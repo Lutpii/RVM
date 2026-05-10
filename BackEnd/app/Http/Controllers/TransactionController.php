@@ -13,21 +13,18 @@ use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
-    const POINTS_PER_100G = [
-        'aluminum' => 25,
-        'plastic'  => 20,
-        'glass'    => 20,
-        'paper'    => 15,
+    // Points awarded per 10g of material
+    const POINTS_PER_10G = [
+        'aluminum' => 7,
+        'plastic'  => 5,
+        'glass'    => 1,
+        'paper'    => 1,
     ];
 
-    private static function loadPointsConfig(): array
+    private static function calcPoints(string $material, int $weightGrams): int
     {
-        $path = storage_path('app/reward_config.json');
-        if (file_exists($path)) {
-            $decoded = json_decode(file_get_contents($path), true);
-            if ($decoded && is_array($decoded)) return $decoded;
-        }
-        return self::POINTS_PER_100G;
+        $rate = self::POINTS_PER_10G[$material] ?? 1;
+        return (int) floor($weightGrams / 10) * $rate;
     }
 
     const BIN_FULL_THRESHOLD = 90; // 90% = full
@@ -147,21 +144,22 @@ class TransactionController extends Controller
     {
         $request->validate([
             'session_code'      => 'required|string',
-            'material_selected' => 'required|in:aluminum,plastic,glass,paper',
+            'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
             'image_path'        => 'nullable|string',
         ]);
 
         $session  = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
 
-        $selected = $request->material_selected;
+        $selected = $request->material_selected; // null when no pre-selection
 
         // Call Python Flask AI service
         $aiResult = $this->ai->classify($request->image_path);
-        $detected = $aiResult['material'] ?? $selected; // fallback to selected if AI unavailable
-        $confidence = $aiResult['confidence'] ?? 0.95;
+        $detected = $aiResult['material'] ?? $selected ?? 'plastic';
+        $confidence = $aiResult['confidence'] ?? 0;
 
-        $isValid = ($detected === $selected);
+        // When no material was pre-selected, AI result is always valid
+        $isValid = $selected === null ? true : ($detected === $selected);
 
         return response()->json([
             'success'           => true,
@@ -170,8 +168,8 @@ class TransactionController extends Controller
             'ai_detected'       => $detected,
             'confidence'        => $confidence,
             'all_predictions'   => $aiResult['all_predictions'] ?? [],
-            'message'           => $isValid ? 'Item validated successfully!' : "AI detected {$detected} but {$selected} was selected.",
-            'step'              => $isValid ? 'validated' : 'invalid',
+            'message'           => 'Item classified successfully.',
+            'step'              => 'validated',
         ]);
     }
 
@@ -180,21 +178,24 @@ class TransactionController extends Controller
     {
         $request->validate([
             'session_code'      => 'required|string',
-            'material_selected' => 'required|in:aluminum,plastic,glass,paper',
-            'ai_detected_type'  => 'required|string',
+            'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
+            'ai_detected_type'  => 'nullable|string',
             'image_path'        => 'nullable|string',
         ]);
 
         $session  = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
 
-        $material    = $request->material_selected;
-        // Simulate weight from sensor (plastic/aluminum/glass: 16–100g; paper: 50–500g)
-        $weightGrams = in_array($material, ['plastic', 'aluminum', 'glass'])
-            ? rand(16, 100)
-            : rand(50, 500);
-        $config        = self::loadPointsConfig();
-        $pointsEarned  = $config[$material] ?? 5;
+        // Use AI detected type as material (since no pre-selection in new flow)
+        $material    = $request->ai_detected_type ?? $request->material_selected ?? 'plastic';
+        // Simulate weight from sensor
+        $weightGrams = match($material) {
+            'aluminum', 'plastic' => rand(9, 49),
+            'glass'               => rand(50, 500),
+            'paper'               => rand(50, 500),
+            default               => rand(9, 49),
+        };
+        $pointsEarned  = self::calcPoints($material, $weightGrams);
 
         return response()->json([
             'success'       => true,
@@ -211,8 +212,8 @@ class TransactionController extends Controller
     {
         $request->validate([
             'session_code'      => 'required|string',
-            'material_selected' => 'required|in:aluminum,plastic,glass,paper',
-            'ai_detected_type'  => 'required|string',
+            'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
+            'ai_detected_type'  => 'nullable|string',
             'ai_confidence'     => 'nullable|numeric',
             'weight_grams'      => 'required|numeric',
             'points_earned'     => 'required|integer',
@@ -225,13 +226,14 @@ class TransactionController extends Controller
         $user    = $request->user();
         $machine = $session->machine;
 
-        // Save transaction
+        // Save transaction — material comes from AI detection (no pre-selection)
+        $materialUsed = $request->ai_detected_type ?? $request->material_selected ?? 'unknown';
         $transaction = Transaction::create([
             'session_id'        => $session->id,
             'user_id'           => $user->id,
             'machine_id'        => $machine->id,
-            'material_selected' => $request->material_selected,
-            'ai_detected_type'  => $request->ai_detected_type,
+            'material_selected' => $materialUsed,
+            'ai_detected_type'  => $materialUsed,
             'ai_confidence'     => $request->ai_confidence,
             'is_valid'          => 1,
             'weight_grams'      => $request->weight_grams,

@@ -152,7 +152,7 @@ async function connectDemo(machine) {
     if (sessionRes.data.success) {
       rvm.setMachine(machine)
       rvm.setSession(sessionRes.data.session)
-      rvm.setStep('selection')
+      rvm.setStep('bin_check')
       router.push('/session')
     } else {
       error.value = sessionRes.data.message
@@ -166,7 +166,7 @@ async function connectDemo(machine) {
         if (showRes.data.success) {
           rvm.setMachine(showRes.data.session.machine || machine)
           rvm.setSession(showRes.data.session)
-          rvm.setStep('selection')
+          rvm.setStep('bin_check')
           router.push('/session')
           return
         }
@@ -183,7 +183,7 @@ async function connectDemo(machine) {
       total_items:   0,
       machine:       machine,
     })
-    rvm.setStep('selection')
+    rvm.setStep('bin_check')
     router.push('/session')
   } finally {
     loading.value = false

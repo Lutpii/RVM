@@ -31,27 +31,8 @@
     <div class="rvm-body">
       <Transition name="step-transition" mode="out-in">
 
-        <!-- SELECTION step -->
-        <div v-if="rvm.currentStep === 'selection'" key="selection" class="step-content">
-          <h2 class="step-title">{{ $t('session.selectType') }}</h2>
-          <div class="material-grid">
-            <button v-for="mat in materials" :key="mat.id"
-              :class="['material-btn', 'mat-' + mat.id, { 'bin-full': isBinFull(mat.id) }]"
-              :disabled="isBinFull(mat.id)"
-              @click="selectMaterial(mat.id)"
-            >
-              <span class="mat-icon">{{ mat.icon }}</span>
-              <span class="mat-name">{{ $t('session.' + mat.id) }}</span>
-              <span v-if="isBinFull(mat.id)" class="bin-full-badge">{{ $t('session.binFull') }}</span>
-            </button>
-          </div>
-          <button class="end-session-btn" @click="confirmEndSession">
-            ⬛ {{ $t('session.endSession') }}
-          </button>
-        </div>
-
         <!-- BIN CHECK step -->
-        <div v-else-if="rvm.currentStep === 'bin_check'" key="bin_check" class="step-content centered">
+        <div v-if="rvm.currentStep === 'bin_check'" key="bin_check" class="step-content centered">
           <div class="spinner-lg"></div>
           <h2 class="step-status">{{ $t('session.checkingBin') }}</h2>
         </div>
@@ -290,10 +271,10 @@ async function startCameraMode() {
   cameraMode.value = 'camera'
   cameraCountdown.value = 3
   await openCamera()
-  await delay(800)
+  await delay(1040)
   for (let i = 3; i >= 1; i--) {
     cameraCountdown.value = i
-    await delay(1000)
+    await delay(1300)
   }
   cameraCountdown.value = 0
   const path = await captureFromCamera()
@@ -369,7 +350,7 @@ const materialIcon = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (['selection'].includes(rvm.currentStep)) return 'Ready'
+  if (['insert'].includes(rvm.currentStep)) return 'Ready'
   return 'Processing'
 })
 
@@ -378,7 +359,7 @@ const statusClass = computed(() => {
 })
 
 const progressWidth = computed(() => {
-  const stepOrder = ['selection','bin_check','lid','insert','conveyor','camera','classify','validate_ok','weigh','complete']
+  const stepOrder = ['bin_check','lid','insert','conveyor','camera','classify','validate_ok','weigh','complete']
   const idx = stepOrder.indexOf(rvm.currentStep)
   return Math.max(5, idx < 0 ? 100 : ((idx + 1) / stepOrder.length) * 100)
 })
@@ -398,35 +379,27 @@ function toggleLang() {
   localStorage.setItem('rvm_lang', locale.value)
 }
 
-function isBinFull(material) {
-  const machine = rvm.session?.machine || rvm.machine
-  if (!machine) return false
-  return (machine[material + '_level'] || 0) >= 90
-}
+const isAutoFlowRunning = ref(false)
 
-async function selectMaterial(material) {
-  rvm.setSelectedMaterial(material)
-  rvm.setStep('bin_check')
+async function autoStartFlow() {
+  if (isAutoFlowRunning.value) return
+  isAutoFlowRunning.value = true
 
-  // Auto-advance through steps
-  await delay(1500) // bin check animation
-  try {
-    const binRes = await rvm.checkBin(material)
-    if (binRes.bin_full) {
-      rvm.setStep('selection')
-      return
-    }
-  } catch {
-    // API failed — continue anyway (demo mode fallback)
-  }
+  await delay(1950)
 
   rvm.setStep('lid')
   lidOpen.value = false
-  await delay(500)
+  await delay(650)
   lidOpen.value = true
-  await delay(2000)
+  await delay(2600)
   rvm.setStep('insert')
+
+  isAutoFlowRunning.value = false
 }
+
+watch(() => rvm.currentStep, (step) => {
+  if (step === 'bin_check') autoStartFlow()
+})
 
 function drawBoundingBoxes(imageDataUrl, predictions) {
   return new Promise((resolve) => {
@@ -477,7 +450,7 @@ async function simulateInsert() {
     if (conveyorPos.value >= 90) clearInterval(interval)
   }, 50)
 
-  await delay(2500)
+  await delay(2200)
 
   // ── CAMERA: wait for user to choose camera or upload ────────────────────
   rvm.setStep('camera')
@@ -488,29 +461,32 @@ async function simulateInsert() {
   // ─────────────────────────────────────────────────────────────────────────
 
   rvm.setStep('classify')
-  await delay(1500)
+  await delay(1950)
 
-  // Step 1: Classify — pass captured image path to backend
+  // Step 1: Classify — AI detects the material type (no pre-selection)
   let isValid = true
   try {
     const res = await rvm.processStep('classify', {
       material_selected: rvm.selectedMaterial,
       image_path: capturedImagePath,
     })
-    aiDetected.value   = res.ai_detected || rvm.selectedMaterial
+    aiDetected.value   = res.ai_detected || rvm.selectedMaterial || 'plastic'
     aiConfidence.value = res.confidence || 0
-    isValid = res.is_valid
+    // Always valid — material is determined by AI, no pre-selection to mismatch against
+    isValid = true
+    rvm.setSelectedMaterial(aiDetected.value)
     if (capturedImageDataUrl.value && res.all_predictions?.length) {
       annotatedImageDataUrl.value = await drawBoundingBoxes(capturedImageDataUrl.value, res.all_predictions)
     }
   } catch {
-    aiDetected.value = rvm.selectedMaterial
+    aiDetected.value = rvm.selectedMaterial || 'plastic'
+    rvm.setSelectedMaterial(aiDetected.value)
     isValid = true
   }
 
   if (isValid) {
     rvm.setStep('validate_ok')
-    await delay(1500)
+    await delay(1950)
     rvm.setStep('weigh')
 
     // Step 2: Weigh — fallback to random weight if API fails
@@ -525,7 +501,7 @@ async function simulateInsert() {
       itemWeight.value = Math.floor(Math.random() * 400) + 50
       itemPoints.value = Math.floor(itemWeight.value / 100) * 10
     }
-    await delay(2000)
+    await delay(2600)
 
     // Step 3: Complete — always call API to save to DB
     try {
@@ -545,7 +521,7 @@ async function simulateInsert() {
   } else {
     // Show mismatch screen first so user sees what AI detected
     rvm.setStep('validate_fail')
-    await delay(2000)
+    await delay(2600)
 
     // Step 3b: Reject — always call API to save deduction
     try {
@@ -591,7 +567,8 @@ function delay(ms) {
 }
 
 onMounted(() => {
-  if (!rvm.session && !rvm.isGuest) router.push('/scan')
+  if (!rvm.session && !rvm.isGuest) { router.push('/scan'); return }
+  if (rvm.currentStep === 'bin_check') autoStartFlow()
 })
 </script>
 
@@ -854,7 +831,7 @@ onMounted(() => {
   border: 4px solid var(--border);
   border-top-color: var(--accent-blue);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 1s linear infinite;
   margin-bottom: 20px;
 }
 
@@ -874,7 +851,7 @@ onMounted(() => {
   height: 50%;
   background: var(--bg-hover);
   border-bottom: 2px solid var(--border);
-  transition: transform 1.5s ease;
+  transition: transform 3s ease;
   transform-origin: top center;
 }
 .lid-door.open { transform: rotateX(-90deg); }

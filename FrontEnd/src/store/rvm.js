@@ -50,7 +50,7 @@ export const useRvmStore = defineStore('rvm', () => {
       started_at: new Date().toISOString(),
     }
     localSummary.value = { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
-    setStep('selection')
+    setStep('bin_check')
   }
 
   function _guestMockStep(stepName, payload) {
@@ -99,7 +99,7 @@ export const useRvmStore = defineStore('rvm', () => {
     const res = await api.post('/sessions/start', { machine_id: machineId, qr_token: qrToken })
     if (res.data.success) {
       session.value = res.data.session
-      setStep('selection')
+      setStep('bin_check')
     }
     return res.data
   }
@@ -167,7 +167,7 @@ export const useRvmStore = defineStore('rvm', () => {
     currentTransaction.value = null
     selectedMaterial.value   = null
     lastError.value          = null
-    setStep('selection')
+    setStep('bin_check')
   }
 
   function resetSession() {

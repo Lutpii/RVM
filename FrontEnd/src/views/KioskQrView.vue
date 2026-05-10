@@ -153,7 +153,7 @@ function startPoll() {
           if (res.data.session) {
             rvm.setSession(res.data.session)
             rvm.setMachine(res.data.session.machine)
-            rvm.setStep('selection')
+            rvm.setStep('bin_check')
           } else {
             // kiosk_token ready but session not created yet (phone still processing)
             // Start/resume the session from the kiosk using kiosk auth
@@ -167,7 +167,7 @@ function startPoll() {
                 if (sessionRes.data.success) {
                   rvm.setSession(sessionRes.data.session)
                   rvm.setMachine(md)
-                  rvm.setStep('selection')
+                  rvm.setStep('bin_check')
                 }
               } catch (e) {
                 const errData = e.response?.data
@@ -177,7 +177,7 @@ function startPoll() {
                     if (showRes.data.success) {
                       rvm.setSession(showRes.data.session)
                       rvm.setMachine(showRes.data.session.machine || md)
-                      rvm.setStep('selection')
+                      rvm.setStep('bin_check')
                     }
                   } catch { /* proceed anyway, session page will handle */ }
                 }
@@ -246,7 +246,7 @@ async function startAuthenticatedSession() {
         if (sessionRes.data.success) {
           rvm.setMachine(machine)
           rvm.setSession(sessionRes.data.session)
-          rvm.setStep('selection')
+          rvm.setStep('bin_check')
           router.push(`/kiosk/${machineCode}/session`)
           return
         }
@@ -259,7 +259,7 @@ async function startAuthenticatedSession() {
             if (showRes.data.success) {
               rvm.setMachine(showRes.data.session.machine || machine)
               rvm.setSession(showRes.data.session)
-              rvm.setStep('selection')
+              rvm.setStep('bin_check')
               router.push(`/kiosk/${machineCode}/session`)
               return
             }
