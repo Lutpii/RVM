@@ -95,18 +95,48 @@
 
         <!-- CAMERA step -->
         <div v-else-if="rvm.currentStep === 'camera'" key="camera" class="step-content centered">
-          <div class="camera-container">
-            <video ref="videoRef" autoplay playsinline muted class="camera-video"></video>
-            <canvas ref="canvasRef" style="display:none"></canvas>
-            <div class="scan-overlay">
-              <div class="scan-corners"></div>
-              <div class="scan-line"></div>
+          <!-- Choose mode -->
+          <template v-if="cameraMode === 'choose'">
+            <h2 class="step-status">Scan or Upload Item</h2>
+            <p class="step-sub">Choose how to capture the item image</p>
+            <div class="capture-options">
+              <button class="capture-btn" @click="startCameraMode">
+                <span class="capture-icon">📷</span>
+                <span>Use Camera</span>
+              </button>
+              <label class="capture-btn">
+                <span class="capture-icon">📁</span>
+                <span>Upload Image</span>
+                <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/*" @change="handleFileUpload" style="display:none" />
+              </label>
             </div>
-            <div class="camera-countdown" v-if="cameraCountdown > 0">{{ cameraCountdown }}</div>
-            <div class="camera-countdown capturing" v-else>📸</div>
-          </div>
-          <h2 class="step-status">{{ $t('session.capturingImage') }}</h2>
-          <p class="step-sub">{{ cameraCountdown > 0 ? `Auto-capture in ${cameraCountdown}s` : 'Uploading...' }}</p>
+          </template>
+
+          <!-- Live camera + countdown -->
+          <template v-else-if="cameraMode === 'camera'">
+            <div class="camera-container">
+              <video ref="videoRef" autoplay playsinline muted class="camera-video"></video>
+              <canvas ref="canvasRef" style="display:none"></canvas>
+              <div class="scan-overlay">
+                <div class="scan-corners"></div>
+                <div class="scan-line"></div>
+              </div>
+              <div class="camera-countdown" v-if="cameraCountdown > 0">{{ cameraCountdown }}</div>
+              <div class="camera-countdown capturing" v-else>📸</div>
+            </div>
+            <h2 class="step-status">{{ $t('session.capturingImage') }}</h2>
+            <p class="step-sub">{{ cameraCountdown > 0 ? `Auto-capture in ${cameraCountdown}s` : 'Uploading...' }}</p>
+          </template>
+
+          <!-- File upload preview -->
+          <template v-else-if="cameraMode === 'upload'">
+            <canvas ref="canvasRef" style="display:none"></canvas>
+            <div class="camera-container">
+              <img v-if="capturedImageDataUrl" :src="capturedImageDataUrl" class="camera-video" alt="preview" style="object-fit:contain;background:#111" />
+            </div>
+            <h2 class="step-status">Uploading Image...</h2>
+            <p class="step-sub">Processing your file</p>
+          </template>
         </div>
 
         <!-- AI CLASSIFY step -->
@@ -229,10 +259,13 @@ const deductedPoints = ref(10)
 // Camera
 const videoRef              = ref(null)
 const canvasRef             = ref(null)
+const fileInputRef          = ref(null)
 const cameraCountdown       = ref(3)
+const cameraMode            = ref('choose') // 'choose' | 'camera' | 'upload'
 const capturedImageDataUrl  = ref(null)
 const annotatedImageDataUrl = ref(null)
 let   cameraStream          = null
+let   cameraResolve         = null // resolves the promise waiting for user capture
 
 async function openCamera() {
   try {
@@ -253,7 +286,22 @@ function stopCamera() {
   if (videoRef.value) videoRef.value.srcObject = null
 }
 
-async function captureAndUpload() {
+async function startCameraMode() {
+  cameraMode.value = 'camera'
+  cameraCountdown.value = 3
+  await openCamera()
+  await delay(800)
+  for (let i = 3; i >= 1; i--) {
+    cameraCountdown.value = i
+    await delay(1000)
+  }
+  cameraCountdown.value = 0
+  const path = await captureFromCamera()
+  stopCamera()
+  if (cameraResolve) { cameraResolve(path); cameraResolve = null }
+}
+
+async function captureFromCamera() {
   const video  = videoRef.value
   const canvas = canvasRef.value
   if (video && canvas && video.readyState >= 2) {
@@ -280,6 +328,30 @@ async function captureAndUpload() {
       }
     }, 'image/jpeg', 0.88)
   })
+}
+
+async function handleFileUpload(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  cameraMode.value = 'upload'
+  // Show preview
+  const reader = new FileReader()
+  reader.onload = (e) => { capturedImageDataUrl.value = e.target.result }
+  reader.readAsDataURL(file)
+  // Upload to server
+  let path = null
+  if (!rvm.isGuest) {
+    try {
+      const form = new FormData()
+      form.append('session_code', rvm.session?.session_code || '')
+      form.append('image', file, file.name)
+      const res = await api.post('/transactions/capture-image', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      path = res.data.image_path || null
+    } catch { path = null }
+  }
+  if (cameraResolve) { cameraResolve(path); cameraResolve = null }
 }
 
 onBeforeUnmount(() => stopCamera())
@@ -407,18 +479,12 @@ async function simulateInsert() {
 
   await delay(2500)
 
-  // ── CAMERA: open webcam, countdown, capture ──────────────────────────────
+  // ── CAMERA: wait for user to choose camera or upload ────────────────────
   rvm.setStep('camera')
+  cameraMode.value = 'choose'
   cameraCountdown.value = 3
-  await openCamera()
-  await delay(800) // let camera initialise before countdown
-  for (let i = 3; i >= 1; i--) {
-    cameraCountdown.value = i
-    await delay(1000)
-  }
-  cameraCountdown.value = 0            // show 📸
-  const capturedImagePath = await captureAndUpload()
-  stopCamera()
+  capturedImageDataUrl.value = null
+  const capturedImagePath = await new Promise(resolve => { cameraResolve = resolve })
   // ─────────────────────────────────────────────────────────────────────────
 
   rvm.setStep('classify')
@@ -679,6 +745,40 @@ onMounted(() => {
   pointer-events: none;
 }
 .camera-countdown.capturing { font-size: 40px; }
+
+/* Capture mode selection */
+.capture-options {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.capture-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 32px;
+  border-radius: 16px;
+  border: 2px solid rgba(78, 158, 245, 0.4);
+  background: rgba(78, 158, 245, 0.08);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  min-width: 130px;
+}
+.capture-btn:hover {
+  background: rgba(78, 158, 245, 0.2);
+  border-color: #4e9ef5;
+  transform: translateY(-2px);
+}
+.capture-icon {
+  font-size: 36px;
+  line-height: 1;
+}
 
 /* Selection */
 .step-title {

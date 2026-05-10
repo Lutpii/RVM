@@ -13,7 +13,7 @@ API_KEY = os.environ.get('AI_API_KEY', 'rvm_ai_secret_key_2024')
 
 _HERE = pathlib.Path(__file__).parent
 _BEST_PT = _HERE.parent.parent / 'best.pt'
-_FALLBACK = _HERE / 'model' / 'rvm_model.pt'
+_FALLBACK = _HERE / 'model' / 'best.pt'
 MODEL_PATH = str(_BEST_PT) if _BEST_PT.exists() else str(_FALLBACK)
 
 _FALLBACK_CLASSES = ['aluminum', 'plastic', 'glass', 'paper']
@@ -76,6 +76,9 @@ def classify():
     class_id = int(best_box.cls[0])
     confidence = float(best_box.conf[0])
     material = CLASSES[class_id] if class_id < len(CLASSES) else 'unknown'
+
+    if confidence < 0.6:
+        return jsonify({'material': 'unknown', 'confidence': round(confidence, 4), 'predictions': []})
 
     img_w, img_h = img.size
     predictions = []
