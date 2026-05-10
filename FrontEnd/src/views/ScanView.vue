@@ -158,7 +158,21 @@ async function connectDemo(machine) {
       error.value = sessionRes.data.message
     }
   } catch (e) {
-    // Full demo fallback — no backend needed
+    const errData = e.response?.data
+    // Resume existing active session if backend returned one
+    if (errData?.session_code) {
+      try {
+        const showRes = await api.get(`/sessions/${errData.session_code}`)
+        if (showRes.data.success) {
+          rvm.setMachine(showRes.data.session.machine || machine)
+          rvm.setSession(showRes.data.session)
+          rvm.setStep('selection')
+          router.push('/session')
+          return
+        }
+      } catch { /* fall through to offline demo mode */ }
+    }
+    // Offline demo fallback — no backend session, AI calls will be skipped
     rvm.setMachine(machine)
     rvm.setSession({
       session_code:  'DEMO-' + Math.random().toString(36).substr(2, 8).toUpperCase(),

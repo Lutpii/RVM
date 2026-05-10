@@ -81,7 +81,8 @@ class QrController extends Controller
             return response()->json(['success' => false, 'message' => 'QR token not found.'], 404);
         }
 
-        if (Carbon::now()->isAfter($qrSession->expires_at)) {
+        // Only expire pending QRs — a scanned session keeps its kiosk_token valid
+        if ($qrSession->status === 'pending' && Carbon::now()->isAfter($qrSession->expires_at)) {
             $qrSession->update(['status' => 'expired']);
         }
 
@@ -89,7 +90,6 @@ class QrController extends Controller
         if ($qrSession->status === 'scanned' && $qrSession->scanned_by) {
             $recyclingSession = RecyclingSession::with(['user', 'machine'])
                 ->where('user_id', $qrSession->scanned_by)
-                ->where('machine_id', $qrSession->machine_id)
                 ->where('status', 'active')
                 ->first();
 

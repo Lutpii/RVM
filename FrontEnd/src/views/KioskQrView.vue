@@ -144,16 +144,48 @@ function startPoll() {
         clearIntervals()
         isActive = false
 
-        if (res.data.kiosk_token && res.data.session) {
+        if (res.data.kiosk_token) {
           // Authenticated kiosk session — real user, real API calls
           setKioskToken(res.data.kiosk_token)
           rvm.isGuest = false
           rvm.guestMachineCode = machineCode
-          rvm.setSession(res.data.session)
-          rvm.setMachine(res.data.session.machine)
-          rvm.setStep('selection')
+
+          if (res.data.session) {
+            rvm.setSession(res.data.session)
+            rvm.setMachine(res.data.session.machine)
+            rvm.setStep('selection')
+          } else {
+            // kiosk_token ready but session not created yet (phone still processing)
+            // Start/resume the session from the kiosk using kiosk auth
+            const md = machineData
+            if (md) {
+              try {
+                const sessionRes = await api.post('/sessions/start', {
+                  machine_id: md.id,
+                  qr_token:   currentToken.value,
+                })
+                if (sessionRes.data.success) {
+                  rvm.setSession(sessionRes.data.session)
+                  rvm.setMachine(md)
+                  rvm.setStep('selection')
+                }
+              } catch (e) {
+                const errData = e.response?.data
+                if (errData?.session_code) {
+                  try {
+                    const showRes = await api.get(`/sessions/${errData.session_code}`)
+                    if (showRes.data.success) {
+                      rvm.setSession(showRes.data.session)
+                      rvm.setMachine(showRes.data.session.machine || md)
+                      rvm.setStep('selection')
+                    }
+                  } catch { /* proceed anyway, session page will handle */ }
+                }
+              }
+            }
+          }
         } else {
-          // Fallback: guest mode with user name injected
+          // No kiosk token — pure guest mode
           const md = machineData ? {
             id: machineData.id,
             name: machineData.name,
@@ -201,20 +233,38 @@ function startAsGuest() {
 }
 
 async function startAuthenticatedSession() {
+  rvm.isGuest = false
   try {
     const res = await api.get('/machines')
     const machine = (res.data.machines || []).find(m => m.machine_code === machineCode)
     if (machine) {
-      const sessionRes = await api.post('/sessions/start', {
-        machine_id: machine.id,
-        qr_token: 'KIOSK_' + Date.now(),
-      })
-      if (sessionRes.data.success) {
-        rvm.setMachine(machine)
-        rvm.setSession(sessionRes.data.session)
-        rvm.setStep('selection')
-        router.push(`/kiosk/${machineCode}/session`)
-        return
+      try {
+        const sessionRes = await api.post('/sessions/start', {
+          machine_id: machine.id,
+          qr_token: 'KIOSK_' + Date.now(),
+        })
+        if (sessionRes.data.success) {
+          rvm.setMachine(machine)
+          rvm.setSession(sessionRes.data.session)
+          rvm.setStep('selection')
+          router.push(`/kiosk/${machineCode}/session`)
+          return
+        }
+      } catch (e) {
+        const errData = e.response?.data
+        // Resume existing active session instead of falling to QR mode
+        if (errData?.session_code) {
+          try {
+            const showRes = await api.get(`/sessions/${errData.session_code}`)
+            if (showRes.data.success) {
+              rvm.setMachine(showRes.data.session.machine || machine)
+              rvm.setSession(showRes.data.session)
+              rvm.setStep('selection')
+              router.push(`/kiosk/${machineCode}/session`)
+              return
+            }
+          } catch { /* fall through to QR */ }
+        }
       }
     }
   } catch { /* fall through to QR */ }

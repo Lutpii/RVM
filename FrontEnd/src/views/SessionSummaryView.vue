@@ -10,7 +10,7 @@
         </div>
         <div class="badge">
           <span class="badge-label">{{ $t('session.status') }}</span>
-          <span class="badge-value">{{ $t('processing') || 'Processing' }}</span>
+          <span class="badge-value">{{ $t('session.processing') }}</span>
         </div>
       </div>
     </div>
