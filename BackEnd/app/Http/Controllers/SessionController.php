@@ -38,14 +38,15 @@ class SessionController extends Controller
         $sessionCode = 'RVM-' . strtoupper(Str::random(12));
 
         $session = RecyclingSession::create([
-            'session_code' => $sessionCode,
-            'user_id'      => $user->id,
-            'machine_id'   => $machine->id,
-            'status'       => 'active',
-            'start_points' => $user->total_points,
-            'end_points'   => $user->total_points,
+            'session_code'  => $sessionCode,
+            'user_id'       => $user->id,
+            'machine_id'    => $machine->id,
+            'status'        => 'active',
+            'start_points'  => $user->total_points,
+            'end_points'    => $user->total_points,
             'points_earned' => 0,
-            'total_items'  => 0,
+            'total_items'   => 0,
+            'started_at'    => Carbon::now(),
         ]);
 
         return response()->json([

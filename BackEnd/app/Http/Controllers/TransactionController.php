@@ -13,13 +13,22 @@ use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
-    // Points per 100g for each material (plastic/aluminum/glass: per 20g rate × 5)
     const POINTS_PER_100G = [
-        'aluminum' => 25,  // 15 pts per 20g
-        'plastic'  => 20,  // 10 pts per 20g
-        'glass'    => 20,  // 10 pts per 20g
-        'paper'    => 15,   // 5 pts per 100g
+        'aluminum' => 25,
+        'plastic'  => 20,
+        'glass'    => 20,
+        'paper'    => 15,
     ];
+
+    private static function loadPointsConfig(): array
+    {
+        $path = storage_path('app/reward_config.json');
+        if (file_exists($path)) {
+            $decoded = json_decode(file_get_contents($path), true);
+            if ($decoded && is_array($decoded)) return $decoded;
+        }
+        return self::POINTS_PER_100G;
+    }
 
     const BIN_FULL_THRESHOLD = 90; // 90% = full
     const DEDUCTION_INVALID  = 10;
@@ -184,8 +193,8 @@ class TransactionController extends Controller
         $weightGrams = in_array($material, ['plastic', 'aluminum', 'glass'])
             ? rand(16, 100)
             : rand(50, 500);
-        $pointsPerUnit = self::POINTS_PER_100G[$material] ?? 5;
-        $pointsEarned  = (int)(($weightGrams / 100) * $pointsPerUnit);
+        $config        = self::loadPointsConfig();
+        $pointsEarned  = $config[$material] ?? 5;
 
         return response()->json([
             'success'       => true,

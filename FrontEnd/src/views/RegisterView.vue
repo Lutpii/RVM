@@ -2,7 +2,7 @@
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-header">
-        <RouterLink to="/" class="back-btn">← Back</RouterLink>
+        <RouterLink to="/" class="back-btn">←</RouterLink>
         <div class="header-controls">
           <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
           <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'ID' : 'EN' }}</button>
@@ -285,4 +285,19 @@ async function handleVerifyOtp() {
 .switch-link a { color: var(--accent-blue); text-decoration: none; font-weight: 500; }
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .auth-page { padding: 12px; align-items: flex-start; padding-top: 20px; }
+  .auth-card { border-radius: 12px; }
+  .auth-header { padding: 20px 16px 14px; }
+  .auth-header h1 { font-size: 20px; }
+  .auth-body { padding: 16px; }
+  .otp-input { font-size: 18px !important; letter-spacing: 4px; }
+}
+
+@media (max-width: 360px) {
+  .auth-page { padding: 8px; }
+  .auth-header h1 { font-size: 18px; }
+}
 </style>

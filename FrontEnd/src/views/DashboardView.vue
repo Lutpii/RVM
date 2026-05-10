@@ -322,4 +322,35 @@ onMounted(async () => {
 
 .spinner-sm { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .top-nav { padding: 10px 12px; gap: 6px; }
+  .user-name { font-size: 13px; }
+  .user-role { display: none; }
+  .ctrl-btn { padding: 4px 8px; font-size: 11px; }
+  .logout-btn { padding: 5px 8px; font-size: 11px; }
+
+  .points-hero { padding: 20px 16px 24px; }
+  .points-number { font-size: 40px; letter-spacing: -1px; }
+
+  .section-pad { padding: 14px 12px 0; }
+  .section-title { font-size: 14px; }
+
+  .scan-action-btn { padding: 12px; gap: 10px; }
+  .scan-icon { font-size: 22px; }
+  .scan-action-btn strong { font-size: 13px; }
+
+  .machine-card { padding: 12px; }
+  .machine-info strong { font-size: 13px; }
+
+  .activity-item { padding: 10px 12px; gap: 8px; }
+  .activity-desc { font-size: 12px; }
+  .activity-pts  { font-size: 13px; }
+}
+
+@media (max-width: 360px) {
+  .points-number { font-size: 34px; }
+  .nav-right .ctrl-btn:first-child { display: none; }
+}
 </style>

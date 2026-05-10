@@ -3,7 +3,7 @@
     <div class="auth-card">
       <!-- Header -->
       <div class="auth-header">
-        <RouterLink to="/" class="back-btn">← Back</RouterLink>
+        <RouterLink to="/" class="back-btn">←</RouterLink>
         <div class="header-controls">
           <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
           <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'ID' : 'EN' }}</button>
@@ -15,7 +15,16 @@
       <div class="auth-body">
         <!-- Google Login -->
         <button class="google-btn" @click="handleGoogle" :disabled="loading">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path fill="#4285F4"
+              d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
+            <path fill="#34A853"
+              d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
+            <path fill="#FBBC05"
+              d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" />
+            <path fill="#EA4335"
+              d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
+          </svg>
           {{ $t('auth.googleBtn') }}
         </button>
 
@@ -36,7 +45,8 @@
           <div class="form-group">
             <label>{{ $t('auth.password') }}</label>
             <div class="password-wrap">
-              <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')" required />
+              <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')"
+                required />
               <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁' }}</button>
             </div>
           </div>
@@ -91,19 +101,19 @@ import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 
-const router   = useRouter()
-const route    = useRoute()
-const auth     = useAuthStore()
-const theme    = inject('theme')
+const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
+const theme = inject('theme')
 const toggleTheme = inject('toggleTheme')
 const { locale } = useI18n()
 
 const loginMethod = ref('email')
-const form     = ref({ email: '', password: '', phone: '', otp: '' })
-const loading  = ref(false)
-const error    = ref('')
-const otpSent  = ref(false)
-const showPwd  = ref(false)
+const form = ref({ email: '', password: '', phone: '', otp: '' })
+const loading = ref(false)
+const error = ref('')
+const otpSent = ref(false)
+const showPwd = ref(false)
 
 function toggleLang() {
   locale.value = locale.value === 'en' ? 'id' : 'en'
@@ -112,7 +122,7 @@ function toggleLang() {
 
 async function handleEmailLogin() {
   loading.value = true
-  error.value   = ''
+  error.value = ''
   try {
     const res = await auth.login({ email: form.value.email, password: form.value.password })
     if (res.success) {
@@ -128,13 +138,13 @@ async function handleEmailLogin() {
 }
 
 async function handleGoogle() {
-  try { await auth.loginWithGoogle() } catch {}
+  try { await auth.loginWithGoogle() } catch { }
 }
 
 async function handleSendOtp() {
   if (!form.value.phone) { error.value = 'Please enter phone number.'; return }
   loading.value = true
-  error.value   = ''
+  error.value = ''
   try {
     const res = await auth.sendOtp(form.value.phone)
     if (res.success) { otpSent.value = true }
@@ -148,7 +158,7 @@ async function handleSendOtp() {
 
 async function handleVerifyOtp() {
   loading.value = true
-  error.value   = ''
+  error.value = ''
   try {
     const res = await auth.verifyOtp(form.value.phone, form.value.otp)
     if (res.success) { router.push(route.query.redirect || '/dashboard') }
@@ -186,14 +196,16 @@ async function handleVerifyOtp() {
   position: relative;
   text-align: center;
 }
+
 .back-btn {
   position: absolute;
   left: 16px;
   top: 16px;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-size: 14px;
 }
+
 .header-controls {
   position: absolute;
   right: 16px;
@@ -201,8 +213,9 @@ async function handleVerifyOtp() {
   display: flex;
   gap: 6px;
 }
+
 .ctrl-btn {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
   padding: 4px 10px;
@@ -210,10 +223,22 @@ async function handleVerifyOtp() {
   cursor: pointer;
   font-size: 12px;
 }
-.auth-header h1 { color: white; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-.auth-header p  { color: rgba(255,255,255,0.85); font-size: 14px; }
 
-.auth-body { padding: 24px 20px; }
+.auth-header h1 {
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.auth-header p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+}
+
+.auth-body {
+  padding: 24px 20px;
+}
 
 .google-btn {
   width: 100%;
@@ -231,7 +256,10 @@ async function handleVerifyOtp() {
   gap: 10px;
   transition: background 0.2s;
 }
-.google-btn:hover { background: var(--bg-hover); }
+
+.google-btn:hover {
+  background: var(--bg-hover);
+}
 
 .separator {
   text-align: center;
@@ -240,7 +268,9 @@ async function handleVerifyOtp() {
   color: var(--text-muted);
   font-size: 12px;
 }
-.separator::before, .separator::after {
+
+.separator::before,
+.separator::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -248,8 +278,14 @@ async function handleVerifyOtp() {
   height: 1px;
   background: var(--border);
 }
-.separator::before { left: 0; }
-.separator::after  { right: 0; }
+
+.separator::before {
+  left: 0;
+}
+
+.separator::after {
+  right: 0;
+}
 
 .tab-group {
   display: flex;
@@ -258,6 +294,7 @@ async function handleVerifyOtp() {
   padding: 3px;
   margin-bottom: 16px;
 }
+
 .tab {
   flex: 1;
   padding: 8px;
@@ -269,13 +306,17 @@ async function handleVerifyOtp() {
   font-size: 14px;
   transition: all 0.2s;
 }
+
 .tab.active {
   background: var(--accent-blue);
   color: white;
   font-weight: 600;
 }
 
-.form-group { margin-bottom: 14px; }
+.form-group {
+  margin-bottom: 14px;
+}
+
 .form-group label {
   display: block;
   font-size: 13px;
@@ -283,6 +324,7 @@ async function handleVerifyOtp() {
   margin-bottom: 6px;
   font-weight: 500;
 }
+
 .form-group input {
   width: 100%;
   padding: 11px 14px;
@@ -294,9 +336,15 @@ async function handleVerifyOtp() {
   outline: none;
   transition: border-color 0.2s;
 }
-.form-group input:focus { border-color: var(--accent-blue); }
 
-.password-wrap { position: relative; }
+.form-group input:focus {
+  border-color: var(--accent-blue);
+}
+
+.password-wrap {
+  position: relative;
+}
+
 .pwd-toggle {
   position: absolute;
   right: 10px;
@@ -309,13 +357,13 @@ async function handleVerifyOtp() {
 }
 
 .error-msg {
-  background: rgba(239,68,68,0.1);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--accent-red);
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
   margin-bottom: 12px;
-  border: 1px solid rgba(239,68,68,0.2);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .submit-btn {
@@ -334,10 +382,19 @@ async function handleVerifyOtp() {
   gap: 8px;
   transition: opacity 0.2s;
 }
-.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.submit-btn:not(:disabled):hover { opacity: 0.9; }
 
-.whatsapp-btn { background: #25D366; }
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.submit-btn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.whatsapp-btn {
+  background: #25D366;
+}
 
 .otp-info {
   color: var(--accent-green);
@@ -371,15 +428,41 @@ async function handleVerifyOtp() {
   font-size: 14px;
   color: var(--text-secondary);
 }
-.switch-link a { color: var(--accent-blue); text-decoration: none; font-weight: 500; }
+
+.switch-link a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-weight: 500;
+}
 
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .auth-page { padding: 12px; align-items: flex-start; padding-top: 20px; }
+  .auth-card { border-radius: 12px; }
+  .auth-header { padding: 20px 16px 14px; }
+  .auth-header h1 { font-size: 20px; }
+  .auth-body { padding: 16px; }
+  .otp-inputs input { width: 36px; height: 44px; font-size: 20px; }
+}
+
+@media (max-width: 360px) {
+  .auth-page { padding: 8px; }
+  .auth-header h1 { font-size: 18px; }
+  .otp-inputs input { width: 32px; height: 40px; font-size: 18px; }
+}
 </style>

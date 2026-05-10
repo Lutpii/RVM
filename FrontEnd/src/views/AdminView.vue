@@ -1,7 +1,10 @@
 <template>
   <div class="admin-page">
+    <!-- Mobile overlay -->
+    <div v-if="mobileSidebarOpen" class="mobile-overlay" @click="mobileSidebarOpen = false"></div>
+
     <!-- Sidebar -->
-    <aside :class="['sidebar', { collapsed: sidebarCollapsed }]">
+    <aside :class="['sidebar', { collapsed: sidebarCollapsed, 'mobile-open': mobileSidebarOpen }]">
       <div class="sidebar-header">
         <span class="sidebar-logo">♻️</span>
         <span class="sidebar-title" v-if="!sidebarCollapsed">RVM Admin</span>
@@ -10,15 +13,16 @@
         </button>
       </div>
       <nav class="sidebar-nav">
-        <button v-for="item in navItems" :key="item.id" :class="['nav-item', { active: activeTab === item.id }]"
-          @click="activeTab = item.id; fetchTabData(item.id)">
+        <button v-for="item in navItems" :key="item.id"
+          :class="['nav-item', { active: activeTab === item.id }]"
+          @click="switchTab(item.id)">
           <span class="nav-icon">{{ item.icon }}</span>
-          <span class="nav-label" v-if="!sidebarCollapsed">{{ item.label }}</span>
+          <span class="nav-label" v-if="!sidebarCollapsed || mobileSidebarOpen">{{ item.label }}</span>
         </button>
       </nav>
-      <div class="sidebar-footer" v-if="!sidebarCollapsed">
+      <div class="sidebar-footer" v-if="!sidebarCollapsed || mobileSidebarOpen">
         <div class="admin-info">
-          <div class="admin-avatar">A</div>
+          <div class="admin-avatar">{{ auth.user?.name?.charAt(0) || 'A' }}</div>
           <div>
             <div class="admin-name">{{ auth.user?.name }}</div>
             <div class="admin-role">Administrator</div>
@@ -35,40 +39,96 @@
     <!-- Main content -->
     <main class="admin-main">
       <div class="admin-topbar">
-        <h2 class="page-title">{{ currentNavItem?.label }}</h2>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="mobile-menu-btn" @click="mobileSidebarOpen = !mobileSidebarOpen; sidebarCollapsed = false">☰</button>
+          <h2 class="page-title">{{ currentNavItem?.label }}</h2>
+        </div>
         <div class="topbar-right">
-          <span class="last-updated">Last updated: {{ lastUpdated }}</span>
-          <button class="refresh-btn" @click="fetchTabData(activeTab)">🔄 Refresh</button>
+          <span class="live-dot" v-if="isLive"></span>
+          <span class="last-updated">Updated: {{ lastUpdated }}</span>
+          <button class="refresh-btn" @click="fetchTabData(activeTab, true)">🔄 Refresh</button>
         </div>
       </div>
 
-      <!-- DASHBOARD tab -->
+      <!-- Global error banner -->
+      <div v-if="tabError" class="error-banner">
+        ⚠️ {{ tabError }}
+        <button class="error-close" @click="tabError = ''">✕</button>
+      </div>
+
+      <!-- ── DASHBOARD ── -->
       <div v-if="activeTab === 'dashboard'" class="tab-content">
-        <div v-if="loadingStats" class="loading-overlay">
-          <div class="spinner-lg"></div>
-        </div>
+        <div v-if="loadingStats" class="loading-overlay"><div class="spinner-lg"></div></div>
         <div v-else>
+
+          <!-- Live clock -->
+          <div class="dash-clock-row">
+            <span class="overview-clock">{{ liveTime }}</span>
+          </div>
+
+          <!-- Waste overview cards -->
+          <div class="overview-cards">
+            <div class="overview-card" v-for="mat in overviewMaterials" :key="mat.key">
+              <div class="ov-icon">{{ mat.icon }}</div>
+              <div class="ov-label">{{ mat.label }}</div>
+              <div class="ov-count">{{ (overviewData[mat.key]?.today ?? 0).toLocaleString() }}</div>
+              <div class="ov-sub">collected today</div>
+              <div :class="['ov-pct', overviewData[mat.key]?.pct >= 0 ? 'pct-up' : 'pct-down']">
+                {{ overviewData[mat.key]?.pct >= 0 ? '↑' : '↓' }}
+                {{ Math.abs(overviewData[mat.key]?.pct ?? 0) }}% vs yesterday
+              </div>
+            </div>
+          </div>
+
           <!-- Stats grid -->
           <div class="stats-grid">
             <div class="stat-card" v-for="stat in statsCards" :key="stat.label">
               <div class="stat-icon">{{ stat.icon }}</div>
               <div class="stat-info">
-                <div class="stat-value">{{ stat.value }}</div>
+                <div class="stat-value" :style="stat.color ? { color: stat.color } : {}">{{ stat.value }}</div>
                 <div class="stat-label">{{ stat.label }}</div>
+              </div>
+            </div>
+            <!-- Machine Status card -->
+            <div class="stat-card machine-status-card">
+              <div>
+                <div class="ms-icon">🤖</div>
+                <div class="ms-label">MACHINE STATUS</div>
+                <div :class="['ms-status', activeMachines > 0 ? 'ms-online' : 'ms-offline']">
+                  {{ activeMachines > 0 ? 'ONLINE' : 'OFFLINE' }}
+                </div>
+                <div class="ms-sub">{{ activeMachines }} Jetson Nano active</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="charts-row">
+            <div class="section-card chart-card-main">
+              <h3 class="card-title-bar"><span class="title-sq"></span> DAILY COLLECTION TREND (LAST 7 DAYS)</h3>
+              <div class="chart-wrap">
+                <Bar v-if="barChartData" :data="barChartData" :options="barChartOptions" />
+                <div v-else class="chart-empty">No data yet</div>
+              </div>
+            </div>
+            <div class="section-card chart-card-side">
+              <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> CATEGORY BREAKDOWN</h3>
+              <div class="chart-wrap donut-wrap">
+                <Doughnut v-if="donutChartData" :data="donutChartData" :options="donutChartOptions" />
+                <div v-else class="chart-empty">No data yet</div>
               </div>
             </div>
           </div>
 
           <!-- Bin alerts -->
           <div class="section-card" v-if="fullBins.length">
-            <h3 class="card-title">⚠️ Bin Alerts (Bins ≥ 90%)</h3>
+            <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> BIN ALERTS (≥ 90%)</h3>
             <div class="alert-list">
               <div v-for="machine in fullBins" :key="machine.id" class="alert-item">
                 <span class="alert-icon">🚨</span>
                 <strong>{{ machine.name }}</strong>
                 <div class="alert-bins">
-                  <span v-if="machine.aluminum_level >= 90" class="bin-tag">Aluminum {{ machine.aluminum_level
-                  }}%</span>
+                  <span v-if="machine.aluminum_level >= 90" class="bin-tag">Aluminum {{ machine.aluminum_level }}%</span>
                   <span v-if="machine.plastic_level >= 90" class="bin-tag">Plastic {{ machine.plastic_level }}%</span>
                   <span v-if="machine.glass_level >= 90" class="bin-tag">Glass {{ machine.glass_level }}%</span>
                   <span v-if="machine.paper_level >= 90" class="bin-tag">Paper {{ machine.paper_level }}%</span>
@@ -77,92 +137,132 @@
             </div>
           </div>
 
-          <!-- Material stats -->
-          <div class="section-card" v-if="materialStats.length">
-            <h3 class="card-title">📊 Material Breakdown</h3>
-            <div class="material-stats">
-              <div v-for="mat in materialStats" :key="mat.material_selected" class="mat-stat">
-                <div class="mat-row">
-                  <span class="mat-name">{{ getMaterialIcon(mat.material_selected) }} {{ mat.material_selected }}</span>
-                  <span class="mat-count">{{ mat.count }} items</span>
-                  <span class="mat-weight">{{ (mat.total_weight / 1000).toFixed(2) }} kg</span>
-                  <span class="mat-pts">{{ mat.total_points }} pts</span>
+          <!-- Material stats + System Status -->
+          <div class="breakdown-status-row">
+            <div class="section-card" style="margin-bottom:0">
+              <div class="card-header">
+                <h3 class="card-title-bar"><span class="title-sq"></span> MATERIAL BREAKDOWN</h3>
+                <span class="table-period-badge">Last 7 Days</span>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Material</th><th>Items</th><th>Total Weight</th><th>Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="mat in materialStats" :key="mat.material_selected">
+                      <td>{{ getMaterialIcon(mat.material_selected) }} {{ capitalize(mat.material_selected) }}</td>
+                      <td>{{ mat.count }}</td>
+                      <td>{{ (mat.total_weight / 1000).toFixed(2) }} kg</td>
+                      <td class="pts-green">{{ mat.total_points }}</td>
+                    </tr>
+                    <tr v-if="!materialStats.length">
+                      <td colspan="4" class="empty-cell">No data for last 7 days</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="section-card" style="margin-bottom:0">
+              <h3 class="card-title-bar"><span class="title-sq"></span> ⚙️ SYSTEM STATUS</h3>
+              <div class="sys-grid">
+                <div v-for="item in systemStatusItems" :key="item.label" class="sys-item">
+                  <span :class="['sys-dot', 'sys-dot-' + item.color]"></span>
+                  <span class="sys-label">{{ item.label }}</span>
+                  <span :class="['sys-value', 'sys-val-' + item.color]">{{ item.value }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Recent sessions -->
+          <!-- Admin Controls -->
           <div class="section-card">
-            <h3 class="card-title">🕒 Recent Sessions</h3>
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Session Code</th>
-                    <th>User</th>
-                    <th>Machine</th>
-                    <th>Status</th>
-                    <th>Points</th>
-                    <th>Started</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="s in recentSessions" :key="s.session_code">
-                    <td class="mono">{{ s.session_code }}</td>
-                    <td>{{ s.user_name }}</td>
-                    <td>{{ s.machine_name }}</td>
-                    <td><span :class="['status-badge', 'status-' + s.status]">{{ s.status }}</span></td>
-                    <td class="pts-green">+{{ s.points_earned }}</td>
-                    <td class="muted">{{ formatDate(s.started_at) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <h3 class="card-title-bar"><span class="title-sq"></span> ADMIN CONTROLS</h3>
+            <div class="controls-grid">
+              <button class="ctrl-card" @click="exportCsv">
+                <span class="ctrl-card-icon ctrl-blue">📤</span>
+                <span class="ctrl-card-label">Export Report (CSV)</span>
+              </button>
+              <button class="ctrl-card" @click="resetAllAlerts">
+                <span class="ctrl-card-icon ctrl-yellow">🔔</span>
+                <span class="ctrl-card-label">Reset All Alerts</span>
+              </button>
+              <button class="ctrl-card" @click="switchTab('machines')">
+                <span class="ctrl-card-icon ctrl-purple">🏭</span>
+                <span class="ctrl-card-label">View Machine Report</span>
+              </button>
+              <button class="ctrl-card" @click="requestBinCollection">
+                <span class="ctrl-card-icon ctrl-gray">🗑️</span>
+                <span class="ctrl-card-label">Request Bin Collection</span>
+              </button>
             </div>
           </div>
+
         </div>
       </div>
 
-      <!-- USERS tab -->
-      <div v-if="activeTab === 'users'" class="tab-content">
-        <div v-if="loadingUsers" class="loading-overlay">
-          <div class="spinner-lg"></div>
-        </div>
-        <div v-else class="section-card">
+      <!-- ── TRANSACTIONS ── -->
+      <div v-if="activeTab === 'transactions'" class="tab-content">
+        <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title">👥 All Users</h3>
-            <input v-model="userSearch" placeholder="Search users..." class="search-input" />
+            <h3 class="card-title-bar"><span class="title-sq"></span> TRANSACTION LOG</h3>
+            <div class="topbar-right">
+              <input v-model="txSearch" placeholder="Search user / item..." class="search-input" />
+              <select v-model="txFilter" class="filter-select">
+                <option value="">All</option>
+                <option value="valid">OK</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
           </div>
-          <div class="table-wrap">
+          <div v-if="loadingTransactions" class="loading-overlay"><div class="spinner-lg"></div></div>
+          <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email/Phone</th>
-                  <th>Points</th>
-                  <th>Role</th>
-                  <th>Verified</th>
-                  <th>Actions</th>
+                  <th>TIME</th>
+                  <th>USER ID</th>
+                  <th>ITEM</th>
+                  <th>AI CONFIDENCE</th>
+                  <th>POINTS</th>
+                  <th>COMPARTMENT</th>
+                  <th>STATUS</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="user in filteredUsers" :key="user.id">
-                  <td class="muted">{{ user.id }}</td>
+                <tr v-for="tx in filteredTransactions" :key="tx.id">
+                  <td class="mono small">{{ timeOnly(tx.created_at) }}</td>
+                  <td class="mono">{{ formatUserId(tx.user) }}</td>
                   <td>
-                    <div class="user-cell">
-                      <div class="user-avatar-sm">{{ user.name?.charAt(0) }}</div>
-                      {{ user.name }}
+                    <span class="item-cell">
+                      {{ getMaterialIcon(tx.material_selected) }}
+                      {{ capitalize(tx.material_selected) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="confidence-wrap">
+                      <div class="confidence-bar">
+                        <div class="confidence-fill" :style="{ width: Math.round((tx.ai_confidence || 0) * 100) + '%' }"></div>
+                      </div>
+                      <span class="confidence-pct">{{ Math.round((tx.ai_confidence || 0) * 100) }}%</span>
                     </div>
                   </td>
-                  <td class="muted">{{ user.email || user.phone }}</td>
-                  <td class="pts-green">{{ user.total_points }}</td>
-                  <td><span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span></td>
-                  <td>{{ user.is_verified ? '✅' : '❌' }}</td>
-                  <td>
-                    <button class="action-btn edit-btn" @click="editUser(user)">Edit</button>
-                    <button class="action-btn del-btn" @click="deleteUser(user.id)">Del</button>
+                  <td :class="tx.points_earned > 0 ? 'pts-green' : 'muted'">
+                    {{ tx.points_earned > 0 ? '+' + tx.points_earned : '0' }}
                   </td>
+                  <td class="compartment">{{ getCompartment(tx) }}</td>
+                  <td>
+                    <span :class="tx.is_valid ? 'badge-ok' : 'badge-rejected'">
+                      {{ tx.is_valid ? 'OK' : 'REJECTED' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="!filteredTransactions.length">
+                  <td colspan="7" class="empty-cell">No transactions found</td>
                 </tr>
               </tbody>
             </table>
@@ -170,16 +270,72 @@
         </div>
       </div>
 
-      <!-- MACHINES tab -->
+      <!-- ── USERS ── -->
+      <div v-if="activeTab === 'users'" class="tab-content">
+        <div v-if="loadingUsers" class="loading-overlay"><div class="spinner-lg"></div></div>
+        <div v-else class="section-card">
+          <div class="card-header">
+            <h3 class="card-title-bar"><span class="title-sq"></span> ALL USERS</h3>
+            <input v-model="userSearch" placeholder="Search users..." class="search-input" />
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Name</th><th>Email / Phone</th><th>Points</th><th>Role</th><th>Verified</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in filteredUsers" :key="user.id">
+                  <td class="muted mono">{{ formatUserId(user) }}</td>
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar-sm">{{ user.name?.charAt(0) }}</div>
+                      {{ user.name }}
+                    </div>
+                  </td>
+                  <td class="muted">{{ user.email || user.phone }}</td>
+                  <td class="pts-green">{{ user.total_points?.toLocaleString() }}</td>
+                  <td><span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span></td>
+                  <td>{{ user.is_verified ? '✅' : '❌' }}</td>
+                  <td>
+                    <button class="action-btn edit-btn" @click="editUser(user)">Edit</button>
+                    <button class="action-btn del-btn" @click="deleteUser(user.id)">Delete</button>
+                  </td>
+                </tr>
+                <tr v-if="!filteredUsers.length">
+                  <td colspan="7" class="empty-cell">No users found</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MACHINES ── -->
       <div v-if="activeTab === 'machines'" class="tab-content">
+        <!-- Reward Points Configuration -->
+        <div class="section-card">
+          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> REWARD POINTS CONFIGURATION</h3>
+          <div class="reward-materials">
+            <div class="reward-mat-card" v-for="mat in rewardMaterials" :key="mat.key">
+              <div class="reward-mat-label">{{ mat.icon }} {{ mat.label }}</div>
+              <div class="reward-mat-control">
+                <input class="reward-input" type="number" v-model.number="rewardEditValues[mat.key]" min="0" max="9999" />
+                <button class="update-btn" @click="updateReward(mat.key)" :disabled="savingReward === mat.key">
+                  {{ savingReward === mat.key ? '...' : 'Update' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title">🏭 RVM Machines</h3>
-            <button class="add-btn" @click="showAddMachine = true">+ Add Machine</button>
+            <h3 class="card-title-bar"><span class="title-sq"></span> RVM MACHINES</h3>
+            <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
           </div>
-          <div v-if="loadingMachines" class="loading-overlay">
-            <div class="spinner-lg"></div>
-          </div>
+          <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="machines-grid">
             <div v-for="machine in adminMachines" :key="machine.id" class="machine-admin-card">
               <div class="machine-admin-header">
@@ -189,7 +345,7 @@
                 </div>
                 <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
               </div>
-              <p class="machine-loc">📍 {{ machine.location_name }}</p>
+              <p class="machine-loc">📍 {{ machine.location_name || 'No location set' }}</p>
               <div class="bin-admin-grid">
                 <div v-for="bin in binTypes" :key="bin.id" class="bin-admin">
                   <span>{{ bin.icon }} {{ bin.label }}</span>
@@ -197,50 +353,49 @@
                     <div :class="['bin-fill-sm', getBinClass(machine[bin.id + '_level'])]"
                       :style="{ width: machine[bin.id + '_level'] + '%' }"></div>
                   </div>
-                  <span :class="machine[bin.id + '_level'] >= 90 ? 'text-red' : 'text-muted'">
+                  <span :class="machine[bin.id + '_level'] >= 90 ? 'text-red' : 'text-muted-sm'">
                     {{ machine[bin.id + '_level'] }}%
                   </span>
                 </div>
               </div>
               <div class="machine-actions">
-                <button class="action-btn edit-btn" @click="editMachine(machine)">Edit</button>
+                <button class="action-btn edit-btn" @click="openEditMachine(machine)">Edit</button>
                 <button class="action-btn" @click="resetBins(machine)">Reset Bins</button>
                 <button class="action-btn del-btn" @click="deleteMachine(machine.id)">Delete</button>
               </div>
+            </div>
+            <div v-if="!adminMachines.length" class="empty-machines">
+              <p>No machines registered. Add your first RVM machine.</p>
+              <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- SESSIONS tab -->
+      <!-- ── SESSIONS ── -->
       <div v-if="activeTab === 'sessions'" class="tab-content">
         <div class="section-card">
-          <h3 class="card-title">📋 All Sessions</h3>
-          <div v-if="loadingSessions" class="loading-overlay">
-            <div class="spinner-lg"></div>
-          </div>
+          <h3 class="card-title-bar"><span class="title-sq"></span> ALL SESSIONS</h3>
+          <div v-if="loadingSessions" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Code</th>
-                  <th>User</th>
-                  <th>Machine</th>
-                  <th>Status</th>
-                  <th>Items</th>
-                  <th>Points</th>
-                  <th>Started</th>
+                  <th>Code</th><th>User</th><th>Machine</th><th>Status</th><th>Items</th><th>Points</th><th>Started</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="s in sessions" :key="s.id">
                   <td class="mono small">{{ s.session_code }}</td>
-                  <td>{{ s.user?.name }}</td>
-                  <td>{{ s.machine?.name }}</td>
+                  <td>{{ s.user?.name || 'Guest' }}</td>
+                  <td>{{ s.machine?.name || '—' }}</td>
                   <td><span :class="['status-badge', 'status-' + s.status]">{{ s.status }}</span></td>
                   <td>{{ s.total_items }}</td>
                   <td class="pts-green">+{{ s.points_earned }}</td>
                   <td class="muted small">{{ formatDate(s.started_at) }}</td>
+                </tr>
+                <tr v-if="!sessions.length">
+                  <td colspan="7" class="empty-cell">No sessions found</td>
                 </tr>
               </tbody>
             </table>
@@ -250,7 +405,7 @@
 
     </main>
 
-    <!-- Edit User Modal -->
+    <!-- ── Edit User Modal ── -->
     <div v-if="editingUser" class="modal-overlay" @click.self="editingUser = null">
       <div class="modal">
         <h3>Edit User</h3>
@@ -269,9 +424,103 @@
             <option value="admin">Admin</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Verified</label>
+          <select v-model="editingUser.is_verified">
+            <option :value="1">Yes</option>
+            <option :value="0">No</option>
+          </select>
+        </div>
         <div class="modal-actions">
           <button class="action-btn" @click="editingUser = null">Cancel</button>
           <button class="action-btn edit-btn" @click="saveUser">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Add Machine Modal ── -->
+    <div v-if="showAddMachine" class="modal-overlay" @click.self="showAddMachine = false">
+      <div class="modal">
+        <h3>Add New Machine</h3>
+        <div class="form-group">
+          <label>Machine Code *</label>
+          <input v-model="newMachine.machine_code" type="text" placeholder="e.g. RVM-001" />
+        </div>
+        <div class="form-group">
+          <label>Machine Name *</label>
+          <input v-model="newMachine.name" type="text" placeholder="e.g. RVM Lobby A" />
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input v-model="newMachine.location_name" type="text" placeholder="e.g. Block A, Ground Floor" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select v-model="newMachine.status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude</label>
+            <input v-model="newMachine.latitude" type="number" step="any" placeholder="3.1234" />
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input v-model="newMachine.longitude" type="number" step="any" placeholder="103.1234" />
+          </div>
+        </div>
+        <p v-if="machineError" class="form-error">{{ machineError }}</p>
+        <div class="modal-actions">
+          <button class="action-btn" @click="showAddMachine = false">Cancel</button>
+          <button class="action-btn edit-btn" @click="addMachine" :disabled="savingMachine">
+            {{ savingMachine ? 'Adding...' : 'Add Machine' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Edit Machine Modal ── -->
+    <div v-if="editingMachine" class="modal-overlay" @click.self="editingMachine = null">
+      <div class="modal">
+        <h3>Edit Machine</h3>
+        <div class="form-group">
+          <label>Machine Code</label>
+          <input v-model="editingMachine.machine_code" type="text" disabled class="input-disabled" />
+        </div>
+        <div class="form-group">
+          <label>Machine Name *</label>
+          <input v-model="editingMachine.name" type="text" />
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input v-model="editingMachine.location_name" type="text" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select v-model="editingMachine.status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude</label>
+            <input v-model="editingMachine.latitude" type="number" step="any" />
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input v-model="editingMachine.longitude" type="number" step="any" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="action-btn" @click="editingMachine = null">Cancel</button>
+          <button class="action-btn edit-btn" @click="saveMachine" :disabled="savingMachine">
+            {{ savingMachine ? 'Saving...' : 'Save Changes' }}
+          </button>
         </div>
       </div>
     </div>
@@ -280,102 +529,376 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  ArcElement, Tooltip, Legend
+} from 'chart.js'
+import { Bar, Doughnut } from 'vue-chartjs'
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend)
 
 const router = useRouter()
 const auth = useAuthStore()
 const theme = inject('theme')
 const toggleTheme = inject('toggleTheme')
 
+// ── State ──
 const activeTab = ref('dashboard')
 const sidebarCollapsed = ref(false)
+const mobileSidebarOpen = ref(false)
 const lastUpdated = ref('—')
+const isLive = ref(true)
+
 const loadingStats = ref(false)
 const loadingUsers = ref(false)
 const loadingMachines = ref(false)
 const loadingSessions = ref(false)
+const loadingTransactions = ref(false)
+
+const tabError = ref('')   // surfaced error message per tab
+
 const userSearch = ref('')
+const txSearch = ref('')
+const txFilter = ref('')
+
 const editingUser = ref(null)
+const editingMachine = ref(null)
 const showAddMachine = ref(false)
+const savingMachine = ref(false)
+const machineError = ref('')
+const savingReward = ref('')
 
 const statsData = ref({})
 const users = ref([])
 const adminMachines = ref([])
 const sessions = ref([])
+const transactions = ref([])
 const materialStats = ref([])
 const recentSessions = ref([])
 const fullBins = ref([])
 
+const rewardEditValues = ref({ plastic: 5, aluminum: 8, glass: 5, paper: 3 })
+
+const barChartData = ref(null)
+const donutChartData = ref(null)
+const overviewData = ref({})
+const liveTime = ref('')
+let clockTimer = null
+
+const CHART_COLORS = {
+  plastic:  '#5B8FF9',
+  aluminum: '#F6AD3C',
+  paper:    '#4BC5A3',
+  glass:    '#A78BFA',
+}
+
+const barChartOptions = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#9ca3af' } } },
+  scales: {
+    x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+    y: {
+      ticks: { color: '#9ca3af' },
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      title: { display: true, text: 'Weight (g)', color: '#6b7280', font: { size: 11 } },
+    },
+  },
+}
+
+const donutChartOptions = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 16 } } },
+  cutout: '65%',
+}
+
+const newMachine = ref({
+  machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '',
+})
+
+let refreshTimer = null
+
+// ── Config ──
 const navItems = [
-  { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-  { id: 'users', icon: '👥', label: 'Users' },
-  { id: 'machines', icon: '🏭', label: 'Machines' },
-  { id: 'sessions', icon: '📋', label: 'Sessions' },
+  { id: 'dashboard',    icon: '📊', label: 'Dashboard' },
+  { id: 'transactions', icon: '📑', label: 'Transactions' },
+  { id: 'users',        icon: '👥', label: 'Users' },
+  { id: 'machines',     icon: '🏭', label: 'Machines' },
+  { id: 'sessions',     icon: '📋', label: 'Sessions' },
 ]
 
 const binTypes = [
   { id: 'aluminum', icon: '🥫', label: 'Aluminum' },
-  { id: 'plastic', icon: '🧴', label: 'Plastic' },
-  { id: 'glass', icon: '🍶', label: 'Glass' },
-  { id: 'paper', icon: '📄', label: 'Paper' },
+  { id: 'plastic',  icon: '🧴', label: 'Plastic'  },
+  { id: 'glass',    icon: '🍶', label: 'Glass'    },
+  { id: 'paper',    icon: '📄', label: 'Paper'    },
 ]
 
+const rewardMaterials = [
+  { key: 'plastic',  icon: '🧴', label: 'Plastic Bottle (pts)' },
+  { key: 'aluminum', icon: '🥫', label: 'Aluminium Can (pts)'  },
+  { key: 'paper',    icon: '📄', label: 'Paper / Card (pts)'   },
+  { key: 'glass',    icon: '🍶', label: 'Glass Bottle (pts)'   },
+]
+
+const overviewMaterials = [
+  { key: 'plastic',  icon: '🧴', label: 'PLASTIC BOTTLES'   },
+  { key: 'aluminum', icon: '🥫', label: 'ALUMINIUM CANS'    },
+  { key: 'paper',    icon: '📄', label: 'PAPER / RECYCLABLES'},
+  { key: 'glass',    icon: '🍶', label: 'GLASS BOTTLES'     },
+]
+
+const COMPARTMENTS = { plastic: 'A', aluminum: 'B', paper: 'C', glass: 'D' }
+
+// ── Computed ──
 const currentNavItem = computed(() => navItems.find(n => n.id === activeTab.value))
 
 const statsCards = computed(() => [
-  { icon: '👥', label: 'Total Users', value: statsData.value.total_users || 0 },
-  { icon: '🏭', label: 'Total Machines', value: statsData.value.total_machines || 0 },
-  { icon: '🔄', label: 'Active Sessions', value: statsData.value.active_sessions || 0 },
-  { icon: '⚖️', label: 'Total Weight (kg)', value: statsData.value.total_weight_kg || 0 },
-  { icon: '⭐', label: 'Points Distributed', value: statsData.value.total_points_given || 0 },
-  { icon: '📦', label: 'Transactions', value: statsData.value.total_transactions || 0 },
+  { icon: '👥', label: 'Total Users',    value: statsData.value.total_users    || 0 },
+  { icon: '🏭', label: 'Machines',       value: statsData.value.total_machines || 0 },
+  { icon: '🔄', label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
+  { icon: '⚖️', label: 'Weight (kg)',    value: statsData.value.total_weight_kg || 0 },
+  { icon: '⭐', label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
+  { icon: '📦', label: 'Transactions',  value: statsData.value.total_transactions || 0 },
 ])
+
+const activeMachines = computed(() =>
+  adminMachines.value.filter(m => m.status === 'active').length
+)
+
+const systemStatusItems = computed(() => {
+  const machines = adminMachines.value
+  const activeSessions = statsData.value.active_sessions ?? 0
+
+  const binLevel = (key) => machines.length
+    ? Math.max(...machines.map(m => m[key] ?? 0)) : 0
+  const binColor = (pct) => pct >= 90 ? 'red' : pct >= 70 ? 'yellow' : 'green'
+  const binLabel = (pct, color) => `${pct}% ${color === 'green' ? 'OK' : 'WARN'}`
+
+  const plastic  = binLevel('plastic_level')
+  const aluminum = binLevel('aluminum_level')
+  const paper    = binLevel('paper_level')
+  const glass    = binLevel('glass_level')
+
+  const totalMachines  = machines.length
+  const onlineMachines = machines.filter(m => m.status === 'active').length
+  const machineColor   = onlineMachines > 0 ? 'green' : 'red'
+
+  const cameraColor = activeSessions > 0 ? 'green' : 'yellow'
+  const cameraValue = activeSessions > 0 ? `LIVE (${activeSessions})` : 'STANDBY'
+
+  const rewardOk    = Object.values(rewardEditValues.value).every(v => v > 0)
+  const rewardColor = rewardOk ? 'green' : 'yellow'
+
+  return [
+    { label: 'Camera',       value: cameraValue,                           color: cameraColor  },
+    { label: 'Jetson Nano',  value: `${onlineMachines}/${totalMachines} ONLINE`, color: machineColor },
+    { label: 'Reward Engine',value: rewardOk ? 'OK' : 'CHECK CONFIG',      color: rewardColor  },
+    { label: 'Plastic Bin',  value: binLabel(plastic,  binColor(plastic)),  color: binColor(plastic)  },
+    { label: 'Aluminum Bin', value: binLabel(aluminum, binColor(aluminum)), color: binColor(aluminum) },
+    { label: 'Paper Bin',    value: binLabel(paper,    binColor(paper)),    color: binColor(paper)    },
+    { label: 'Glass Bin',    value: binLabel(glass,    binColor(glass)),    color: binColor(glass)    },
+  ]
+})
 
 const filteredUsers = computed(() => {
   if (!userSearch.value) return users.value
   const q = userSearch.value.toLowerCase()
-  return users.value.filter(u =>
-    u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
-  )
+  return users.value.filter(u => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.includes(q))
 })
 
-function getMaterialIcon(mat) { return { aluminum: '🥫', plastic: '🧴', glass: '🍶', paper: '📄' }[mat] || '♻️' }
-function getBinClass(level) { if (level >= 90) return 'bin-danger'; if (level >= 70) return 'bin-warning'; return 'bin-ok'; }
-function formatDate(ts) { return ts ? new Date(ts).toLocaleDateString() + ' ' + new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—' }
+const filteredTransactions = computed(() => {
+  let list = transactions.value
+  if (txFilter.value === 'valid')    list = list.filter(t => t.is_valid)
+  if (txFilter.value === 'rejected') list = list.filter(t => !t.is_valid)
+  if (txSearch.value) {
+    const q = txSearch.value.toLowerCase()
+    list = list.filter(t =>
+      t.user?.name?.toLowerCase().includes(q) ||
+      formatUserId(t.user).toLowerCase().includes(q) ||
+      t.material_selected?.toLowerCase().includes(q)
+    )
+  }
+  return list
+})
 
-async function fetchTabData(tab) {
-  lastUpdated.value = new Date().toLocaleTimeString()
+// ── Helpers ──
+function getMaterialIcon(mat) {
+  return { aluminum: '🥫', plastic: '🧴', glass: '🍶', paper: '📄' }[mat] || '♻️'
+}
+
+function getBinClass(level) {
+  if (level >= 90) return 'bin-danger'
+  if (level >= 70) return 'bin-warning'
+  return 'bin-ok'
+}
+
+function fmtTime(d, withSeconds = false) {
+  let h = d.getHours(), m = d.getMinutes(), s = d.getSeconds()
+  const ampm = h >= 12 ? 'pm' : 'am'
+  h = h % 12 || 12
+  const hh = String(h).padStart(2, '0')
+  const mm = String(m).padStart(2, '0')
+  const ss = String(s).padStart(2, '0')
+  return withSeconds ? `${hh}:${mm}:${ss} ${ampm}` : `${hh}:${mm} ${ampm}`
+}
+
+function formatDate(ts) {
+  if (!ts) return '—'
+  const d = new Date(ts)
+  return d.toLocaleDateString() + ' ' + fmtTime(d)
+}
+
+function timeOnly(ts) {
+  if (!ts) return '—'
+  return fmtTime(new Date(ts), true)
+}
+
+function capitalize(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
+}
+
+function formatUserId(user) {
+  if (!user) return 'GUEST'
+  if (user.role === 'admin') return 'ADMIN-' + String(user.id).padStart(3, '0')
+  return 'USR-' + String(user.id).padStart(4, '0')
+}
+
+function getCompartment(tx) {
+  if (!tx.is_valid) return '—'
+  return COMPARTMENTS[tx.material_selected] || '—'
+}
+
+// ── Data fetching ──
+async function fetchTabData(tab, showSpinner = false) {
+  lastUpdated.value = fmtTime(new Date(), true)
+  tabError.value = ''
   try {
     if (tab === 'dashboard') {
-      loadingStats.value = true
+      if (showSpinner) loadingStats.value = true
       const res = await api.get('/admin/stats')
-      statsData.value = res.data.stats
-      materialStats.value = res.data.stats.material_stats || []
-      recentSessions.value = res.data.stats.recent_sessions || []
-      fullBins.value = res.data.stats.full_bins || []
+      statsData.value      = res.data.stats                   || {}
+      materialStats.value  = res.data.stats?.material_stats   || []
+      recentSessions.value = res.data.stats?.recent_sessions  || []
+      fullBins.value       = res.data.stats?.full_bins        || []
+    } else if (tab === 'transactions') {
+      if (showSpinner) loadingTransactions.value = true
+      const res = await api.get('/admin/transactions')
+      transactions.value = res.data.transactions?.data || []
     } else if (tab === 'users') {
-      loadingUsers.value = true
+      if (showSpinner) loadingUsers.value = true
       const res = await api.get('/admin/users')
       users.value = res.data.users?.data || []
     } else if (tab === 'machines') {
-      loadingMachines.value = true
+      if (showSpinner) loadingMachines.value = true
       const res = await api.get('/admin/machines')
       adminMachines.value = res.data.machines || []
     } else if (tab === 'sessions') {
-      loadingSessions.value = true
+      if (showSpinner) loadingSessions.value = true
       const res = await api.get('/admin/sessions')
       sessions.value = res.data.sessions?.data || []
     }
-  } catch {
-    // Silently fail — show empty states
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message || 'Failed to load data'
+    tabError.value = msg
+    console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
   } finally {
-    loadingStats.value = loadingUsers.value = loadingMachines.value = loadingSessions.value = false
+    loadingStats.value = loadingUsers.value = loadingMachines.value = loadingSessions.value = loadingTransactions.value = false
   }
 }
 
+async function fetchRewardConfig() {
+  try {
+    const res = await api.get('/admin/reward-config')
+    rewardEditValues.value = { ...rewardEditValues.value, ...res.data.config }
+  } catch {}
+}
+
+async function fetchChartData() {
+  try {
+    const res = await api.get('/admin/chart-data')
+    const { labels, datasets, breakdown, overview } = res.data
+    overviewData.value = overview || {}
+
+    barChartData.value = {
+      labels,
+      datasets: [
+        { label: 'Plastic',  data: datasets.plastic,  backgroundColor: CHART_COLORS.plastic  },
+        { label: 'Aluminum', data: datasets.aluminum, backgroundColor: CHART_COLORS.aluminum },
+        { label: 'Paper',    data: datasets.paper,    backgroundColor: CHART_COLORS.paper    },
+        { label: 'Glass',    data: datasets.glass,    backgroundColor: CHART_COLORS.glass    },
+      ],
+    }
+
+    donutChartData.value = {
+      labels: ['Plastic', 'Aluminum', 'Paper', 'Glass'],
+      datasets: [{
+        data: [breakdown.plastic, breakdown.aluminum, breakdown.paper, breakdown.glass],
+        backgroundColor: [CHART_COLORS.plastic, CHART_COLORS.aluminum, CHART_COLORS.paper, CHART_COLORS.glass],
+        borderWidth: 0,
+      }],
+    }
+  } catch {}
+}
+
+function switchTab(tab) {
+  activeTab.value = tab
+  mobileSidebarOpen.value = false
+  fetchTabData(tab, true)
+}
+
+// ── Admin Controls ──
+async function exportCsv() {
+  try {
+    const res = await api.get('/admin/export-csv', { responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `rvm_report_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    alert('Export failed. Please try again.')
+  }
+}
+
+async function resetAllAlerts() {
+  if (!confirm('Reset all bin alerts? This will clear all full-bin warnings.')) return
+  try {
+    const res = await api.post('/admin/reset-bin-alerts')
+    alert(res.data.message || 'Alerts reset.')
+    await fetchTabData('dashboard')
+  } catch {
+    alert('Failed to reset alerts.')
+  }
+}
+
+async function requestBinCollection() {
+  if (!confirm('Send a bin collection request?')) return
+  try {
+    await api.post('/admin/reset-bin-alerts', { collection_request: true })
+    alert('Bin collection request sent.')
+  } catch {}
+}
+
+// ── Reward Config ──
+async function updateReward(material) {
+  savingReward.value = material
+  try {
+    const config = { ...rewardEditValues.value }
+    await api.put('/admin/reward-config', config)
+  } catch {
+    alert('Failed to update reward config.')
+  } finally {
+    savingReward.value = ''
+  }
+}
+
+// ── User management ──
 function editUser(user) { editingUser.value = { ...user } }
 
 async function saveUser() {
@@ -384,37 +907,133 @@ async function saveUser() {
     const idx = users.value.findIndex(u => u.id === editingUser.value.id)
     if (idx > -1) users.value[idx] = { ...editingUser.value }
     editingUser.value = null
-  } catch { }
+  } catch { alert('Failed to save user.') }
 }
 
 async function deleteUser(id) {
-  if (!confirm('Delete this user?')) return
+  if (!confirm('Delete this user? This cannot be undone.')) return
   try {
     await api.delete(`/admin/users/${id}`)
     users.value = users.value.filter(u => u.id !== id)
-  } catch { }
+  } catch { alert('Failed to delete user.') }
 }
 
-function editMachine(machine) { /* implement edit modal */ }
+// ── Machine management ──
+function openAddMachine() {
+  newMachine.value = { machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '' }
+  machineError.value = ''
+  showAddMachine.value = true
+}
+
+function openEditMachine(machine) {
+  editingMachine.value = { ...machine }
+}
+
+async function addMachine() {
+  if (!newMachine.value.machine_code?.trim() || !newMachine.value.name?.trim()) {
+    machineError.value = 'Machine code and name are required.'
+    return
+  }
+  savingMachine.value = true
+  machineError.value = ''
+  try {
+    const payload = {
+      machine_code:  newMachine.value.machine_code.trim(),
+      name:          newMachine.value.name.trim(),
+      location_name: newMachine.value.location_name?.trim() || null,
+      status:        newMachine.value.status || 'active',
+      latitude:      newMachine.value.latitude !== '' ? newMachine.value.latitude : null,
+      longitude:     newMachine.value.longitude !== '' ? newMachine.value.longitude : null,
+    }
+    const res = await api.post('/admin/machines', payload)
+    adminMachines.value.push(res.data.machine)
+    showAddMachine.value = false
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    if (errors) {
+      machineError.value = Object.values(errors).flat().join(' ')
+    } else {
+      machineError.value = e.response?.data?.message || 'Failed to add machine.'
+    }
+  } finally {
+    savingMachine.value = false
+  }
+}
+
+async function saveMachine() {
+  savingMachine.value = true
+  try {
+    const payload = {
+      name:          editingMachine.value.name,
+      location_name: editingMachine.value.location_name || null,
+      status:        editingMachine.value.status,
+      latitude:      editingMachine.value.latitude !== '' ? editingMachine.value.latitude : null,
+      longitude:     editingMachine.value.longitude !== '' ? editingMachine.value.longitude : null,
+    }
+    const res = await api.put(`/admin/machines/${editingMachine.value.id}`, payload)
+    const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
+    if (idx > -1) adminMachines.value[idx] = res.data.machine
+    editingMachine.value = null
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    alert(errors ? Object.values(errors).flat().join('\n') : (e.response?.data?.message || 'Failed to save machine.'))
+  } finally {
+    savingMachine.value = false
+  }
+}
 
 async function deleteMachine(id) {
-  if (!confirm('Delete this machine?')) return
+  if (!confirm('Delete this machine? This cannot be undone.')) return
   try {
     await api.delete(`/admin/machines/${id}`)
     adminMachines.value = adminMachines.value.filter(m => m.id !== id)
-  } catch { }
+  } catch { alert('Failed to delete machine.') }
 }
 
 async function resetBins(machine) {
+  if (!confirm(`Reset all bin levels for ${machine.name}?`)) return
   try {
-    await api.put(`/admin/machines/${machine.id}/bin-levels`, { aluminum_level: 0, plastic_level: 0, glass_level: 0, paper_level: 0 })
+    await api.put(`/admin/machines/${machine.id}/bin-levels`, {
+      aluminum_level: 0, plastic_level: 0, glass_level: 0, paper_level: 0,
+    })
     machine.aluminum_level = machine.plastic_level = machine.glass_level = machine.paper_level = 0
-  } catch { }
+  } catch { alert('Failed to reset bins.') }
 }
 
-async function handleLogout() { await auth.logout(); router.push('/') }
+async function handleLogout() {
+  await auth.logout()
+  router.push('/')
+}
 
-onMounted(() => fetchTabData('dashboard'))
+// ── Lifecycle ──
+function updateClock() {
+  const now = new Date()
+  liveTime.value = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    + ', ' + fmtTime(now, true)
+}
+
+onMounted(async () => {
+  updateClock()
+  clockTimer = setInterval(updateClock, 1000)
+  // Load all tabs in parallel so switching is instant and machines are available immediately
+  await Promise.allSettled([
+    fetchTabData('dashboard', true),
+    fetchTabData('machines', true),
+    fetchTabData('users', true),
+    fetchTabData('sessions', true),
+    fetchRewardConfig(),
+    fetchChartData(),
+  ])
+  refreshTimer = setInterval(() => {
+    fetchTabData(activeTab.value)
+    if (activeTab.value === 'dashboard') fetchChartData()
+  }, 30000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
+  if (clockTimer) clearInterval(clockTimer)
+})
 </script>
 
 <style scoped>
@@ -424,7 +1043,7 @@ onMounted(() => fetchTabData('dashboard'))
   background: var(--bg-primary);
 }
 
-/* Sidebar */
+/* ── Sidebar ── */
 .sidebar {
   width: 220px;
   min-height: 100vh;
@@ -435,10 +1054,7 @@ onMounted(() => fetchTabData('dashboard'))
   transition: width 0.3s ease;
   flex-shrink: 0;
 }
-
-.sidebar.collapsed {
-  width: 60px;
-}
+.sidebar.collapsed { width: 60px; }
 
 .sidebar-header {
   display: flex;
@@ -447,639 +1063,484 @@ onMounted(() => fetchTabData('dashboard'))
   padding: 16px 12px;
   border-bottom: 1px solid var(--border);
 }
+.sidebar-logo { font-size: 20px; flex-shrink: 0; }
+.sidebar-title { font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 1; white-space: nowrap; overflow: hidden; }
+.collapse-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
 
-.sidebar-logo {
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.sidebar-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.collapse-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
+.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 8px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-  width: 100%;
-  text-align: left;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 8px; border-radius: 8px;
+  background: none; border: none; color: var(--text-secondary);
+  cursor: pointer; font-size: 14px; transition: all 0.2s; width: 100%; text-align: left;
 }
+.nav-item:hover { background: var(--bg-card); color: var(--text-primary); }
+.nav-item.active { background: rgba(78, 110, 242, 0.15); color: var(--accent-blue); font-weight: 600; }
+.nav-icon { font-size: 18px; flex-shrink: 0; }
+.nav-label { white-space: nowrap; overflow: hidden; }
 
-.nav-item:hover {
-  background: var(--bg-card);
-  color: var(--text-primary);
-}
-
-.nav-item.active {
-  background: rgba(78, 110, 242, 0.15);
-  color: var(--accent-blue);
-  font-weight: 600;
-}
-
-.nav-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.nav-label {
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.sidebar-footer {
-  padding: 12px;
-  border-top: 1px solid var(--border);
-}
-
-.admin-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+.admin-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .admin-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--grad-header);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--grad-header); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
 }
-
-.admin-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.admin-role {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
+.admin-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.admin-role { font-size: 11px; color: var(--text-muted); }
+.sidebar-actions { display: flex; flex-direction: column; gap: 6px; }
 .ctrl-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  text-decoration: none;
-  text-align: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-secondary); padding: 6px 10px;
+  border-radius: 6px; cursor: pointer; font-size: 12px;
+  text-decoration: none; text-align: center;
 }
-
 .logout-btn-sm {
-  background: none;
-  border: 1px solid var(--accent-red);
-  color: var(--accent-red);
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
+  background: none; border: 1px solid var(--accent-red);
+  color: var(--accent-red); padding: 6px 10px;
+  border-radius: 6px; cursor: pointer; font-size: 12px;
 }
 
-/* Main */
-.admin-main {
-  flex: 1;
-  overflow: auto;
-}
+/* ── Main ── */
+.admin-main { flex: 1; overflow: auto; }
 
 .admin-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: var(--bg-secondary);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  position: sticky; top: 0; z-index: 5;
 }
-
-.page-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.last-updated {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
+.page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.last-updated { font-size: 12px; color: var(--text-muted); }
 .refresh-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-secondary); padding: 6px 12px;
+  border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent-green);
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
-.tab-content {
-  padding: 20px 24px;
-}
+.tab-content { padding: 20px 24px; }
 
-/* Stats grid */
+/* ── Stats grid ── */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px; margin-bottom: 16px;
 }
-
 .stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+  display: flex; align-items: center; gap: 12px;
 }
+.stat-icon { font-size: 24px; }
+.stat-value { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.stat-label { font-size: 12px; color: var(--text-muted); }
 
-.stat-icon {
-  font-size: 24px;
-}
+/* Machine Status card */
+.machine-status-card { align-items: flex-start; }
+.ms-icon { font-size: 26px; margin-bottom: 6px; }
+.ms-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; margin-bottom: 6px; }
+.ms-status { font-size: 20px; font-weight: 900; letter-spacing: .04em; margin-bottom: 4px; }
+.ms-online  { color: #00e5a0; }
+.ms-offline { color: #ef4444; }
+.ms-sub { font-size: 12px; color: var(--text-secondary); }
 
-.stat-value {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
+/* ── Section card ── */
 .section-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 16px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
 }
-
-.card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 14px;
+.card-title-bar {
+  font-size: 12px; font-weight: 700; color: var(--text-muted);
+  letter-spacing: 0.8px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
 }
+.title-sq {
+  width: 10px; height: 10px; border-radius: 2px;
+  background: var(--accent-blue); flex-shrink: 0;
+}
+.title-sq-yellow { background: var(--accent-yellow); }
+.title-sq-red    { background: var(--accent-red); }
 
 .card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.table-period-badge {
+  font-size: 11px; font-weight: 600; color: #9ca3af;
+  background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px;
 }
 
-/* Alerts */
-.alert-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* ── Overview ── */
+.dash-clock-row {
+  display: flex; justify-content: flex-end;
+  margin-bottom: 10px;
 }
-
-.alert-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
-}
-
-.alert-icon {
-  font-size: 18px;
-}
-
-.alert-bins {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-left: 4px;
-}
-
-.bin-tag {
-  background: var(--accent-red);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* Material stats */
-.mat-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.mat-row:last-child {
-  border-bottom: none;
-}
-
-.mat-name {
-  flex: 1;
-  font-size: 14px;
-  color: var(--text-primary);
-  text-transform: capitalize;
-}
-
-.mat-count,
-.mat-weight,
-.mat-pts {
-  font-size: 13px;
-  color: var(--text-secondary);
-  min-width: 80px;
-  text-align: right;
-}
-
-/* Table */
-.table-wrap {
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.data-table th {
-  text-align: left;
-  padding: 10px 12px;
-  border-bottom: 2px solid var(--border);
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.data-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-primary);
-  vertical-align: middle;
-}
-
-.data-table tr:hover td {
-  background: var(--bg-hover);
-}
-
-.mono {
-  font-family: monospace;
-}
-
-.small {
-  font-size: 11px;
-}
-
-.muted {
-  color: var(--text-muted);
-}
-
-.pts-green {
-  color: var(--accent-green);
-  font-weight: 600;
-}
-
-.status-badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.status-active {
-  background: rgba(34, 197, 94, 0.15);
-  color: var(--accent-green);
-}
-
-.status-completed {
-  background: rgba(78, 110, 242, 0.15);
-  color: var(--accent-blue);
-}
-
-.status-cancelled {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--accent-red);
-}
-
-.status-inactive {
-  background: rgba(107, 114, 128, 0.15);
-  color: var(--text-muted);
-}
-
-.status-maintenance {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--accent-yellow);
-}
-
-.role-badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.role-admin {
-  background: rgba(168, 85, 247, 0.15);
-  color: var(--accent-purple);
-}
-
-.role-user {
-  background: rgba(78, 110, 242, 0.15);
-  color: var(--accent-blue);
-}
-
-.user-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-avatar-sm {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--grad-header);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.action-btn {
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-  margin-right: 4px;
-}
-
-.edit-btn {
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
-}
-
-.del-btn {
-  border-color: var(--accent-red);
-  color: var(--accent-red);
-}
-
-.add-btn {
-  padding: 8px 16px;
-  background: var(--accent-green);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.search-input {
-  padding: 8px 12px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-size: 13px;
-  outline: none;
-  width: 200px;
-}
-
-/* Machines grid */
-.machines-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
-}
-
-.machine-admin-card {
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-}
-
-.machine-admin-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-
-.machine-code-badge {
-  display: inline-block;
-  background: var(--bg-card);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-family: monospace;
-  color: var(--text-muted);
-  margin-left: 8px;
-}
-
-.machine-loc {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-}
-
-.bin-admin-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.bin-admin {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.bin-admin span {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.bin-bar-sm {
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-}
-
-.bin-fill-sm {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.5s;
-}
-
-.bin-ok {
-  background: var(--accent-green);
-}
-
-.bin-warning {
-  background: var(--accent-yellow);
-}
-
-.bin-danger {
-  background: var(--accent-red);
-}
-
-.text-red {
-  color: var(--accent-red) !important;
-}
-
-.text-muted {
-  color: var(--text-muted) !important;
-}
-
-.machine-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  width: 360px;
-}
-
-.modal h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
+.overview-clock { font-size: 13px; color: var(--text-muted); }
+.overview-cards {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
   margin-bottom: 16px;
 }
+.overview-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 22px;
+}
+.ov-icon { font-size: 26px; margin-bottom: 10px; }
+.ov-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; margin-bottom: 8px; }
+.ov-count { font-size: 36px; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
+.ov-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.ov-pct { font-size: 13px; font-weight: 600; }
+.pct-up   { color: #22c55e; }
+.pct-down { color: #ef4444; }
 
-.form-group {
-  margin-bottom: 12px;
+/* ── Charts ── */
+.charts-row {
+  display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 16px;
+}
+.chart-card-main, .chart-card-side { margin-bottom: 0; }
+.chart-wrap { height: 260px; position: relative; }
+.donut-wrap { display: flex; align-items: center; justify-content: center; }
+.chart-empty { color: var(--text-muted); font-size: 13px; text-align: center; padding-top: 80px; }
+
+/* ── Breakdown + System Status row ── */
+.breakdown-status-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
+}
+.sys-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.sys-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+}
+.sys-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.sys-dot-green  { background: #00e5a0; box-shadow: 0 0 6px #00e5a0aa; }
+.sys-dot-yellow { background: #f59e0b; box-shadow: 0 0 6px #f59e0baa; }
+.sys-dot-red    { background: #ef4444; box-shadow: 0 0 6px #ef4444aa; }
+.sys-label { flex: 1; font-size: 13px; color: var(--text-primary); }
+.sys-value { font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+.sys-val-green  { color: #00e5a0; }
+.sys-val-yellow { color: #f59e0b; }
+.sys-val-red    { color: #ef4444; }
+
+/* ── Admin Controls ── */
+.controls-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.ctrl-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; text-align: left; width: 100%;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ctrl-card:hover { background: var(--bg-secondary); border-color: var(--accent-blue); }
+.ctrl-card-icon { font-size: 20px; padding: 8px; border-radius: 8px; flex-shrink: 0; }
+.ctrl-blue   { background: rgba(78, 110, 242, 0.15); }
+.ctrl-yellow { background: rgba(245, 158, 11, 0.15); }
+.ctrl-purple { background: rgba(168, 85, 247, 0.15); }
+.ctrl-gray   { background: rgba(107, 114, 128, 0.15); }
+.ctrl-card-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+
+/* ── Reward Config ── */
+.reward-materials {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-bottom: 16px;
+}
+.reward-mat-card {
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px;
+}
+.reward-mat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+.reward-mat-control { display: flex; gap: 8px; align-items: center; }
+.reward-input {
+  width: 70px; padding: 6px 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-primary); font-size: 16px;
+  font-weight: 700; outline: none; text-align: center;
+}
+.update-btn {
+  flex: 1; padding: 7px 12px;
+  background: var(--accent-green); color: white;
+  border: none; border-radius: 6px;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.update-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.reward-stats-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  padding-top: 14px; border-top: 1px solid var(--border);
+}
+.reward-stat { text-align: center; }
+.reward-stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.reward-stat-value { font-size: 24px; font-weight: 800; color: var(--text-primary); }
+
+/* ── Transaction log ── */
+.confidence-wrap { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+.confidence-bar {
+  flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+}
+.confidence-fill {
+  height: 100%; background: var(--accent-green); border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.confidence-pct { font-size: 12px; color: var(--text-muted); min-width: 32px; }
+
+.compartment { font-weight: 700; color: var(--text-secondary); font-size: 13px; }
+
+.badge-ok {
+  display: inline-block; padding: 2px 10px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  border: 1px solid var(--accent-green); color: var(--accent-green);
+}
+.badge-rejected {
+  display: inline-block; padding: 2px 10px; border-radius: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  background: var(--accent-red); color: white;
 }
 
-.form-group label {
-  display: block;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 5px;
+.item-cell { display: flex; align-items: center; gap: 6px; }
+
+.filter-select {
+  padding: 7px 10px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-primary); font-size: 13px; outline: none;
 }
 
+/* ── Alerts ── */
+.alert-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;
+}
+.alert-icon { font-size: 18px; }
+.alert-bins { display: flex; gap: 6px; flex-wrap: wrap; margin-left: 4px; }
+.bin-tag {
+  background: var(--accent-red); color: white;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  text-align: left; padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted); font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+}
+.data-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text-primary); vertical-align: middle;
+}
+.data-table tr:hover td { background: var(--bg-hover); }
+.empty-cell { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+
+/* ── Users ── */
+.user-cell { display: flex; align-items: center; gap: 8px; }
+.user-avatar-sm {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--grad-header); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── Machines ── */
+.machines-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;
+}
+.machine-admin-card {
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+}
+.machine-admin-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 6px;
+}
+.machine-code-badge {
+  display: inline-block; background: var(--bg-card);
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-family: monospace;
+  color: var(--text-muted); margin-left: 8px;
+}
+.machine-loc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.bin-admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bin-admin { display: flex; flex-direction: column; gap: 3px; }
+.bin-admin span { font-size: 11px; color: var(--text-secondary); }
+.bin-bar-sm { height: 4px; background: var(--border); border-radius: 2px; }
+.bin-fill-sm { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.bin-ok      { background: var(--accent-green); }
+.bin-warning { background: var(--accent-yellow); }
+.bin-danger  { background: var(--accent-red); }
+.text-red    { color: var(--accent-red) !important; }
+.text-muted-sm { color: var(--text-muted) !important; font-size: 11px; }
+.machine-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.empty-machines {
+  grid-column: 1 / -1; text-align: center;
+  color: var(--text-muted); padding: 40px;
+}
+.empty-machines p { margin-bottom: 14px; }
+
+/* ── Badges ── */
+.status-badge {
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.status-active     { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
+.status-completed  { background: rgba(78, 110, 242, 0.15); color: var(--accent-blue); }
+.status-cancelled  { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+.status-inactive   { background: rgba(107, 114, 128, 0.15); color: var(--text-muted); }
+.status-maintenance{ background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+.role-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.role-admin { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+.role-user  { background: rgba(78, 110, 242, 0.15); color: var(--accent-blue); }
+
+/* ── Buttons ── */
+.action-btn {
+  padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--bg-hover);
+  color: var(--text-secondary); cursor: pointer;
+  font-size: 12px; margin-right: 4px;
+}
+.edit-btn { border-color: var(--accent-blue); color: var(--accent-blue); }
+.del-btn  { border-color: var(--accent-red);  color: var(--accent-red);  }
+.add-btn  {
+  padding: 8px 16px; background: var(--accent-green); color: white;
+  border: none; border-radius: 6px; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+}
+.search-input {
+  padding: 7px 12px; background: var(--bg-hover);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-primary); font-size: 13px; outline: none; width: 200px;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; width: 400px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
 .form-group input,
 .form-group select {
-  width: 100%;
-  padding: 9px 12px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-size: 14px;
-  outline: none;
+  width: 100%; padding: 9px 12px; box-sizing: border-box;
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-primary); font-size: 14px; outline: none;
 }
+.input-disabled { opacity: 0.5; cursor: not-allowed; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-/* Loading */
-.loading-overlay {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 60px;
-}
-
+/* ── Loading ── */
+.loading-overlay { display: flex; justify-content: center; align-items: center; padding: 60px; }
 .spinner-lg {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent-blue);
-  border-radius: 50%;
+  width: 40px; height: 40px; border: 3px solid var(--border);
+  border-top-color: var(--accent-blue); border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+/* ── Error banner ── */
+.error-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--accent-red); padding: 10px 24px;
+  font-size: 13px; gap: 10px;
+}
+.error-close {
+  background: none; border: none; color: var(--accent-red);
+  cursor: pointer; font-size: 16px; line-height: 1;
+}
+
+/* ── Util ── */
+.mono   { font-family: monospace; }
+.small  { font-size: 11px; }
+.muted  { color: var(--text-muted); }
+.pts-green { color: var(--accent-green); font-weight: 600; }
+
+.mobile-menu-btn {
+  display: none; background: none; border: none;
+  color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 4px;
+}
+.mobile-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 199;
+}
+
+/* ── Responsive ── */
+
+/* Tablet: ≤ 1024px */
+@media (max-width: 1024px) {
+  .stats-grid       { grid-template-columns: repeat(4, 1fr); }
+  .overview-cards   { grid-template-columns: repeat(2, 1fr); }
+  .charts-row       { grid-template-columns: 1fr; }
+  .chart-card-side  { min-height: 260px; }
+  .breakdown-status-row { grid-template-columns: 1fr; }
+  .reward-materials { grid-template-columns: repeat(2, 1fr); }
+  .sys-grid         { grid-template-columns: 1fr 1fr; }
+}
+
+/* Large mobile: ≤ 768px */
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: block; }
+  .mobile-overlay  { display: block; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 200;
+    transform: translateX(-100%); transition: transform .25s;
+    width: 220px !important;
   }
+  .sidebar.collapsed                { transform: translateX(-100%); width: 220px !important; }
+  .sidebar.mobile-open,
+  .sidebar.collapsed.mobile-open   { transform: translateX(0) !important; width: 220px !important; }
+  .admin-main          { margin-left: 0 !important; }
+
+  .stats-grid       { grid-template-columns: repeat(2, 1fr); }
+  .overview-cards   { grid-template-columns: repeat(2, 1fr); }
+  .controls-grid    { grid-template-columns: 1fr 1fr; }
+  .reward-materials { grid-template-columns: repeat(2, 1fr); }
+  .sys-grid         { grid-template-columns: 1fr; }
+  .form-row         { grid-template-columns: 1fr; }
+  .charts-row       { grid-template-columns: 1fr; }
+  .breakdown-status-row { grid-template-columns: 1fr; }
+
+  .admin-topbar     { flex-wrap: wrap; gap: 8px; }
+  .topbar-right     { flex-wrap: wrap; }
+  .table-wrap       { overflow-x: auto; }
+}
+
+/* Small mobile: ≤ 480px */
+@media (max-width: 480px) {
+  .stats-grid       { grid-template-columns: repeat(2, 1fr); }
+  .overview-cards   { grid-template-columns: 1fr 1fr; }
+  .ov-count         { font-size: 26px; }
+  .controls-grid    { grid-template-columns: 1fr; }
+  .reward-materials { grid-template-columns: 1fr 1fr; }
+  .section-card     { padding: 12px; }
+  .admin-topbar     { padding: 10px 12px; }
+  .tab-content      { padding: 12px; }
 }
 </style>

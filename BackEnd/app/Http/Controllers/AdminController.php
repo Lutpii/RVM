@@ -13,17 +13,37 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
+    private const DEFAULT_REWARD_CONFIG = [
+        'plastic'  => 5,
+        'aluminum' => 8,
+        'glass'    => 5,
+        'paper'    => 3,
+    ];
+
+    private function loadRewardConfig(): array
+    {
+        $path = storage_path('app/reward_config.json');
+        if (file_exists($path)) {
+            $decoded = json_decode(file_get_contents($path), true);
+            if ($decoded && is_array($decoded)) return $decoded;
+        }
+        return self::DEFAULT_REWARD_CONFIG;
+    }
+
     // Dashboard stats
     public function dashboard(Request $request): JsonResponse
     {
-        $totalUsers       = User::where('role', 'user')->count();
-        $totalMachines    = RvmMachine::count();
-        $activeSessions   = RecyclingSession::where('status', 'active')->count();
-        $totalTransactions= Transaction::count();
-        $totalPointsGiven = Transaction::where('is_valid', 1)->sum('points_earned');
-        $totalWeight      = Transaction::where('is_valid', 1)->sum('weight_grams');
+        $totalUsers        = User::count();
+        $totalMachines     = RvmMachine::count();
+        $activeSessions    = RecyclingSession::where('status', 'active')->count();
+        $totalTransactions = Transaction::count();
+        $totalPointsGiven  = Transaction::where('is_valid', 1)->sum('points_earned');
+        $totalWeight       = Transaction::where('is_valid', 1)->sum('weight_grams');
+        $activeUsers       = User::where('role', 'user')->whereHas('recyclingSessions')->count();
+        $redemptionsToday  = Transaction::where('is_valid', 1)->whereDate('created_at', today())->count();
 
         $materialStats = Transaction::where('is_valid', 1)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
             ->selectRaw('material_selected, COUNT(*) as count, SUM(weight_grams) as total_weight, SUM(points_earned) as total_points')
             ->groupBy('material_selected')
             ->get();
@@ -34,8 +54,8 @@ class AdminController extends Controller
             ->get()
             ->map(fn($s) => [
                 'session_code'  => $s->session_code,
-                'user_name'     => $s->user->name,
-                'machine_name'  => $s->machine->name,
+                'user_name'     => $s->user?->name ?? 'Guest',
+                'machine_name'  => $s->machine?->name ?? '—',
                 'status'        => $s->status,
                 'points_earned' => $s->points_earned,
                 'started_at'    => $s->started_at,
@@ -56,6 +76,8 @@ class AdminController extends Controller
                 'total_transactions' => $totalTransactions,
                 'total_points_given' => $totalPointsGiven,
                 'total_weight_kg'    => round($totalWeight / 1000, 2),
+                'active_users'       => $activeUsers,
+                'redemptions_today'  => $redemptionsToday,
                 'material_stats'     => $materialStats,
                 'recent_sessions'    => $recentSessions,
                 'full_bins'          => $fullBins,
@@ -66,9 +88,8 @@ class AdminController extends Controller
     // Users management
     public function users(Request $request): JsonResponse
     {
-        $users = User::where('role', 'user')
-            ->orderByDesc('total_points')
-            ->paginate(20);
+        $users = User::orderByDesc('total_points')
+            ->paginate(50);
 
         return response()->json(['success' => true, 'users' => $users]);
     }
@@ -108,15 +129,28 @@ class AdminController extends Controller
 
     public function createMachine(Request $request): JsonResponse
     {
-        $request->validate([
-            'machine_code'  => 'required|unique:rvm_machines,machine_code',
-            'name'          => 'required|string',
-            'location_name' => 'nullable|string',
+        $validated = $request->validate([
+            'machine_code'  => 'required|string|max:50|unique:rvm_machines,machine_code',
+            'name'          => 'required|string|max:100',
+            'location_name' => 'nullable|string|max:255',
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
+            'status'        => 'nullable|in:active,inactive,maintenance',
         ]);
 
-        $machine = RvmMachine::create($request->all());
+        $machine = RvmMachine::create([
+            'machine_code'  => $validated['machine_code'],
+            'name'          => $validated['name'],
+            'location_name' => $validated['location_name'] ?? null,
+            'latitude'      => isset($validated['latitude']) && $validated['latitude'] !== '' ? $validated['latitude'] : null,
+            'longitude'     => isset($validated['longitude']) && $validated['longitude'] !== '' ? $validated['longitude'] : null,
+            'status'        => $validated['status'] ?? 'active',
+            'aluminum_level'=> 0,
+            'plastic_level' => 0,
+            'glass_level'   => 0,
+            'paper_level'   => 0,
+        ]);
+
         $this->log($request->user(), 'create_machine', 'machine', $machine->id, "Created machine: {$machine->name}");
         return response()->json(['success' => true, 'machine' => $machine], 201);
     }
@@ -126,9 +160,24 @@ class AdminController extends Controller
         $machine = RvmMachine::find($id);
         if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
 
-        $machine->update($request->only(['name', 'location_name', 'latitude', 'longitude', 'status']));
+        $validated = $request->validate([
+            'name'          => 'sometimes|required|string|max:100',
+            'location_name' => 'nullable|string|max:255',
+            'latitude'      => 'nullable|numeric',
+            'longitude'     => 'nullable|numeric',
+            'status'        => 'nullable|in:active,inactive,maintenance',
+        ]);
+
+        $machine->update([
+            'name'          => $validated['name']          ?? $machine->name,
+            'location_name' => array_key_exists('location_name', $validated) ? $validated['location_name'] : $machine->location_name,
+            'latitude'      => array_key_exists('latitude',  $validated) && $validated['latitude']  !== '' ? $validated['latitude']  : $machine->latitude,
+            'longitude'     => array_key_exists('longitude', $validated) && $validated['longitude'] !== '' ? $validated['longitude'] : $machine->longitude,
+            'status'        => $validated['status'] ?? $machine->status,
+        ]);
+
         $this->log($request->user(), 'update_machine', 'machine', $id, "Updated machine: {$machine->name}");
-        return response()->json(['success' => true, 'machine' => $machine]);
+        return response()->json(['success' => true, 'machine' => $machine->fresh()]);
     }
 
     public function deleteMachine(Request $request, int $id): JsonResponse
@@ -173,6 +222,144 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'logs' => $logs]);
     }
 
+    // Reward Points Configuration
+    public function getRewardConfig(): JsonResponse
+    {
+        return response()->json(['success' => true, 'config' => $this->loadRewardConfig()]);
+    }
+
+    public function updateRewardConfig(Request $request): JsonResponse
+    {
+        $request->validate([
+            'plastic'  => 'required|integer|min:0|max:9999',
+            'aluminum' => 'required|integer|min:0|max:9999',
+            'glass'    => 'required|integer|min:0|max:9999',
+            'paper'    => 'required|integer|min:0|max:9999',
+        ]);
+
+        $config = $request->only(['plastic', 'aluminum', 'glass', 'paper']);
+        file_put_contents(storage_path('app/reward_config.json'), json_encode($config));
+        $this->log($request->user(), 'update_reward_config', 'system', 0, 'Updated reward points configuration');
+
+        return response()->json(['success' => true, 'config' => $config]);
+    }
+
+    // Reset all bin alerts (clear bins >= 90%)
+    public function resetBinAlerts(Request $request): JsonResponse
+    {
+        $machines = RvmMachine::where('aluminum_level', '>=', 90)
+            ->orWhere('plastic_level', '>=', 90)
+            ->orWhere('glass_level', '>=', 90)
+            ->orWhere('paper_level', '>=', 90)
+            ->get();
+
+        foreach ($machines as $machine) {
+            $updates = [];
+            if ($machine->aluminum_level >= 90) $updates['aluminum_level'] = 0;
+            if ($machine->plastic_level >= 90)  $updates['plastic_level']  = 0;
+            if ($machine->glass_level >= 90)    $updates['glass_level']    = 0;
+            if ($machine->paper_level >= 90)    $updates['paper_level']    = 0;
+            if (!empty($updates)) $machine->update($updates);
+        }
+
+        $this->log($request->user(), 'reset_bin_alerts', 'system', 0, "Reset alerts for {$machines->count()} machine(s)");
+        return response()->json(['success' => true, 'message' => 'All bin alerts have been reset.', 'affected' => $machines->count()]);
+    }
+
+    // 7-day daily collection trend + category breakdown + today overview
+    public function chartData(): JsonResponse
+    {
+        $days   = collect(range(6, 0))->map(fn($i) => now()->subDays($i)->format('Y-m-d'));
+        $labels = $days->map(fn($d) => \Carbon\Carbon::parse($d)->format('D'))->values();
+
+        $materials = ['plastic', 'aluminum', 'paper', 'glass'];
+
+        $raw = \App\Models\Transaction::where('is_valid', 1)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day, material_selected, SUM(weight_grams) as total_weight')
+            ->groupBy('day', 'material_selected')
+            ->get()
+            ->groupBy('day');
+
+        $datasets = [];
+        foreach ($materials as $mat) {
+            $datasets[$mat] = $days->map(fn($d) =>
+                (int) ($raw->get($d)?->firstWhere('material_selected', $mat)?->total_weight ?? 0)
+            )->values();
+        }
+
+        // Category breakdown totals
+        $breakdown = \App\Models\Transaction::where('is_valid', 1)
+            ->selectRaw('material_selected, SUM(weight_grams) as total_weight')
+            ->groupBy('material_selected')
+            ->pluck('total_weight', 'material_selected');
+
+        // Today vs yesterday counts
+        $today     = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+
+        $todayCounts = \App\Models\Transaction::where('is_valid', 1)
+            ->whereDate('created_at', $today)
+            ->selectRaw('material_selected, COUNT(*) as cnt')
+            ->groupBy('material_selected')
+            ->pluck('cnt', 'material_selected');
+
+        $yesterdayCounts = \App\Models\Transaction::where('is_valid', 1)
+            ->whereDate('created_at', $yesterday)
+            ->selectRaw('material_selected, COUNT(*) as cnt')
+            ->groupBy('material_selected')
+            ->pluck('cnt', 'material_selected');
+
+        $overview = [];
+        foreach ($materials as $mat) {
+            $t = (int) ($todayCounts[$mat]     ?? 0);
+            $y = (int) ($yesterdayCounts[$mat] ?? 0);
+            $pct = $y > 0 ? round((($t - $y) / $y) * 100, 1) : ($t > 0 ? 100 : 0);
+            $overview[$mat] = ['today' => $t, 'yesterday' => $y, 'pct' => $pct];
+        }
+
+        return response()->json([
+            'success'   => true,
+            'labels'    => $labels,
+            'datasets'  => $datasets,
+            'breakdown' => [
+                'plastic'  => (int) ($breakdown['plastic']  ?? 0),
+                'aluminum' => (int) ($breakdown['aluminum'] ?? 0),
+                'paper'    => (int) ($breakdown['paper']    ?? 0),
+                'glass'    => (int) ($breakdown['glass']    ?? 0),
+            ],
+            'overview'  => $overview,
+        ]);
+    }
+
+    // Export all transactions as CSV
+    public function exportCsv()
+    {
+        $transactions = Transaction::with(['user', 'machine'])->latest()->get();
+        $filename = 'rvm_report_' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($transactions) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Weight (g)', 'Points Earned', 'Status']);
+            foreach ($transactions as $t) {
+                fputcsv($handle, [
+                    $t->id,
+                    $t->created_at?->toDateTimeString(),
+                    $t->user?->name ?? 'Guest',
+                    $t->machine?->name ?? '—',
+                    $t->material_selected,
+                    $t->ai_detected_type ?? '—',
+                    round(($t->ai_confidence ?? 0) * 100),
+                    $t->is_valid ? 'Valid' : 'Rejected',
+                    $t->weight_grams,
+                    $t->points_earned,
+                    $t->is_valid ? 'OK' : 'REJECTED',
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"{$filename}\""]);
+    }
+
     private function log(User $admin, string $action, string $targetType, int $targetId, string $details): void
     {
         AdminLog::create([
@@ -180,7 +367,7 @@ class AdminController extends Controller
             'action'      => $action,
             'target_type' => $targetType,
             'target_id'   => $targetId,
-            'details'     => $details,
+            'details'     => json_encode(['message' => $details]),
         ]);
     }
 }
