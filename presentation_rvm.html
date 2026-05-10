@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RVM Smart Recycling System — UMPSA × DSME Engineering</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:      #1a375e;
+  --navy-dark: #0f2240;
+  --teal:      #00897b;
+  --teal-light:#e0f2f1;
+  --teal-mid:  #4db6ac;
+  --green:     #2e7d32;
+  --green-light:#e8f5e9;
+  --white:     #ffffff;
+  --gray-bg:   #f5f7fa;
+  --gray-mid:  #90a4ae;
+  --gray-light:#eceff1;
+  --text:      #212121;
+  --text-sub:  #455568;
+  --red-light: #ffebee;
+  --red:       #c62828;
+  --orange:    #ff8f00;
+  --border:    #b2dfdb;
+  --slide-w:   1280px;
+  --slide-h:   720px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: #0d1b2a;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+/* ── Stage & Slides ───────────────────────────────────────────────────── */
+#stage {
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+
+.deck {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+}
+
+/* Scale deck to fit viewport */
+.deck-scaler {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform-origin: center center;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  width: var(--slide-w); height: var(--slide-h);
+  background: var(--white);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(60px);
+  pointer-events: none;
+  transition: opacity .45s cubic-bezier(.4,0,.2,1),
+              transform .45s cubic-bezier(.4,0,.2,1);
+}
+.slide.active {
+  opacity: 1; transform: translateX(0); pointer-events: auto;
+}
+.slide.exit {
+  opacity: 0; transform: translateX(-60px);
+}
+
+/* ── HUD ─────────────────────────────────────────────────────────────── */
+#hud {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px; z-index: 999;
+  background: rgba(15,34,64,.85);
+  border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(10px);
+  border-radius: 40px; padding: 8px 20px;
+  color: #fff; font-size: 13px; user-select: none;
+}
+.hud-btn {
+  background: none; border: none; color: #fff; cursor: pointer;
+  font-size: 18px; padding: 2px 6px; border-radius: 4px;
+  transition: background .2s;
+  line-height: 1;
+}
+.hud-btn:hover { background: rgba(255,255,255,.15); }
+#slide-counter { min-width: 60px; text-align: center; font-weight: 600; letter-spacing: .5px; }
+
+/* dot nav */
+#dots { display: flex; gap: 7px; align-items: center; }
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,.3); cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+.dot.active { background: var(--teal-mid); transform: scale(1.35); }
+
+/* progress bar */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: linear-gradient(90deg, var(--teal), var(--teal-mid));
+  transition: width .4s ease; z-index: 999;
+}
+
+/* fullscreen btn */
+#fs-btn {
+  position: fixed; top: 14px; right: 18px; z-index: 999;
+  background: rgba(15,34,64,.75); border: 1px solid rgba(255,255,255,.15);
+  color: #fff; border-radius: 8px; padding: 6px 12px;
+  cursor: pointer; font-size: 13px; backdrop-filter: blur(8px);
+  transition: background .2s;
+}
+#fs-btn:hover { background: rgba(15,34,64,.95); }
+
+/* ── Shared layout helpers ───────────────────────────────────────────── */
+.slide-header {
+  width: 100%; height: 90px;
+  background: var(--navy);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 44px; position: relative; flex-shrink: 0;
+}
+.slide-header::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 5px; background: var(--teal);
+}
+.slide-header h2 { font-size: 26px; color: #fff; font-weight: 700; }
+.slide-header p  { font-size: 13px; color: var(--teal-mid); margin-top: 3px; }
+
+.slide-body {
+  padding: 28px 44px 24px;
+  height: calc(var(--slide-h) - 90px);
+  display: flex; flex-direction: column;
+}
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; height: 100%; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; height: 100%; }
+
+.col-card {
+  background: var(--gray-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px 20px;
+  position: relative; overflow: hidden;
+}
+.col-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 5px;
+}
+.col-card.teal::before  { background: var(--teal); }
+.col-card.navy::before  { background: var(--navy); }
+.col-card.green::before { background: var(--green); }
+
+.col-card h3 { font-size: 15px; color: var(--navy); margin-bottom: 12px; }
+.col-card ul { list-style: none; }
+.col-card ul li {
+  font-size: 12.5px; color: var(--text-sub);
+  padding: 4px 0; border-bottom: 1px solid var(--gray-light);
+  line-height: 1.45;
+}
+.col-card ul li:last-child { border-bottom: none; }
+
+/* feature cards grid */
+.feat-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  grid-template-rows: repeat(2,1fr);
+  gap: 16px; flex: 1;
+}
+.feat-card {
+  background: var(--gray-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+  position: relative; overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.feat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,137,123,.15); }
+.feat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: var(--teal);
+}
+.feat-card .feat-icon { font-size: 22px; margin-bottom: 6px; }
+.feat-card h4 { font-size: 13.5px; color: var(--navy); font-weight: 700; margin-bottom: 8px; }
+.feat-card ul { list-style: none; }
+.feat-card ul li { font-size: 11.5px; color: var(--text-sub); padding: 2.5px 0; line-height: 1.4; }
+.feat-card ul li::before { content: '· '; color: var(--teal); font-weight: 700; }
+
+/* ── SLIDE 1 — Title ─────────────────────────────────────────────────── */
+#s1 { background: var(--navy-dark); }
+
+.title-accent-left {
+  position: absolute; top: 0; left: 0; width: 7px; height: 100%;
+  background: var(--teal);
+}
+.title-circle {
+  position: absolute; border-radius: 50%;
+  background: rgba(0,137,123,.18);
+}
+.title-content {
+  position: absolute; left: 70px; top: 50%;
+  transform: translateY(-50%);
+  max-width: 820px;
+}
+.title-icon { font-size: 72px; line-height: 1; margin-bottom: 6px; }
+.title-main { font-size: 46px; font-weight: 800; color: #fff; line-height: 1.1; }
+.title-sub  { font-size: 28px; color: var(--teal-mid); font-weight: 400; margin-top: 4px; }
+.title-divider { width: 320px; height: 4px; background: var(--teal); margin: 22px 0; border-radius: 2px; }
+.title-label  { font-size: 14px; color: var(--gray-mid); margin-bottom: 6px; }
+.title-route  { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: .5px; }
+.title-author { font-size: 13px; color: var(--gray-mid); margin-top: 16px; }
+.title-inst   { font-size: 11.5px; color: var(--gray-mid); margin-top: 3px; font-style: italic; }
+
+.title-badge {
+  position: absolute; right: 60px; bottom: 50px;
+  text-align: center;
+}
+.title-badge-ring {
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 4px solid var(--teal);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: #fff; margin: 0 auto;
+}
+.title-badge-ring .yr { font-size: 28px; font-weight: 800; color: var(--teal-mid); }
+.title-badge-ring .lbl { font-size: 10px; color: var(--gray-mid); letter-spacing: 1px; }
+.title-badge p { font-size: 11px; color: var(--gray-mid); margin-top: 8px; }
+
+/* ── SLIDE 2 — Background ────────────────────────────────────────────── */
+.prob-col, .sol-col {
+  border-radius: 10px; padding: 18px 22px; overflow-y: auto;
+}
+.prob-col {
+  background: #f8f9fb;
+  border-top: 5px solid var(--navy);
+}
+.sol-col {
+  background: var(--teal-light);
+  border-top: 5px solid var(--teal);
+}
+.col-title {
+  font-size: 15px; font-weight: 700; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.col-title.navy { color: var(--navy); }
+.col-title.teal { color: var(--teal); }
+.list-item {
+  display: flex; gap: 10px; padding: 7px 0;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  font-size: 12.5px; color: var(--text-sub); line-height: 1.5;
+}
+.list-item:last-child { border-bottom: none; }
+.bullet-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+}
+.bd-navy { background: var(--navy); }
+.bd-teal { background: var(--teal); }
+
+.context-banner {
+  background: var(--teal-light); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 18px;
+  font-size: 12.5px; color: var(--text-sub); line-height: 1.65;
+  margin-top: 16px; font-style: italic;
+}
+
+/* ── SLIDE 4 — Workflow ──────────────────────────────────────────────── */
+.flow-section { margin-bottom: 14px; }
+.flow-phase-label {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
+  margin-bottom: 6px; padding-left: 2px;
+}
+.flow-phase-label.navy  { color: var(--navy); }
+.flow-phase-label.teal  { color: var(--teal); }
+.flow-phase-label.green { color: var(--green); }
+
+.flow-row {
+  display: flex; align-items: center; gap: 0; flex-wrap: nowrap;
+}
+.flow-step {
+  border-radius: 7px; padding: 7px 10px;
+  font-size: 10.5px; font-weight: 700; text-align: center; color: #fff;
+  line-height: 1.3; white-space: nowrap;
+  min-width: 88px;
+}
+.fs-navy  { background: var(--navy); }
+.fs-teal  { background: var(--teal); }
+.fs-green { background: var(--green); }
+.fs-red   { background: var(--red); }
+
+.flow-arrow {
+  color: var(--teal); font-size: 14px;
+  padding: 0 3px; flex-shrink: 0;
+}
+.flow-arrow.green { color: var(--green); }
+.flow-arrow.navy  { color: var(--navy); }
+
+.reject-note {
+  background: var(--red-light); border: 1px solid #ef9a9a;
+  border-radius: 7px; padding: 8px 14px;
+  font-size: 11px; color: var(--red); margin-top: 8px;
+  display: inline-block;
+}
+
+.flow-legend {
+  background: var(--gray-light); border-radius: 7px; padding: 8px 14px;
+  font-size: 11px; color: var(--text-sub); margin-top: 10px;
+  display: flex; gap: 22px; flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ── SLIDE 6 — Expected Output ───────────────────────────────────────── */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 18px; }
+.kpi-card {
+  background: var(--navy); border-radius: 10px; padding: 16px 14px; text-align: center;
+}
+.kpi-card .kpi-title { font-size: 14px; font-weight: 700; color: var(--teal-mid); line-height: 1.25; margin-bottom: 8px; }
+.kpi-card .kpi-desc  { font-size: 11px; color: rgba(255,255,255,.75); line-height: 1.5; }
+
+.deliverables-header {
+  background: var(--teal); border-radius: 7px 7px 0 0;
+  padding: 8px 18px; font-size: 13px; font-weight: 700; color: #fff;
+}
+.deliverables-body {
+  background: var(--gray-bg); border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 7px 7px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  flex: 1;
+}
+.del-col { padding: 14px 18px; }
+.del-col:first-child { border-right: 1px solid var(--border); }
+.del-item {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 5px 0; font-size: 12px; color: var(--text-sub);
+  border-bottom: 1px solid var(--gray-light); line-height: 1.45;
+}
+.del-item:last-child { border-bottom: none; }
+.del-check { color: var(--teal); font-weight: 700; flex-shrink: 0; }
+
+/* ── SLIDE 7 — Conclusion ─────────────────────────────────────────────── */
+.summary-banner {
+  background: var(--teal-light); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 20px; margin-bottom: 18px;
+  font-size: 13px; color: var(--text-sub); line-height: 1.7;
+}
+.conc-col { border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+.conc-col-header {
+  padding: 12px 18px; font-size: 14px; font-weight: 700; color: #fff;
+}
+.conc-col-header.navy  { background: var(--navy); }
+.conc-col-header.teal  { background: var(--teal); }
+.conc-col-header.green { background: var(--green); }
+.conc-col-body { background: var(--gray-bg); border: 1px solid var(--border); border-top: none; flex: 1; padding: 14px 16px; }
+.conc-item {
+  font-size: 11.5px; color: var(--text-sub); padding: 5px 0;
+  border-bottom: 1px solid var(--gray-light); line-height: 1.45;
+}
+.conc-item:last-child { border-bottom: none; }
+
+.conc-footer {
+  background: var(--navy); color: #fff; text-align: center;
+  padding: 10px; font-size: 13px; margin-top: 16px; border-radius: 8px;
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide.active .animate {
+  opacity: 0; animation: fadeUp .5s ease forwards;
+}
+.slide.active .a1 { animation-delay: .05s; }
+.slide.active .a2 { animation-delay: .15s; }
+.slide.active .a3 { animation-delay: .25s; }
+.slide.active .a4 { animation-delay: .35s; }
+.slide.active .a5 { animation-delay: .45s; }
+.slide.active .a6 { animation-delay: .55s; }
+
+/* ── Responsive scale ─────────────────────────────────────────────────── */
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<button id="fs-btn" onclick="toggleFS()">⛶ Fullscreen</button>
+
+<div id="stage">
+  <div class="deck-scaler" id="scaler">
+    <div class="deck" id="deck">
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 1 — TITLE                                                 -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide active" id="s1">
+        <div class="title-accent-left"></div>
+
+        <!-- background decorative circles -->
+        <div class="title-circle" style="width:480px;height:480px;top:-140px;right:-100px;"></div>
+        <div class="title-circle" style="width:260px;height:260px;bottom:-80px;right:180px;"></div>
+        <div class="title-circle" style="width:120px;height:120px;top:260px;right:340px;opacity:.5"></div>
+
+        <div class="title-content">
+          <div class="title-icon animate a1">♻</div>
+          <div class="title-main animate a2">Reverse Vending Machine</div>
+          <div class="title-sub animate a2">(RVM) Smart Recycling System</div>
+          <div class="title-divider animate a3"></div>
+          <div class="title-label animate a3">Collaboration Presentation</div>
+          <div class="title-route animate a4">UMPSA &nbsp;→&nbsp; DSME ENGINEERING</div>
+          <div class="title-author animate a5">Presented by: &nbsp;<strong style="color:#fff">Adi Luthfi Nur Roki</strong></div>
+          <div class="title-inst animate a5">Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA) &nbsp;|&nbsp; 2026</div>
+        </div>
+
+        <div class="title-badge animate a6">
+          <div class="title-badge-ring">
+            <span class="yr">2026</span>
+            <span class="lbl">COLLAB</span>
+          </div>
+          <p>Web Technology<br>Semester II</p>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 2 — BACKGROUND / INTRODUCTION                            -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide" id="s2">
+        <div class="slide-header">
+          <h2>Background &amp; Introduction</h2>
+          <p>Why a Reverse Vending Machine?</p>
+        </div>
+        <div class="slide-body">
+          <div class="two-col" style="flex:1;">
+            <div class="prob-col animate a1">
+              <div class="col-title navy">⚠️ &nbsp;The Problem</div>
+              <div class="list-item"><div class="bullet-dot bd-navy"></div>Recycling rates remain critically low in Malaysia — only ~23% of solid waste is recycled annually</div>
+              <div class="list-item"><div class="bullet-dot bd-navy"></div>Lack of tangible incentives drives low public participation in recycling programmes</div>
+              <div class="list-item"><div class="bullet-dot bd-navy"></div>Manual material sorting is error-prone, inefficient, and labour-intensive</div>
+              <div class="list-item"><div class="bullet-dot bd-navy"></div>Recyclable waste frequently ends up in landfills due to poor collection infrastructure</div>
+              <div class="list-item"><div class="bullet-dot bd-navy"></div>Communities lack real-time visibility into bin capacity and machine availability</div>
+            </div>
+            <div class="sol-col animate a2">
+              <div class="col-title teal">✅ &nbsp;Our Solution: RVM System</div>
+              <div class="list-item"><div class="bullet-dot bd-teal"></div>Smart kiosk that accepts recyclable materials: Aluminum, Plastic, Glass &amp; Paper</div>
+              <div class="list-item"><div class="bullet-dot bd-teal"></div>AI-powered material classification using YOLOv8n deep learning model (≥60% confidence)</div>
+              <div class="list-item"><div class="bullet-dot bd-teal"></div>Gamified reward system — users earn redeemable points per gram of material deposited</div>
+              <div class="list-item"><div class="bullet-dot bd-teal"></div>Real-time bin-level monitoring and machine status tracking via admin dashboard</div>
+              <div class="list-item"><div class="bullet-dot bd-teal"></div>Full-stack platform: Vue.js frontend + Laravel API backend + Python Flask AI service</div>
+            </div>
+          </div>
+          <div class="context-banner animate a3">
+            📌 &nbsp;This project is developed by UMPSA students as a collaboration deliverable for DSME Engineering.
+            The system bridges sustainable recycling practices with modern IoT and AI technologies,
+            creating a scalable, data-driven solution for smart waste management.
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 3 — DASHBOARD OVERVIEW                                   -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide" id="s3">
+        <div class="slide-header">
+          <h2>Dashboard Overview</h2>
+          <p>Unified interface for users, admins, and kiosk operators</p>
+        </div>
+        <div class="slide-body">
+          <div class="two-col" style="flex:1;">
+            <div class="col-card teal animate a1">
+              <h3 style="font-size:16px;">👤 &nbsp;User Dashboard</h3>
+              <ul>
+                <li>🏆 &nbsp;<strong>Total Points Balance</strong> — live tracking of earned rewards</li>
+                <li>📋 &nbsp;<strong>Recycling History</strong> — session logs with material breakdown</li>
+                <li>📈 &nbsp;<strong>Points History</strong> — full ledger of earned &amp; deducted points</li>
+                <li>🔄 &nbsp;<strong>Active Session Status</strong> — real-time recycling session tracker</li>
+                <li>👤 &nbsp;<strong>Profile Management</strong> — update name, language &amp; theme</li>
+                <li>📷 &nbsp;<strong>QR Code Scanner</strong> — link device to RVM kiosk for session start</li>
+                <li>🌐 &nbsp;<strong>Bilingual UI</strong> — toggle English ↔ Bahasa Indonesia</li>
+                <li>🌙 &nbsp;<strong>Dark / Light Theme</strong> — comfortable viewing in any environment</li>
+              </ul>
+            </div>
+            <div class="col-card navy animate a2">
+              <h3 style="font-size:16px;color:var(--navy);">🛠 &nbsp;Admin Dashboard</h3>
+              <ul>
+                <li>📊 &nbsp;<strong>System Statistics</strong> — total users, sessions, items &amp; points issued</li>
+                <li>👥 &nbsp;<strong>User Management</strong> — view, edit, and remove user accounts</li>
+                <li>🏭 &nbsp;<strong>Machine Management</strong> — add/edit RVM kiosks with GPS location</li>
+                <li>🗑 &nbsp;<strong>Bin Level Monitoring</strong> — fill-level per material type per machine</li>
+                <li>📝 &nbsp;<strong>Transaction Logs</strong> — full audit trail of all recycling transactions</li>
+                <li>⚙ &nbsp;<strong>Reward Config</strong> — configure points per material type</li>
+                <li>📥 &nbsp;<strong>CSV Export</strong> — download data for reporting &amp; analysis</li>
+                <li>🔍 &nbsp;<strong>Admin Action Log</strong> — accountability trail for all admin operations</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 4 — SYSTEM WORKFLOW                                       -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide" id="s4">
+        <div class="slide-header">
+          <h2>System Workflow</h2>
+          <p>End-to-end recycling session business flow — 3 phases, 14 steps</p>
+        </div>
+        <div class="slide-body" style="justify-content:space-between; padding-bottom:18px;">
+
+          <!-- Phase 1 -->
+          <div class="flow-section animate a1">
+            <div class="flow-phase-label navy">⬛ Phase 1 — User Onboarding &amp; Session Initiation</div>
+            <div class="flow-row">
+              <div class="flow-step fs-navy">Register /<br>Login</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-navy">Scan QR<br>Code</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-navy">Select<br>Material</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-navy">Check<br>Bin Level</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-navy">Open Kiosk<br>Lid</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-navy">Insert<br>Item</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-navy">Conveyor<br>Process</div>
+            </div>
+          </div>
+
+          <!-- Phase 2 -->
+          <div class="flow-section animate a2">
+            <div class="flow-phase-label teal">🟦 Phase 2 — AI Classification &amp; Validation</div>
+            <div class="flow-row">
+              <div class="flow-step fs-teal">Capture<br>Image</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-teal">AI Classify<br>(YOLOv8n)</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-teal">Confidence<br>Check ≥60%</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-teal">Weigh<br>Item</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step fs-teal">Calculate<br>Points</div>
+              <span style="margin-left:18px; font-size:13px; color:var(--text-sub); font-style:italic; align-self:center;">
+                &nbsp; If confidence &lt;60% or type mismatch:
+              </span>
+              <span class="reject-note" style="margin-left:8px;">✗ Item Rejected → −10 pts deducted</span>
+            </div>
+          </div>
+
+          <!-- Phase 3 -->
+          <div class="flow-section animate a3">
+            <div class="flow-phase-label green">🟩 Phase 3 — Completion &amp; Rewards</div>
+            <div class="flow-row">
+              <div class="flow-step fs-green">Update<br>Bin Level</div>
+              <div class="flow-arrow green">→</div>
+              <div class="flow-step fs-green">Save<br>Transaction</div>
+              <div class="flow-arrow green">→</div>
+              <div class="flow-step fs-green">Update<br>User Points</div>
+              <div class="flow-arrow green">→</div>
+              <div class="flow-step fs-green">Points<br>History Log</div>
+              <div class="flow-arrow green">→</div>
+              <div class="flow-step fs-green">Session<br>Summary</div>
+              <div class="flow-arrow green">→</div>
+              <div class="flow-step fs-green">End<br>Session</div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="flow-legend animate a4">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--navy)"></div>User Actions</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>AI / System Processing</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Completion Steps</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Rejection Path (−10 pts)</div>
+            <div class="legend-item" style="margin-left:auto; color:var(--teal); font-weight:600;">Total Steps: 14</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 5 — MAIN FEATURES                                         -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide" id="s5">
+        <div class="slide-header">
+          <h2>Main Features</h2>
+          <p>Core capabilities of the RVM Smart Recycling System</p>
+        </div>
+        <div class="slide-body">
+          <div class="feat-grid">
+            <div class="feat-card animate a1">
+              <div class="feat-icon">🤖</div>
+              <h4>AI Material Classification</h4>
+              <ul>
+                <li>YOLOv8n deep learning model</li>
+                <li>4 classes: Aluminum, Plastic, Glass, Paper</li>
+                <li>60% confidence threshold</li>
+                <li>Bounding box detection &amp; scoring</li>
+                <li>Mock fallback mode for testing</li>
+              </ul>
+            </div>
+            <div class="feat-card animate a2" style="--teal:var(--navy);">
+              <div class="feat-icon">🔐</div>
+              <h4>Multi-Authentication System</h4>
+              <ul>
+                <li>Email &amp; password registration</li>
+                <li>WhatsApp OTP via Fonnte API</li>
+                <li>Google OAuth 2.0 sign-in</li>
+                <li>Laravel Sanctum token-based auth</li>
+                <li>Role-based access: User / Admin</li>
+              </ul>
+            </div>
+            <div class="feat-card animate a3" style="--teal:var(--green);">
+              <div class="feat-icon">📊</div>
+              <h4>Real-Time Monitoring</h4>
+              <ul>
+                <li>Live bin-level per material type (0–100%)</li>
+                <li>Machine status: Active / Maintenance</li>
+                <li>GPS location with Google Maps embed</li>
+                <li>Alert threshold at 90% bin capacity</li>
+                <li>Admin session &amp; transaction audit logs</li>
+              </ul>
+            </div>
+            <div class="feat-card animate a4" style="--teal:var(--orange);">
+              <div class="feat-icon">🏆</div>
+              <h4>Points &amp; Rewards Engine</h4>
+              <ul>
+                <li>Aluminum → 10 pts / 100g</li>
+                <li>Plastic → 8 pts / 100g</li>
+                <li>Glass → 6 pts / 100g</li>
+                <li>Paper → 5 pts / 100g</li>
+                <li>−10 pts for rejected items</li>
+              </ul>
+            </div>
+            <div class="feat-card animate a5">
+              <div class="feat-icon">📱</div>
+              <h4>User Experience</h4>
+              <ul>
+                <li>14-step guided recycling session UI</li>
+                <li>QR code kiosk linking (mobile scan)</li>
+                <li>Bilingual: English &amp; Bahasa Indonesia</li>
+                <li>Dark / Light theme toggle</li>
+                <li>Mobile-responsive, PWA-ready layout</li>
+              </ul>
+            </div>
+            <div class="feat-card animate a6" style="--teal:var(--navy);">
+              <div class="feat-icon">⚙</div>
+              <h4>Tech Stack</h4>
+              <ul>
+                <li>Frontend: Vue.js 3 + Pinia + Vite</li>
+                <li>Backend: Laravel 10 + MySQL 8</li>
+                <li>AI Service: Python Flask + YOLOv8n</li>
+                <li>Auth: Sanctum + Socialite + Fonnte</li>
+                <li>Charts: Chart.js &nbsp;|&nbsp; QR: qrcode.js</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 6 — EXPECTED OUTPUT                                       -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide" id="s6">
+        <div class="slide-header">
+          <h2>Expected Output</h2>
+          <p>Measurable deliverables and outcomes of the RVM System</p>
+        </div>
+        <div class="slide-body">
+          <div class="kpi-row animate a1">
+            <div class="kpi-card">
+              <div class="kpi-title">♻ Higher<br>Recycling Rate</div>
+              <div class="kpi-desc">Incentive-driven engagement boosts public participation through points-reward mechanism</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">🤖 Accurate AI<br>Classification</div>
+              <div class="kpi-desc">YOLOv8n model achieves reliable material identification, reducing human sorting errors</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">📈 Data-Driven<br>Insights</div>
+              <div class="kpi-desc">Admin dashboard provides actionable analytics for waste management decision-making</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">🌐 Scalable<br>Infrastructure</div>
+              <div class="kpi-desc">Multi-machine support with centralised monitoring enables city-wide deployment</div>
+            </div>
+          </div>
+
+          <div class="animate a2" style="flex:1; display:flex; flex-direction:column;">
+            <div class="deliverables-header">✅ &nbsp;System Deliverables</div>
+            <div class="deliverables-body" style="flex:1;">
+              <div class="del-col">
+                <div class="del-item"><span class="del-check">✓</span>Fully functional full-stack web application (Frontend + Backend + AI service)</div>
+                <div class="del-item"><span class="del-check">✓</span>Admin panel with user, machine &amp; transaction management</div>
+                <div class="del-item"><span class="del-check">✓</span>AI classification service with pre-trained YOLOv8n model (best.pt)</div>
+                <div class="del-item"><span class="del-check">✓</span>QR-based kiosk linking for seamless session initiation</div>
+                <div class="del-item"><span class="del-check">✓</span>Bilingual interface (English &amp; Bahasa Indonesia) with theme support</div>
+              </div>
+              <div class="del-col">
+                <div class="del-item"><span class="del-check">✓</span>Points system with earn/deduct logic and complete audit trail</div>
+                <div class="del-item"><span class="del-check">✓</span>WhatsApp OTP and Google OAuth multi-authentication</div>
+                <div class="del-item"><span class="del-check">✓</span>Real-time bin monitoring with GPS machine locations</div>
+                <div class="del-item"><span class="del-check">✓</span>CSV data export for reporting and external integration</div>
+                <div class="del-item"><span class="del-check">✓</span>Documented REST API endpoints for future IoT hardware integration</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- SLIDE 7 — CONCLUSION                                            -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="slide" id="s7">
+        <div class="slide-header">
+          <h2>Conclusion</h2>
+          <p>Summary &amp; path forward — UMPSA × DSME Engineering collaboration</p>
+        </div>
+        <div class="slide-body">
+          <div class="summary-banner animate a1">
+            The <strong>RVM Smart Recycling System</strong> demonstrates a complete, production-ready solution combining
+            AI-powered material classification, gamified incentives, and real-time monitoring to drive
+            sustainable recycling behaviour. Developed at <strong>UMPSA</strong> and presented to
+            <strong>DSME Engineering</strong> as a collaboration deliverable, the system is designed for
+            scalability, real-world deployment, and future integration with physical RVM hardware.
+          </div>
+
+          <div class="three-col" style="flex:1;">
+            <div class="conc-col animate a2">
+              <div class="conc-col-header navy">🏆 &nbsp;Achievements</div>
+              <div class="conc-col-body">
+                <div class="conc-item">✓ &nbsp;Full-stack web system delivered</div>
+                <div class="conc-item">✓ &nbsp;AI classification integrated (YOLOv8n)</div>
+                <div class="conc-item">✓ &nbsp;14-step recycling session flow</div>
+                <div class="conc-item">✓ &nbsp;Admin &amp; user dashboards live</div>
+                <div class="conc-item">✓ &nbsp;Multi-auth &amp; bilingual support</div>
+                <div class="conc-item">✓ &nbsp;Points reward engine functional</div>
+                <div class="conc-item">✓ &nbsp;QR kiosk session linking working</div>
+              </div>
+            </div>
+            <div class="conc-col animate a3">
+              <div class="conc-col-header teal">🚀 &nbsp;Next Steps</div>
+              <div class="conc-col-body">
+                <div class="conc-item">→ &nbsp;Connect to physical RVM hardware via API</div>
+                <div class="conc-item">→ &nbsp;Deploy to cloud (AWS / Azure / GCP)</div>
+                <div class="conc-item">→ &nbsp;Mobile app (React Native / Flutter)</div>
+                <div class="conc-item">→ &nbsp;Expand AI to detect more material types</div>
+                <div class="conc-item">→ &nbsp;Integrate redemption / cashout system</div>
+                <div class="conc-item">→ &nbsp;Pilot testing at UMPSA campus sites</div>
+                <div class="conc-item">→ &nbsp;CI/CD pipeline for auto-deployment</div>
+              </div>
+            </div>
+            <div class="conc-col animate a4">
+              <div class="conc-col-header green">🤝 &nbsp;Collaboration Opportunities</div>
+              <div class="conc-col-body">
+                <div class="conc-item">⟷ &nbsp;Provide hardware kiosk specs to UMPSA</div>
+                <div class="conc-item">⟷ &nbsp;Co-develop IoT sensor integration layer</div>
+                <div class="conc-item">⟷ &nbsp;Joint testing &amp; field validation at DSME</div>
+                <div class="conc-item">⟷ &nbsp;Share domain expertise on waste management</div>
+                <div class="conc-item">⟷ &nbsp;Scale deployment to DSME partner locations</div>
+                <div class="conc-item">⟷ &nbsp;Explore research publication opportunities</div>
+                <div class="conc-item">⟷ &nbsp;Technology transfer &amp; knowledge sharing</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="conc-footer animate a5">
+            Thank you &nbsp;|&nbsp; Adi Luthfi Nur Roki &nbsp;|&nbsp; UMPSA &nbsp;→&nbsp; DSME Engineering &nbsp;|&nbsp; 2026
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .deck -->
+  </div><!-- .deck-scaler -->
+</div><!-- #stage -->
+
+<!-- HUD -->
+<div id="hud">
+  <button class="hud-btn" id="btn-prev" onclick="navigate(-1)" title="Previous (←)">‹</button>
+  <div id="dots"></div>
+  <button class="hud-btn" id="btn-next" onclick="navigate(1)"  title="Next (→)">›</button>
+  <span id="slide-counter">1 / 7</span>
+</div>
+
+<script>
+const TOTAL   = 7;
+let current   = 1;
+let animating = false;
+
+const slides  = () => document.querySelectorAll('.slide');
+const dotsEl  = document.getElementById('dots');
+const counter = document.getElementById('slide-counter');
+const bar     = document.getElementById('progress-bar');
+
+/* Build dot nav */
+for (let i = 1; i <= TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 1 ? ' active' : '');
+  d.title = slideName(i);
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function slideName(n) {
+  return ['Title','Background','Dashboard','Workflow','Features','Expected Output','Conclusion'][n-1];
+}
+
+function goTo(n) {
+  if (animating || n === current || n < 1 || n > TOTAL) return;
+  animating = true;
+
+  const from = document.getElementById('s' + current);
+  const to   = document.getElementById('s' + n);
+
+  // determine direction
+  const dir = n > current ? 1 : -1;
+  from.style.transition = 'opacity .4s ease, transform .4s ease';
+  from.style.transform  = `translateX(${dir * -60}px)`;
+  from.style.opacity    = '0';
+
+  to.style.transition   = 'none';
+  to.style.transform    = `translateX(${dir * 60}px)`;
+  to.style.opacity      = '0';
+  to.classList.remove('exit');
+  to.classList.add('active');
+
+  // force reflow
+  to.getBoundingClientRect();
+
+  to.style.transition   = 'opacity .4s ease, transform .4s ease';
+  to.style.transform    = 'translateX(0)';
+  to.style.opacity      = '1';
+
+  setTimeout(() => {
+    from.classList.remove('active');
+    from.style.transform = '';
+    from.style.opacity   = '';
+    from.style.transition= '';
+    to.style.transform   = '';
+    to.style.transition  = '';
+    animating = false;
+  }, 420);
+
+  current = n;
+  updateHUD();
+}
+
+function navigate(dir) { goTo(current + dir); }
+
+function updateHUD() {
+  counter.textContent = current + ' / ' + TOTAL;
+  bar.style.width = (current / TOTAL * 100) + '%';
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('active', i + 1 === current);
+  });
+}
+
+/* Keyboard navigation */
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); navigate(-1); }
+  if (e.key === 'Home')  goTo(1);
+  if (e.key === 'End')   goTo(TOTAL);
+  if (e.key === 'f' || e.key === 'F') toggleFS();
+});
+
+/* Touch swipe */
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) navigate(dx < 0 ? 1 : -1);
+}, {passive:true});
+
+/* Responsive scaling */
+function rescale() {
+  const scaler = document.getElementById('scaler');
+  const sw = window.innerWidth, sh = window.innerHeight;
+  const scale = Math.min(sw / 1280, sh / 720) * 0.97;
+  scaler.style.transform = `translate(-50%,-50%) scale(${scale})`;
+}
+window.addEventListener('resize', rescale);
+rescale();
+
+/* Fullscreen */
+function toggleFS() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  document.getElementById('fs-btn').textContent =
+    document.fullscreenElement ? '✕ Exit Fullscreen' : '⛶ Fullscreen';
+  rescale();
+});
+
+updateHUD();
+</script>
+</body>
+</html>

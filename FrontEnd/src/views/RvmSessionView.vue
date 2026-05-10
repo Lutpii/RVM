@@ -4,7 +4,7 @@
     <div class="rvm-header">
       <div class="header-controls">
         <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
-        <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'ID' : 'EN' }}</button>
+        <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
       </div>
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
       <p class="welcome-text" v-if="auth.user">Welcome, {{ auth.user.name }}</p>
@@ -78,16 +78,16 @@
         <div v-else-if="rvm.currentStep === 'camera'" key="camera" class="step-content centered">
           <!-- Choose mode -->
           <template v-if="cameraMode === 'choose'">
-            <h2 class="step-status">Scan or Upload Item</h2>
-            <p class="step-sub">Choose how to capture the item image</p>
+            <h2 class="step-status">{{ $t('session.scanOrUpload') }}</h2>
+            <p class="step-sub">{{ $t('session.chooseCapture') }}</p>
             <div class="capture-options">
               <button class="capture-btn" @click="startCameraMode">
                 <span class="capture-icon">📷</span>
-                <span>Use Camera</span>
+                <span>{{ $t('session.useCamera') }}</span>
               </button>
               <label class="capture-btn">
                 <span class="capture-icon">📁</span>
-                <span>Upload Image</span>
+                <span>{{ $t('session.uploadImage') }}</span>
                 <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/*" @change="handleFileUpload" style="display:none" />
               </label>
             </div>
@@ -375,7 +375,7 @@ const currentStepLabel = computed(() => {
 })
 
 function toggleLang() {
-  locale.value = locale.value === 'en' ? 'id' : 'en'
+  locale.value = locale.value === 'en' ? 'my' : 'en'
   localStorage.setItem('rvm_lang', locale.value)
 }
 
@@ -555,7 +555,6 @@ async function confirmEndSession() {
     if (auth.user) auth.updatePoints(displayPoints.value)
   }
   if (isKioskRoute.value) {
-    setKioskToken(null)
     router.push(`/kiosk/${kioskMachineCode.value}/summary`)
   } else {
     router.push('/session/summary')

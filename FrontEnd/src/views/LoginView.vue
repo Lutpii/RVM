@@ -6,7 +6,7 @@
         <RouterLink to="/" class="back-btn">←</RouterLink>
         <div class="header-controls">
           <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
-          <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'ID' : 'EN' }}</button>
+          <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
         </div>
         <h1>{{ $t('app.name') }}</h1>
         <p>{{ $t('auth.loginTitle') }}</p>
@@ -116,7 +116,7 @@ const otpSent = ref(false)
 const showPwd = ref(false)
 
 function toggleLang() {
-  locale.value = locale.value === 'en' ? 'id' : 'en'
+  locale.value = locale.value === 'en' ? 'my' : 'en'
   localStorage.setItem('rvm_lang', locale.value)
 }
 

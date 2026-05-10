@@ -11,7 +11,7 @@
       </div>
       <div class="nav-right">
         <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
-        <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'ID' : 'EN' }}</button>
+        <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
         <RouterLink v-if="auth.isAdmin" to="/admin" class="admin-link">⚙️</RouterLink>
         <button class="logout-btn" @click="handleLogout">{{ $t('nav.logout') }}</button>
       </div>
@@ -146,7 +146,7 @@ const binTypes = [
 ]
 
 function toggleLang() {
-  locale.value = locale.value === 'en' ? 'id' : 'en'
+  locale.value = locale.value === 'en' ? 'my' : 'en'
   localStorage.setItem('rvm_lang', locale.value)
 }
 

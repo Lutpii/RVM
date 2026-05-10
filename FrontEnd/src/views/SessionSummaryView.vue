@@ -99,11 +99,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
+import { setKioskToken } from '@/services/api'
 
 const router = useRouter()
+const route  = useRoute()
 const auth = useAuthStore()
 const rvm = useRvmStore()
 
@@ -129,10 +131,12 @@ function confettiStyle(i) {
 }
 
 async function goHome() {
-  const machineCode = rvm.guestMachineCode
-  const isGuest = rvm.isGuest
+  const machineCode = rvm.guestMachineCode || route.params.machineCode
+  const isKiosk = route.path.startsWith('/kiosk/')
+  setKioskToken(null)
   rvm.resetSession()
-  if (isGuest && machineCode) {
+  if (isKiosk && machineCode) {
+    await auth.logout()
     router.push(`/kiosk/${machineCode}`)
   } else {
     await auth.logout()

@@ -7,7 +7,7 @@
           {{ theme === 'dark' ? '☀️' : '🌙' }}
         </button>
         <button class="lang-btn" @click="toggleLang">
-          {{ locale === 'en' ? 'ID' : 'EN' }}
+          {{ locale === 'en' ? 'MY' : 'EN' }}
         </button>
       </div>
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
@@ -84,7 +84,7 @@ const toggleTheme = inject('toggleTheme')
 const { locale, t } = useI18n()
 
 function toggleLang() {
-  locale.value = locale.value === 'en' ? 'id' : 'en'
+  locale.value = locale.value === 'en' ? 'my' : 'en'
   localStorage.setItem('rvm_lang', locale.value)
 }
 
