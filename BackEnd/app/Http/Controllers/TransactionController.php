@@ -13,12 +13,12 @@ use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
-    // Points per 100g for each material
+    // Points per 100g for each material (plastic/aluminum/glass: per 20g rate × 5)
     const POINTS_PER_100G = [
-        'aluminum' => 10,
-        'plastic'  => 8,
-        'glass'    => 6,
-        'paper'    => 5,
+        'aluminum' => 25,  // 15 pts per 20g
+        'plastic'  => 20,  // 10 pts per 20g
+        'glass'    => 20,  // 10 pts per 20g
+        'paper'    => 15,   // 5 pts per 100g
     ];
 
     const BIN_FULL_THRESHOLD = 90; // 90% = full
@@ -179,9 +179,11 @@ class TransactionController extends Controller
         $session  = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
 
-        // Simulate weight from sensor (50g–500g random for prototype)
-        $weightGrams = rand(50, 500);
         $material    = $request->material_selected;
+        // Simulate weight from sensor (plastic/aluminum/glass: 16–100g; paper: 50–500g)
+        $weightGrams = in_array($material, ['plastic', 'aluminum', 'glass'])
+            ? rand(16, 100)
+            : rand(50, 500);
         $pointsPerUnit = self::POINTS_PER_100G[$material] ?? 5;
         $pointsEarned  = (int)(($weightGrams / 100) * $pointsPerUnit);
 
