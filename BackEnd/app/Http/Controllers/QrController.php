@@ -32,8 +32,8 @@ class QrController extends Controller
             ->where('expires_at', '<', Carbon::now())
             ->update(['status' => 'expired']);
 
-        // Generate new token
-        $token = Str::random(40) . time();
+        // Generate new token — 8 uppercase chars, easy to type manually
+        $token = strtoupper(Str::random(4));
 
         $qrSession = QrSession::create([
             'machine_id' => $machine->id,

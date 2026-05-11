@@ -7,16 +7,34 @@
     </div>
 
     <div class="scan-body">
-      <!-- Manual token entry -->
       <div class="manual-section">
-        <div class="qr-visual">
-          <div class="qr-frame">
+
+        <!-- Camera scanner -->
+        <div class="camera-section">
+          <div class="qr-frame" :class="{ 'camera-active': cameraActive }">
             <div class="corner tl"></div>
             <div class="corner tr"></div>
             <div class="corner bl"></div>
             <div class="corner br"></div>
-            <div class="scan-line"></div>
-            <div class="qr-placeholder">
+
+            <!-- Live camera feed -->
+            <video
+              v-show="cameraActive"
+              ref="videoRef"
+              class="camera-feed"
+              autoplay
+              playsinline
+              muted
+            ></video>
+
+            <!-- Hidden canvas for frame capture -->
+            <canvas ref="canvasRef" class="hidden-canvas"></canvas>
+
+            <!-- Scan line overlay (only when camera active) -->
+            <div v-if="cameraActive" class="scan-line"></div>
+
+            <!-- QR icon placeholder (when no camera) -->
+            <div v-if="!cameraActive" class="qr-placeholder">
               <svg viewBox="0 0 80 80" width="60" height="60">
                 <rect x="5" y="5" width="30" height="30" fill="none" stroke="var(--accent-blue)" stroke-width="3"/>
                 <rect x="10" y="10" width="20" height="20" fill="var(--accent-blue)" opacity="0.3"/>
@@ -30,10 +48,33 @@
                 <rect x="57" y="57" width="8" height="8" fill="var(--accent-blue)"/>
               </svg>
             </div>
+
+            <!-- Detected flash overlay -->
+            <div v-if="qrDetected" class="detected-flash"></div>
           </div>
+
+          <div class="camera-status" v-if="cameraActive">
+            <span class="pulse-dot"></span> Camera active — point at QR code
+          </div>
+          <div class="camera-status error" v-if="cameraError">
+            ⚠ {{ cameraError }}
+          </div>
+
+          <button
+            v-if="cameraSupported"
+            class="camera-btn"
+            @click="toggleCamera"
+            :disabled="loading"
+          >
+            <span v-if="!cameraActive">📷 Open Camera</span>
+            <span v-else>✕ Close Camera</span>
+          </button>
+          <p v-else class="insecure-note">📷 Camera unavailable — enter the token manually below</p>
         </div>
 
-        <p class="scan-hint">After scanning on the machine, enter the session token below:</p>
+        <div class="divider-text">— OR ENTER MANUALLY —</div>
+
+        <p class="scan-hint">Enter the session token shown on the machine screen:</p>
 
         <div class="token-input-wrap">
           <input
@@ -80,28 +121,146 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore }  from '@/store/rvm'
 import api from '@/services/api'
+import jsQR from 'jsqr'
 
 const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 const rvm    = useRvmStore()
 
-const token          = ref('')
-const loading        = ref(false)
-const error          = ref('')
-const success        = ref('')
-const machines       = ref([])
+const token           = ref('')
+const loading         = ref(false)
+const error           = ref('')
+const success         = ref('')
+const machines        = ref([])
 const loadingMachines = ref(true)
+
+// Camera state
+const videoRef     = ref(null)
+const canvasRef    = ref(null)
+const cameraActive = ref(false)
+const cameraError  = ref('')
+const qrDetected   = ref(false)
+let stream         = null
+let scanInterval   = null
+
+// Camera is only available in secure contexts (HTTPS / localhost)
+const cameraSupported = computed(() =>
+  window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
+)
 
 const activeMachines = computed(() => machines.value.filter(m => m.status === 'active'))
 
+async function toggleCamera() {
+  if (cameraActive.value) {
+    stopCamera()
+  } else {
+    await startCamera()
+  }
+}
+
+async function startCamera() {
+  cameraError.value = ''
+
+  // Camera API requires HTTPS or localhost (secure context)
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    cameraError.value = 'Camera requires HTTPS. Open the app via https:// or enter the token manually below.'
+    return
+  }
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 640 } },
+    })
+    videoRef.value.srcObject = stream
+    cameraActive.value = true
+    scanInterval = setInterval(scanFrame, 200)
+  } catch (e) {
+    if (e.name === 'NotAllowedError') {
+      cameraError.value = 'Camera permission denied. Please allow camera access and try again.'
+    } else if (e.name === 'NotFoundError') {
+      cameraError.value = 'No camera found on this device.'
+    } else if (e.name === 'NotReadableError' || e.message?.toLowerCase().includes('in use')) {
+      cameraError.value = 'Camera is in use by another app. Close it and try again.'
+    } else {
+      cameraError.value = 'Could not access camera: ' + e.message
+    }
+  }
+}
+
+function stopCamera() {
+  clearInterval(scanInterval)
+  scanInterval = null
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop())
+    stream = null
+  }
+  if (videoRef.value) videoRef.value.srcObject = null
+  cameraActive.value = false
+}
+
+function scanFrame() {
+  const video = videoRef.value
+  const canvas = canvasRef.value
+  if (!video || !canvas || video.readyState < 2) return
+
+  const size = Math.min(video.videoWidth, video.videoHeight)
+  canvas.width  = size
+  canvas.height = size
+
+  const ctx = canvas.getContext('2d')
+  const offsetX = (video.videoWidth  - size) / 2
+  const offsetY = (video.videoHeight - size) / 2
+  ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, size, size)
+
+  const imageData = ctx.getImageData(0, 0, size, size)
+  const code = jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts: 'dontInvert',
+  })
+
+  if (code && code.data) {
+    onQrDetected(code.data)
+  }
+}
+
+function onQrDetected(data) {
+  stopCamera()
+  qrDetected.value = true
+  setTimeout(() => { qrDetected.value = false }, 1000)
+
+  // If the QR contains a full URL with ?token= param, extract just the token
+  try {
+    const url = new URL(data)
+    const t = url.searchParams.get('token')
+    if (t) { token.value = t; handleScan(); return }
+  } catch { /* not a URL */ }
+
+  token.value = data
+  handleScan()
+}
+
+function extractToken(raw) {
+  const s = raw.trim()
+  try {
+    const t = new URL(s).searchParams.get('token')
+    if (t) return t
+  } catch { /* not a URL */ }
+  // Handle hash-URL pasted without protocol: e.g. "10.x.x.x:5173/#/scan?token=ABC"
+  const m = s.match(/[?&]token=([^&]+)/)
+  if (m) return decodeURIComponent(m[1])
+  return s
+}
+
 async function handleScan() {
-  if (!token.value.trim()) return
+  const raw = token.value.trim()
+  if (!raw) return
+  token.value = extractToken(raw)
+  if (!token.value) return
   loading.value = true
   error.value   = ''
   success.value = ''
@@ -121,7 +280,6 @@ async function handleScan() {
         }
       } catch (sessionErr) {
         const errData = sessionErr.response?.data
-        // Resume existing active session — phone still goes to dashboard
         if (errData?.session_code) {
           setTimeout(() => router.push('/dashboard'), 800)
           return
@@ -143,7 +301,6 @@ async function connectDemo(machine) {
   loading.value = true
   error.value   = ''
   try {
-    // Demo: start session directly without QR token
     const sessionRes = await api.post('/sessions/start', {
       machine_id: machine.id,
       qr_token:   'DEMO_' + Date.now(),
@@ -159,7 +316,6 @@ async function connectDemo(machine) {
     }
   } catch (e) {
     const errData = e.response?.data
-    // Resume existing active session if backend returned one
     if (errData?.session_code) {
       try {
         const showRes = await api.get(`/sessions/${errData.session_code}`)
@@ -170,18 +326,17 @@ async function connectDemo(machine) {
           router.push('/session')
           return
         }
-      } catch { /* fall through to offline demo mode */ }
+      } catch { /* fall through */ }
     }
-    // Offline demo fallback — no backend session, AI calls will be skipped
     rvm.setMachine(machine)
     rvm.setSession({
-      session_code:  'DEMO-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
-      user_name:     auth.user?.name,
+      session_code:   'DEMO-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
+      user_name:      auth.user?.name,
       current_points: auth.user?.total_points || 0,
-      start_points:  auth.user?.total_points || 0,
-      points_earned: 0,
-      total_items:   0,
-      machine:       machine,
+      start_points:   auth.user?.total_points || 0,
+      points_earned:  0,
+      total_items:    0,
+      machine:        machine,
     })
     rvm.setStep('bin_check')
     router.push('/session')
@@ -191,10 +346,8 @@ async function connectDemo(machine) {
 }
 
 onMounted(async () => {
-  // Auto-fill token from QR scan URL (e.g. /#/scan?token=xxx&machine=RVM-001)
   if (route.query.token) {
     token.value = route.query.token
-    // Auto-connect immediately if token present in URL
     await handleScan()
   }
 
@@ -210,6 +363,10 @@ onMounted(async () => {
     loadingMachines.value = false
   }
 })
+
+onUnmounted(() => {
+  stopCamera()
+})
 </script>
 
 <style scoped>
@@ -221,28 +378,39 @@ onMounted(async () => {
 .scan-body { flex: 1; padding: 24px 16px; }
 .manual-section { max-width: 400px; margin: 0 auto; }
 
-/* QR Visual */
-.qr-visual { display: flex; justify-content: center; margin-bottom: 20px; }
+/* Camera section */
+.camera-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; }
+
 .qr-frame {
-  width: 160px; height: 160px;
+  width: 240px; height: 240px;
   position: relative;
   display: flex; align-items: center; justify-content: center;
   background: var(--bg-card);
-  border-radius: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: width 0.3s, height 0.3s;
 }
+.qr-frame.camera-active {
+  width: 100%;
+  max-width: 380px;
+  height: 320px;
+}
+
 .corner {
-  position: absolute;
-  width: 20px; height: 20px;
+  position: absolute; z-index: 10;
+  width: 24px; height: 24px;
   border-color: var(--accent-blue);
   border-style: solid;
   border-width: 0;
+  pointer-events: none;
 }
 .corner.tl { top: 8px; left: 8px; border-top-width: 3px; border-left-width: 3px; }
 .corner.tr { top: 8px; right: 8px; border-top-width: 3px; border-right-width: 3px; }
 .corner.bl { bottom: 8px; left: 8px; border-bottom-width: 3px; border-left-width: 3px; }
 .corner.br { bottom: 8px; right: 8px; border-bottom-width: 3px; border-right-width: 3px; }
+
 .scan-line {
-  position: absolute;
+  position: absolute; z-index: 10;
   left: 12px; right: 12px;
   height: 2px;
   background: var(--accent-blue);
@@ -254,6 +422,56 @@ onMounted(async () => {
   0%, 100% { top: 20px; }
   50%       { top: calc(100% - 20px); }
 }
+
+.camera-feed {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.hidden-canvas { display: none; }
+
+.detected-flash {
+  position: absolute; inset: 0;
+  background: rgba(34, 197, 94, 0.35);
+  border-radius: 12px;
+  animation: flash 0.6s ease-out forwards;
+  z-index: 20;
+}
+@keyframes flash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.camera-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+  margin: 8px 0 4px;
+}
+.camera-status.error { color: var(--accent-red); }
+
+.pulse-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent-green);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
+.camera-btn {
+  margin-top: 10px; padding: 10px 28px;
+  background: transparent;
+  border: 1.5px solid var(--accent-blue);
+  border-radius: var(--radius);
+  color: var(--accent-blue);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.camera-btn:hover { background: var(--accent-blue); color: white; }
+.camera-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.insecure-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; }
 
 .scan-hint { text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; }
 .token-input-wrap { margin-bottom: 12px; }

@@ -33,7 +33,7 @@
         <div class="corner br"></div>
       </div>
 
-      <div class="qr-url" v-if="scanUrl">{{ scanUrl }}</div>
+      <div class="qr-url" v-if="currentToken">Token: {{ currentToken }}</div>
 
       <div class="qr-steps">
         <div class="step"><span class="step-num">1</span> Open this URL on your phone</div>
