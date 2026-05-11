@@ -42,6 +42,7 @@
               <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')" required minlength="6" />
               <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁' }}</button>
             </div>
+            <span class="field-hint">{{ $t('auth.passwordHint') }}</span>
           </div>
 
           <div class="form-group">
@@ -90,11 +91,12 @@
 
 <script setup>
 import { ref, computed, inject } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 
 const router      = useRouter()
+const route       = useRoute()
 const auth        = useAuthStore()
 const theme       = inject('theme')
 const toggleTheme = inject('toggleTheme')
@@ -170,7 +172,7 @@ async function handleRegister() {
         showOtp.value  = true
         success.value  = 'Account created! Please verify your WhatsApp.'
       } else {
-        router.push('/dashboard')
+        router.push(route.query.redirect || '/dashboard')
       }
     } else {
       error.value = res.message || 'Registration failed.'
@@ -197,7 +199,7 @@ async function handleVerifyOtp() {
   try {
     const res = await auth.verifyOtp(form.value.phone, otpCode.value)
     if (res.success) {
-      router.push('/dashboard')
+      router.push(route.query.redirect || '/dashboard')
     } else {
       error.value = res.message
     }
@@ -217,6 +219,8 @@ async function handleVerifyOtp() {
   justify-content: center;
   background: var(--bg-primary);
   padding: 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 .auth-card {
   width: 100%;
@@ -225,6 +229,7 @@ async function handleVerifyOtp() {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow);
+  box-sizing: border-box;
 }
 .auth-header {
   background: var(--grad-header);
@@ -237,7 +242,7 @@ async function handleVerifyOtp() {
 .ctrl-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 16px; cursor: pointer; font-size: 12px; }
 .auth-header h1 { color: white; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
 .auth-header p  { color: rgba(255,255,255,0.85); font-size: 14px; }
-.auth-body { padding: 24px 20px; }
+.auth-body { padding: 24px 20px; box-sizing: border-box; }
 .google-btn {
   width: 100%; padding: 12px; background: var(--bg-card);
   border: 1px solid var(--border); border-radius: var(--radius);
@@ -255,6 +260,7 @@ async function handleVerifyOtp() {
   width: 100%; padding: 11px 14px; background: var(--bg-card);
   border: 1px solid var(--border); border-radius: 8px;
   color: var(--text-primary); font-size: 15px; outline: none; transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 .form-group input:focus { border-color: var(--accent-blue); }
 .password-wrap { position: relative; }
@@ -269,6 +275,7 @@ async function handleVerifyOtp() {
 .strength-label.weak   { color: var(--accent-red); }
 .strength-label.medium { color: var(--accent-yellow); }
 .strength-label.strong { color: var(--accent-green); }
+.field-hint { display: block; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 .error-msg   { background: rgba(239,68,68,0.1); color: var(--accent-red); padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; border: 1px solid rgba(239,68,68,0.2); }
 .success-msg { background: rgba(34,197,94,0.1); color: var(--accent-green); padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; border: 1px solid rgba(34,197,94,0.2); }
 .submit-btn {

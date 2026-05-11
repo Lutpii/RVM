@@ -88,7 +88,7 @@
         <!-- Register link -->
         <p class="switch-link">
           {{ $t('auth.noAccount') }}
-          <RouterLink to="/register">{{ $t('auth.registerBtn') }}</RouterLink>
+          <RouterLink :to="{ name: 'register', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">{{ $t('auth.registerBtn') }}</RouterLink>
         </p>
       </div>
     </div>
