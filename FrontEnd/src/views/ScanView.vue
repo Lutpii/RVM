@@ -74,7 +74,7 @@
 
         <div class="divider-text">— OR ENTER MANUALLY —</div>
 
-        <p class="scan-hint">Enter the session token shown on the machine screen:</p>
+        <!-- <p class="scan-hint">Enter the session token shown on the machine screen:</p> -->
 
         <div class="token-input-wrap">
           <input
@@ -94,9 +94,9 @@
           {{ loading ? 'Connecting...' : '🔗 Connect to Machine' }}
         </button>
 
+        <!-- Machine list shortcut
         <div class="divider-text">— OR —</div>
 
-        <!-- Machine list shortcut -->
         <p class="shortcut-label">Select a machine directly (demo mode):</p>
         <div v-if="loadingMachines" class="loading-row"><div class="spinner-sm"></div> Loading machines...</div>
         <div v-else class="machine-shortcuts">
@@ -114,7 +114,7 @@
             </div>
             <span>→</span>
           </button>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
