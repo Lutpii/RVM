@@ -267,7 +267,7 @@ async function handleScan() {
   try {
     const res = await api.post('/qr/scan', { token: token.value.trim() })
     if (res.data.success) {
-      success.value = 'Connected! Starting session...'
+      success.value = 'Connected! Returning to dashboard...'
       rvm.setMachine(res.data.machine)
 
       try {
@@ -276,24 +276,12 @@ async function handleScan() {
           qr_token:   token.value.trim(),
         })
         if (sessionRes.data.success) {
-          rvm.setSession(sessionRes.data.session)
-          rvm.setStep('bin_check')
-          setTimeout(() => router.push('/session'), 800)
+          setTimeout(() => router.push('/dashboard'), 800)
         }
       } catch (sessionErr) {
         const errData = sessionErr.response?.data
         if (errData?.session_code) {
-          try {
-            const showRes = await api.get(`/sessions/${errData.session_code}`)
-            if (showRes.data.success) {
-              rvm.setSession(showRes.data.session)
-              rvm.setMachine(showRes.data.session.machine || res.data.machine)
-              rvm.setStep('bin_check')
-              setTimeout(() => router.push('/session'), 800)
-              return
-            }
-          } catch { /* fall through */ }
-          setTimeout(() => router.push('/session'), 800)
+          setTimeout(() => router.push('/dashboard'), 800)
           return
         }
         success.value = ''
