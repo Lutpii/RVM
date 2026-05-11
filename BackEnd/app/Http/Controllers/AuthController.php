@@ -228,6 +228,7 @@ class AuthController extends Controller
             'total_points' => $user->total_points,
             'role'         => $user->role,
             'is_verified'  => $user->is_verified,
+            'created_at'   => $user->created_at,
         ];
     }
 }

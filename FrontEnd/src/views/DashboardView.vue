@@ -2,17 +2,28 @@
   <div class="dashboard-page">
     <!-- Top nav -->
     <div class="top-nav">
-      <div class="nav-left">
+      <RouterLink to="/settings" class="nav-left nav-left-link">
         <div class="avatar" v-if="auth.user">{{ auth.user.name?.charAt(0)?.toUpperCase() }}</div>
         <div class="user-info">
           <span class="user-name">{{ auth.user?.name }}</span>
           <span class="user-role">{{ auth.user?.role === 'admin' ? '⚙️ Admin' : '♻️ Recycler' }}</span>
         </div>
-      </div>
+      </RouterLink>
       <div class="nav-right">
         <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
         <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
-        <RouterLink v-if="auth.isAdmin" to="/admin" class="admin-link">⚙️</RouterLink>
+        <RouterLink to="/settings" class="icon-link" :title="$t('nav.settings')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </RouterLink>
+        <RouterLink v-if="auth.isAdmin" to="/admin" class="icon-link" :title="$t('nav.admin')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </RouterLink>
         <button class="logout-btn" @click="handleLogout">{{ $t('nav.logout') }}</button>
       </div>
     </div>
@@ -209,6 +220,8 @@ onMounted(async () => {
   position: sticky; top: 0; z-index: 10;
 }
 .nav-left { display: flex; align-items: center; gap: 10px; }
+.nav-left-link { text-decoration: none; border-radius: 8px; padding: 2px 4px; transition: background 0.2s; }
+.nav-left-link:hover { background: var(--bg-hover); }
 .avatar {
   width: 38px; height: 38px; border-radius: 50%;
   background: var(--grad-header); color: white;
@@ -221,6 +234,8 @@ onMounted(async () => {
 .nav-right { display: flex; align-items: center; gap: 8px; }
 .ctrl-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 5px 10px; border-radius: 16px; cursor: pointer; font-size: 12px; }
 .admin-link { color: var(--text-secondary); text-decoration: none; font-size: 18px; }
+.icon-link { color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; }
+.icon-link:hover { color: var(--text-primary); }
 .logout-btn { background: none; border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
 .logout-btn:hover { background: var(--accent-red); color: white; border-color: var(--accent-red); }
 

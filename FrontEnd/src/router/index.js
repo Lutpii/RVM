@@ -10,6 +10,7 @@ import ScanView           from '@/views/ScanView.vue'
 import RvmSessionView     from '@/views/RvmSessionView.vue'
 import SessionSummaryView from '@/views/SessionSummaryView.vue'
 import AdminView          from '@/views/AdminView.vue'
+import UserSettingsView   from '@/views/UserSettingsView.vue'
 import NotFoundView       from '@/views/NotFoundView.vue'
 import KioskLandingView      from '@/views/KioskLandingView.vue'
 import KioskQrView           from '@/views/KioskQrView.vue'
@@ -90,6 +91,12 @@ const routes = [
     name: 'session-summary',
     component: SessionSummaryView,
     meta: { title: 'Session Summary - RVM', requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: UserSettingsView,
+    meta: { title: 'Settings - RVM', requiresAuth: true },
   },
   {
     path: '/admin',
