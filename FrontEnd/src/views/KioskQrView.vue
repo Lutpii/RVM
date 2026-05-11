@@ -5,6 +5,7 @@
     <!-- Header -->
     <div class="qr-header">
       <button class="back-btn" @click="$router.push(`/kiosk/${machineCode}`)">← Back</button>
+      <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
       <span class="machine-label">{{ machineCode }}</span>
     </div>
 
@@ -324,6 +325,14 @@ onBeforeUnmount(() => {
   color: rgba(255,255,255,0.4);
   font-size: 13px;
   font-family: monospace;
+}
+
+.dsme-logo {
+  height: 28px;
+  width: auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .qr-content {

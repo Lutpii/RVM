@@ -21,6 +21,7 @@
     </div>
 
     <div class="kiosk-footer">
+      <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
       <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
     </div>
   </div>
@@ -166,7 +167,17 @@ function goToQr() {
 .kiosk-footer {
   position: absolute;
   bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   color: rgba(255,255,255,0.2);
   font-size: 13px;
+}
+
+.dsme-logo {
+  height: 32px;
+  width: auto;
+  opacity: 0.55;
 }
 </style>
