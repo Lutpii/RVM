@@ -78,6 +78,9 @@
           <button class="submit-btn whatsapp-btn" @click="handleVerifyOtp" :disabled="loading">
             {{ $t('auth.verifyOtp') }}
           </button>
+          <button type="button" class="resend-btn" @click="handleResendOtp" :disabled="loading">
+            Resend OTP
+          </button>
         </div>
 
         <p class="switch-link">
@@ -90,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject, onMounted, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
@@ -109,6 +112,18 @@ const success = ref('')
 const showPwd = ref(false)
 const showOtp = ref(false)
 const otpCode = ref('')
+
+// Draft persistence so an accidental refresh doesn't lose what the user typed.
+// Password is intentionally excluded — never park plaintext passwords in browser storage.
+const DRAFT_KEY = 'rvm_register_draft'
+
+function clearDraft() {
+  sessionStorage.removeItem(DRAFT_KEY)
+}
+
+watch(() => [form.value.name, form.value.email, form.value.phone], ([name, email, phone]) => {
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ name, email, phone }))
+})
 
 function toggleLang() {
   locale.value = locale.value === 'en' ? 'my' : 'en'
@@ -172,7 +187,11 @@ async function handleRegister() {
         showOtp.value  = true
         success.value  = 'Account created! Please verify your WhatsApp.'
       } else {
-        router.push(route.query.redirect || '/dashboard')
+        clearDraft()
+        success.value = 'Account created! Redirecting to dashboard...'
+        setTimeout(() => {
+          router.push(route.query.redirect || '/dashboard')
+        }, 1200)
       }
     } else {
       error.value = res.message || 'Registration failed.'
@@ -199,6 +218,7 @@ async function handleVerifyOtp() {
   try {
     const res = await auth.verifyOtp(form.value.phone, otpCode.value)
     if (res.success) {
+      clearDraft()
       router.push(route.query.redirect || '/dashboard')
     } else {
       error.value = res.message
@@ -209,6 +229,47 @@ async function handleVerifyOtp() {
     loading.value = false
   }
 }
+
+async function handleResendOtp() {
+  loading.value = true
+  error.value   = ''
+  success.value = ''
+  try {
+    const res = await auth.sendOtp(form.value.phone)
+    if (res.success) {
+      success.value = 'A new OTP has been sent to your WhatsApp.'
+    } else {
+      error.value = res.message || 'Failed to resend OTP.'
+    }
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Failed to resend OTP.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  // Restore whatever was typed before an accidental refresh (name/email/phone only).
+  const draftRaw = sessionStorage.getItem(DRAFT_KEY)
+  if (draftRaw) {
+    try {
+      const draft = JSON.parse(draftRaw)
+      form.value.name  = draft.name  || form.value.name
+      form.value.email = draft.email || form.value.email
+      form.value.phone = draft.phone || form.value.phone
+    } catch { /* ignore corrupt draft */ }
+  }
+
+  // Resume the "waiting for OTP" state after an accidental refresh — the account
+  // (and auth token) already exists at this point, only phone verification is pending.
+  if (auth.isLoggedIn && auth.user?.phone && !auth.user?.is_verified) {
+    form.value.name  = auth.user.name  || form.value.name
+    form.value.email = auth.user.email || form.value.email
+    form.value.phone = auth.user.phone
+    showOtp.value = true
+    success.value = 'Account created! Please verify your WhatsApp.'
+  }
+})
 </script>
 
 <style scoped>
@@ -285,6 +346,13 @@ async function handleVerifyOtp() {
 }
 .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .whatsapp-btn { background: #25D366; margin-top: 8px; }
+.resend-btn {
+  width: 100%; padding: 10px; margin-top: 8px;
+  background: transparent; border: none;
+  color: var(--accent-blue); font-size: 13px; font-weight: 500;
+  cursor: pointer; text-decoration: underline;
+}
+.resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .otp-section { margin-top: 16px; }
 .otp-info { color: var(--accent-green); font-size: 13px; margin-bottom: 12px; text-align: center; }
 .otp-input { text-align: center !important; font-size: 24px !important; letter-spacing: 8px; font-weight: 700; }
