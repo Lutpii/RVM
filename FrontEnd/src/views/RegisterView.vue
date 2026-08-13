@@ -190,7 +190,7 @@ async function handleRegister() {
         clearDraft()
         success.value = 'Account created! Redirecting to dashboard...'
         setTimeout(() => {
-          router.push(route.query.redirect || '/dashboard')
+          router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
         }, 1200)
       }
     } else {
@@ -219,7 +219,7 @@ async function handleVerifyOtp() {
     const res = await auth.verifyOtp(form.value.phone, otpCode.value)
     if (res.success) {
       clearDraft()
-      router.push(route.query.redirect || '/dashboard')
+      router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
     } else {
       error.value = res.message
     }

@@ -15,6 +15,7 @@ import NotFoundView       from '@/views/NotFoundView.vue'
 import KioskLandingView      from '@/views/KioskLandingView.vue'
 import KioskQrView           from '@/views/KioskQrView.vue'
 import GoogleCallbackView    from '@/views/GoogleCallbackView.vue'
+import WelcomeView           from '@/views/WelcomeView.vue'
 
 const routes = [
   // ── Kiosk routes (RVM machine side — no auth required) ──────────────────
@@ -61,6 +62,12 @@ const routes = [
     name: 'google-callback',
     component: GoogleCallbackView,
     meta: { title: 'Signing in...' },
+  },
+  {
+    path: '/welcome',
+    name: 'welcome',
+    component: WelcomeView,
+    meta: { title: 'Welcome - RVM', requiresAuth: true },
   },
   {
     path: '/register',

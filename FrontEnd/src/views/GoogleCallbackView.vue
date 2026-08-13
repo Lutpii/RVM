@@ -37,7 +37,7 @@ onMounted(() => {
 
     const redirect = sessionStorage.getItem('rvm_post_login_redirect')
     sessionStorage.removeItem('rvm_post_login_redirect')
-    router.replace(redirect || '/dashboard')
+    router.replace({ path: '/welcome', query: { redirect: redirect || '/dashboard' } })
   } catch {
     error.value = 'Google sign-in failed. Please try again.'
   }

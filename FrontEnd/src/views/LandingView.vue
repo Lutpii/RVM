@@ -22,15 +22,8 @@
     <!-- Main content -->
     <div class="rvm-body">
       <div class="landing-content">
-        <!-- Recycle animation -->
-        <div class="recycle-icon">
-          <svg viewBox="0 0 100 100" class="spin-slow">
-            <path d="M50 10 L65 35 L50 30 L35 35 Z" fill="#22c55e"/>
-            <path d="M80 60 L55 60 L60 45 L75 65 Z" fill="#22c55e"/>
-            <path d="M20 60 L45 60 L40 45 L25 65 Z" fill="#22c55e"/>
-            <circle cx="50" cy="50" r="8" fill="#22c55e"/>
-          </svg>
-        </div>
+        <!-- Recycle icon -->
+        <div class="recycle-icon">♻️</div>
 
         <h2 class="welcome-title">{{ $t('landing.welcome') }}</h2>
         <p class="welcome-sub">{{ $t('landing.subtitle') }}</p>
@@ -175,23 +168,15 @@ function goToScan() {
 }
 
 .recycle-icon {
-  width: 80px;
-  height: 80px;
+  font-size: 64px;
   margin: 0 auto 20px;
+  filter: drop-shadow(0 0 24px rgba(34,197,94,0.5));
+  animation: float 4s ease-in-out infinite;
 }
 
-.recycle-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.spin-slow {
-  animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 
 .welcome-title {

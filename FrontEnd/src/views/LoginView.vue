@@ -126,7 +126,7 @@ async function handleEmailLogin() {
   try {
     const res = await auth.login({ email: form.value.email, password: form.value.password })
     if (res.success) {
-      router.push(route.query.redirect || '/dashboard')
+      router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
     } else {
       error.value = res.message || 'Login failed.'
     }
@@ -164,7 +164,7 @@ async function handleVerifyOtp() {
   error.value = ''
   try {
     const res = await auth.verifyOtp(form.value.phone, form.value.otp)
-    if (res.success) { router.push(route.query.redirect || '/dashboard') }
+    if (res.success) { router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } }) }
     else { error.value = res.message }
   } catch (e) {
     error.value = e.response?.data?.message || 'Invalid OTP.'
