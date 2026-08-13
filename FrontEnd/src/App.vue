@@ -7,12 +7,27 @@
 <script setup>
 import { ref, provide, onMounted, watch } from 'vue'
 import { RouterView } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
+import api from '@/services/api'
 
 const theme = ref(localStorage.getItem('rvm_theme') || 'dark')
+const auth  = useAuthStore()
 
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
   localStorage.setItem('rvm_theme', theme.value)
+
+  // Persist to the account (not just this browser) so it can follow the
+  // user anywhere theme is applied from their identity, e.g. the RVM kiosk.
+  if (auth.isLoggedIn) {
+    api.put('/user/profile', { theme_preference: theme.value }).then((res) => {
+      if (res.data.success && auth.user) {
+        const updated = { ...auth.user, theme_preference: theme.value }
+        auth.user = updated
+        localStorage.setItem('rvm_user', JSON.stringify(updated))
+      }
+    }).catch(() => { /* local toggle already applied; not critical if this sync fails */ })
+  }
 }
 
 provide('theme', theme)

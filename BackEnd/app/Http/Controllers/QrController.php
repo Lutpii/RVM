@@ -118,11 +118,12 @@ class QrController extends Controller
         }
 
         return response()->json([
-            'success'      => true,
-            'status'       => $qrSession->status,
-            'user_name'    => $qrSession->scannedUser?->name,
-            'kiosk_token'  => $qrSession->kiosk_token,
-            'session'      => $sessionData,
+            'success'          => true,
+            'status'           => $qrSession->status,
+            'user_name'        => $qrSession->scannedUser?->name,
+            'theme_preference' => $qrSession->scannedUser?->theme_preference,
+            'kiosk_token'      => $qrSession->kiosk_token,
+            'session'          => $sessionData,
         ]);
     }
 

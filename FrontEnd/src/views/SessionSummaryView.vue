@@ -137,6 +137,8 @@ async function goHome() {
   rvm.resetSession()
   if (isKiosk && machineCode) {
     await auth.logout()
+    // Reset the kiosk display to its own default look for the next customer.
+    document.documentElement.setAttribute('data-theme', 'dark')
     router.push(`/kiosk/${machineCode}`)
   } else {
     await auth.logout()

@@ -145,6 +145,12 @@ function startPoll() {
         clearIntervals()
         isActive = false
 
+        // Apply the scanned user's theme for the rest of this kiosk session.
+        // Landing/QR screens stay dark regardless (they don't use theme variables).
+        if (res.data.theme_preference) {
+          document.documentElement.setAttribute('data-theme', res.data.theme_preference)
+        }
+
         if (res.data.kiosk_token) {
           // Authenticated kiosk session — real user, real API calls
           setKioskToken(res.data.kiosk_token)
@@ -235,6 +241,9 @@ function startAsGuest() {
 
 async function startAuthenticatedSession() {
   rvm.isGuest = false
+  if (auth.user?.theme_preference) {
+    document.documentElement.setAttribute('data-theme', auth.user.theme_preference)
+  }
   try {
     const res = await api.get('/machines')
     const machine = (res.data.machines || []).find(m => m.machine_code === machineCode)
