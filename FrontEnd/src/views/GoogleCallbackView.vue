@@ -34,7 +34,10 @@ onMounted(() => {
   try {
     const user = JSON.parse(decodeURIComponent(userRaw))
     auth.setAuth(user, token)
-    router.replace('/dashboard')
+
+    const redirect = sessionStorage.getItem('rvm_post_login_redirect')
+    sessionStorage.removeItem('rvm_post_login_redirect')
+    router.replace(redirect || '/dashboard')
   } catch {
     error.value = 'Google sign-in failed. Please try again.'
   }

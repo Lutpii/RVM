@@ -138,6 +138,9 @@ async function handleEmailLogin() {
 }
 
 async function handleGoogle() {
+  if (route.query.redirect) {
+    sessionStorage.setItem('rvm_post_login_redirect', route.query.redirect)
+  }
   try { await auth.loginWithGoogle() } catch { }
 }
 
