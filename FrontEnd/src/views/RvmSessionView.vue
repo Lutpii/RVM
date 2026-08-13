@@ -184,6 +184,26 @@
           </div>
         </div>
 
+        <!-- UNKNOWN step (AI couldn't recognize the material) -->
+        <div v-else-if="rvm.currentStep === 'item_unknown'" key="item_unknown" class="step-content centered">
+          <div class="return-anim">
+            <span class="return-item">❓</span>
+            <div class="return-slot"></div>
+          </div>
+          <h2 class="step-status red">Item Not Recognized</h2>
+          <div v-if="annotatedImageDataUrl" class="bbox-preview">
+            <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
+          </div>
+          <div class="result-box">
+            <p>{{ $t('session.weight') }}: 0g</p>
+            <p>{{ $t('session.pointsEarned') }}: +0</p>
+          </div>
+          <div class="action-buttons">
+            <button class="end-btn" @click="confirmEndSession">⬛ {{ $t('session.endSession') }}</button>
+            <button class="recycle-btn" @click="rvm.resetTransaction()">🔄 Retry Another Item</button>
+          </div>
+        </div>
+
         <!-- REJECTED step -->
         <div v-else-if="rvm.currentStep === 'rejected'" key="rejected" class="step-content centered">
           <div class="result-icon invalid pulse-red">✕</div>
@@ -369,7 +389,7 @@ const currentStepLabel = computed(() => {
     selection: 'Selection', bin_check: 'Bin Check', lid: 'Lid Open',
     insert: 'Insert', conveyor: 'Conveyor', camera: 'Camera',
     classify: 'Classify', validate_ok: 'Weight', validate_fail: 'Validate',
-    weigh: 'Weight', complete: 'Complete', rejected: 'Rejected',
+    weigh: 'Weight', complete: 'Complete', rejected: 'Rejected', item_unknown: 'Not Recognized',
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -472,8 +492,8 @@ async function simulateInsert() {
     })
     aiDetected.value   = res.ai_detected || rvm.selectedMaterial || 'plastic'
     aiConfidence.value = res.confidence || 0
-    // Always valid — material is determined by AI, no pre-selection to mismatch against
-    isValid = true
+    // Valid unless the AI couldn't recognize the material at all
+    isValid = aiDetected.value !== 'unknown'
     rvm.setSelectedMaterial(aiDetected.value)
     if (capturedImageDataUrl.value && res.all_predictions?.length) {
       annotatedImageDataUrl.value = await drawBoundingBoxes(capturedImageDataUrl.value, res.all_predictions)
@@ -482,6 +502,15 @@ async function simulateInsert() {
     aiDetected.value = rvm.selectedMaterial || 'plastic'
     rvm.setSelectedMaterial(aiDetected.value)
     isValid = true
+  }
+
+  if (aiDetected.value === 'unknown') {
+    // Not the AI's fault vs. the user's — no weight, no points, no deduction.
+    itemWeight.value = 0
+    itemPoints.value = 0
+    rvm.setStep('item_unknown')
+    rvm.recordLocalTransaction({ material: 'unknown', weight: 0, points: 0, isValid: false, deducted: 0 })
+    return
   }
 
   if (isValid) {
@@ -923,6 +952,35 @@ onMounted(() => {
 }
 .result-icon.valid   { background: #22c55e; color: white; }
 .result-icon.invalid { background: #ef4444; color: white; }
+
+/* Item being returned to the user (unrecognized item) */
+.return-anim {
+  position: relative;
+  width: 100px;
+  height: 90px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.return-slot {
+  width: 70px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+}
+.return-item {
+  position: absolute;
+  bottom: 8px;
+  font-size: 40px;
+  animation: returnItemDrop 1.8s ease-in-out infinite;
+}
+@keyframes returnItemDrop {
+  0%   { transform: translateY(-30px); opacity: 0; }
+  25%  { transform: translateY(0);     opacity: 1; }
+  70%  { transform: translateY(0);     opacity: 1; }
+  100% { transform: translateY(24px);  opacity: 0; }
+}
 
 .success-pulse { animation: success-pulse 2s ease-in-out 3; }
 @keyframes success-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow:0 0 0 20px transparent; } }

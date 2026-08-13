@@ -158,8 +158,12 @@ class TransactionController extends Controller
         $detected = $aiResult['material'] ?? $selected ?? 'plastic';
         $confidence = $aiResult['confidence'] ?? 0;
 
-        // When no material was pre-selected, AI result is always valid
-        $isValid = $selected === null ? true : ($detected === $selected);
+        // Unknown detections are never valid; otherwise, valid unless it mismatches a pre-selection
+        if ($detected === 'unknown') {
+            $isValid = false;
+        } else {
+            $isValid = $selected === null ? true : ($detected === $selected);
+        }
 
         return response()->json([
             'success'           => true,
@@ -188,11 +192,11 @@ class TransactionController extends Controller
 
         // Use AI detected type as material (since no pre-selection in new flow)
         $material    = $request->ai_detected_type ?? $request->material_selected ?? 'plastic';
-        // Simulate weight from sensor
+        // Simulate weight from sensor — unknown material gets no weight estimate
         $weightGrams = match($material) {
             'aluminum', 'plastic' => rand(9, 49),
-            'glass'               => rand(50, 500),
-            'paper'               => rand(50, 500),
+            'glass', 'paper'      => rand(50, 500),
+            'unknown'             => 0,
             default               => rand(9, 49),
         };
         $pointsEarned  = self::calcPoints($material, $weightGrams);
