@@ -5,13 +5,13 @@ Requires=pigpiod.service
 
 [Service]
 Type=simple
-User=pi
-Group=pi
+User=adi
+Group=adi
 # Needs the "gpio" and "video" supplementary groups on the User above
-# (sudo usermod -aG gpio,video pi) for servo + camera access.
-WorkingDirectory=/home/pi/RVM/BackEnd/ai_service
+# (sudo usermod -aG gpio,video adi) for servo + camera access.
+WorkingDirectory=/home/adi/RVM/BackEnd/ai_service
 Environment="AI_API_KEY=rvm_ai_secret_key_2024"
-ExecStart=/home/pi/RVM/BackEnd/ai_service/venv/bin/python app.py
+ExecStart=/home/adi/RVM/BackEnd/ai_service/venv/bin/python app.py
 Restart=always
 RestartSec=3
 

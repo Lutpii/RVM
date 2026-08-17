@@ -2,24 +2,17 @@
 
 Panduan ini mengasumsikan Raspberry Pi 4 kamu **sudah ada OS-nya dan bisa diakses lewat SSH**. Semua perintah di bawah dijalankan **di Pi** (lewat SSH), bukan di laptop.
 
-Ganti `pi` / `/home/pi/RVM` di seluruh contoh kalau username atau lokasi clone kamu beda. File-file config siap pakai ada di folder [`deploy/`](../deploy/) di root repo ini — panduan ini menjelaskan cara pakainya.
+Ditulis untuk konfigurasi yang sudah diverifikasi: user `adi`, home `/home/adi/RVM`, Raspberry Pi OS berbasis **Debian 13 "trixie"** (PHP default 8.4), kamera `ov5647` terdeteksi lewat `rpicam-hello`. Kalau environment kamu beda, ganti `adi` / `/home/adi/RVM` / versi PHP di seluruh contoh. File-file config siap pakai ada di folder [`deploy/`](../deploy/) di root repo ini.
 
 ---
 
-## 0. Prasyarat
+## 0. Prasyarat ✅ (sudah diverifikasi)
 
-```bash
-uname -m
-```
-Harus keluar **`aarch64`** (64-bit). Kalau keluar `armv7l` (32-bit), PyTorch/ultralytics tidak punya wheel resmi — kamu perlu flash ulang SD card pakai **Raspberry Pi OS (64-bit)** dulu sebelum lanjut.
+- `uname -m` → `aarch64` ✅ (64-bit, wajib untuk PyTorch/ultralytics)
+- `rpicam-hello --list-cameras` → kamera `ov5647` terdeteksi ✅
+- `VERSION_CODENAME=trixie` (Debian 13) — PHP default **8.4**, dipakai di seluruh panduan ini.
 
-Cek kamera sudah aktif:
-```bash
-libcamera-hello --list-cameras
-```
-Kalau kamera tidak terdeteksi, aktifkan dulu lewat `sudo raspi-config` → Interface Options → Camera, lalu reboot.
-
-Panduan ini juga mengasumsikan Pi jalan **Raspberry Pi OS Desktop** (bukan Lite) — dibutuhkan untuk mode kiosk (Chromium fullscreen) di langkah 8.
+Panduan ini juga mengasumsikan Pi jalan versi **Desktop** (bukan Lite) — dibutuhkan untuk mode kiosk (Chromium fullscreen) di langkah 8. Cek dengan `echo $XDG_SESSION_TYPE` (harus `x11` atau `wayland`, bukan kosong).
 
 ---
 
@@ -30,29 +23,40 @@ sudo apt update && sudo apt full-upgrade -y
 
 sudo apt install -y \
   nginx mariadb-server \
-  php8.2-fpm php8.2-mysql php8.2-mbstring php8.2-xml php8.2-curl php8.2-zip php8.2-bcmath \
+  php8.4-fpm php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath \
   composer \
   python3-venv python3-pip python3-picamera2 \
-  pigpio \
-  chromium-browser \
   git
 
-# Node.js 18+ (Raspberry Pi OS apt biasanya versi lama, pakai NodeSource)
+# Node.js 18+ (apt bawaan biasanya versi lama, pakai NodeSource)
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
-
-# pigpio daemon harus jalan permanen (dipakai servo lewat gpiozero)
-sudo systemctl enable --now pigpiod
 ```
 
-> Cek versi PHP yang ke-install (`php -v`) — kalau bukan 8.2, sesuaikan nama paket di atas dan socket path di [`deploy/nginx-rvm.conf`](../deploy/nginx-rvm.conf) & [`deploy/rvm-ai.service`](../deploy/rvm-ai.service).
+> **`pigpio` tidak ada di repo apt** di Debian/Raspberry Pi OS versi ini (project-nya sudah tidak dimaintain upstream) — install manual dari source (`git clone https://github.com/joan2937/pigpio`, `make`, `sudo make install`) kalau belum punya. Lalu daftarkan sebagai systemd service supaya jalan permanen & auto-start tiap boot:
+> ```bash
+> sudo pkill pigpiod   # matikan instance manual yang mungkin lagi jalan
+> sudo cp ~/RVM/deploy/pigpiod.service /etc/systemd/system/pigpiod.service
+> sudo systemctl daemon-reload
+> sudo systemctl enable --now pigpiod
+> systemctl status pigpiod   # pastikan "active (running)"
+> ```
+
+> **Chromium untuk mode kiosk** — nama paketnya beda-beda antar versi OS (`chromium` atau `chromium-browser`). Coba dulu:
+> ```bash
+> sudo apt install -y chromium
+> which chromium || which chromium-browser
+> ```
+> Kalau `chromium` tidak ada, pakai `chromium-browser`. Catat mana yang berhasil — dipakai lagi di langkah 8.
+
+Kalau ada nama paket `php8.4-*` yang gagal ("Unable to locate package"), jalankan `apt-cache search php-fpm` dan kirim hasilnya ke saya — berarti versi PHP di repo kamu beda dari dugaan, saya sesuaikan lagi.
 
 ---
 
 ## 2. Permission GPIO & kamera
 
 ```bash
-sudo usermod -aG gpio,video pi
+sudo usermod -aG gpio,video adi
 ```
 Logout/login ulang (atau reboot) supaya grup baru kepakai.
 
@@ -75,7 +79,9 @@ SQL
 mysql -u rvm_user -p rvm_db < database/rvm_db.sql
 ```
 
-`database/rvm_db.sql` sekarang adalah export segar dari database dev (bukan dump lama yang basi) — sudah termasuk skema terbaru (kolom `kiosk_token`, `ai_confidence`) **dan** tabel `migrations` itu sendiri, jadi `php artisan migrate` nanti tidak akan bentrok "table already exists" kalau dijalankan lagi.
+`database/rvm_db.sql` adalah export bersih (data user sudah dummy, token API dikosongkan) dari database dev — sudah termasuk skema terbaru (kolom `kiosk_token`, `ai_confidence`) **dan** tabel `migrations` itu sendiri, jadi `php artisan migrate` nanti tidak akan bentrok "table already exists" kalau dijalankan lagi.
+
+**Login demo setelah import**: semua akun pakai password `password` — admin di `admin@rvm.com`, user biasa di `user2@example.com` sampai `user14@example.com`.
 
 ---
 
@@ -93,14 +99,11 @@ php artisan storage:link
 # php artisan migrate   -- opsional, cuma buat jaga-jaga; harusnya no-op karena
 #                           semua migration sudah tercatat lewat import di atas
 
-sudo chown -R pi:www-data storage bootstrap/cache
+sudo chown -R adi:www-data storage bootstrap/cache
 sudo chmod -R 775 storage bootstrap/cache
 ```
 
-**Login**: karena database yang diimport adalah data dev asli (bukan seed generik), akun-akun yang sudah ada dari testing sebelumnya ikut terbawa — termasuk akun admin yang sudah kamu pakai selama ini. Kalau mau bikin akun admin baru, pakai cara yang sama seperti sebelumnya:
-```bash
-mysql -u rvm_user -p rvm_db -e "UPDATE users SET role='admin', is_verified=1 WHERE email='emailkamu@example.com';"
-```
+> Kalau `composer install` komplain soal versi PHP (platform requirement) — PHP 8.4 lebih baru dari yang biasa dites Laravel 10 — kirim error-nya ke saya, kemungkinan cuma perlu update 1-2 dependency lewat `composer update` yang aman, bukan masalah besar.
 
 ---
 
@@ -150,7 +153,7 @@ Hasil build ada di `FrontEnd/dist/` — tidak perlu ubah apa pun di kode-nya, `a
 
 ## 7. Nginx + HTTPS
 
-Generate sertifikat self-signed (untuk kiosk LAN internal — lihat catatan upgrade ke cert asli di langkah 9):
+Generate sertifikat self-signed (untuk kiosk LAN internal — lihat catatan upgrade ke cert asli di langkah 10):
 ```bash
 sudo mkdir -p /etc/ssl/rvm
 sudo openssl req -x509 -nodes -days 3650 \
@@ -169,8 +172,6 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-> Kalau path clone kamu bukan `/home/pi/RVM`, edit dulu path di [`deploy/nginx-rvm.conf`](../deploy/nginx-rvm.conf) & [`deploy/rvm-ai.service`](../deploy/rvm-ai.service) sebelum copy.
-
 ---
 
 ## 8. Mode kiosk (fullscreen di layar Pi)
@@ -179,9 +180,9 @@ sudo nginx -t && sudo systemctl reload nginx
 mkdir -p ~/.config/autostart
 cp ~/RVM/deploy/rvm-kiosk-autostart.desktop ~/.config/autostart/
 ```
-Ganti `RVM-001` di file itu dengan `machine_code` mesin fisik ini kalau berbeda.
+Ganti `RVM-001` di file itu dengan `machine_code` mesin fisik ini kalau berbeda. Kalau di Step 1 ternyata binary-nya `chromium` bukan `chromium-browser`, edit juga baris `Exec=` di file itu.
 
-Matikan screen blanking supaya layar kiosk tidak tidur — tambahkan ke `~/.config/lxsession/LXDE-pi/autostart`:
+Matikan screen blanking supaya layar kiosk tidak tidur — tambahkan ke `~/.config/lxsession/LXDE-pi/autostart` (buat file/folder-nya kalau belum ada):
 ```
 @xset s off
 @xset -dpms
@@ -198,7 +199,7 @@ sudo reboot
 
 Setelah nyala lagi:
 ```bash
-systemctl status nginx mariadb php8.2-fpm pigpiod rvm-ai
+systemctl status nginx mariadb php8.4-fpm pigpiod rvm-ai
 ```
 Semua harus `active (running)`.
 

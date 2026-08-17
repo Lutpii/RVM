@@ -1,0 +1,19 @@
+[Unit]
+Description=pigpio GPIO daemon (manually built from source — not an apt package on this OS)
+After=network.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/pigpio.pid
+ExecStart=/usr/local/bin/pigpiod
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+# Install (kill the manually-started instance first so systemd owns it):
+#   sudo pkill pigpiod
+#   sudo cp deploy/pigpiod.service /etc/systemd/system/pigpiod.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now pigpiod
+#   systemctl status pigpiod   # should show active (running)
