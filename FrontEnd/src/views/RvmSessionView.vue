@@ -98,7 +98,12 @@
           <!-- Live camera + countdown -->
           <template v-else-if="cameraMode === 'camera'">
             <div class="camera-container">
-              <video ref="videoRef" autoplay playsinline muted class="camera-video"></video>
+              <!-- The Pi's CSI camera has no browser-visible live feed (getUserMedia
+                   can't reach it) — show a placeholder instead of a blank video box. -->
+              <div v-if="isKioskRoute" class="camera-placeholder">
+                <span class="camera-placeholder-icon">📷</span>
+              </div>
+              <video v-else ref="videoRef" autoplay playsinline muted class="camera-video"></video>
               <canvas ref="canvasRef" style="display:none"></canvas>
               <div class="scan-overlay">
                 <div class="scan-corners"></div>
@@ -735,6 +740,19 @@ onMounted(() => {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.camera-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+.camera-placeholder-icon {
+  font-size: 64px;
+  opacity: 0.5;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 .scan-overlay {
   position: absolute;
