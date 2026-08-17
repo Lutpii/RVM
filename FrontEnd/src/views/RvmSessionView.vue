@@ -85,11 +85,13 @@
                 <span class="capture-icon">📷</span>
                 <span>{{ $t('session.useCamera') }}</span>
               </button>
+              <!-- Upload option disabled — kiosk only uses the real hardware camera.
               <label class="capture-btn">
                 <span class="capture-icon">📁</span>
                 <span>{{ $t('session.uploadImage') }}</span>
                 <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/*" @change="handleFileUpload" style="display:none" />
               </label>
+              -->
             </div>
           </template>
 
@@ -290,6 +292,23 @@ function stopCamera() {
 async function startCameraMode() {
   cameraMode.value = 'camera'
   cameraCountdown.value = 3
+
+  // The Pi's own CSI camera (Picamera2) isn't reachable via the browser's
+  // getUserMedia() — it's driven by the AI service's /capture endpoint instead
+  // (see BackEnd/ai_service/app.py). On a kiosk route, skip the browser camera
+  // entirely and let the backend grab the real hardware frame.
+  if (isKioskRoute.value) {
+    await delay(1040)
+    for (let i = 3; i >= 1; i--) {
+      cameraCountdown.value = i
+      await delay(1300)
+    }
+    cameraCountdown.value = 0
+    const path = await captureFromHardware()
+    if (cameraResolve) { cameraResolve(path); cameraResolve = null }
+    return
+  }
+
   await openCamera()
   await delay(1040)
   for (let i = 3; i >= 1; i--) {
@@ -300,6 +319,20 @@ async function startCameraMode() {
   const path = await captureFromCamera()
   stopCamera()
   if (cameraResolve) { cameraResolve(path); cameraResolve = null }
+}
+
+async function captureFromHardware() {
+  if (rvm.isGuest) return null
+  try {
+    const form = new FormData()
+    form.append('session_code', rvm.session?.session_code || '')
+    const res = await api.post('/transactions/capture-image', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data.image_path || null
+  } catch {
+    return null
+  }
 }
 
 async function captureFromCamera() {
