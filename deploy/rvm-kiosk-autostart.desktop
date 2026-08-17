@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Name=RVM Kiosk
+Comment=Auto-launch the RVM kiosk display in fullscreen Chromium on boot
+Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble --check-for-update-interval=31536000 https://localhost/#/kiosk/RVM-001
+X-GNOME-Autostart-enabled=true
+
+# Install (run as the desktop user that auto-logs-in on boot):
+#   mkdir -p ~/.config/autostart
+#   cp deploy/rvm-kiosk-autostart.desktop ~/.config/autostart/
+#
+# Also disable screen blanking so the kiosk display never sleeps — add to
+# ~/.config/lxsession/LXDE-pi/autostart (or equivalent for your desktop):
+#   @xset s off
+#   @xset -dpms
+#   @xset s noblank
+#
+# Replace RVM-001 with the actual machine_code for this physical unit.

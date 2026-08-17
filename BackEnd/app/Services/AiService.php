@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AiService
 {
@@ -57,6 +59,48 @@ class AiService
         } catch (\Exception $e) {
             Log::error("AI Service exception: " . $e->getMessage());
             return $this->mockClassify();
+        }
+    }
+
+    /**
+     * Trigger a real camera capture on the AI service (Raspberry Pi hardware).
+     * Returns the stored image path (on the "public" disk) or null if hardware
+     * capture isn't available — callers should fall back to mock/null.
+     */
+    public function capture(): ?string
+    {
+        try {
+            $response = Http::withHeaders([
+                'X-API-Key' => $this->apiKey,
+            ])->post($this->baseUrl . '/capture');
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $filename = 'captures/' . Str::random(20) . '.jpg';
+            Storage::disk('public')->put($filename, $response->body());
+
+            return $filename;
+        } catch (\Exception $e) {
+            Log::error("AI Service capture exception: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Trigger the sorting servo for a classified material. Fire-and-forget —
+     * failures are logged only, never thrown, so a missing/offline AI service
+     * can't break the transaction flow.
+     */
+    public function sort(string $material): void
+    {
+        try {
+            Http::withHeaders([
+                'X-API-Key' => $this->apiKey,
+            ])->post($this->baseUrl . '/sort', ['material' => $material]);
+        } catch (\Exception $e) {
+            Log::error("AI Service sort exception: " . $e->getMessage());
         }
     }
 

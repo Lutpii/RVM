@@ -124,11 +124,12 @@ class TransactionController extends Controller
         $session = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
 
-        // In real hardware: trigger camera capture
-        // For web prototype: accept uploaded image OR use placeholder
+        // Priority: explicit browser upload (dev/testing) -> real hardware camera -> null (AI service mocks).
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('captures', 'public');
+        } else {
+            $imagePath = $this->ai->capture();
         }
 
         return response()->json([
@@ -246,6 +247,9 @@ class TransactionController extends Controller
             'image_path'        => $request->image_path,
         ]);
 
+        // Drop the item into the physical bin that matches its detected material.
+        $this->ai->sort($materialUsed);
+
         // Update user points
         $user->increment('total_points', $request->points_earned);
 
@@ -313,6 +317,9 @@ class TransactionController extends Controller
             'points_deducted'   => self::DEDUCTION_INVALID,
             'image_path'        => $request->image_path,
         ]);
+
+        // Drop the rejected item into the reject bin.
+        $this->ai->sort('reject');
 
         // Deduct points
         $deduction = min($user->total_points, self::DEDUCTION_INVALID);

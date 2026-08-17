@@ -318,6 +318,14 @@ English (default) and Bahasa Indonesia — toggle with the `EN / ID` button on a
 
 ---
 
+## 🔌 Hardware Integration
+
+`BackEnd/ai_service/app.py` can drive real hardware on a Raspberry Pi — a Picamera2 camera (`POST /capture`) and two sorting servos (`POST /sort`), ported from the standalone test rig in `BackEnd/ai_service/test_yolo.py`. It falls back to software-only mode automatically when those libraries aren't available (e.g. on a dev laptop), so the rest of the app is unaffected either way.
+
+For a full production deployment to a Raspberry Pi 4 (Nginx, MariaDB, systemd services, kiosk-mode Chromium), see **[docs/DEPLOY_RASPBERRY_PI.md](docs/DEPLOY_RASPBERRY_PI.md)**.
+
+---
+
 ## 🩹 Troubleshooting
 
 | Symptom | Likely cause / fix |
