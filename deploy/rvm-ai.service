@@ -11,7 +11,10 @@ Group=adi
 # (sudo usermod -aG gpio,video adi) for servo + camera access.
 WorkingDirectory=/home/adi/RVM/BackEnd/ai_service
 Environment="AI_API_KEY=rvm_ai_secret_key_2024"
-ExecStart=/home/adi/RVM/BackEnd/ai_service/venv/bin/python app.py
+# Reuses the existing venv at /home/adi/RVM_test/venv (already has torch/ultralytics/
+# picamera2/opencv installed) instead of a fresh venv inside ai_service/ — avoids
+# re-downloading multiple GB of ML packages that don't fit on the SD card twice.
+ExecStart=/home/adi/RVM_test/venv/bin/python /home/adi/RVM/BackEnd/ai_service/app.py
 Restart=always
 RestartSec=3
 

@@ -23,7 +23,7 @@ sudo apt update && sudo apt full-upgrade -y
 
 sudo apt install -y \
   nginx mariadb-server \
-  php8.4-fpm php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath \
+  php8.4-fpm php8.4-mysql php8.4-mbstring php8.4-xml php8.4-curl php8.4-zip php8.4-bcmath php8.4-gd \
   composer \
   python3-venv python3-pip python3-picamera2 \
   git
@@ -109,12 +109,20 @@ sudo chmod -R 775 storage bootstrap/cache
 
 ## 5. AI service (kamera + YOLO + servo)
 
+`ultralytics`/`torch` itu paket besar (ratusan MB–GB) dan gampang bikin kartu SD kehabisan ruang — apalagi kalau `pip install torch` biasa ikut menarik paket CUDA NVIDIA yang sama sekali tidak berguna di Pi. Kalau kamu **sudah punya venv lain yang berhasil** (mis. dari eksperimen `test_yolo.py` sebelumnya) dengan `torch`/`ultralytics`/`picamera2`/`opencv` terpasang, **pakai venv itu langsung** — jangan buat venv baru di sini, cukup arahkan `rvm-ai.service` ke situ (lihat `ExecStart` di [`deploy/rvm-ai.service`](../deploy/rvm-ai.service), sesuaikan path-nya kalau beda).
+
+Cek dulu venv lama itu punya `flask` + `flask-cors` asli (bukan cuma `types-Flask-Cors`):
+```bash
+/path/ke/venv-lama/bin/python3 -c "import flask, flask_cors; print('OK')"
+```
+Kalau error, install ke venv itu langsung: `/path/ke/venv-lama/bin/pip install flask flask-cors`.
+
+**Kalau belum ada venv sama sekali**, baru buat baru — pakai CPU-only torch dari awal supaya tidak kena masalah CUDA/space:
 ```bash
 cd ~/RVM/BackEnd/ai_service
-
-# --system-site-packages WAJIB — supaya picamera2 (dari apt) ikut terbaca di venv
 python3 -m venv venv --system-site-packages
 source venv/bin/activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 pip install gpiozero
 deactivate
