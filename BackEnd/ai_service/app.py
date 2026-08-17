@@ -38,6 +38,21 @@ else:
     print(f"WARNING: Model not found at {MODEL_PATH}. Running in mock mode.")
 
 
+def normalize_material(raw_name: str) -> str:
+    """Map whatever class name the model was trained with (e.g. 'aluminium can',
+    'plastic bottle') to the fixed slug the rest of the app expects."""
+    name = (raw_name or '').lower()
+    if 'alumin' in name:
+        return 'aluminum'
+    if 'glass' in name:
+        return 'glass'
+    if 'plastic' in name:
+        return 'plastic'
+    if 'paper' in name:
+        return 'paper'
+    return 'unknown'
+
+
 def require_api_key(f):
     from functools import wraps
     @wraps(f)
@@ -239,9 +254,9 @@ def classify():
     best_box = max(results.boxes, key=lambda b: float(b.conf[0]))
     class_id = int(best_box.cls[0])
     confidence = float(best_box.conf[0])
-    material = CLASSES[class_id] if class_id < len(CLASSES) else 'unknown'
+    material = normalize_material(CLASSES[class_id]) if class_id < len(CLASSES) else 'unknown'
 
-    if confidence < 0.6:
+    if confidence < 0.6 or material == 'unknown':
         return jsonify({'material': 'unknown', 'confidence': round(confidence, 4), 'predictions': []})
 
     img_w, img_h = img.size
@@ -250,7 +265,7 @@ def classify():
         cid = int(box.cls[0])
         xyxy = box.xyxy[0].tolist()
         predictions.append({
-            'material': CLASSES[cid] if cid < len(CLASSES) else 'unknown',
+            'material': normalize_material(CLASSES[cid]) if cid < len(CLASSES) else 'unknown',
             'confidence': round(float(box.conf[0]), 4),
             'bbox': {
                 'x1': round(xyxy[0] / img_w, 4),
