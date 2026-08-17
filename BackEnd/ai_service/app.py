@@ -309,4 +309,9 @@ def classify():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # threaded=True is required — the MJPEG /stream endpoint holds a connection
+    # open continuously, and Flask's dev server only handles one request at a
+    # time by default, which would otherwise stall /capture, /classify, /sort
+    # for as long as a stream is active. camera_lock still serializes actual
+    # hardware access, so this is safe.
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
