@@ -98,9 +98,17 @@
           <!-- Live camera + countdown -->
           <template v-else-if="cameraMode === 'camera'">
             <div class="camera-container">
-              <!-- The Pi's CSI camera has no browser-visible live feed (getUserMedia
-                   can't reach it) — show a placeholder instead of a blank video box. -->
-              <div v-if="isKioskRoute" class="camera-placeholder">
+              <!-- The Pi's CSI camera can't reach the browser via getUserMedia, so the
+                   "live" preview here is an MJPEG stream from the AI service instead
+                   (see /ai-stream in nginx-rvm.conf -> app.py's /stream). Stopped once
+                   the countdown hits 0 so it isn't fighting /capture for the camera. -->
+              <img
+                v-if="isKioskRoute && cameraCountdown > 0"
+                :src="cameraStreamUrl"
+                class="camera-video"
+                alt="Live camera preview"
+              />
+              <div v-else-if="isKioskRoute" class="camera-placeholder">
                 <span class="camera-placeholder-icon">📷</span>
               </div>
               <video v-else ref="videoRef" autoplay playsinline muted class="camera-video"></video>
@@ -269,6 +277,7 @@ const videoRef              = ref(null)
 const canvasRef             = ref(null)
 const fileInputRef          = ref(null)
 const cameraCountdown       = ref(3)
+const cameraStreamUrl       = ref('')
 const cameraMode            = ref('choose') // 'choose' | 'camera' | 'upload'
 const capturedImageDataUrl  = ref(null)
 const annotatedImageDataUrl = ref(null)
@@ -303,6 +312,7 @@ async function startCameraMode() {
   // (see BackEnd/ai_service/app.py). On a kiosk route, skip the browser camera
   // entirely and let the backend grab the real hardware frame.
   if (isKioskRoute.value) {
+    cameraStreamUrl.value = '/ai-stream?t=' + Date.now()
     await delay(1040)
     for (let i = 3; i >= 1; i--) {
       cameraCountdown.value = i

@@ -3,7 +3,7 @@ import io
 import time
 import threading
 import pathlib
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
 from ultralytics import YOLO
 from PIL import Image
@@ -198,20 +198,46 @@ def health():
     })
 
 
+camera_lock = threading.Lock()
+
+
 @app.route('/capture', methods=['POST'])
 @require_api_key
 def capture():
     if not HARDWARE_AVAILABLE:
         return jsonify({'success': False, 'error': 'Camera not available on this device.'}), 503
 
-    frame = camera.capture_array()
+    with camera_lock:
+        frame = camera.capture_array()
     img = Image.fromarray(frame)
     buf = io.BytesIO()
     img.save(buf, format='JPEG')
     buf.seek(0)
 
-    from flask import send_file
     return send_file(buf, mimetype='image/jpeg', download_name='capture.jpg')
+
+
+def _generate_mjpeg():
+    while True:
+        with camera_lock:
+            if not HARDWARE_AVAILABLE:
+                break
+            frame = camera.capture_array()
+        img = Image.fromarray(frame)
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=70)
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buf.getvalue() + b'\r\n')
+        time.sleep(0.15)  # ~6-7 fps — plenty for a kiosk preview, light on CPU
+
+
+@app.route('/stream')
+def stream():
+    # No @require_api_key: this is loaded directly by an <img> tag, which can't
+    # send custom headers. Only reachable on the LAN (proxied through Nginx),
+    # and only ever shows a camera preview — no sensitive data.
+    if not HARDWARE_AVAILABLE:
+        return jsonify({'error': 'Camera not available on this device.'}), 503
+    return Response(_generate_mjpeg(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 @app.route('/sort', methods=['POST'])
