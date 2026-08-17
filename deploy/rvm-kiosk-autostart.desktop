@@ -2,7 +2,7 @@
 Type=Application
 Name=RVM Kiosk
 Comment=Auto-launch the RVM kiosk display in fullscreen Chromium on boot
-Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble --check-for-update-interval=31536000 https://localhost/#/kiosk/RVM-001
+Exec=chromium --kiosk --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble --check-for-update-interval=31536000 https://localhost/#/kiosk/RVM-001
 X-GNOME-Autostart-enabled=true
 
 # Install (run as the desktop user that auto-logs-in on boot):
