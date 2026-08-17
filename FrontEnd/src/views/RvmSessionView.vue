@@ -1090,4 +1090,31 @@ onMounted(() => {
   width: 100%;
   display: block;
 }
+
+/* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
+@media (max-height: 650px) {
+  .rvm-header { padding: 12px 16px 10px; }
+  .rvm-title { font-size: 18px; margin-bottom: 2px; }
+  .welcome-text { font-size: 12px; margin-bottom: 8px; }
+  .badge { padding: 6px 12px; }
+  .badge-value { font-size: 17px; }
+
+  .rvm-body { padding: 14px 20px; }
+  .step-content { min-height: 220px; }
+
+  .spinner-lg { width: 44px; height: 44px; margin-bottom: 12px; }
+  .lid-box { width: 76px; height: 76px; }
+  .box-3d { font-size: 48px; }
+  .conveyor-track { height: 54px; }
+  .ai-ring { width: 52px; height: 52px; margin-bottom: 12px; }
+  .result-icon { width: 60px; height: 60px; font-size: 26px; margin-bottom: 10px; }
+  .scale-icon { font-size: 44px; margin-bottom: 10px; }
+  .weight-value { font-size: 30px; }
+  .camera-container { max-width: 260px; }
+
+  .step-status { font-size: 17px; }
+  .result-box { padding: 10px 18px; margin: 8px 0; }
+
+  .rvm-footer { padding: 8px 16px; font-size: 12px; }
+}
 </style>

@@ -190,12 +190,11 @@ cp ~/RVM/deploy/rvm-kiosk-autostart.desktop ~/.config/autostart/
 ```
 Ganti `RVM-001` di file itu dengan `machine_code` mesin fisik ini kalau berbeda. Kalau di Step 1 ternyata binary-nya `chromium` bukan `chromium-browser`, edit juga baris `Exec=` di file itu.
 
-Matikan screen blanking supaya layar kiosk tidak tidur — tambahkan ke `~/.config/lxsession/LXDE-pi/autostart` (buat file/folder-nya kalau belum ada):
+Matikan screen blanking supaya layar kiosk tidak tidur. Raspberry Pi OS sejak Bookworm/trixie pakai **Wayland** (bukan X11/LXDE lagi), jadi `xset` tidak berlaku — pakai `raspi-config`:
+```bash
+sudo raspi-config
 ```
-@xset s off
-@xset -dpms
-@xset s noblank
-```
+Pilih **Display Options** → **Screen Blanking** → **No** → **Finish**.
 
 ---
 

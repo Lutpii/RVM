@@ -286,6 +286,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-y: auto;
 }
 
 /* Trophy */
@@ -535,5 +536,27 @@ onMounted(async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
+@media (max-height: 650px) {
+  .summary-header { padding: 12px 16px 10px; }
+  .summary-header h1 { font-size: 17px; }
+  .summary-header p { font-size: 12px; margin-bottom: 8px; }
+  .badge-value { font-size: 16px; }
+
+  .summary-body { padding: 14px 20px; }
+  .trophy-wrap { width: 70px; height: 70px; margin-bottom: 8px; }
+  .trophy { font-size: 44px; }
+  .summary-title { font-size: 18px; margin-bottom: 12px; }
+
+  .donation-banner { padding: 10px 14px; margin-bottom: 10px; }
+  .summary-card { margin-bottom: 10px; }
+  .summary-row { padding: 8px 16px; }
+  .row-value.earned { font-size: 17px; }
+
+  .end-btn { padding: 12px; margin-bottom: 12px; }
+
+  .rvm-footer { padding: 8px 16px; font-size: 12px; }
 }
 </style>

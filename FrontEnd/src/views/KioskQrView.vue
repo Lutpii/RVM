@@ -533,4 +533,29 @@ onBeforeUnmount(() => {
   color: rgba(34,197,94,0.75);
   letter-spacing: 0.02em;
 }
+
+/* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
+@media (max-height: 650px) {
+  .qr-header { padding: 10px 20px; }
+  .dsme-logo { height: 20px; }
+
+  .qr-content { gap: 10px; padding: 10px 24px 16px; }
+  .qr-title { font-size: 24px; }
+  .qr-sub { font-size: 13px; }
+
+  .qr-box { width: 170px; height: 170px; }
+  .qr-image { width: 140px; height: 140px; }
+
+  .qr-steps { gap: 6px; }
+  .step { font-size: 12px; }
+  .step-num { width: 20px; height: 20px; font-size: 11px; }
+
+  .timer-bar, .guest-divider, .guest-btn { width: 170px; }
+  .guest-btn { padding: 10px 16px; gap: 2px; }
+  .guest-btn-icon { font-size: 18px; }
+
+  .scanned-content { padding-top: 20px; }
+  .success-ring { width: 80px; height: 80px; }
+  .success-icon { font-size: 36px; }
+}
 </style>

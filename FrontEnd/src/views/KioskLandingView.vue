@@ -180,4 +180,19 @@ function goToQr() {
   width: auto;
   opacity: 0.55;
 }
+
+/* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
+@media (max-height: 650px) {
+  .kiosk-content { gap: 12px; padding: 20px; }
+  .rvm-logo { font-size: 56px; }
+  .rvm-title { font-size: 34px; }
+  .rvm-subtitle { font-size: 16px; }
+  .machine-badge { padding: 6px 16px; font-size: 13px; }
+  .start-btn { margin-top: 8px; padding: 14px 40px; font-size: 20px; gap: 10px; }
+  .start-icon { font-size: 18px; }
+  .hint-text { font-size: 12px; }
+
+  .kiosk-footer { bottom: 10px; gap: 4px; font-size: 11px; }
+  .kiosk-footer .dsme-logo { height: 20px; }
+}
 </style>

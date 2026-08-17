@@ -2,17 +2,22 @@
 Type=Application
 Name=RVM Kiosk
 Comment=Auto-launch the RVM kiosk display in fullscreen Chromium on boot
-Exec=chromium --kiosk --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble --check-for-update-interval=31536000 https://localhost/#/kiosk/RVM-001
+Exec=chromium --kiosk --window-size=1024,600 --window-position=0,0 --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble --check-for-update-interval=31536000 https://localhost/#/kiosk/RVM-001
 X-GNOME-Autostart-enabled=true
 
 # Install (run as the desktop user that auto-logs-in on boot):
 #   mkdir -p ~/.config/autostart
 #   cp deploy/rvm-kiosk-autostart.desktop ~/.config/autostart/
 #
-# Also disable screen blanking so the kiosk display never sleeps — add to
-# ~/.config/lxsession/LXDE-pi/autostart (or equivalent for your desktop):
-#   @xset s off
-#   @xset -dpms
-#   @xset s noblank
+# --window-size=1024,600 matches a common small kiosk touchscreen — if your
+# display's native resolution is already exactly that, --kiosk alone would
+# fill it anyway; the explicit size mainly matters if the reported/virtual
+# resolution differs, or when testing on a bigger monitor. Adjust the numbers
+# to your actual screen, or drop both --window-* flags to just fill whatever
+# the display reports natively.
+#
+# Screen blanking is disabled separately via `sudo raspi-config` -> Display
+# Options -> Screen Blanking (Raspberry Pi OS Bookworm+ uses Wayland, so the
+# old xset/lxsession approach no longer applies).
 #
 # Replace RVM-001 with the actual machine_code for this physical unit.
