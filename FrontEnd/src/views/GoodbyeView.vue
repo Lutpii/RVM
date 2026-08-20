@@ -14,8 +14,8 @@
         </svg>
       </div>
 
-      <h1 class="welcome-title">Welcome, <span class="user-name">{{ userName }}</span>!</h1>
-      <p class="welcome-sub">Let's get recycling.</p>
+      <h1 class="welcome-title">Thank You, <span class="user-name">{{ userName }}</span>!</h1>
+      <p class="welcome-sub">Every item you recycle makes a difference.</p>
 
       <div class="progress-bar">
         <div class="progress-fill"></div>
@@ -34,11 +34,11 @@ const route  = useRoute()
 const auth   = useAuthStore()
 
 // On the kiosk, the kiosk's own browser session isn't logged in (only holds a
-// kiosk_token) — the phone-scanned user's name comes via ?name= instead.
+// kiosk_token) — the ended session's name comes via ?name= instead.
 const userName = computed(() => auth.user?.name || route.query.name || 'there')
 
 onMounted(() => {
-  const target = route.query.redirect || '/dashboard'
+  const target = route.query.redirect || '/'
   setTimeout(() => {
     router.replace(target)
   }, 3000)
@@ -59,7 +59,7 @@ onMounted(() => {
 .welcome-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 30%, rgba(78,110,242,0.25) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 30%, rgba(34,197,94,0.25) 0%, transparent 60%);
 }
 
 .welcome-content {
@@ -91,7 +91,7 @@ onMounted(() => {
 
 .welcome-icon {
   font-size: 72px;
-  filter: drop-shadow(0 0 30px rgba(78,110,242,0.5));
+  filter: drop-shadow(0 0 30px rgba(34,197,94,0.5));
   animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -112,7 +112,7 @@ onMounted(() => {
   margin: 4px 0 0;
 }
 
-.user-name { color: var(--accent-blue); }
+.user-name { color: var(--accent-green); }
 
 .welcome-sub {
   font-size: 15px;
@@ -132,7 +132,7 @@ onMounted(() => {
 .progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+  background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
   border-radius: 2px;
   animation: fillProgress 3s linear forwards;
 }

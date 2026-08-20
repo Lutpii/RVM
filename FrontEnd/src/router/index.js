@@ -16,6 +16,7 @@ import KioskLandingView      from '@/views/KioskLandingView.vue'
 import KioskQrView           from '@/views/KioskQrView.vue'
 import GoogleCallbackView    from '@/views/GoogleCallbackView.vue'
 import WelcomeView           from '@/views/WelcomeView.vue'
+import GoodbyeView           from '@/views/GoodbyeView.vue'
 
 const routes = [
   // ── Kiosk routes (RVM machine side — no auth required) ──────────────────
@@ -64,10 +65,21 @@ const routes = [
     meta: { title: 'Signing in...' },
   },
   {
+    // No requiresAuth: also used by the kiosk after a phone-scanned login,
+    // where the kiosk's own browser session only holds a kiosk_token, not a
+    // Sanctum session (see KioskQrView.vue's scanned-QR handler).
     path: '/welcome',
     name: 'welcome',
     component: WelcomeView,
-    meta: { title: 'Welcome - RVM', requiresAuth: true },
+    meta: { title: 'Welcome - RVM' },
+  },
+  {
+    // No requiresAuth — same reasoning as /welcome above: reached from the
+    // kiosk's End Session button for both guests and phone-logged-in users.
+    path: '/thank-you',
+    name: 'thank-you',
+    component: GoodbyeView,
+    meta: { title: 'Thank You - RVM' },
   },
   {
     path: '/register',

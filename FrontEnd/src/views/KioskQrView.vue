@@ -191,20 +191,27 @@ function startPoll() {
               }
             }
           }
-        } else {
-          // No kiosk token — pure guest mode
-          const md = machineData ? {
-            id: machineData.id,
-            name: machineData.name,
-            location: '',
-            aluminum_level: machineData.bins?.aluminum ?? 0,
-            plastic_level:  machineData.bins?.plastic  ?? 0,
-            glass_level:    machineData.bins?.glass    ?? 0,
-            paper_level:    machineData.bins?.paper    ?? 0,
-          } : null
-          rvm.startGuestSession(machineCode, md)
-          if (rvm.session) rvm.session.user_name = scannedUser.value
+
+          // Real logged-in user — show the welcome splash before the session starts.
+          router.push({
+            path: '/welcome',
+            query: { redirect: `/kiosk/${machineCode}/session`, name: scannedUser.value },
+          })
+          return
         }
+
+        // No kiosk token — pure guest mode, straight into the session (no name to greet)
+        const md = machineData ? {
+          id: machineData.id,
+          name: machineData.name,
+          location: '',
+          aluminum_level: machineData.bins?.aluminum ?? 0,
+          plastic_level:  machineData.bins?.plastic  ?? 0,
+          glass_level:    machineData.bins?.glass    ?? 0,
+          paper_level:    machineData.bins?.paper    ?? 0,
+        } : null
+        rvm.startGuestSession(machineCode, md)
+        if (rvm.session) rvm.session.user_name = scannedUser.value
         router.push(`/kiosk/${machineCode}/session`)
       } else if (res.data.status === 'expired') {
         handleExpiry()
