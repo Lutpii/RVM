@@ -267,14 +267,7 @@ curl -X POST http://localhost:5000/classify \
 
 ## 💰 Points System
 
-Defined in `TransactionController::POINTS_PER_10G` — points are awarded **per 10g** of recycled material:
-
-| Material | Points / 10g |
-|----------|---------------|
-| Aluminum | 7 |
-| Plastic  | 5 |
-| Glass    | 1 |
-| Paper    | 1 |
+Defined in `TransactionController::calcPoints()` — every valid recycled item (any material) earns a random amount between `POINTS_MIN` and `POINTS_MAX`, currently **15–20 points** (conversion baseline: 100 points = RM 1).
 
 - Rejected / invalid items deduct **10 points**.
 - Admins can view/adjust suggested reward rates per material from the Admin panel (`/api/admin/reward-config`), stored in `BackEnd/storage/app/reward_config.json`.

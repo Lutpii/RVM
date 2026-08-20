@@ -13,18 +13,14 @@ use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
-    // Points awarded per 10g of material
-    const POINTS_PER_10G = [
-        'aluminum' => 7,
-        'plastic'  => 5,
-        'glass'    => 1,
-        'paper'    => 1,
-    ];
+    // Points awarded per recycled item — random per transaction, same range for
+    // every material (conversion baseline: 100 points = RM 1).
+    const POINTS_MIN = 15;
+    const POINTS_MAX = 20;
 
-    private static function calcPoints(string $material, int $weightGrams): int
+    private static function calcPoints(): int
     {
-        $rate = self::POINTS_PER_10G[$material] ?? 1;
-        return (int) floor($weightGrams / 10) * $rate;
+        return rand(self::POINTS_MIN, self::POINTS_MAX);
     }
 
     const BIN_FULL_THRESHOLD = 90; // 90% = full
@@ -193,21 +189,24 @@ class TransactionController extends Controller
 
         // Use AI detected type as material (since no pre-selection in new flow)
         $material    = $request->ai_detected_type ?? $request->material_selected ?? 'plastic';
-        // Simulate weight from sensor — unknown material gets no weight estimate
+        // No physical scale on this hardware — weight is simulated purely for bin-level
+        // tracking (see complete()) and storage; it's no longer shown to the user or
+        // used to derive points (points are now a fixed amount per material, see
+        // POINTS_PER_ITEM above).
         $weightGrams = match($material) {
             'aluminum', 'plastic' => rand(9, 49),
             'glass', 'paper'      => rand(50, 500),
             'unknown'             => 0,
             default               => rand(9, 49),
         };
-        $pointsEarned  = self::calcPoints($material, $weightGrams);
+        $pointsEarned  = self::calcPoints();
 
         return response()->json([
             'success'       => true,
             'weight_grams'  => $weightGrams,
             'points_earned' => $pointsEarned,
             'material'      => $material,
-            'message'       => "Weight: {$weightGrams}g — You earned {$pointsEarned} points!",
+            'message'       => "You earned {$pointsEarned} points!",
             'step'          => 'weighed',
         ]);
     }

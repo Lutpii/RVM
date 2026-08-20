@@ -112,35 +112,16 @@
           <!-- Live camera + countdown -->
           <template v-if="cameraMode === 'camera'">
             <div class="camera-container">
-              <!-- The Pi's CSI camera can't reach the browser via getUserMedia, so the
-                   "live" preview here is an MJPEG stream from the AI service instead
-                   (see /ai-stream in nginx-rvm.conf -> app.py's /stream). Stopped once
-                   the countdown hits 0 so it isn't fighting /capture for the camera. -->
-              <img
-                v-if="isKioskRoute && cameraCountdown > 0"
-                :src="cameraStreamUrl"
-                class="camera-video"
-                alt="Live camera preview"
-              />
-              <div v-else-if="isKioskRoute" class="camera-placeholder">
-                <svg class="camera-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.5A1.5 1.5 0 0 1 9.4 4h5.2a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/>
-                  <circle cx="12" cy="13" r="3.5"/>
-                </svg>
-              </div>
-              <video v-else ref="videoRef" autoplay playsinline muted class="camera-video"></video>
+              <!-- The Pi's CSI camera can't reach the browser via getUserMedia — it's
+                   driven by the AI service's /capture endpoint instead (see
+                   BackEnd/ai_service/app.py). No live preview on a kiosk route. -->
+              <video v-if="!isKioskRoute" ref="videoRef" autoplay playsinline muted class="camera-video"></video>
               <canvas ref="canvasRef" style="display:none"></canvas>
               <div class="scan-overlay">
                 <div class="scan-corners"></div>
                 <div class="scan-line"></div>
               </div>
               <div class="camera-countdown" v-if="cameraCountdown > 0">{{ cameraCountdown }}</div>
-              <div class="camera-countdown capturing" v-else>
-                <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px">
-                  <path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.5A1.5 1.5 0 0 1 9.4 4h5.2a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/>
-                  <circle cx="12" cy="13" r="3.5" fill="#0f172a"/>
-                </svg>
-              </div>
             </div>
             <h2 class="step-status">{{ $t('session.capturingImage') }}</h2>
             <p class="step-sub">{{ cameraCountdown > 0 ? `Auto-capture in ${cameraCountdown}s` : 'Uploading...' }}</p>
@@ -354,7 +335,6 @@ const videoRef              = ref(null)
 const canvasRef             = ref(null)
 const fileInputRef          = ref(null)
 const cameraCountdown       = ref(3)
-const cameraStreamUrl       = ref('')
 const cameraMode            = ref('choose') // 'choose' | 'camera' | 'upload'
 const capturedImageDataUrl  = ref(null)
 const annotatedImageDataUrl = ref(null)
@@ -389,18 +369,11 @@ async function startCameraMode() {
   // (see BackEnd/ai_service/app.py). On a kiosk route, skip the browser camera
   // entirely and let the backend grab the real hardware frame.
   if (isKioskRoute.value) {
-    cameraStreamUrl.value = '/ai-stream?t=' + Date.now()
     await delay(1040)
     for (let i = 3; i >= 1; i--) {
       cameraCountdown.value = i
       await delay(1300)
     }
-    // Explicitly blank the <img> src WHILE it's still mounted, to force the
-    // browser to actually abort the MJPEG connection — swapping it out via
-    // v-if alone isn't reliable, and a lingering stream fights /capture for
-    // the camera lock.
-    cameraStreamUrl.value = ''
-    await delay(300)
     cameraCountdown.value = 0
     const path = await captureFromHardware()
     if (cameraResolve) { cameraResolve(path); cameraResolve = null }
@@ -627,6 +600,10 @@ async function simulateInsert() {
 
   if (aiDetected.value === 'unknown') {
     // Not the AI's fault vs. the user's — no weight, no points, no deduction.
+    // Still has to physically eject the item though, same as test_yolo.py's
+    // reject drop — /hardware/sort is public (works for guest and logged-in
+    // alike) and falls back to the reject slot for any unmapped material.
+    api.post('/hardware/sort', { material: 'reject' }).catch(() => {})
     itemWeight.value = 0
     itemPoints.value = 0
     rvm.setStep('item_unknown')
@@ -827,21 +804,6 @@ onMounted(() => {
   object-fit: cover;
   display: block;
 }
-.camera-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-}
-.camera-placeholder-icon {
-  width: 64px;
-  height: 64px;
-  color: #fff;
-  opacity: 0.5;
-  animation: pulse 1.5s ease-in-out infinite;
-}
 .scan-overlay {
   position: absolute;
   inset: 0;
@@ -888,7 +850,6 @@ onMounted(() => {
   text-shadow: 0 2px 12px rgba(0,0,0,0.7);
   pointer-events: none;
 }
-.camera-countdown.capturing { font-size: 40px; }
 
 /* Capture mode selection */
 .capture-options {
