@@ -223,7 +223,10 @@ def _generate_mjpeg():
             if not HARDWARE_AVAILABLE:
                 break
             frame = camera.capture_array()
-        img = Image.fromarray(frame)
+        # Picamera2's 'RGB888' stream is actually ordered BGR (OpenCV convention) —
+        # reverse the channel axis so the preview shows correct on-screen colors.
+        # /capture and /classify are left untouched since detection already works.
+        img = Image.fromarray(frame[:, :, ::-1])
         buf = io.BytesIO()
         img.save(buf, format='JPEG', quality=70)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buf.getvalue() + b'\r\n')

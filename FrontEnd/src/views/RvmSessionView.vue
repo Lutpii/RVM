@@ -109,7 +109,10 @@
                 alt="Live camera preview"
               />
               <div v-else-if="isKioskRoute" class="camera-placeholder">
-                <span class="camera-placeholder-icon">📷</span>
+                <svg class="camera-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.5A1.5 1.5 0 0 1 9.4 4h5.2a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/>
+                  <circle cx="12" cy="13" r="3.5"/>
+                </svg>
               </div>
               <video v-else ref="videoRef" autoplay playsinline muted class="camera-video"></video>
               <canvas ref="canvasRef" style="display:none"></canvas>
@@ -318,6 +321,12 @@ async function startCameraMode() {
       cameraCountdown.value = i
       await delay(1300)
     }
+    // Explicitly blank the <img> src WHILE it's still mounted, to force the
+    // browser to actually abort the MJPEG connection — swapping it out via
+    // v-if alone isn't reliable, and a lingering stream fights /capture for
+    // the camera lock.
+    cameraStreamUrl.value = ''
+    await delay(300)
     cameraCountdown.value = 0
     const path = await captureFromHardware()
     if (cameraResolve) { cameraResolve(path); cameraResolve = null }
@@ -760,7 +769,9 @@ onMounted(() => {
   background: #000;
 }
 .camera-placeholder-icon {
-  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #fff;
   opacity: 0.5;
   animation: pulse 1.5s ease-in-out infinite;
 }
