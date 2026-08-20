@@ -97,7 +97,6 @@
           </svg>
           <div class="txn-info">
             <span class="txn-mat">{{ t.material }}</span>
-            <span class="txn-weight">{{ t.weight }}g</span>
           </div>
           <span :class="['txn-pts', t.is_valid ? 'pts-green' : 'pts-red']">
             {{ t.is_valid ? '+' + t.points_earned : '-' + t.points_deducted }}
@@ -491,11 +490,6 @@ onMounted(async () => {
   font-weight: 600;
   color: var(--text-primary);
   text-transform: capitalize;
-}
-
-.txn-weight {
-  font-size: 11px;
-  color: var(--text-muted);
 }
 
 .txn-pts {

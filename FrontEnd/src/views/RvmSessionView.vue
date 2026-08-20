@@ -179,7 +179,11 @@
             <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
           </div>
           <p class="step-sub">{{ $t('session.selected') }}: {{ rvm.selectedMaterial }}</p>
-          <p class="step-sub">{{ $t('session.classified') }}: {{ aiDetected }}</p>
+          <p class="step-sub">
+            {{ $t('session.classified') }}:
+            <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
+            {{ aiDetected }}
+          </p>
           <p class="step-sub" v-if="aiConfidence > 0">Confidence: {{ (aiConfidence * 100).toFixed(1) }}%</p>
         </div>
 
@@ -194,26 +198,28 @@
           </div>
           <div class="result-box">
             <p>{{ $t('session.selected') }}: <strong>{{ rvm.selectedMaterial }}</strong></p>
-            <p>AI Detected: <strong>{{ aiDetected }}</strong></p>
+            <p>
+              AI Detected:
+              <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
+              <strong>{{ aiDetected }}</strong>
+            </p>
             <p v-if="aiConfidence > 0">Confidence: {{ (aiConfidence * 100).toFixed(1) }}%</p>
             <p class="deduction-text">-10 points will be deducted</p>
           </div>
         </div>
 
-        <!-- WEIGH step -->
+        <!-- WEIGH step (points calculation — no physical scale on this hardware) -->
         <div v-else-if="rvm.currentStep === 'weigh'" key="weigh" class="step-content centered">
-          <div class="scale-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:100%;height:100%">
-              <path d="M12 3v18M7 21h10"/>
-              <path d="M5 7h6M13 7h6"/>
-              <path d="M5 7 2.5 12a2.5 2.5 0 0 0 5 0Z"/>
-              <path d="M19 7 16.5 12a2.5 2.5 0 0 0 5 0Z"/>
+          <div class="points-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%">
+              <circle cx="12" cy="8" r="5"/>
+              <path d="M8.5 12.5 7 21l5-3 5 3-1.5-8.5"/>
             </svg>
           </div>
           <h2 class="step-status">{{ $t('session.weighing') }}</h2>
-          <div class="weight-display" v-if="itemWeight > 0">
-            <span class="weight-value">{{ itemWeight }}g</span>
-            <span class="points-preview">+{{ itemPoints }} points earned</span>
+          <div class="points-display" v-if="itemPoints > 0">
+            <span class="points-value">+{{ itemPoints }}</span>
+            <span class="points-preview">{{ $t('session.pointsEarned') }}</span>
           </div>
         </div>
 
@@ -224,8 +230,11 @@
           </div>
           <h2 class="step-status green">{{ $t('session.success') }}</h2>
           <div class="result-box">
-            <p>{{ $t('session.material') }}: {{ rvm.selectedMaterial }}</p>
-            <p>{{ $t('session.weight') }}: {{ itemWeight }}g</p>
+            <p>
+              {{ $t('session.material') }}:
+              <svg v-if="materialIconSvg(rvm.selectedMaterial)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(rvm.selectedMaterial)"></svg>
+              {{ rvm.selectedMaterial }}
+            </p>
             <p class="earned-text">{{ rvm.isGuest ? 'Points Donated' : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
           </div>
           <div class="action-buttons">
@@ -255,7 +264,6 @@
             <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
           </div>
           <div class="result-box">
-            <p>{{ $t('session.weight') }}: 0g</p>
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
@@ -278,7 +286,11 @@
           <h2 class="step-status red">{{ $t('session.itemRejected') }}</h2>
           <div class="result-box">
             <p>{{ $t('session.selected') }}: {{ rvm.selectedMaterial }}</p>
-            <p>{{ $t('session.aiDetected') }}: {{ aiDetected }}</p>
+            <p>
+              {{ $t('session.aiDetected') }}:
+              <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
+              {{ aiDetected }}
+            </p>
             <p class="deduction-text">{{ $t('session.pointsDeducted') }}: -{{ deductedPoints }}</p>
           </div>
           <p class="reject-hint">Please select the correct material type</p>
@@ -324,6 +336,18 @@ const itemPoints     = ref(0)
 const aiDetected     = ref('')
 const aiConfidence   = ref(0)
 const deductedPoints = ref(10)
+
+// Small per-class icons shown next to a material name. Fixed lookup only —
+// never interpolates the detected string into markup — so it's safe to render via v-html.
+const MATERIAL_ICON_PATHS = {
+  aluminum: '<path d="M7 4h10l-1 2.5v11A1.5 1.5 0 0 1 14.5 19h-5A1.5 1.5 0 0 1 8 17.5v-11L7 4Z"/><path d="M8 4V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1"/><path d="M8 9h8"/>',
+  plastic:  '<path d="M10 2h4v3l1.5 2v13.5A1.5 1.5 0 0 1 14 22h-4a1.5 1.5 0 0 1-1.5-1.5V7L10 5V2Z"/><path d="M8.5 11h7"/>',
+  glass:    '<path d="M10.5 2h3v5l2 3v10a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 8.5 20V10l2-3V2Z" fill="currentColor" fill-opacity="0.15"/><path d="M9 15h6"/>',
+  paper:    '<path d="M6 3h9l3 3v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M15 3v3h3"/><path d="M8 12h8M8 16h8M8 8h4"/>',
+}
+function materialIconSvg(material) {
+  return MATERIAL_ICON_PATHS[(material || '').toLowerCase()] || ''
+}
 
 // Camera
 const videoRef              = ref(null)
@@ -1128,12 +1152,13 @@ onMounted(() => {
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
 .deduction-text { color: var(--accent-red) !important; font-weight: 700; font-size: 16px !important; }
 
-.scale-icon { width: 60px; height: 60px; color: var(--text-primary); margin-bottom: 16px; animation: wobble 0.5s ease infinite alternate; }
-@keyframes wobble { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+.points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }
 
-.weight-display { margin-top: 12px; text-align: center; }
-.weight-value { display: block; font-size: 40px; font-weight: 800; color: var(--text-primary); }
-.points-preview { color: var(--accent-green); font-size: 16px; font-weight: 600; }
+.points-display { margin-top: 12px; text-align: center; }
+.points-value { display: block; font-size: 40px; font-weight: 800; color: var(--accent-green); }
+.points-preview { color: var(--text-secondary); font-size: 16px; font-weight: 600; }
+
+.mat-inline-icon { width: 16px; height: 16px; vertical-align: -3px; margin: 0 2px; }
 
 .simulate-btn {
   margin-top: 16px;
@@ -1242,8 +1267,8 @@ onMounted(() => {
   .ai-ring { width: 52px; height: 52px; margin-bottom: 12px; }
   .result-icon { width: 60px; height: 60px; margin-bottom: 10px; }
   .result-icon svg { width: 28px; height: 28px; }
-  .scale-icon { width: 44px; height: 44px; margin-bottom: 10px; }
-  .weight-value { font-size: 30px; }
+  .points-icon { width: 44px; height: 44px; margin-bottom: 10px; }
+  .points-value { font-size: 30px; }
   .camera-container { max-width: 260px; }
 
   .step-status { font-size: 17px; }
