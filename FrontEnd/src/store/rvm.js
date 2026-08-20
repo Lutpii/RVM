@@ -137,7 +137,28 @@ export const useRvmStore = defineStore('rvm', () => {
   }
 
   async function processStep(stepName, payload = {}) {
-    if (isGuest.value) return _guestMockStep(stepName, payload)
+    if (isGuest.value) {
+      // Classify still hits the real AI service — guests get real detection,
+      // not a random guess.
+      if (stepName === 'classify') {
+        try {
+          const res = await api.post('/hardware/classify', { image_path: payload.image_path })
+          return res.data
+        } catch {
+          return _guestMockStep(stepName, payload)
+        }
+      }
+      // No points/DB record for guests, but the physical servo still sorts
+      // the item — fire-and-forget so a slow/offline AI service can't stall
+      // the on-screen flow.
+      if (stepName === 'complete' || stepName === 'reject') {
+        const material = stepName === 'reject'
+          ? 'reject'
+          : (payload.ai_detected_type || payload.material_selected || 'reject')
+        api.post('/hardware/sort', { material }).catch(() => {})
+      }
+      return _guestMockStep(stepName, payload)
+    }
 
     const endpoints = {
       open_lid: '/transactions/open-lid',

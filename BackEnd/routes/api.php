@@ -33,6 +33,13 @@ Route::get('/qr/status/{token}', [QrController::class, 'status']);
 Route::get('/machines', [MachineController::class, 'index']);
 Route::get('/machines/{id}', [MachineController::class, 'show']);
 
+// Hardware-only actions (camera capture, AI classify, servo sort) — no login
+// required, used by the kiosk's "Continue as Guest" flow so the physical
+// machine still works for guests. No points/DB records are created here.
+Route::post('/hardware/capture', [TransactionController::class, 'hardwareCapture']);
+Route::post('/hardware/classify', [TransactionController::class, 'hardwareClassify']);
+Route::post('/hardware/sort', [TransactionController::class, 'hardwareSort']);
+
 // Protected routes (require auth or valid kiosk token)
 Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
 

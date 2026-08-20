@@ -3,7 +3,10 @@
     <!-- RVM Header -->
     <div class="rvm-header">
       <div class="header-controls">
-        <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
+        <button class="ctrl-btn" @click="toggleTheme()">
+          <svg v-if="theme === 'dark'" class="ctrl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg v-else class="ctrl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        </button>
         <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
       </div>
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
@@ -51,7 +54,13 @@
         <!-- INSERT step -->
         <div v-else-if="rvm.currentStep === 'insert'" key="insert" class="step-content centered">
           <div class="insert-icon">
-            <div class="box-3d">📦</div>
+            <div class="box-3d">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/>
+                <path d="M3 8.5v7L12 20l9-4.5v-7"/>
+                <path d="M12 13v7"/>
+              </svg>
+            </div>
           </div>
           <h2 class="step-status">{{ $t('session.readyAccept') }}</h2>
           <p class="step-sub">{{ $t('session.insertItem') }}</p>
@@ -65,7 +74,11 @@
           <div class="conveyor-wrap">
             <div class="conveyor-track">
               <div class="conveyor-item" :style="{ left: conveyorPos + '%' }">
-                <span style="font-size:24px">{{ materialIcon }}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="conveyor-item-icon">
+                  <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/>
+                  <path d="M3 8.5v7L12 20l9-4.5v-7"/>
+                  <path d="M12 13v7"/>
+                </svg>
               </div>
               <div class="conveyor-belt"></div>
             </div>
@@ -76,7 +89,9 @@
 
         <!-- CAMERA step -->
         <div v-else-if="rvm.currentStep === 'camera'" key="camera" class="step-content centered">
-          <!-- Choose mode -->
+          <!-- Choose mode — disabled: the kiosk only has one capture option (the
+               real hardware camera), so we skip straight to it after the conveyor
+               step instead of making the user tap through a menu of one.
           <template v-if="cameraMode === 'choose'">
             <h2 class="step-status">{{ $t('session.scanOrUpload') }}</h2>
             <p class="step-sub">{{ $t('session.chooseCapture') }}</p>
@@ -85,18 +100,17 @@
                 <span class="capture-icon">📷</span>
                 <span>{{ $t('session.useCamera') }}</span>
               </button>
-              <!-- Upload option disabled — kiosk only uses the real hardware camera.
               <label class="capture-btn">
                 <span class="capture-icon">📁</span>
                 <span>{{ $t('session.uploadImage') }}</span>
                 <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/*" @change="handleFileUpload" style="display:none" />
               </label>
-              -->
             </div>
           </template>
+          -->
 
           <!-- Live camera + countdown -->
-          <template v-else-if="cameraMode === 'camera'">
+          <template v-if="cameraMode === 'camera'">
             <div class="camera-container">
               <!-- The Pi's CSI camera can't reach the browser via getUserMedia, so the
                    "live" preview here is an MJPEG stream from the AI service instead
@@ -121,7 +135,12 @@
                 <div class="scan-line"></div>
               </div>
               <div class="camera-countdown" v-if="cameraCountdown > 0">{{ cameraCountdown }}</div>
-              <div class="camera-countdown capturing" v-else>📸</div>
+              <div class="camera-countdown capturing" v-else>
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px">
+                  <path d="M4 8a2 2 0 0 1 2-2h1.2l.9-1.5A1.5 1.5 0 0 1 9.4 4h5.2a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/>
+                  <circle cx="12" cy="13" r="3.5" fill="#0f172a"/>
+                </svg>
+              </div>
             </div>
             <h2 class="step-status">{{ $t('session.capturingImage') }}</h2>
             <p class="step-sub">{{ cameraCountdown > 0 ? `Auto-capture in ${cameraCountdown}s` : 'Uploading...' }}</p>
@@ -152,7 +171,9 @@
 
         <!-- VALIDATE step - Valid -->
         <div v-else-if="rvm.currentStep === 'validate_ok'" key="validate_ok" class="step-content centered">
-          <div class="result-icon valid">✓</div>
+          <div class="result-icon valid">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+          </div>
           <h2 class="step-status green">{{ $t('session.itemValid') }}</h2>
           <div v-if="annotatedImageDataUrl" class="bbox-preview">
             <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
@@ -164,7 +185,9 @@
 
         <!-- VALIDATE step - Invalid -->
         <div v-else-if="rvm.currentStep === 'validate_fail'" key="validate_fail" class="step-content centered">
-          <div class="result-icon invalid">✕</div>
+          <div class="result-icon invalid">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+          </div>
           <h2 class="step-status red">{{ $t('session.itemInvalid') }}</h2>
           <div v-if="annotatedImageDataUrl" class="bbox-preview">
             <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
@@ -179,7 +202,14 @@
 
         <!-- WEIGH step -->
         <div v-else-if="rvm.currentStep === 'weigh'" key="weigh" class="step-content centered">
-          <div class="scale-icon">⚖️</div>
+          <div class="scale-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:100%;height:100%">
+              <path d="M12 3v18M7 21h10"/>
+              <path d="M5 7h6M13 7h6"/>
+              <path d="M5 7 2.5 12a2.5 2.5 0 0 0 5 0Z"/>
+              <path d="M19 7 16.5 12a2.5 2.5 0 0 0 5 0Z"/>
+            </svg>
+          </div>
           <h2 class="step-status">{{ $t('session.weighing') }}</h2>
           <div class="weight-display" v-if="itemWeight > 0">
             <span class="weight-value">{{ itemWeight }}g</span>
@@ -189,7 +219,9 @@
 
         <!-- COMPLETE step -->
         <div v-else-if="rvm.currentStep === 'complete'" key="complete" class="step-content centered">
-          <div class="result-icon valid success-pulse">✓</div>
+          <div class="result-icon valid success-pulse">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+          </div>
           <h2 class="step-status green">{{ $t('session.success') }}</h2>
           <div class="result-box">
             <p>{{ $t('session.material') }}: {{ rvm.selectedMaterial }}</p>
@@ -197,15 +229,25 @@
             <p class="earned-text">{{ rvm.isGuest ? 'Points Donated' : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
           </div>
           <div class="action-buttons">
-            <button class="end-btn" @click="confirmEndSession">⬛ {{ $t('session.endSession') }}</button>
-            <button class="recycle-btn" @click="rvm.resetTransaction()">♻ {{ $t('session.recycleAnother') }}</button>
+            <button class="end-btn" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+            <button class="recycle-btn" @click="rvm.resetTransaction()">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              {{ $t('session.recycleAnother') }}
+            </button>
           </div>
         </div>
 
         <!-- UNKNOWN step (AI couldn't recognize the material) -->
         <div v-else-if="rvm.currentStep === 'item_unknown'" key="item_unknown" class="step-content centered">
           <div class="return-anim">
-            <span class="return-item">❓</span>
+            <svg class="return-item" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4"/>
+              <line x1="12" y1="17" x2="12" y2="17.01"/>
+            </svg>
             <div class="return-slot"></div>
           </div>
           <h2 class="step-status red">Item Not Recognized</h2>
@@ -217,14 +259,22 @@
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
-            <button class="end-btn" @click="confirmEndSession">⬛ {{ $t('session.endSession') }}</button>
-            <button class="recycle-btn" @click="rvm.resetTransaction()">🔄 Retry Another Item</button>
+            <button class="end-btn" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+            <button class="recycle-btn" @click="rvm.resetTransaction()">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              Retry Another Item
+            </button>
           </div>
         </div>
 
         <!-- REJECTED step -->
         <div v-else-if="rvm.currentStep === 'rejected'" key="rejected" class="step-content centered">
-          <div class="result-icon invalid pulse-red">✕</div>
+          <div class="result-icon invalid pulse-red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+          </div>
           <h2 class="step-status red">{{ $t('session.itemRejected') }}</h2>
           <div class="result-box">
             <p>{{ $t('session.selected') }}: {{ rvm.selectedMaterial }}</p>
@@ -346,11 +396,11 @@ async function startCameraMode() {
 }
 
 async function captureFromHardware() {
-  if (rvm.isGuest) return null
   try {
+    const endpoint = rvm.isGuest ? '/hardware/capture' : '/transactions/capture-image'
     const form = new FormData()
-    form.append('session_code', rvm.session?.session_code || '')
-    const res = await api.post('/transactions/capture-image', form, {
+    if (!rvm.isGuest) form.append('session_code', rvm.session?.session_code || '')
+    const res = await api.post(endpoint, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return res.data.image_path || null
@@ -413,18 +463,6 @@ async function handleFileUpload(event) {
 }
 
 onBeforeUnmount(() => stopCamera())
-
-const materials = [
-  { id: 'aluminum', icon: '🥫' },
-  { id: 'plastic',  icon: '🧴' },
-  { id: 'glass',    icon: '🍶' },
-  { id: 'paper',    icon: '📄' },
-]
-
-const materialIcon = computed(() => {
-  const m = materials.find(x => x.id === rvm.selectedMaterial)
-  return m?.icon || '📦'
-})
 
 const statusText = computed(() => {
   if (['insert'].includes(rvm.currentStep)) return 'Ready'
@@ -529,12 +567,14 @@ async function simulateInsert() {
 
   await delay(2200)
 
-  // ── CAMERA: wait for user to choose camera or upload ────────────────────
+  // ── CAMERA: only one capture option (real hardware camera), so go straight
+  //    into it instead of waiting for the user to pick from a menu of one. ──
   rvm.setStep('camera')
-  cameraMode.value = 'choose'
-  cameraCountdown.value = 3
   capturedImageDataUrl.value = null
-  const capturedImagePath = await new Promise(resolve => { cameraResolve = resolve })
+  const capturedImagePath = await new Promise(resolve => {
+    cameraResolve = resolve
+    startCameraMode()
+  })
   // ─────────────────────────────────────────────────────────────────────────
 
   rvm.setStep('classify')
@@ -685,7 +725,10 @@ onMounted(() => {
   border-radius: 16px;
   cursor: pointer;
   font-size: 12px;
+  display: inline-flex;
+  align-items: center;
 }
+.ctrl-icon { width: 14px; height: 14px; display: block; }
 .rvm-title {
   color: white;
   font-size: 22px;
@@ -971,8 +1014,12 @@ onMounted(() => {
   top: 50%;
   transform: translateY(-50%);
   transition: left 0.1s linear;
-  font-size: 28px;
   line-height: 1;
+}
+.conveyor-item-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--text-primary);
 }
 .conveyor-belt {
   position: absolute;
@@ -1022,6 +1069,7 @@ onMounted(() => {
   font-weight: 700;
   margin-bottom: 16px;
 }
+.result-icon svg { width: 36px; height: 36px; }
 .result-icon.valid   { background: #22c55e; color: white; }
 .result-icon.invalid { background: #ef4444; color: white; }
 
@@ -1044,7 +1092,9 @@ onMounted(() => {
 .return-item {
   position: absolute;
   bottom: 8px;
-  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--accent-red);
   animation: returnItemDrop 1.8s ease-in-out infinite;
 }
 @keyframes returnItemDrop {
@@ -1078,7 +1128,7 @@ onMounted(() => {
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
 .deduction-text { color: var(--accent-red) !important; font-weight: 700; font-size: 16px !important; }
 
-.scale-icon { font-size: 60px; margin-bottom: 16px; animation: wobble 0.5s ease infinite alternate; }
+.scale-icon { width: 60px; height: 60px; color: var(--text-primary); margin-bottom: 16px; animation: wobble 0.5s ease infinite alternate; }
 @keyframes wobble { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
 
 .weight-display { margin-top: 12px; text-align: center; }
@@ -1101,7 +1151,12 @@ onMounted(() => {
 .simulate-btn:hover { transform: translateY(-2px); }
 
 .insert-icon { margin-bottom: 16px; }
-.box-3d { font-size: 64px; animation: float 2s ease-in-out infinite; }
+.box-3d {
+  width: 64px;
+  height: 64px;
+  color: var(--text-primary);
+  animation: float 2s ease-in-out infinite;
+}
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
 .action-buttons { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
@@ -1129,6 +1184,12 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   min-width: 180px;
+}
+.btn-icon {
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+  margin-right: 4px;
 }
 .reject-hint { color: var(--text-muted); font-size: 13px; margin: 8px 0; }
 
@@ -1176,11 +1237,12 @@ onMounted(() => {
 
   .spinner-lg { width: 44px; height: 44px; margin-bottom: 12px; }
   .lid-box { width: 76px; height: 76px; }
-  .box-3d { font-size: 48px; }
+  .box-3d { width: 48px; height: 48px; }
   .conveyor-track { height: 54px; }
   .ai-ring { width: 52px; height: 52px; margin-bottom: 12px; }
-  .result-icon { width: 60px; height: 60px; font-size: 26px; margin-bottom: 10px; }
-  .scale-icon { font-size: 44px; margin-bottom: 10px; }
+  .result-icon { width: 60px; height: 60px; margin-bottom: 10px; }
+  .result-icon svg { width: 28px; height: 28px; }
+  .scale-icon { width: 44px; height: 44px; margin-bottom: 10px; }
   .weight-value { font-size: 30px; }
   .camera-container { max-width: 260px; }
 

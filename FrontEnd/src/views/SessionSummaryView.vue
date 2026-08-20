@@ -22,14 +22,28 @@
     <div class="summary-body">
       <!-- Trophy animation -->
       <div class="trophy-wrap">
-        <div class="trophy">{{ rvm.isGuest ? '♻️' : '🏆' }}</div>
+        <div class="trophy">
+          <svg v-if="rvm.isGuest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em">
+            <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/>
+            <path d="M7 6H4.5a2.5 2.5 0 0 0 0 5H6M17 6h2.5a2.5 2.5 0 0 1 0 5H17"/>
+          </svg>
+        </div>
         <div class="confetti" v-for="i in 12" :key="i" :style="confettiStyle(i)"></div>
       </div>
 
       <h2 class="summary-title">{{ rvm.isGuest ? 'Thank You for Recycling!' : $t('summary.title') }}</h2>
 
       <div v-if="rvm.isGuest" class="donation-banner">
-        <span class="donation-icon">🌱</span>
+        <svg class="donation-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 22c0-6 4-8 8-9-1 6-3 9-8 9Z"/>
+          <path d="M12 22c0-7-3-10-8-11 0 7 3 11 8 11Z"/>
+        </svg>
         <div class="donation-text">
           <strong>{{ earnedPoints }} points donated</strong>
           <span>Your recycling contribution makes a difference!</span>
@@ -75,7 +89,12 @@
       <div v-if="summary?.transactions?.length" class="transactions-wrap">
         <h3 class="breakdown-title">Items Recycled</h3>
         <div v-for="(t, i) in summary.transactions" :key="i" class="txn-row">
-          <span class="txn-icon">{{ getMaterialIcon(t.material) }}</span>
+          <svg class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
           <div class="txn-info">
             <span class="txn-mat">{{ t.material }}</span>
             <span class="txn-weight">{{ t.weight }}g</span>
@@ -116,9 +135,6 @@ const earnedPoints = computed(() => summary.value?.points_earned ?? 0)
 watch(summary, (val) => {
   if (val?.end_points != null) auth.updatePoints(val.end_points)
 })
-
-const materialIcons = { aluminum: '🥫', plastic: '🧴', glass: '🍶', paper: '📄' }
-function getMaterialIcon(mat) { return materialIcons[mat] || '♻️' }
 
 function confettiStyle(i) {
   const colors = ['#4e6ef2', '#a855f7', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4']
@@ -301,7 +317,9 @@ onMounted(async () => {
 }
 
 .trophy {
-  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: var(--accent-green);
   animation: trophy-bounce 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
@@ -358,7 +376,7 @@ onMounted(async () => {
   max-width: 380px;
   margin-bottom: 16px;
 }
-.donation-icon { font-size: 32px; flex-shrink: 0; }
+.donation-icon { width: 32px; height: 32px; color: var(--accent-green); flex-shrink: 0; }
 .donation-text {
   display: flex;
   flex-direction: column;
@@ -456,7 +474,10 @@ onMounted(async () => {
 }
 
 .txn-icon {
-  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 .txn-info {
@@ -547,7 +568,7 @@ onMounted(async () => {
 
   .summary-body { padding: 14px 20px; }
   .trophy-wrap { width: 70px; height: 70px; margin-bottom: 8px; }
-  .trophy { font-size: 44px; }
+  .trophy { width: 44px; height: 44px; }
   .summary-title { font-size: 18px; margin-bottom: 12px; }
 
   .donation-banner { padding: 10px 14px; margin-bottom: 10px; }

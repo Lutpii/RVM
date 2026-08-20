@@ -54,7 +54,7 @@
       </div>
 
       <button class="guest-btn" @click="startAsGuest">
-        <span class="guest-btn-icon">👤</span>
+        <svg class="guest-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
         Continue as Guest
         <span class="guest-btn-note">Points will be donated</span>
       </button>
@@ -63,7 +63,7 @@
     <!-- SCANNED — session active -->
     <div v-else-if="state === 'scanned'" class="qr-content scanned-content">
       <div class="success-ring">
-        <div class="success-icon">✓</div>
+        <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
       </div>
       <h2 class="qr-title green">Session Started!</h2>
       <p class="qr-sub" v-if="scannedUser">
@@ -481,7 +481,7 @@ onBeforeUnmount(() => {
   animation: pop 0.4s ease;
 }
 @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.success-icon { font-size: 52px; color: #22c55e; font-weight: 700; }
+.success-icon { width: 52px; height: 52px; color: #22c55e; }
 .redirect-hint { color: rgba(255,255,255,0.3); font-size: 14px; margin: 0; }
 
 /* Expired */
@@ -526,7 +526,7 @@ onBeforeUnmount(() => {
   border-color: rgba(255,255,255,0.35);
   color: rgba(255,255,255,0.9);
 }
-.guest-btn-icon { font-size: 22px; margin-bottom: 2px; }
+.guest-btn-icon { width: 22px; height: 22px; margin-bottom: 2px; }
 .guest-btn-note {
   font-size: 11px;
   font-weight: 400;
@@ -552,10 +552,10 @@ onBeforeUnmount(() => {
 
   .timer-bar, .guest-divider, .guest-btn { width: 170px; }
   .guest-btn { padding: 10px 16px; gap: 2px; }
-  .guest-btn-icon { font-size: 18px; }
+  .guest-btn-icon { width: 18px; height: 18px; }
 
   .scanned-content { padding-top: 20px; }
   .success-ring { width: 80px; height: 80px; }
-  .success-icon { font-size: 36px; }
+  .success-icon { width: 36px; height: 36px; }
 }
 </style>

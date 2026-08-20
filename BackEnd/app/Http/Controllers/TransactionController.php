@@ -348,6 +348,45 @@ class TransactionController extends Controller
         ]);
     }
 
+    // Guest-safe hardware actions (no auth, no session, no points/DB writes) —
+    // lets the kiosk's "Continue as Guest" flow still drive the real camera,
+    // AI classification, and sorting servo.
+    public function hardwareCapture(Request $request): JsonResponse
+    {
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('captures', 'public');
+        } else {
+            $imagePath = $this->ai->capture();
+        }
+
+        return response()->json(['success' => true, 'image_path' => $imagePath]);
+    }
+
+    public function hardwareClassify(Request $request): JsonResponse
+    {
+        $request->validate(['image_path' => 'nullable|string']);
+
+        $aiResult = $this->ai->classify($request->image_path);
+        $detected = $aiResult['material'] ?? 'unknown';
+
+        return response()->json([
+            'success'         => true,
+            'is_valid'        => $detected !== 'unknown',
+            'ai_detected'     => $detected,
+            'confidence'      => $aiResult['confidence'] ?? 0,
+            'all_predictions' => $aiResult['all_predictions'] ?? [],
+        ]);
+    }
+
+    public function hardwareSort(Request $request): JsonResponse
+    {
+        $request->validate(['material' => 'nullable|string']);
+        $this->ai->sort($request->material ?? 'reject');
+
+        return response()->json(['success' => true]);
+    }
+
     // Helpers
     private function getActiveSession(Request $request): ?RecyclingSession
     {
