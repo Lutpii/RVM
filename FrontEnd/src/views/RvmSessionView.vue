@@ -338,6 +338,12 @@ function materialIconSvg(material) {
   return MATERIAL_ICON_PATHS[(material || '').toLowerCase()] || ''
 }
 
+// Range must match BackEnd/app/Http/Controllers/TransactionController.php's
+// POINTS_MIN/POINTS_MAX — only used if the /transactions/weigh call fails.
+function randomPointsFallback() {
+  return Math.floor(Math.random() * (20 - 15 + 1)) + 15
+}
+
 // Camera
 const videoRef              = ref(null)
 const canvasRef             = ref(null)
@@ -639,10 +645,10 @@ async function simulateInsert() {
         ai_detected_type: aiDetected.value,
       })
       itemWeight.value = weighRes.weight_grams || (Math.floor(Math.random() * 400) + 50)
-      itemPoints.value = weighRes.points_earned || Math.floor(itemWeight.value / 100) * 10
+      itemPoints.value = weighRes.points_earned || randomPointsFallback()
     } catch {
       itemWeight.value = Math.floor(Math.random() * 400) + 50
-      itemPoints.value = Math.floor(itemWeight.value / 100) * 10
+      itemPoints.value = randomPointsFallback()
     }
     await delay(2600)
 

@@ -53,8 +53,13 @@ export const useRvmStore = defineStore('rvm', () => {
     setStep('bin_check')
   }
 
+  // Points range must match BackEnd/app/Http/Controllers/TransactionController.php's
+  // POINTS_MIN/POINTS_MAX — guests never hit the real /transactions/weigh endpoint,
+  // so this is the only place their points get decided.
+  const GUEST_POINTS_MIN = 15
+  const GUEST_POINTS_MAX = 20
+
   function _guestMockStep(stepName, payload) {
-    const POINTS_PER_100G = { aluminum: 10, plastic: 8, glass: 6, paper: 5 }
     if (stepName === 'classify') {
       const selected = payload.material_selected || selectedMaterial.value
       return { success: true, is_valid: true, ai_detected: selected, confidence: 0.95, all_predictions: [], step: 'validated' }
@@ -62,7 +67,7 @@ export const useRvmStore = defineStore('rvm', () => {
     if (stepName === 'weigh') {
       const material = payload.material_selected || selectedMaterial.value
       const weight   = Math.floor(Math.random() * 400) + 50
-      const points   = Math.floor((weight / 100) * (POINTS_PER_100G[material] || 5))
+      const points   = Math.floor(Math.random() * (GUEST_POINTS_MAX - GUEST_POINTS_MIN + 1)) + GUEST_POINTS_MIN
       return { success: true, weight_grams: weight, points_earned: points, material, step: 'weighed' }
     }
     if (stepName === 'complete') {

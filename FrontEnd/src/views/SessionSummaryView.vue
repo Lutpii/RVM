@@ -20,20 +20,9 @@
     </div>
 
     <div class="summary-body">
-      <!-- Trophy animation -->
+      <!-- Trophy animation — same recycle icon as the kiosk landing screen -->
       <div class="trophy-wrap">
-        <div class="trophy">
-          <svg v-if="rvm.isGuest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em">
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-            <path d="M3 21v-5h5"/>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em">
-            <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/>
-            <path d="M7 6H4.5a2.5 2.5 0 0 0 0 5H6M17 6h2.5a2.5 2.5 0 0 1 0 5H17"/>
-          </svg>
-        </div>
+        <div class="trophy">♻️</div>
         <div class="confetti" v-for="i in 12" :key="i" :style="confettiStyle(i)"></div>
       </div>
 
@@ -89,7 +78,8 @@
       <div v-if="summary?.transactions?.length" class="transactions-wrap">
         <h3 class="breakdown-title">Items Recycled</h3>
         <div v-for="(t, i) in summary.transactions" :key="i" class="txn-row">
-          <svg class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg v-if="materialIconSvg(t.material)" class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(t.material)"></svg>
+          <svg v-else class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
             <path d="M21 3v5h-5"/>
             <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
@@ -130,6 +120,18 @@ const rvm = useRvmStore()
 const summary = ref(null)
 const finalPoints = computed(() => summary.value?.end_points ?? 0)
 const earnedPoints = computed(() => summary.value?.points_earned ?? 0)
+
+// Small per-class icons for the transaction breakdown. Fixed lookup only —
+// never interpolates the material string into markup — so it's safe via v-html.
+const MATERIAL_ICON_PATHS = {
+  aluminum: '<path d="M7 4h10l-1 2.5v11A1.5 1.5 0 0 1 14.5 19h-5A1.5 1.5 0 0 1 8 17.5v-11L7 4Z"/><path d="M8 4V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1"/><path d="M8 9h8"/>',
+  plastic:  '<path d="M10 2h4v3l1.5 2v13.5A1.5 1.5 0 0 1 14 22h-4a1.5 1.5 0 0 1-1.5-1.5V7L10 5V2Z"/><path d="M8.5 11h7"/>',
+  glass:    '<path d="M10.5 2h3v5l2 3v10a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 8.5 20V10l2-3V2Z" fill="currentColor" fill-opacity="0.15"/><path d="M9 15h6"/>',
+  paper:    '<path d="M6 3h9l3 3v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M15 3v3h3"/><path d="M8 12h8M8 16h8M8 8h4"/>',
+}
+function materialIconSvg(material) {
+  return MATERIAL_ICON_PATHS[(material || '').toLowerCase()] || ''
+}
 
 watch(summary, (val) => {
   if (val?.end_points != null) auth.updatePoints(val.end_points)
@@ -316,9 +318,8 @@ onMounted(async () => {
 }
 
 .trophy {
-  width: 64px;
-  height: 64px;
-  color: var(--accent-green);
+  font-size: 64px;
+  line-height: 1;
   animation: trophy-bounce 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
@@ -562,7 +563,7 @@ onMounted(async () => {
 
   .summary-body { padding: 14px 20px; }
   .trophy-wrap { width: 70px; height: 70px; margin-bottom: 8px; }
-  .trophy { width: 44px; height: 44px; }
+  .trophy { font-size: 44px; }
   .summary-title { font-size: 18px; margin-bottom: 12px; }
 
   .donation-banner { padding: 10px 14px; margin-bottom: 10px; }
