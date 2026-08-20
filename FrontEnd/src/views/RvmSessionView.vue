@@ -121,7 +121,7 @@
                 v-if="isKioskRoute && cameraCountdown > 0"
                 :src="cameraStreamUrl"
                 class="camera-video"
-                alt="Live camera preview"
+                alt=""
               />
               <video v-else-if="!isKioskRoute" ref="videoRef" autoplay playsinline muted class="camera-video"></video>
               <canvas ref="canvasRef" style="display:none"></canvas>
