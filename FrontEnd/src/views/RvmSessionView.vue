@@ -112,10 +112,18 @@
           <!-- Live camera + countdown -->
           <template v-if="cameraMode === 'camera'">
             <div class="camera-container">
-              <!-- The Pi's CSI camera can't reach the browser via getUserMedia — it's
-                   driven by the AI service's /capture endpoint instead (see
-                   BackEnd/ai_service/app.py). No live preview on a kiosk route. -->
-              <video v-if="!isKioskRoute" ref="videoRef" autoplay playsinline muted class="camera-video"></video>
+              <!-- The Pi's CSI camera can't reach the browser via getUserMedia, so the
+                   "live" preview here is an MJPEG stream from the AI service instead
+                   (see /ai-stream in nginx-rvm.conf -> app.py's /stream). Stopped once
+                   the countdown hits 0 so it isn't fighting /capture for the camera —
+                   no placeholder/icon shown after that, just the plain background. -->
+              <img
+                v-if="isKioskRoute && cameraCountdown > 0"
+                :src="cameraStreamUrl"
+                class="camera-video"
+                alt="Live camera preview"
+              />
+              <video v-else-if="!isKioskRoute" ref="videoRef" autoplay playsinline muted class="camera-video"></video>
               <canvas ref="canvasRef" style="display:none"></canvas>
               <div class="scan-overlay">
                 <div class="scan-corners"></div>
@@ -335,6 +343,7 @@ const videoRef              = ref(null)
 const canvasRef             = ref(null)
 const fileInputRef          = ref(null)
 const cameraCountdown       = ref(3)
+const cameraStreamUrl       = ref('')
 const cameraMode            = ref('choose') // 'choose' | 'camera' | 'upload'
 const capturedImageDataUrl  = ref(null)
 const annotatedImageDataUrl = ref(null)
@@ -369,11 +378,18 @@ async function startCameraMode() {
   // (see BackEnd/ai_service/app.py). On a kiosk route, skip the browser camera
   // entirely and let the backend grab the real hardware frame.
   if (isKioskRoute.value) {
+    cameraStreamUrl.value = '/ai-stream?t=' + Date.now()
     await delay(1040)
     for (let i = 3; i >= 1; i--) {
       cameraCountdown.value = i
       await delay(1300)
     }
+    // Explicitly blank the <img> src WHILE it's still mounted, to force the
+    // browser to actually abort the MJPEG connection — swapping it out via
+    // v-if alone isn't reliable, and a lingering stream fights /capture for
+    // the camera lock.
+    cameraStreamUrl.value = ''
+    await delay(300)
     cameraCountdown.value = 0
     const path = await captureFromHardware()
     if (cameraResolve) { cameraResolve(path); cameraResolve = null }
