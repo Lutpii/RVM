@@ -148,19 +148,18 @@ function confettiStyle(i) {
 }
 
 async function goHome() {
-  const machineCode  = rvm.guestMachineCode || route.params.machineCode
-  const isKiosk      = route.path.startsWith('/kiosk/')
-  const displayName  = summary.value?.user_name || auth.user?.name || 'Guest'
+  const machineCode = rvm.guestMachineCode || route.params.machineCode
+  const isKiosk = route.path.startsWith('/kiosk/')
   setKioskToken(null)
   rvm.resetSession()
   if (isKiosk && machineCode) {
     await auth.logout()
     // Reset the kiosk display to its own default look for the next customer.
     document.documentElement.setAttribute('data-theme', 'dark')
-    router.push({ path: '/thank-you', query: { redirect: `/kiosk/${machineCode}`, name: displayName } })
+    router.push(`/kiosk/${machineCode}`)
   } else {
     await auth.logout()
-    router.push({ path: '/thank-you', query: { redirect: '/', name: displayName } })
+    router.push('/')
   }
 }
 

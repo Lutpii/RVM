@@ -200,7 +200,7 @@ function startPoll() {
           return
         }
 
-        // No kiosk token — pure guest mode
+        // No kiosk token — pure guest mode, straight into the session (no name to greet)
         const md = machineData ? {
           id: machineData.id,
           name: machineData.name,
@@ -211,11 +211,8 @@ function startPoll() {
           paper_level:    machineData.bins?.paper    ?? 0,
         } : null
         rvm.startGuestSession(machineCode, md)
-        if (rvm.session) rvm.session.user_name = 'Guest'
-        router.push({
-          path: '/welcome',
-          query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest' },
-        })
+        if (rvm.session) rvm.session.user_name = scannedUser.value
+        router.push(`/kiosk/${machineCode}/session`)
       } else if (res.data.status === 'expired') {
         handleExpiry()
       }
@@ -246,11 +243,7 @@ function clearIntervals() {
 function startAsGuest() {
   clearIntervals()
   rvm.startGuestSession(machineCode)
-  if (rvm.session) rvm.session.user_name = 'Guest'
-  router.push({
-    path: '/welcome',
-    query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest' },
-  })
+  router.push(`/kiosk/${machineCode}/session`)
 }
 
 async function startAuthenticatedSession() {

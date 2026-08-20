@@ -691,23 +691,24 @@ async function simulateInsert() {
 }
 
 async function confirmEndSession() {
+  const displayName = auth.user?.name || rvm.session?.user_name || 'Guest'
+  let summaryPath
+
   if (rvm.isGuest) {
     await rvm.endSession()
-    router.push(`/kiosk/${rvm.guestMachineCode}/summary`)
-    return
-  }
-  try {
-    const res = await rvm.endSession()
-    const finalPoints = res?.session?.current_points ?? res?.session?.end_points ?? displayPoints.value
-    if (auth.user) auth.updatePoints(finalPoints)
-  } catch {
-    if (auth.user) auth.updatePoints(displayPoints.value)
-  }
-  if (isKioskRoute.value) {
-    router.push(`/kiosk/${kioskMachineCode.value}/summary`)
+    summaryPath = `/kiosk/${rvm.guestMachineCode}/summary`
   } else {
-    router.push('/session/summary')
+    try {
+      const res = await rvm.endSession()
+      const finalPoints = res?.session?.current_points ?? res?.session?.end_points ?? displayPoints.value
+      if (auth.user) auth.updatePoints(finalPoints)
+    } catch {
+      if (auth.user) auth.updatePoints(displayPoints.value)
+    }
+    summaryPath = isKioskRoute.value ? `/kiosk/${kioskMachineCode.value}/summary` : '/session/summary'
   }
+
+  router.push({ path: '/thank-you', query: { redirect: summaryPath, name: displayName } })
 }
 
 function delay(ms) {

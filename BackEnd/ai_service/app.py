@@ -14,14 +14,11 @@ CORS(app)
 API_KEY = os.environ.get('AI_API_KEY', 'rvm_ai_secret_key_2024')
 
 _HERE = pathlib.Path(__file__).parent
-# best_exp6.pt is the model actually in use (3 classes: aluminium can, glass
-# bottle, plastic bottle — no paper). It's listed first on purpose so it wins
-# even if an older best.pt happens to also be sitting in the repo root.
 _MODEL_CANDIDATES = [
-    _HERE.parent.parent / 'best_exp6.pt',
-    _HERE / 'model' / 'best_exp6.pt',
     _HERE.parent.parent / 'best.pt',
+    _HERE.parent.parent / 'best_exp6.pt',
     _HERE / 'model' / 'best.pt',
+    _HERE / 'model' / 'best_exp6.pt',
 ]
 MODEL_PATH = next((str(p) for p in _MODEL_CANDIDATES if p.exists()), str(_MODEL_CANDIDATES[0]))
 
