@@ -390,13 +390,13 @@ async function startCameraMode() {
       cameraCountdown.value = i
       await delay(1300)
     }
-    // Explicitly blank the <img> src WHILE it's still mounted, to force the
-    // browser to actually abort the MJPEG connection — swapping it out via
-    // v-if alone isn't reliable, and a lingering stream fights /capture for
-    // the camera lock.
-    cameraStreamUrl.value = ''
-    await delay(300)
+    // Unmount the <img> (v-if goes false) so the browser drops the MJPEG
+    // connection. That alone isn't guaranteed to happen instantly, so
+    // /capture also force-stops the stream server-side as a backstop (see
+    // app.py's _stream_active) — otherwise a lingering stream can hold
+    // camera_lock forever and make /capture hang indefinitely.
     cameraCountdown.value = 0
+    cameraStreamUrl.value = ''
     const path = await captureFromHardware()
     if (cameraResolve) { cameraResolve(path); cameraResolve = null }
     return

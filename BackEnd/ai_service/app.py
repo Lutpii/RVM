@@ -203,12 +203,23 @@ def health():
 
 camera_lock = threading.Lock()
 
+# Signals an in-flight /stream generator to stop. A browser dropping the
+# <img> tag doesn't reliably abort the underlying MJPEG connection, so
+# without this a stale stream can hold camera_lock forever and make
+# /capture hang indefinitely waiting for it.
+_stream_active = threading.Event()
+
 
 @app.route('/capture', methods=['POST'])
 @require_api_key
 def capture():
     if not HARDWARE_AVAILABLE:
         return jsonify({'success': False, 'error': 'Camera not available on this device.'}), 503
+
+    # Force any lingering stream to exit its loop (within one ~0.15s tick)
+    # and release camera_lock, instead of trusting the client actually
+    # closed the connection.
+    _stream_active.clear()
 
     with camera_lock:
         frame = camera.capture_array()
@@ -221,19 +232,23 @@ def capture():
 
 
 def _generate_mjpeg():
-    while True:
-        with camera_lock:
-            if not HARDWARE_AVAILABLE:
-                break
-            frame = camera.capture_array()
-        # Picamera2's 'RGB888' stream is actually ordered BGR (OpenCV convention) —
-        # reverse the channel axis so the preview shows correct on-screen colors.
-        # /capture and /classify are left untouched since detection already works.
-        img = Image.fromarray(frame[:, :, ::-1])
-        buf = io.BytesIO()
-        img.save(buf, format='JPEG', quality=70)
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buf.getvalue() + b'\r\n')
-        time.sleep(0.15)  # ~6-7 fps — plenty for a kiosk preview, light on CPU
+    _stream_active.set()
+    try:
+        while _stream_active.is_set():
+            with camera_lock:
+                if not HARDWARE_AVAILABLE:
+                    break
+                frame = camera.capture_array()
+            # Picamera2's 'RGB888' stream is actually ordered BGR (OpenCV convention) —
+            # reverse the channel axis so the preview shows correct on-screen colors.
+            # /capture and /classify are left untouched since detection already works.
+            img = Image.fromarray(frame[:, :, ::-1])
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=70)
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buf.getvalue() + b'\r\n')
+            time.sleep(0.15)  # ~6-7 fps — plenty for a kiosk preview, light on CPU
+    finally:
+        _stream_active.clear()
 
 
 @app.route('/stream')
