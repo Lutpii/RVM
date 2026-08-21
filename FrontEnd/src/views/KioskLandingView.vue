@@ -65,7 +65,7 @@ function goToQr() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #0f172a;
+  background: #f0f4f8;
   position: relative;
   overflow: hidden;
 }
@@ -73,8 +73,8 @@ function goToQr() {
 .kiosk-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(78,110,242,0.25) 0%, transparent 65%),
-              radial-gradient(ellipse at 80% 100%, rgba(34,197,94,0.15) 0%, transparent 50%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(78,110,242,0.14) 0%, transparent 65%),
+              radial-gradient(ellipse at 80% 100%, rgba(34,197,94,0.12) 0%, transparent 50%);
 }
 
 .kiosk-content {
@@ -100,14 +100,14 @@ function goToQr() {
 .rvm-title {
   font-size: 52px;
   font-weight: 800;
-  color: #fff;
+  color: #1a202c;
   letter-spacing: -1px;
   margin: 0;
 }
 
 .rvm-subtitle {
   font-size: 22px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(26,32,44,0.55);
   margin: 0;
 }
 
@@ -115,11 +115,11 @@ function goToQr() {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 999px;
   padding: 8px 20px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(26,32,44,0.7);
   font-size: 16px;
 }
 
@@ -159,7 +159,7 @@ function goToQr() {
 }
 
 .hint-text {
-  color: rgba(255,255,255,0.35);
+  color: rgba(26,32,44,0.4);
   font-size: 15px;
   margin: 0;
 }
@@ -171,14 +171,14 @@ function goToQr() {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: rgba(255,255,255,0.2);
+  color: rgba(26,32,44,0.35);
   font-size: 13px;
 }
 
 .dsme-logo {
   height: 32px;
   width: auto;
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */

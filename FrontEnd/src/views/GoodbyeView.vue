@@ -6,12 +6,7 @@
       <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
 
       <div class="welcome-icon-float">
-        <svg class="welcome-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em">
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-          <path d="M21 3v5h-5"/>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-          <path d="M3 21v-5h5"/>
-        </svg>
+        <div class="welcome-icon">♻️</div>
       </div>
 
       <h1 class="welcome-title">Thank You, <span class="user-name">{{ userName }}</span>!</h1>
@@ -38,8 +33,19 @@ const auth   = useAuthStore()
 const userName = computed(() => auth.user?.name || route.query.name || 'there')
 
 onMounted(() => {
+  // Default to light. A logged-in user's own dark preference wins — either
+  // this browser's own session (regular web login), or the ending session's
+  // theme passed via ?theme= (this browser isn't logged in on the kiosk,
+  // only the phone was).
+  document.documentElement.setAttribute('data-theme', route.query.theme || auth.user?.theme_preference || 'light')
+
   const target = route.query.redirect || '/'
   setTimeout(() => {
+    // Back to the kiosk's default look for whoever arrives next — regular
+    // web navigation (non-kiosk) keeps whatever the browser had instead.
+    if (target.startsWith('/kiosk/')) {
+      document.documentElement.setAttribute('data-theme', 'light')
+    }
     router.replace(target)
   }, 3000)
 })

@@ -145,11 +145,11 @@ function startPoll() {
         clearIntervals()
         isActive = false
 
-        // Apply the scanned user's theme for the rest of this kiosk session.
-        // Landing/QR screens stay dark regardless (they don't use theme variables).
-        if (res.data.theme_preference) {
-          document.documentElement.setAttribute('data-theme', res.data.theme_preference)
-        }
+        // Apply the scanned user's theme for the rest of this kiosk session —
+        // default light if they've never set a preference. Landing/QR screens
+        // stay light regardless (they don't use theme variables).
+        const scannedTheme = res.data.theme_preference || 'light'
+        document.documentElement.setAttribute('data-theme', scannedTheme)
 
         if (res.data.kiosk_token) {
           // Authenticated kiosk session — real user, real API calls
@@ -195,7 +195,7 @@ function startPoll() {
           // Real logged-in user — show the welcome splash before the session starts.
           router.push({
             path: '/welcome',
-            query: { redirect: `/kiosk/${machineCode}/session`, name: scannedUser.value },
+            query: { redirect: `/kiosk/${machineCode}/session`, name: scannedUser.value, theme: scannedTheme },
           })
           return
         }
@@ -212,9 +212,10 @@ function startPoll() {
         } : null
         rvm.startGuestSession(machineCode, md)
         if (rvm.session) rvm.session.user_name = 'Guest'
+        // scannedTheme already defaulted to 'light' above (guests have no saved preference).
         router.push({
           path: '/welcome',
-          query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest' },
+          query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest', theme: scannedTheme },
         })
       } else if (res.data.status === 'expired') {
         handleExpiry()
@@ -247,9 +248,11 @@ function startAsGuest() {
   clearIntervals()
   rvm.startGuestSession(machineCode)
   if (rvm.session) rvm.session.user_name = 'Guest'
+  // Guests default to light mode.
+  document.documentElement.setAttribute('data-theme', 'light')
   router.push({
     path: '/welcome',
-    query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest' },
+    query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest', theme: 'light' },
   })
 }
 
@@ -312,7 +315,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .kiosk-qr {
   min-height: 100vh;
-  background: #0f172a;
+  background: #f0f4f8;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -323,7 +326,7 @@ onBeforeUnmount(() => {
 .kiosk-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% -10%, rgba(78,110,242,0.2) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% -10%, rgba(78,110,242,0.12) 0%, transparent 60%);
 }
 
 .qr-header {
@@ -335,17 +338,17 @@ onBeforeUnmount(() => {
   padding: 20px 32px;
 }
 .back-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.08);
+  color: rgba(26,32,44,0.65);
   padding: 8px 18px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
 }
-.back-btn:hover { background: rgba(255,255,255,0.14); }
+.back-btn:hover { background: rgba(0,0,0,0.08); }
 .machine-label {
-  color: rgba(255,255,255,0.4);
+  color: rgba(26,32,44,0.4);
   font-size: 13px;
   font-family: monospace;
 }
@@ -373,13 +376,13 @@ onBeforeUnmount(() => {
 .qr-title {
   font-size: 36px;
   font-weight: 800;
-  color: #fff;
+  color: #1a202c;
   margin: 0;
 }
 .qr-title.green { color: #22c55e; }
 .qr-sub {
   font-size: 16px;
-  color: rgba(255,255,255,0.55);
+  color: rgba(26,32,44,0.6);
   margin: 0;
 }
 
@@ -431,7 +434,7 @@ onBeforeUnmount(() => {
 .qr-url {
   font-family: monospace;
   font-size: 11px;
-  color: rgba(255,255,255,0.25);
+  color: rgba(26,32,44,0.3);
   word-break: break-all;
   max-width: 320px;
 }
@@ -448,7 +451,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(26,32,44,0.55);
   font-size: 14px;
 }
 .step-num {
@@ -467,7 +470,7 @@ onBeforeUnmount(() => {
 .timer-bar {
   width: 260px;
   height: 4px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.08);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -478,7 +481,7 @@ onBeforeUnmount(() => {
   border-radius: 2px;
 }
 .timer-text {
-  color: rgba(255,255,255,0.25);
+  color: rgba(26,32,44,0.4);
   font-size: 12px;
   margin: 0;
 }
@@ -496,7 +499,7 @@ onBeforeUnmount(() => {
 }
 @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .success-icon { width: 52px; height: 52px; color: #22c55e; }
-.redirect-hint { color: rgba(255,255,255,0.3); font-size: 14px; margin: 0; }
+.redirect-hint { color: rgba(26,32,44,0.4); font-size: 14px; margin: 0; }
 
 /* Expired */
 .expired-icon { font-size: 64px; }
@@ -512,10 +515,10 @@ onBeforeUnmount(() => {
 .guest-divider-line {
   flex: 1;
   height: 1px;
-  background: rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.1);
 }
 .guest-divider-text {
-  color: rgba(255,255,255,0.3);
+  color: rgba(26,32,44,0.35);
   font-size: 12px;
 }
 
@@ -526,19 +529,19 @@ onBeforeUnmount(() => {
   gap: 4px;
   width: 260px;
   padding: 14px 20px;
-  background: rgba(255,255,255,0.05);
-  border: 1px dashed rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.02);
+  border: 1px dashed rgba(0,0,0,0.15);
   border-radius: 12px;
-  color: rgba(255,255,255,0.65);
+  color: rgba(26,32,44,0.7);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 .guest-btn:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.35);
-  color: rgba(255,255,255,0.9);
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.3);
+  color: rgba(26,32,44,0.95);
 }
 .guest-btn-icon { width: 22px; height: 22px; margin-bottom: 2px; }
 .guest-btn-note {
