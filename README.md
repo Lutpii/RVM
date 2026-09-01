@@ -25,14 +25,20 @@ RVM/
 │   ├── routes/api.php
 │   ├── ai_service/            ← Python Flask + YOLOv8 microservice
 │   │   ├── app.py
+│   │   ├── model/               ← working copies of trained weights (see AI Service below)
 │   │   └── requirements.txt
 │   └── .env.example
 │
-└── database/
-    └── rvm_db.sql             ← MySQL schema + demo seed data (see caveat below)
+├── database/
+│   └── rvm_db.sql             ← MySQL schema + demo seed data (see caveat below)
+│
+├── deploy/                   ← Nginx / systemd / kiosk-autostart configs for the Raspberry Pi target
+├── docs/                      ← DEPLOY_RASPBERRY_PI.md and other reference docs
+├── backup/                    ← archived trained model weights (best.pt, best_exp6.pt)
+└── materials/                 ← course report/presentation material (not required to run the app)
 ```
 
-> `materials/` (`generate_ppt.py`, `presentation*.html`) holds supporting report/presentation material for the course project — not required to run the web app itself. Trained model weights (`best.pt`, `best_exp6.pt`) live in `backup/`; the AI service loads its own copy from `BackEnd/ai_service/model/`, see [AI Service](#-ai-service--yolov8-model) below.
+> `materials/` (`generate_ppt.py`, `presentation*.html`) holds supporting report/presentation material for the course project — not required to run the web app itself. Trained model weights (`best.pt`, `best_exp6.pt`) are archived in `backup/`; the AI service actually loads its working copy from `BackEnd/ai_service/model/`, see [AI Service](#-ai-service--yolov8-model) below.
 
 ---
 
@@ -184,16 +190,18 @@ UPDATE users SET role = 'admin', is_verified = 1 WHERE email = 'you@example.com'
 
 ## 🤖 AI Service / YOLOv8 model
 
-`BackEnd/ai_service/app.py` looks for a trained model in this order:
+`BackEnd/ai_service/app.py` looks for a trained model in this order, using the first one that exists:
 
-1. `<repo root>/best.pt`
-2. `BackEnd/ai_service/model/best.pt`
+1. `<repo root>/best_exp6.pt`
+2. `BackEnd/ai_service/model/best_exp6.pt` ← **the model actually in use** (3 classes: `aluminium can`, `glass bottle`, `plastic bottle`)
+3. `<repo root>/best.pt`
+4. `BackEnd/ai_service/model/best.pt` (older 4-class fallback: `aluminum`, `plastic`, `glass`, `paper`)
 
-`*.pt` files are excluded from git (large binaries), so **a fresh clone from GitHub has no model file** — the AI service will log a warning and automatically run in **mock mode**, returning a random material + confidence for every classification request. This lets you exercise the entire recycling flow end-to-end without a real model.
+This repo keeps its trained weights out of the repo root — `best.pt` and `best_exp6.pt` live in `backup/`, with a working copy of `best_exp6.pt` placed at `BackEnd/ai_service/model/best_exp6.pt` so candidate #2 above resolves. `*.pt` files are excluded from git (large binaries), so **a fresh clone from GitHub has no model file** — the AI service will log a warning and automatically run in **mock mode**, returning a random material + confidence for every classification request. This lets you exercise the entire recycling flow end-to-end without a real model.
 
-The service expects a model trained on 4 classes: `aluminum`, `plastic`, `glass`, `paper` (class names come from the model itself if present, otherwise this fallback list is used).
+Class names come from the model itself when a model is loaded; `['aluminum', 'plastic', 'glass', 'paper']` is only used as a fallback label list in mock mode.
 
-**To use a real trained model**, place your weights at either path above and restart `python app.py`.
+**To use a real trained model**, place your weights at any of the paths above (matching filename matters — `best_exp6.pt` takes priority over `best.pt`) and restart `python app.py`.
 
 **Test the AI service directly:**
 ```bash

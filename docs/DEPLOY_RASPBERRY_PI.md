@@ -128,7 +128,7 @@ pip install gpiozero
 deactivate
 ```
 
-Taruh file model (`best.pt` atau `best_exp6.pt`) di `~/RVM/best.pt` (root project) atau `~/RVM/BackEnd/ai_service/model/best.pt` — `app.py` otomatis mencari di kedua lokasi itu.
+Taruh file model di `~/RVM/BackEnd/ai_service/model/best_exp6.pt` (model yang benar-benar dipakai, 3 kelas) — `app.py` mencari `best_exp6.pt` lebih dulu daripada `best.pt`, baik di root project maupun di `BackEnd/ai_service/model/`. Lihat urutan lengkapnya di `app.py` (`_MODEL_CANDIDATES`) atau README bagian [AI Service](../README.md#-ai-service--yolov8-model).
 
 ```bash
 sudo cp ~/RVM/deploy/rvm-ai.service /etc/systemd/system/rvm-ai.service
