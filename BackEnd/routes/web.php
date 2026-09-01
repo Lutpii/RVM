@@ -18,5 +18,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Google OAuth callback — must be a web route (browser redirect, not API call)
+// Google OAuth — both must be 'web' routes reached by real browser navigation
+// (not the frontend's proxied API client): googleStart() sets a cookie that
+// googleCallback() later reads, and both only see it if the browser talks to
+// this exact host both times, same as any 'web'-group cookie.
+Route::get('/auth/google/start', [AuthController::class, 'googleStart']);
 Route::get('/auth/google/callback', [AuthController::class, 'googleCallback']);

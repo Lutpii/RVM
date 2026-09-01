@@ -28,6 +28,15 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // /qr/status/{token} is public (the physical kiosk polls it with no auth,
+        // by design) and its {token} space is small enough to brute-force under
+        // the generic 60/min API limit, so it gets its own tighter cap. A real
+        // kiosk only ever polls its own single token every few seconds — this
+        // limit only bites a sweep across many guessed tokens.
+        RateLimiter::for('qr-status', function (Request $request) {
+            return Limit::perMinute(20)->by($request->ip());
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

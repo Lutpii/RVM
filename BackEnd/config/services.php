@@ -18,10 +18,11 @@ return [
         'sender' => env('FONNTE_SENDER'),
     ],
 
-    // Python AI Service
+    // Python AI Service — no fallback default: a missing key must fail loudly,
+    // not silently resolve to a value that's public knowledge from the repo.
     'ai' => [
         'url' => env('AI_SERVICE_URL', 'http://localhost:5000'),
-        'key' => env('AI_SERVICE_KEY', 'rvm_ai_secret_key_2024'),
+        'key' => env('AI_SERVICE_KEY'),
     ],
 
     // Vue Frontend URL (used to build QR scan links)

@@ -34,7 +34,7 @@ class UserController extends Controller
         $user = $request->user();
         $request->validate([
             'name'     => 'sometimes|string|max:100',
-            'password' => 'sometimes|string|min:6|confirmed',
+            'password' => 'sometimes|string|min:8|confirmed',
             'preferred_language' => 'sometimes|in:en,id',
             'theme_preference'   => 'sometimes|in:dark,light',
         ]);

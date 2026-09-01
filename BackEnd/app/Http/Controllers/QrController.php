@@ -32,8 +32,10 @@ class QrController extends Controller
             ->where('expires_at', '<', Carbon::now())
             ->update(['status' => 'expired']);
 
-        // Generate new token — 8 uppercase chars, easy to type manually
-        $token = strtoupper(Str::random(4));
+        // Generate new token — 6 uppercase chars, still easy to type manually but
+        // large enough (36^6 ≈ 2.2B combinations) to resist brute force even before
+        // the qr-status rate limiter kicks in.
+        $token = strtoupper(Str::random(6));
 
         $qrSession = QrSession::create([
             'machine_id' => $machine->id,
@@ -81,8 +83,11 @@ class QrController extends Controller
             return response()->json(['success' => false, 'message' => 'QR token not found.'], 404);
         }
 
-        // Only expire pending QRs — a scanned session keeps its kiosk_token valid
-        if ($qrSession->status === 'pending' && Carbon::now()->isAfter($qrSession->expires_at)) {
+        // expires_at means two different things depending on status: for a
+        // 'pending' QR it's the 5-minute scan window; for a 'scanned' one it's the
+        // kiosk_token's own TTL (see scan()). Either way, once it's passed the
+        // session (and its kiosk_token) is dead.
+        if (Carbon::now()->isAfter($qrSession->expires_at) && $qrSession->status !== 'expired') {
             $qrSession->update(['status' => 'expired']);
         }
 
@@ -122,7 +127,10 @@ class QrController extends Controller
             'status'           => $qrSession->status,
             'user_name'        => $qrSession->scannedUser?->name,
             'theme_preference' => $qrSession->scannedUser?->theme_preference,
-            'kiosk_token'      => $qrSession->kiosk_token,
+            // Only handed out while the session is actually live — once it flips
+            // to 'expired' above, the kiosk has no further use for this value and
+            // there's no reason to keep echoing a dead (or brute-forced) token.
+            'kiosk_token'      => $qrSession->status === 'scanned' ? $qrSession->kiosk_token : null,
             'session'          => $sessionData,
         ]);
     }
@@ -148,7 +156,14 @@ class QrController extends Controller
 
         $user = $request->user();
         $kioskToken = Str::random(64);
-        $qrSession->update(['status' => 'scanned', 'scanned_by' => $user->id, 'kiosk_token' => $kioskToken]);
+        // Re-purpose expires_at as the kiosk_token's own TTL once scanned — a kiosk
+        // session has no business staying authenticatable longer than one visit.
+        $qrSession->update([
+            'status'      => 'scanned',
+            'scanned_by'  => $user->id,
+            'kiosk_token' => $kioskToken,
+            'expires_at'  => Carbon::now()->addHours(2),
+        ]);
 
         $machine = $qrSession->machine;
 

@@ -21,13 +21,17 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/send-otp', [AuthController::class, 'sendOtp']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    // Just hands back this server's real absolute URL for /auth/google/start
+    // (see AuthController::googleRedirect docblock) — sets no cookie itself,
+    // so no special middleware needed here.
     Route::get('/google/redirect', [AuthController::class, 'googleRedirect']);
+    Route::post('/google/exchange', [AuthController::class, 'googleExchange']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
 });
 
 // QR public endpoint (for RVM machine display)
 Route::get('/qr/generate/{machineCode}', [QrController::class, 'generate']);
-Route::get('/qr/status/{token}', [QrController::class, 'status']);
+Route::get('/qr/status/{token}', [QrController::class, 'status'])->middleware('throttle:qr-status');
 
 // Machine public info
 Route::get('/machines', [MachineController::class, 'index']);

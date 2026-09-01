@@ -3,15 +3,40 @@ import io
 import time
 import threading
 import pathlib
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
 from ultralytics import YOLO
 from PIL import Image
 
-app = Flask(__name__)
-CORS(app)
+load_dotenv()
 
-API_KEY = os.environ.get('AI_API_KEY', 'rvm_ai_secret_key_2024')
+app = Flask(__name__)
+# Reject oversized uploads at the WSGI layer before they ever reach PIL/YOLO —
+# closes a straightforward DoS vector (large-file decode + inference cost) on
+# hardware with little to spare (a Raspberry Pi). 8 MB comfortably covers a
+# real camera-capture JPEG.
+app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024
+
+# No fallback default — a missing key must fail loudly at startup rather than
+# silently accept a value that's public knowledge from the repo. (A bare
+# `os.environ.get('AI_API_KEY')` with no default would be worse than the old
+# hardcoded one: request.headers.get() also returns None for a request with no
+# X-API-Key header at all, so None != None would pass require_api_key() for
+# EVERY unauthenticated caller.)
+API_KEY = os.environ.get('AI_API_KEY')
+if not API_KEY:
+    raise RuntimeError(
+        "AI_API_KEY is not set. Create ai_service/.env with AI_API_KEY=<a random "
+        "secret> matching BackEnd/.env's AI_SERVICE_KEY (see ai_service/.env.example)."
+    )
+
+# Restrict to the actual frontend origin(s) instead of CORS(app)'s default '*'
+# — comma-separated in .env so a Pi/kiosk deployment can list its own hostname.
+_allowed_origins = [o.strip() for o in os.environ.get(
+    'ALLOWED_ORIGINS', 'https://localhost:5173,https://localhost:4173'
+).split(',') if o.strip()]
+CORS(app, origins=_allowed_origins)
 
 _HERE = pathlib.Path(__file__).parent
 # best_exp6.pt is the model actually in use (3 classes: aluminium can, glass
@@ -252,10 +277,12 @@ def _generate_mjpeg():
 
 
 @app.route('/stream')
+@require_api_key
 def stream():
-    # No @require_api_key: this is loaded directly by an <img> tag, which can't
-    # send custom headers. Only reachable on the LAN (proxied through Nginx),
-    # and only ever shows a camera preview — no sensitive data.
+    # The browser <img> tag can't send a custom header itself, so in production
+    # Nginx injects X-API-Key when it proxies /ai-stream -> here (see
+    # deploy/nginx-rvm.conf). Direct-to-Flask access without going through that
+    # proxy is rejected like every other endpoint.
     if not HARDWARE_AVAILABLE:
         return jsonify({'error': 'Camera not available on this device.'}), 503
     return Response(_generate_mjpeg(), mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -285,7 +312,13 @@ def classify():
         return jsonify({'error': 'No image provided'}), 400
 
     file = request.files['image']
-    img = Image.open(io.BytesIO(file.read())).convert('RGB')
+    if file.mimetype not in ('image/jpeg', 'image/png'):
+        return jsonify({'error': 'Unsupported file type.'}), 400
+
+    try:
+        img = Image.open(io.BytesIO(file.read())).convert('RGB')
+    except Exception:
+        return jsonify({'error': 'Could not read image.'}), 400
 
     if model is None:
         import random

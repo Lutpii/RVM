@@ -28,6 +28,17 @@ class AiService
             return $this->mockClassify();
         }
 
+        // Only ever accept the exact shape our own capture()/upload code produces
+        // (captures/<random>.<ext>) before it's concatenated into a filesystem
+        // path. Anything else — "../../../.env", an absolute path, a different
+        // directory — is rejected outright rather than passed to storage_path(),
+        // which prevents path traversal / arbitrary file read via a crafted
+        // image_path.
+        if (!preg_match('#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i', $imagePath)) {
+            Log::warning("AI: rejected malformed/suspicious image_path: {$imagePath}");
+            return $this->mockClassify();
+        }
+
         try {
             $fullPath = storage_path('app/public/' . $imagePath);
 

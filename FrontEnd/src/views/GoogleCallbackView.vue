@@ -15,25 +15,31 @@
 import { onMounted, ref } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import api from '@/services/api'
 
 const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 const error  = ref('')
 
-onMounted(() => {
-  const token   = route.query.token
-  const userRaw = route.query.user
-  const err     = route.query.error
+onMounted(async () => {
+  const code = route.query.code
+  const err  = route.query.error
 
-  if (err || !token || !userRaw) {
+  if (err || !code) {
     error.value = 'Google sign-in failed. Please try again.'
     return
   }
 
+  // The backend hands us a short-lived, single-use code rather than the real
+  // token — this call redeems it. A code that's already been used (e.g. this
+  // link was opened by someone else first) fails here instead of silently
+  // signing this browser in as whoever redeemed it.
   try {
-    const user = JSON.parse(decodeURIComponent(userRaw))
-    auth.setAuth(user, token)
+    const res = await api.post('/auth/google/exchange', { code })
+    if (!res.data.success) throw new Error(res.data.message || 'exchange failed')
+
+    auth.setAuth(res.data.user, res.data.token)
 
     const redirect = sessionStorage.getItem('rvm_post_login_redirect')
     sessionStorage.removeItem('rvm_post_login_redirect')

@@ -5,6 +5,9 @@ use Illuminate\Http\Request;
 
 class AdminMiddleware {
     public function handle(Request $request, Closure $next) {
+        if ($request->attributes->get('via_kiosk_token')) {
+            return response()->json(['success' => false, 'message' => 'Access denied. Admin only.'], 403);
+        }
         if ($request->user()?->role !== 'admin') {
             return response()->json(['success' => false, 'message' => 'Access denied. Admin only.'], 403);
         }

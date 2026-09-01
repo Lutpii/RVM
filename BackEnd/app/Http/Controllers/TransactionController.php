@@ -10,6 +10,7 @@ use App\Services\AiService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 
 class TransactionController extends Controller
 {
@@ -116,7 +117,10 @@ class TransactionController extends Controller
     // Step 5: Capture image
     public function captureImage(Request $request): JsonResponse
     {
-        $request->validate(['session_code' => 'required|string']);
+        $request->validate([
+            'session_code' => 'required|string',
+            'image'        => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
+        ]);
         $session = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
 
@@ -142,7 +146,7 @@ class TransactionController extends Controller
         $request->validate([
             'session_code'      => 'required|string',
             'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
-            'image_path'        => 'nullable|string',
+            'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
         $session  = $this->getActiveSession($request);
@@ -181,7 +185,7 @@ class TransactionController extends Controller
             'session_code'      => 'required|string',
             'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
             'ai_detected_type'  => 'nullable|string',
-            'image_path'        => 'nullable|string',
+            'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
         $session  = $this->getActiveSession($request);
@@ -201,6 +205,16 @@ class TransactionController extends Controller
         };
         $pointsEarned  = self::calcPoints();
 
+        // Server-authoritative result for this session's pending item — complete()
+        // reads this back instead of trusting client-supplied weight/points, so a
+        // forged request body can no longer mint arbitrary points (Cache::pull in
+        // complete() also makes this single-use, preventing replay).
+        Cache::put(
+            "rvm:pending_txn:{$session->id}",
+            ['weight_grams' => $weightGrams, 'points_earned' => $pointsEarned, 'material' => $material],
+            now()->addMinutes(15)
+        );
+
         return response()->json([
             'success'       => true,
             'weight_grams'  => $weightGrams,
@@ -219,13 +233,24 @@ class TransactionController extends Controller
             'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
             'ai_detected_type'  => 'nullable|string',
             'ai_confidence'     => 'nullable|numeric',
-            'weight_grams'      => 'required|numeric',
-            'points_earned'     => 'required|integer',
-            'image_path'        => 'nullable|string',
+            'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
         $session = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
+
+        // weight_grams / points_earned are never taken from the client — they must
+        // have been computed and cached by weigh() for this exact session. Cache::pull
+        // also removes the entry, so the same weighed item can't be completed twice.
+        $pending = Cache::pull("rvm:pending_txn:{$session->id}");
+        if (!$pending) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No weighed item is pending for this session. Please weigh an item first.',
+            ], 400);
+        }
+        $weightGrams  = $pending['weight_grams'];
+        $pointsEarned = $pending['points_earned'];
 
         $user    = $request->user();
         $machine = $session->machine;
@@ -240,8 +265,8 @@ class TransactionController extends Controller
             'ai_detected_type'  => $materialUsed,
             'ai_confidence'     => $request->ai_confidence,
             'is_valid'          => 1,
-            'weight_grams'      => $request->weight_grams,
-            'points_earned'     => $request->points_earned,
+            'weight_grams'      => $weightGrams,
+            'points_earned'     => $pointsEarned,
             'points_deducted'   => 0,
             'image_path'        => $request->image_path,
         ]);
@@ -250,37 +275,37 @@ class TransactionController extends Controller
         $this->ai->sort($materialUsed);
 
         // Update user points
-        $user->increment('total_points', $request->points_earned);
+        $user->increment('total_points', $pointsEarned);
 
         // Record points history
         PointsHistory::create([
             'user_id'        => $user->id,
             'transaction_id' => $transaction->id,
             'session_id'     => $session->id,
-            'points_change'  => $request->points_earned,
+            'points_change'  => $pointsEarned,
             'balance_after'  => $user->fresh()->total_points,
             'type'           => 'earned',
-            'description'    => "Recycled {$request->weight_grams}g of {$request->material_selected}",
+            'description'    => "Recycled {$weightGrams}g of {$materialUsed}",
         ]);
 
         // Update bin level
-        $binField = $request->material_selected . '_level';
-        $newLevel = min(100, $machine->$binField + (int)($request->weight_grams / 50));
+        $binField = $materialUsed . '_level';
+        $newLevel = min(100, $machine->$binField + (int)($weightGrams / 50));
         $machine->update([$binField => $newLevel]);
 
         // Update session totals
         $session->increment('total_items');
-        $session->increment('points_earned', $request->points_earned);
+        $session->increment('points_earned', $pointsEarned);
         $session->update(['end_points' => $user->fresh()->total_points]);
 
         return response()->json([
             'success'        => true,
             'message'        => 'Transaction completed successfully!',
             'transaction_id' => $transaction->id,
-            'points_earned'  => $request->points_earned,
+            'points_earned'  => $pointsEarned,
             'total_points'   => $user->fresh()->total_points,
-            'weight_grams'   => $request->weight_grams,
-            'material'       => $request->material_selected,
+            'weight_grams'   => $weightGrams,
+            'material'       => $materialUsed,
             'step'           => 'complete',
         ]);
     }
@@ -293,7 +318,7 @@ class TransactionController extends Controller
             'material_selected' => 'required|in:aluminum,plastic,glass,paper',
             'ai_detected_type'  => 'required|string',
             'ai_confidence'     => 'nullable|numeric',
-            'image_path'        => 'nullable|string',
+            'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
         $session = $this->getActiveSession($request);
@@ -352,6 +377,10 @@ class TransactionController extends Controller
     // AI classification, and sorting servo.
     public function hardwareCapture(Request $request): JsonResponse
     {
+        $request->validate([
+            'image' => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
+        ]);
+
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('captures', 'public');
@@ -364,7 +393,9 @@ class TransactionController extends Controller
 
     public function hardwareClassify(Request $request): JsonResponse
     {
-        $request->validate(['image_path' => 'nullable|string']);
+        $request->validate([
+            'image_path' => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
+        ]);
 
         $aiResult = $this->ai->classify($request->image_path);
         $detected = $aiResult['material'] ?? 'unknown';

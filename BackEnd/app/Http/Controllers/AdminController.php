@@ -218,7 +218,15 @@ class AdminController extends Controller
         $machine = RvmMachine::find($id);
         if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
 
+        $request->validate([
+            'aluminum_level' => 'sometimes|integer|min:0|max:100',
+            'plastic_level'  => 'sometimes|integer|min:0|max:100',
+            'glass_level'    => 'sometimes|integer|min:0|max:100',
+            'paper_level'    => 'sometimes|integer|min:0|max:100',
+        ]);
+
         $machine->update($request->only(['aluminum_level', 'plastic_level', 'glass_level', 'paper_level']));
+        $this->log($request->user(), 'update_bin_levels', 'machine', $machine->id, "Bin levels updated for {$machine->name}");
         return response()->json(['success' => true, 'machine' => $machine]);
     }
 
@@ -389,10 +397,11 @@ class AdminController extends Controller
     }
 
     // Export all transactions as CSV
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
         $transactions = Transaction::with(['user', 'machine'])->latest()->get();
         $filename = 'rvm_report_' . now()->format('Y-m-d') . '.csv';
+        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported {$transactions->count()} transactions");
 
         return response()->streamDownload(function () use ($transactions) {
             $handle = fopen('php://output', 'w');
