@@ -26,6 +26,31 @@ export const useAuthStore = defineStore('auth', () => {
     api.defaults.headers.common['Authorization'] = `Bearer ${tokenValue}`
   }
 
+  // Used when entering the kiosk flow (see router/index.js) — a kiosk screen
+  // must never inherit a regular Bearer session left in this browser's
+  // storage (e.g. from testing both the phone and kiosk flows on one
+  // machine). Unlike clearAuth(), this never touches localStorage: it only
+  // clears this tab's in-memory/axios state, so a real user's own login is
+  // untouched if they navigate back to their own dashboard.
+  function suspendForKiosk() {
+    user.value  = null
+    token.value = null
+    delete api.defaults.headers.common['Authorization']
+  }
+
+  // Undoes suspendForKiosk() when navigating back out of the kiosk flow —
+  // re-reads whatever this browser's own login (if any) is from localStorage,
+  // since suspendForKiosk() never touched storage, only the reactive state.
+  function rehydrate() {
+    const storedUser  = JSON.parse(localStorage.getItem('rvm_user') || 'null')
+    const storedToken = localStorage.getItem('rvm_token') || null
+    user.value  = storedUser
+    token.value = storedToken
+    if (storedToken) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+    }
+  }
+
   function clearAuth() {
     // Save points per-user before clearing so re-login restores them if backend is stale
     if (user.value?.id != null && user.value?.total_points != null) {
@@ -113,6 +138,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user, token, isLoggedIn, isAdmin,
-    login, register, loginWithGoogle, sendOtp, verifyOtp, logout, fetchMe, setAuth, clearAuth, updatePoints,
+    login, register, loginWithGoogle, sendOtp, verifyOtp, logout, fetchMe, setAuth, clearAuth, suspendForKiosk, rehydrate, updatePoints,
   }
 })

@@ -86,12 +86,10 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
-import { useAuthStore } from '@/store/auth'
 
 const router      = useRouter()
 const route       = useRoute()
 const rvm         = useRvmStore()
-const auth        = useAuthStore()
 const machineCode = route.params.machineCode || 'RVM-001'
 
 const state          = ref('waiting') // waiting | scanned | expired
@@ -256,55 +254,15 @@ function startAsGuest() {
   })
 }
 
-async function startAuthenticatedSession() {
-  rvm.isGuest = false
-  if (auth.user?.theme_preference) {
-    document.documentElement.setAttribute('data-theme', auth.user.theme_preference)
-  }
-  try {
-    const res = await api.get('/machines')
-    const machine = (res.data.machines || []).find(m => m.machine_code === machineCode)
-    if (machine) {
-      try {
-        const sessionRes = await api.post('/sessions/start', {
-          machine_id: machine.id,
-          qr_token: 'KIOSK_' + Date.now(),
-        })
-        if (sessionRes.data.success) {
-          rvm.setMachine(machine)
-          rvm.setSession(sessionRes.data.session)
-          rvm.setStep('bin_check')
-          router.push(`/kiosk/${machineCode}/session`)
-          return
-        }
-      } catch (e) {
-        const errData = e.response?.data
-        // Resume existing active session instead of falling to QR mode
-        if (errData?.session_code) {
-          try {
-            const showRes = await api.get(`/sessions/${errData.session_code}`)
-            if (showRes.data.success) {
-              rvm.setMachine(showRes.data.session.machine || machine)
-              rvm.setSession(showRes.data.session)
-              rvm.setStep('bin_check')
-              router.push(`/kiosk/${machineCode}/session`)
-              return
-            }
-          } catch { /* fall through to QR */ }
-        }
-      }
-    }
-  } catch { /* fall through to QR */ }
-  generateQr()
-}
-
 onMounted(() => {
   isActive = true
-  if (auth.isLoggedIn) {
-    startAuthenticatedSession()
-  } else {
-    generateQr()
-  }
+  // Always wait for a real QR scan — a kiosk screen must never silently
+  // start a session as whoever happens to be logged into this browser (e.g.
+  // a leftover phone session from testing both flows on one machine). The
+  // only legitimate way to authenticate a kiosk session is scanning the QR
+  // with a phone, which hands this screen a kiosk_token (see handleScanned()
+  // above).
+  generateQr()
 })
 onBeforeUnmount(() => {
   isActive = false

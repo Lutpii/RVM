@@ -142,6 +142,21 @@ router.beforeEach((to, from, next) => {
 
   const authStore = useAuthStore()
 
+  // A kiosk screen always starts guest and waits for a QR scan — never
+  // silently inherit a regular Bearer session left in this browser's
+  // storage (e.g. from testing both the phone and kiosk flows on one
+  // machine). Only the pre-scan entry points need this; kiosk-session and
+  // kiosk-summary are reached solely via the legitimate scan flow afterward.
+  const kioskRouteNames = ['kiosk-landing', 'kiosk-qr', 'kiosk-session', 'kiosk-summary']
+  if (to.name === 'kiosk-landing' || to.name === 'kiosk-qr') {
+    authStore.suspendForKiosk()
+  } else if (kioskRouteNames.includes(from.name) && !kioskRouteNames.includes(to.name)) {
+    // Leaving the kiosk flow for a normal page — restore this browser's own
+    // login (if any) from storage, since suspendForKiosk() only cleared the
+    // in-memory state, never localStorage itself.
+    authStore.rehydrate()
+  }
+
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return next({ name: 'login', query: { redirect: to.fullPath } })
   }
