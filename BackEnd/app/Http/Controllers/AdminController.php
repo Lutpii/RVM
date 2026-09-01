@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\AdminLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
@@ -30,8 +31,24 @@ class AdminController extends Controller
         return self::DEFAULT_REWARD_CONFIG;
     }
 
+    private const ALLOWED_PER_PAGE = [15, 25, 50, 100, 200];
+    private const CACHE_TTL_SECONDS = 15;
+
+    private function resolvePerPage(Request $request): int
+    {
+        $value = (int) $request->query('per_page', 15);
+        return in_array($value, self::ALLOWED_PER_PAGE, true) ? $value : 15;
+    }
+
     // Dashboard stats
     public function dashboard(Request $request): JsonResponse
+    {
+        $stats = Cache::remember('admin:dashboard:stats', self::CACHE_TTL_SECONDS, fn () => $this->computeDashboardStats());
+
+        return response()->json(['success' => true, 'stats' => $stats]);
+    }
+
+    private function computeDashboardStats(): array
     {
         $totalUsers        = User::count();
         $totalMachines     = RvmMachine::count();
@@ -67,9 +84,7 @@ class AdminController extends Controller
             ->orWhere('paper_level', '>=', 90)
             ->get(['id','name','aluminum_level','plastic_level','glass_level','paper_level']);
 
-        return response()->json([
-            'success' => true,
-            'stats'   => [
+        return [
                 'total_users'        => $totalUsers,
                 'total_machines'     => $totalMachines,
                 'active_sessions'    => $activeSessions,
@@ -81,15 +96,24 @@ class AdminController extends Controller
                 'material_stats'     => $materialStats,
                 'recent_sessions'    => $recentSessions,
                 'full_bins'          => $fullBins,
-            ],
-        ]);
+        ];
     }
 
     // Users management
     public function users(Request $request): JsonResponse
     {
-        $users = User::orderByDesc('total_points')
-            ->paginate(50);
+        $search = trim((string) $request->query('search', ''));
+
+        $query = User::orderByDesc('total_points');
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->paginate($this->resolvePerPage($request));
 
         return response()->json(['success' => true, 'users' => $users]);
     }
@@ -199,15 +223,41 @@ class AdminController extends Controller
     }
 
     // Sessions & Transactions
-    public function allSessions(): JsonResponse
+    public function allSessions(Request $request): JsonResponse
     {
-        $sessions = RecyclingSession::with(['user', 'machine'])->latest()->paginate(20);
+        $search = trim((string) $request->query('search', ''));
+
+        $query = RecyclingSession::with(['user', 'machine'])->latest();
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('status', 'like', "%{$search}%")
+                  ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"))
+                  ->orWhereHas('machine', fn ($m) => $m->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        $sessions = $query->paginate($this->resolvePerPage($request));
         return response()->json(['success' => true, 'sessions' => $sessions]);
     }
 
-    public function allTransactions(): JsonResponse
+    public function allTransactions(Request $request): JsonResponse
     {
-        $transactions = Transaction::with(['user', 'machine', 'session'])->latest()->paginate(20);
+        $search = trim((string) $request->query('search', ''));
+        $status = $request->query('status');
+
+        $query = Transaction::with(['user', 'machine', 'session'])->latest();
+
+        if ($status === 'valid')    $query->where('is_valid', 1);
+        if ($status === 'rejected') $query->where('is_valid', 0);
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('material_selected', 'like', "%{$search}%")
+                  ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        $transactions = $query->paginate($this->resolvePerPage($request));
         return response()->json(['success' => true, 'transactions' => $transactions]);
     }
 
@@ -269,6 +319,13 @@ class AdminController extends Controller
     // 7-day daily collection trend + category breakdown + today overview
     public function chartData(): JsonResponse
     {
+        $data = Cache::remember('admin:dashboard:chart-data', self::CACHE_TTL_SECONDS, fn () => $this->computeChartData());
+
+        return response()->json(array_merge(['success' => true], $data));
+    }
+
+    private function computeChartData(): array
+    {
         $days   = collect(range(6, 0))->map(fn($i) => now()->subDays($i)->format('Y-m-d'));
         $labels = $days->map(fn($d) => \Carbon\Carbon::parse($d)->format('D'))->values();
 
@@ -318,8 +375,7 @@ class AdminController extends Controller
             $overview[$mat] = ['today' => $t, 'yesterday' => $y, 'pct' => $pct];
         }
 
-        return response()->json([
-            'success'   => true,
+        return [
             'labels'    => $labels,
             'datasets'  => $datasets,
             'breakdown' => [
@@ -329,7 +385,7 @@ class AdminController extends Controller
                 'glass'    => (int) ($breakdown['glass']    ?? 0),
             ],
             'overview'  => $overview,
-        ]);
+        ];
     }
 
     // Export all transactions as CSV

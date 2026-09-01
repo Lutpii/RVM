@@ -211,8 +211,8 @@
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> TRANSACTION LOG</h3>
             <div class="topbar-right">
-              <input v-model="txSearch" placeholder="Search user / item..." class="search-input" />
-              <select v-model="txFilter" class="filter-select">
+              <input v-model="txSearch" @keyup.enter="searchTransactions" placeholder="Search user / item... (press Enter)" class="search-input" />
+              <select v-model="txFilter" @change="filterTransactions" class="filter-select">
                 <option value="">All</option>
                 <option value="valid">OK</option>
                 <option value="rejected">Rejected</option>
@@ -234,7 +234,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="tx in filteredTransactions" :key="tx.id">
+                <tr v-for="tx in transactions" :key="tx.id">
                   <td class="mono small">{{ timeOnly(tx.created_at) }}</td>
                   <td class="mono">{{ formatUserId(tx.user) }}</td>
                   <td>
@@ -261,11 +261,26 @@
                     </span>
                   </td>
                 </tr>
-                <tr v-if="!filteredTransactions.length">
+                <tr v-if="!transactions.length">
                   <td colspan="7" class="empty-cell">No transactions found</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="pagination-bar">
+            <span class="pagination-label">{{ paginationLabel({ currentPage: txPage, perPage: txPerPage, total: txTotal }) }}</span>
+            <div class="pagination-controls">
+              <select v-model.number="txPerPage" @change="changeTxPerPage" class="filter-select">
+                <option :value="15">15 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+                <option :value="100">100 / page</option>
+                <option :value="200">200 / page</option>
+              </select>
+              <button class="action-btn" :disabled="txPage <= 1" @click="goToTxPage(txPage - 1)">← Prev</button>
+              <span class="pagination-page">Page {{ txPage }} of {{ txLastPage }}</span>
+              <button class="action-btn" :disabled="txPage >= txLastPage" @click="goToTxPage(txPage + 1)">Next →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -276,7 +291,7 @@
         <div v-else class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> ALL USERS</h3>
-            <input v-model="userSearch" placeholder="Search users..." class="search-input" />
+            <input v-model="userSearch" @keyup.enter="searchUsers" placeholder="Search users... (press Enter)" class="search-input" />
           </div>
           <div class="table-wrap">
             <table class="data-table">
@@ -286,7 +301,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="user in filteredUsers" :key="user.id">
+                <tr v-for="user in users" :key="user.id">
                   <td class="muted mono">{{ formatUserId(user) }}</td>
                   <td>
                     <div class="user-cell">
@@ -303,11 +318,26 @@
                     <button class="action-btn del-btn" @click="deleteUser(user.id)">Delete</button>
                   </td>
                 </tr>
-                <tr v-if="!filteredUsers.length">
+                <tr v-if="!users.length">
                   <td colspan="7" class="empty-cell">No users found</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="pagination-bar">
+            <span class="pagination-label">{{ paginationLabel({ currentPage: usersPage, perPage: usersPerPage, total: usersTotal }) }}</span>
+            <div class="pagination-controls">
+              <select v-model.number="usersPerPage" @change="changeUsersPerPage" class="filter-select">
+                <option :value="15">15 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+                <option :value="100">100 / page</option>
+                <option :value="200">200 / page</option>
+              </select>
+              <button class="action-btn" :disabled="usersPage <= 1" @click="goToUsersPage(usersPage - 1)">← Prev</button>
+              <span class="pagination-page">Page {{ usersPage }} of {{ usersLastPage }}</span>
+              <button class="action-btn" :disabled="usersPage >= usersLastPage" @click="goToUsersPage(usersPage + 1)">Next →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -375,7 +405,10 @@
       <!-- ── SESSIONS ── -->
       <div v-if="activeTab === 'sessions'" class="tab-content">
         <div class="section-card">
-          <h3 class="card-title-bar"><span class="title-sq"></span> ALL SESSIONS</h3>
+          <div class="card-header">
+            <h3 class="card-title-bar"><span class="title-sq"></span> ALL SESSIONS</h3>
+            <input v-model="sessionsSearch" @keyup.enter="searchSessions" placeholder="Search user / machine / status... (press Enter)" class="search-input" />
+          </div>
           <div v-if="loadingSessions" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="table-wrap">
             <table class="data-table">
@@ -399,6 +432,21 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="pagination-bar">
+            <span class="pagination-label">{{ paginationLabel({ currentPage: sessionsPage, perPage: sessionsPerPage, total: sessionsTotal }) }}</span>
+            <div class="pagination-controls">
+              <select v-model.number="sessionsPerPage" @change="changeSessionsPerPage" class="filter-select">
+                <option :value="15">15 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+                <option :value="100">100 / page</option>
+                <option :value="200">200 / page</option>
+              </select>
+              <button class="action-btn" :disabled="sessionsPage <= 1" @click="goToSessionsPage(sessionsPage - 1)">← Prev</button>
+              <span class="pagination-page">Page {{ sessionsPage }} of {{ sessionsLastPage }}</span>
+              <button class="action-btn" :disabled="sessionsPage >= sessionsLastPage" @click="goToSessionsPage(sessionsPage + 1)">Next →</button>
+            </div>
           </div>
         </div>
       </div>
@@ -516,6 +564,7 @@
             <input v-model="editingMachine.longitude" type="number" step="any" />
           </div>
         </div>
+        <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
           <button class="action-btn" @click="editingMachine = null">Cancel</button>
           <button class="action-btn edit-btn" @click="saveMachine" :disabled="savingMachine">
@@ -529,10 +578,16 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
+import { paginationLabel } from '@/utils/admin/paginationLabel.js'
+import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
+import { validateMachineName } from '@/utils/admin/validateMachine.js'
+import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
+import { isFresh } from '@/utils/admin/tabFreshness.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   ArcElement, Tooltip, Legend
@@ -560,9 +615,30 @@ const loadingTransactions = ref(false)
 
 const tabError = ref('')   // surfaced error message per tab
 
+// Skip re-fetching a tab if it was loaded this recently — makes rapid tab
+// switching feel instant instead of flashing a spinner every click.
+const TAB_STALE_MS = 10000
+const tabFetchedAt = reactive({ dashboard: 0, transactions: 0, users: 0, machines: 0, sessions: 0 })
+
 const userSearch = ref('')
 const txSearch = ref('')
 const txFilter = ref('')
+const sessionsSearch = ref('')
+
+const usersPage = ref(1)
+const usersPerPage = ref(15)
+const usersTotal = ref(0)
+const usersLastPage = ref(1)
+
+const txPage = ref(1)
+const txPerPage = ref(15)
+const txTotal = ref(0)
+const txLastPage = ref(1)
+
+const sessionsPage = ref(1)
+const sessionsPerPage = ref(15)
+const sessionsTotal = ref(0)
+const sessionsLastPage = ref(1)
 
 const editingUser = ref(null)
 const editingMachine = ref(null)
@@ -581,6 +657,7 @@ const recentSessions = ref([])
 const fullBins = ref([])
 
 const rewardEditValues = ref({ plastic: 5, aluminum: 8, glass: 5, paper: 3 })
+const savedRewardValues = ref({ plastic: 5, aluminum: 8, glass: 5, paper: 3 })
 
 const barChartData = ref(null)
 const donutChartData = ref(null)
@@ -703,27 +780,6 @@ const systemStatusItems = computed(() => {
   ]
 })
 
-const filteredUsers = computed(() => {
-  if (!userSearch.value) return users.value
-  const q = userSearch.value.toLowerCase()
-  return users.value.filter(u => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.includes(q))
-})
-
-const filteredTransactions = computed(() => {
-  let list = transactions.value
-  if (txFilter.value === 'valid')    list = list.filter(t => t.is_valid)
-  if (txFilter.value === 'rejected') list = list.filter(t => !t.is_valid)
-  if (txSearch.value) {
-    const q = txSearch.value.toLowerCase()
-    list = list.filter(t =>
-      t.user?.name?.toLowerCase().includes(q) ||
-      formatUserId(t.user).toLowerCase().includes(q) ||
-      t.material_selected?.toLowerCase().includes(q)
-    )
-  }
-  return list
-})
-
 // ── Helpers ──
 function getMaterialIcon(mat) {
   return { aluminum: '🥫', plastic: '🧴', glass: '🍶', paper: '📄' }[mat] || '♻️'
@@ -785,27 +841,43 @@ async function fetchTabData(tab, showSpinner = false) {
       fullBins.value       = res.data.stats?.full_bins        || []
     } else if (tab === 'transactions') {
       if (showSpinner) loadingTransactions.value = true
-      const res = await api.get('/admin/transactions')
+      const res = await api.get('/admin/transactions', { params: {
+        page: txPage.value, per_page: txPerPage.value,
+        search: txSearch.value || undefined, status: txFilter.value || undefined,
+      } })
       transactions.value = res.data.transactions?.data || []
+      txTotal.value     = res.data.transactions?.total ?? 0
+      txLastPage.value  = res.data.transactions?.last_page ?? 1
     } else if (tab === 'users') {
       if (showSpinner) loadingUsers.value = true
-      const res = await api.get('/admin/users')
+      const res = await api.get('/admin/users', { params: {
+        page: usersPage.value, per_page: usersPerPage.value, search: userSearch.value || undefined,
+      } })
       users.value = res.data.users?.data || []
+      usersTotal.value    = res.data.users?.total ?? 0
+      usersLastPage.value = res.data.users?.last_page ?? 1
     } else if (tab === 'machines') {
       if (showSpinner) loadingMachines.value = true
       const res = await api.get('/admin/machines')
-      adminMachines.value = res.data.machines || []
+      adminMachines.value = (res.data.machines || []).map(normalizeMachine)
     } else if (tab === 'sessions') {
       if (showSpinner) loadingSessions.value = true
-      const res = await api.get('/admin/sessions')
+      const res = await api.get('/admin/sessions', { params: {
+        page: sessionsPage.value, per_page: sessionsPerPage.value, search: sessionsSearch.value || undefined,
+      } })
       sessions.value = res.data.sessions?.data || []
+      sessionsTotal.value    = res.data.sessions?.total ?? 0
+      sessionsLastPage.value = res.data.sessions?.last_page ?? 1
     }
+    tabFetchedAt[tab] = Date.now()
   } catch (err) {
     const msg = err.response?.data?.message || err.message || 'Failed to load data'
     tabError.value = msg
     console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
   } finally {
-    loadingStats.value = loadingUsers.value = loadingMachines.value = loadingSessions.value = loadingTransactions.value = false
+    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingTransactions }
+    const flagName = resolveLoadingFlag(tab)
+    if (flagName) flags[flagName].value = false
   }
 }
 
@@ -813,6 +885,7 @@ async function fetchRewardConfig() {
   try {
     const res = await api.get('/admin/reward-config')
     rewardEditValues.value = { ...rewardEditValues.value, ...res.data.config }
+    savedRewardValues.value = { ...savedRewardValues.value, ...res.data.config }
   } catch {}
 }
 
@@ -846,7 +919,52 @@ async function fetchChartData() {
 function switchTab(tab) {
   activeTab.value = tab
   mobileSidebarOpen.value = false
+  if (isFresh(tabFetchedAt[tab], Date.now(), TAB_STALE_MS)) return
   fetchTabData(tab, true)
+}
+
+// ── Pagination / search (Users, Transactions, Sessions) ──
+function searchUsers() {
+  usersPage.value = 1
+  fetchTabData('users', true)
+}
+function goToUsersPage(page) {
+  usersPage.value = page
+  fetchTabData('users', true)
+}
+function changeUsersPerPage() {
+  usersPage.value = 1
+  fetchTabData('users', true)
+}
+
+function searchTransactions() {
+  txPage.value = 1
+  fetchTabData('transactions', true)
+}
+function filterTransactions() {
+  txPage.value = 1
+  fetchTabData('transactions', true)
+}
+function goToTxPage(page) {
+  txPage.value = page
+  fetchTabData('transactions', true)
+}
+function changeTxPerPage() {
+  txPage.value = 1
+  fetchTabData('transactions', true)
+}
+
+function searchSessions() {
+  sessionsPage.value = 1
+  fetchTabData('sessions', true)
+}
+function goToSessionsPage(page) {
+  sessionsPage.value = page
+  fetchTabData('sessions', true)
+}
+function changeSessionsPerPage() {
+  sessionsPage.value = 1
+  fetchTabData('sessions', true)
 }
 
 // ── Admin Controls ──
@@ -889,10 +1007,12 @@ async function requestBinCollection() {
 async function updateReward(material) {
   savingReward.value = material
   try {
-    const config = { ...rewardEditValues.value }
+    const config = buildRewardUpdatePayload(savedRewardValues.value, rewardEditValues.value, material)
     await api.put('/admin/reward-config', config)
-  } catch {
-    alert('Failed to update reward config.')
+    savedRewardValues.value = config
+    rewardEditValues.value = { ...rewardEditValues.value, [material]: config[material] }
+  } catch (e) {
+    alert(e.message?.startsWith('Invalid value') ? e.message : 'Failed to update reward config.')
   } finally {
     savingReward.value = ''
   }
@@ -927,6 +1047,7 @@ function openAddMachine() {
 
 function openEditMachine(machine) {
   editingMachine.value = { ...machine }
+  machineError.value = ''
 }
 
 async function addMachine() {
@@ -946,7 +1067,7 @@ async function addMachine() {
       longitude:     newMachine.value.longitude !== '' ? newMachine.value.longitude : null,
     }
     const res = await api.post('/admin/machines', payload)
-    adminMachines.value.push(res.data.machine)
+    adminMachines.value.push(normalizeMachine(res.data.machine))
     showAddMachine.value = false
   } catch (e) {
     const errors = e.response?.data?.errors
@@ -961,10 +1082,16 @@ async function addMachine() {
 }
 
 async function saveMachine() {
+  const nameError = validateMachineName(editingMachine.value.name)
+  if (nameError) {
+    machineError.value = nameError
+    return
+  }
+  machineError.value = ''
   savingMachine.value = true
   try {
     const payload = {
-      name:          editingMachine.value.name,
+      name:          editingMachine.value.name.trim(),
       location_name: editingMachine.value.location_name || null,
       status:        editingMachine.value.status,
       latitude:      editingMachine.value.latitude !== '' ? editingMachine.value.latitude : null,
@@ -972,11 +1099,11 @@ async function saveMachine() {
     }
     const res = await api.put(`/admin/machines/${editingMachine.value.id}`, payload)
     const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
-    if (idx > -1) adminMachines.value[idx] = res.data.machine
+    if (idx > -1) adminMachines.value[idx] = normalizeMachine(res.data.machine)
     editingMachine.value = null
   } catch (e) {
     const errors = e.response?.data?.errors
-    alert(errors ? Object.values(errors).flat().join('\n') : (e.response?.data?.message || 'Failed to save machine.'))
+    machineError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to save machine.')
   } finally {
     savingMachine.value = false
   }
@@ -1181,6 +1308,14 @@ onUnmounted(() => {
   background: rgba(255,255,255,0.07); border: 1px solid var(--border);
   border-radius: 20px; padding: 3px 10px;
 }
+.pagination-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.pagination-label { font-size: 13px; color: #9ca3af; }
+.pagination-controls { display: flex; align-items: center; gap: 8px; }
+.pagination-page { font-size: 13px; color: #9ca3af; white-space: nowrap; }
 
 /* ── Overview ── */
 .dash-clock-row {

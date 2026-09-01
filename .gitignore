@@ -42,6 +42,7 @@ BackEnd/public/hot
 BackEnd/public/storage
 BackEnd/.phpunit.cache/
 BackEnd/node_modules/
+BackEnd/tests/**/*Test.php
 
 # ========================
 # React / Vite (Frontend)
@@ -49,6 +50,11 @@ BackEnd/node_modules/
 FrontEnd/dist/
 FrontEnd/.vite/
 FrontEnd/**/*.test.js
+
+# ========================
+# Claude Code / Superpowers (local planning artifacts)
+# ========================
+docs/superpowers/
 
 # ========================
 # OS & IDE
