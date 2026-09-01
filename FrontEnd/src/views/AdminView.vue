@@ -574,11 +574,33 @@
       </div>
     </div>
 
+    <!-- ── Confirm modal (replaces native confirm()) ── -->
+    <div v-if="confirmState.show" class="modal-overlay" @click.self="settleConfirm(false)">
+      <div class="modal confirm-modal">
+        <p class="confirm-message">{{ confirmState.message }}</p>
+        <div class="modal-actions">
+          <button class="action-btn" @click="settleConfirm(false)">Cancel</button>
+          <button
+            :class="['action-btn', confirmState.variant === 'danger' ? 'del-btn' : 'edit-btn']"
+            @click="settleConfirm(true)"
+          >OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Toast (replaces native alert()) ── -->
+    <Transition name="toast-fade">
+      <div v-if="toastState.show" :class="['toast', toastState.type]" role="status">
+        <span class="toast-icon">{{ toastState.type === 'error' ? '⚠️' : '✅' }}</span>
+        {{ toastState.message }}
+      </div>
+    </Transition>
+
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, inject, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
@@ -644,6 +666,26 @@ const editingUser = ref(null)
 const editingMachine = ref(null)
 const showAddMachine = ref(false)
 const savingMachine = ref(false)
+
+// ── Confirm modal + toast (replaces native confirm()/alert()) ──
+const confirmState = ref({ show: false, message: '', variant: 'danger', resolve: null })
+function askConfirm(message, variant = 'danger') {
+  return new Promise((resolve) => {
+    confirmState.value = { show: true, message, variant, resolve }
+  })
+}
+function settleConfirm(result) {
+  confirmState.value.resolve?.(result)
+  confirmState.value.show = false
+}
+
+const toastState = ref({ show: false, message: '', type: 'success' })
+let toastTimer = null
+function showToast(message, type = 'success') {
+  toastState.value = { show: true, message, type }
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toastState.value.show = false }, 3500)
+}
 const machineError = ref('')
 const savingReward = ref('')
 
@@ -1589,6 +1631,31 @@ onUnmounted(() => {
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ── Confirm modal ── */
+.confirm-modal { width: 340px; }
+.confirm-message { font-size: 14px; color: var(--text-primary); line-height: 1.5; margin: 0; }
+.confirm-modal .action-btn { padding: 8px 16px; font-size: 13px; }
+.confirm-modal .del-btn  { background: rgba(239,68,68,0.12); }
+.confirm-modal .edit-btn { background: rgba(78,110,242,0.12); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-left: 4px solid var(--accent-green);
+  color: var(--text-primary); padding: 12px 18px;
+  border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  font-size: 13.5px; z-index: 300; max-width: 90vw;
+}
+.toast.error { border-left-color: var(--accent-red); }
+.toast-icon { font-size: 14px; flex-shrink: 0; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, 8px); }
+@media (prefers-reduced-motion: reduce) {
+  .toast-fade-enter-active, .toast-fade-leave-active { transition: none; }
+}
 
 /* ── Loading ── */
 .loading-overlay { display: flex; justify-content: center; align-items: center; padding: 60px; }
