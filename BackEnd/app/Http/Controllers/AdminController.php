@@ -302,8 +302,13 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'config' => $config]);
     }
 
-    // Reset all bin alerts (clear bins >= 90%)
-    public function resetBinAlerts(Request $request): JsonResponse
+    // Notify that a physical collection has been requested for full bins —
+    // deliberately does NOT touch bin levels. A bin isn't actually empty just
+    // because someone was asked to come empty it; only updateBinLevels() (once
+    // a bin has genuinely been emptied) should zero it out. The dashboard's
+    // "Dismiss Alerts" button is UI-only for the same reason and has no
+    // backend endpoint at all.
+    public function requestBinCollection(Request $request): JsonResponse
     {
         $machines = RvmMachine::where('aluminum_level', '>=', 90)
             ->orWhere('plastic_level', '>=', 90)
@@ -311,17 +316,8 @@ class AdminController extends Controller
             ->orWhere('paper_level', '>=', 90)
             ->get();
 
-        foreach ($machines as $machine) {
-            $updates = [];
-            if ($machine->aluminum_level >= 90) $updates['aluminum_level'] = 0;
-            if ($machine->plastic_level >= 90)  $updates['plastic_level']  = 0;
-            if ($machine->glass_level >= 90)    $updates['glass_level']    = 0;
-            if ($machine->paper_level >= 90)    $updates['paper_level']    = 0;
-            if (!empty($updates)) $machine->update($updates);
-        }
-
-        $this->log($request->user(), 'reset_bin_alerts', 'system', 0, "Reset alerts for {$machines->count()} machine(s)");
-        return response()->json(['success' => true, 'message' => 'All bin alerts have been reset.', 'affected' => $machines->count()]);
+        $this->log($request->user(), 'request_bin_collection', 'system', 0, "Collection requested for {$machines->count()} machine(s)");
+        return response()->json(['success' => true, 'message' => 'Bin collection request sent.', 'affected' => $machines->count()]);
     }
 
     // 7-day daily collection trend + category breakdown + today overview

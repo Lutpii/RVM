@@ -191,8 +191,8 @@
                 <span class="ctrl-card-label">Export Report (CSV)</span>
               </button>
               <button class="ctrl-card" @click="resetAllAlerts">
-                <span class="ctrl-card-icon ctrl-yellow">🔔</span>
-                <span class="ctrl-card-label">Reset All Alerts</span>
+                <span class="ctrl-card-icon ctrl-yellow">🔕</span>
+                <span class="ctrl-card-label">Dismiss Alerts</span>
               </button>
               <button class="ctrl-card" @click="switchTab('machines')">
                 <span class="ctrl-card-icon ctrl-purple">🏭</span>
@@ -1045,27 +1045,34 @@ async function exportCsv() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   } catch {
-    alert('Export failed. Please try again.')
+    showToast('Export failed. Please try again.', 'error')
   }
 }
 
-async function resetAllAlerts() {
-  if (!confirm('Reset all bin alerts? This will clear all full-bin warnings.')) return
-  try {
-    const res = await api.post('/admin/reset-bin-alerts')
-    alert(res.data.message || 'Alerts reset.')
-    await fetchTabData('dashboard')
-  } catch {
-    alert('Failed to reset alerts.')
-  }
+// Dismisses the warning list only — deliberately does NOT touch bin levels.
+// A bin doesn't become empty just because the dashboard notice was cleared;
+// only actually emptying it (Machines tab → Reset Bins) should do that. The
+// dismissal is local to this session: since the underlying levels are
+// untouched, the next natural refresh (30s timer, tab revisit) will show the
+// alert again for any bin that's still genuinely ≥90% — that's intentional,
+// not a bug, the same way a "disk full" warning shouldn't stay dismissed
+// forever while the disk is still full.
+function resetAllAlerts() {
+  fullBins.value = []
+  showToast('Alerts dismissed. Bin levels are unchanged — empty a bin from the Machines tab to clear it for good.')
 }
 
 async function requestBinCollection() {
-  if (!confirm('Send a bin collection request?')) return
+  if (!(await askConfirm('Send a bin collection request?', 'warning'))) return
   try {
-    await api.post('/admin/reset-bin-alerts', { collection_request: true })
-    alert('Bin collection request sent.')
-  } catch {}
+    // Deliberately a separate endpoint from resetAllAlerts() — this only logs
+    // the request, it must not zero out bin levels (the bin isn't actually
+    // empty yet, someone just needs to go collect it).
+    await api.post('/admin/request-bin-collection')
+    showToast('Bin collection request sent.')
+  } catch {
+    showToast('Failed to send collection request.', 'error')
+  }
 }
 
 // ── Reward Config ──
@@ -1076,8 +1083,10 @@ async function updateReward(material) {
     await api.put('/admin/reward-config', config)
     savedRewardValues.value = config
     rewardEditValues.value = { ...rewardEditValues.value, [material]: config[material] }
+    const label = material.charAt(0).toUpperCase() + material.slice(1)
+    showToast(`${label} reward updated to ${config[material]} pts/item.`)
   } catch (e) {
-    alert(e.message?.startsWith('Invalid value') ? e.message : 'Failed to update reward config.')
+    showToast(e.message?.startsWith('Invalid value') ? e.message : 'Failed to update reward config.', 'error')
   } finally {
     savingReward.value = ''
   }
@@ -1091,16 +1100,18 @@ async function saveUser() {
     await api.put(`/admin/users/${editingUser.value.id}`, editingUser.value)
     const idx = users.value.findIndex(u => u.id === editingUser.value.id)
     if (idx > -1) users.value[idx] = { ...editingUser.value }
+    const name = editingUser.value.name
     editingUser.value = null
-  } catch { alert('Failed to save user.') }
+    showToast(`User "${name}" saved.`)
+  } catch { showToast('Failed to save user.', 'error') }
 }
 
 async function deleteUser(id) {
-  if (!confirm('Delete this user? This cannot be undone.')) return
+  if (!(await askConfirm('Delete this user? This cannot be undone.'))) return
   try {
     await api.delete(`/admin/users/${id}`)
     users.value = users.value.filter(u => u.id !== id)
-  } catch { alert('Failed to delete user.') }
+  } catch { showToast('Failed to delete user.', 'error') }
 }
 
 // ── Machine management ──
@@ -1134,6 +1145,7 @@ async function addMachine() {
     const res = await api.post('/admin/machines', payload)
     adminMachines.value.push(normalizeMachine(res.data.machine))
     showAddMachine.value = false
+    showToast(`Machine "${payload.name}" added.`)
   } catch (e) {
     const errors = e.response?.data?.errors
     if (errors) {
@@ -1166,6 +1178,7 @@ async function saveMachine() {
     const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
     if (idx > -1) adminMachines.value[idx] = normalizeMachine(res.data.machine)
     editingMachine.value = null
+    showToast(`Machine "${payload.name}" saved.`)
   } catch (e) {
     const errors = e.response?.data?.errors
     machineError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to save machine.')
@@ -1175,21 +1188,22 @@ async function saveMachine() {
 }
 
 async function deleteMachine(id) {
-  if (!confirm('Delete this machine? This cannot be undone.')) return
+  if (!(await askConfirm('Delete this machine? This cannot be undone.'))) return
   try {
     await api.delete(`/admin/machines/${id}`)
     adminMachines.value = adminMachines.value.filter(m => m.id !== id)
-  } catch { alert('Failed to delete machine.') }
+  } catch { showToast('Failed to delete machine.', 'error') }
 }
 
 async function resetBins(machine) {
-  if (!confirm(`Reset all bin levels for ${machine.name}?`)) return
+  if (!(await askConfirm(`Reset all bin levels for ${machine.name}?`, 'warning'))) return
   try {
     await api.put(`/admin/machines/${machine.id}/bin-levels`, {
       aluminum_level: 0, plastic_level: 0, glass_level: 0, paper_level: 0,
     })
     machine.aluminum_level = machine.plastic_level = machine.glass_level = machine.paper_level = 0
-  } catch { alert('Failed to reset bins.') }
+    showToast(`Bin levels reset for ${machine.name}.`)
+  } catch { showToast('Failed to reset bins.', 'error') }
 }
 
 async function handleLogout() {
