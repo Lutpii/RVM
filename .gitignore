@@ -48,6 +48,7 @@ BackEnd/node_modules/
 # ========================
 FrontEnd/dist/
 FrontEnd/.vite/
+FrontEnd/**/*.test.js
 
 # ========================
 # OS & IDE
