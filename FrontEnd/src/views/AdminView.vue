@@ -766,7 +766,7 @@ const systemStatusItems = computed(() => {
   const cameraColor = activeSessions > 0 ? 'green' : 'yellow'
   const cameraValue = activeSessions > 0 ? `LIVE (${activeSessions})` : 'STANDBY'
 
-  const rewardOk    = Object.values(rewardEditValues.value).every(v => v > 0)
+  const rewardOk    = Object.values(savedRewardValues.value).every(v => v > 0)
   const rewardColor = rewardOk ? 'green' : 'yellow'
 
   return [
@@ -1051,7 +1051,7 @@ function openEditMachine(machine) {
 }
 
 async function addMachine() {
-  if (!newMachine.value.machine_code?.trim() || !newMachine.value.name?.trim()) {
+  if (!newMachine.value.machine_code?.trim() || validateMachineName(newMachine.value.name)) {
     machineError.value = 'Machine code and name are required.'
     return
   }
@@ -1092,7 +1092,7 @@ async function saveMachine() {
   try {
     const payload = {
       name:          editingMachine.value.name.trim(),
-      location_name: editingMachine.value.location_name || null,
+      location_name: editingMachine.value.location_name?.trim() || null,
       status:        editingMachine.value.status,
       latitude:      editingMachine.value.latitude !== '' ? editingMachine.value.latitude : null,
       longitude:     editingMachine.value.longitude !== '' ? editingMachine.value.longitude : null,
