@@ -32,7 +32,7 @@ RVM/
     └── rvm_db.sql             ← MySQL schema + demo seed data (see caveat below)
 ```
 
-> The `best.pt` / `best_exp6.pt` files, `generate_ppt.py` and `presentation*.html` at the repo root are supporting report/presentation material for the course project — they are **not** required to run the web app itself (except `best.pt`, which is one of the optional AI model locations, see [AI Service](#-ai-service--yolov8-model) below).
+> `materials/` (`generate_ppt.py`, `presentation*.html`) holds supporting report/presentation material for the course project — not required to run the web app itself. Trained model weights (`best.pt`, `best_exp6.pt`) live in `backup/`; the AI service loads its own copy from `BackEnd/ai_service/model/`, see [AI Service](#-ai-service--yolov8-model) below.
 
 ---
 
