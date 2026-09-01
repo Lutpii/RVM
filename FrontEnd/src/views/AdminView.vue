@@ -50,6 +50,9 @@
         </div>
       </div>
 
+      <!-- Only this area scrolls — topbar above stays put -->
+      <div class="admin-scroll-area">
+
       <!-- Global error banner -->
       <div v-if="tabError" class="error-banner">
         ⚠️ {{ tabError }}
@@ -451,6 +454,7 @@
         </div>
       </div>
 
+      </div>
     </main>
 
     <!-- ── Edit User Modal ── -->
@@ -955,8 +959,27 @@ async function fetchChartData() {
         borderWidth: 0,
       }],
     }
+
+    // Chart.js measures its container on mount via ResizeObserver — on some
+    // mobile browsers that first measurement can be wrong (seen as the chart
+    // rendering far wider than the screen, pushing the whole card off-screen)
+    // and nothing naturally fires again afterward to correct it. Nudging a
+    // resize event once the canvas has actually mounted forces every chart on
+    // the page to remeasure against its real, current container size.
+    await nextTick()
+    window.dispatchEvent(new Event('resize'))
   } catch {}
 }
+
+// The dashboard's charts are unmounted/remounted (v-if) every time this tab
+// is left and returned to, without necessarily re-fetching data — so the
+// resize nudge in fetchChartData() alone doesn't cover that path. Re-fire it
+// on every remount too.
+watch(activeTab, async (tab) => {
+  if (tab !== 'dashboard') return
+  await nextTick()
+  window.dispatchEvent(new Event('resize'))
+})
 
 function switchTab(tab) {
   activeTab.value = tab
@@ -1208,7 +1231,8 @@ onUnmounted(() => {
 <style scoped>
 .admin-page {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* the shell itself never scrolls — see .admin-scroll-area */
   background: var(--bg-primary);
 }
 
@@ -1236,7 +1260,7 @@ onUnmounted(() => {
 .sidebar-title { font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 1; white-space: nowrap; overflow: hidden; }
 .collapse-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
 
-.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; justify-content: flex-start; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 8px; border-radius: 8px;
@@ -1272,13 +1296,17 @@ onUnmounted(() => {
 }
 
 /* ── Main ── */
-.admin-main { flex: 1; overflow: auto; }
+/* App-shell layout: .admin-main itself never scrolls — it just stacks the
+   topbar (fixed size) above .admin-scroll-area (the one scrollable region),
+   so the sidebar and topbar stay in place while only content moves. */
+.admin-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.admin-scroll-area { flex: 1; overflow-y: auto; }
 
 .admin-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 24px; background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 5;
+  flex-shrink: 0;
 }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
@@ -1385,8 +1413,14 @@ onUnmounted(() => {
 .charts-row {
   display: grid; grid-template-columns: 1fr 340px; gap: 16px; margin-bottom: 16px;
 }
-.chart-card-main, .chart-card-side { margin-bottom: 0; }
-.chart-wrap { height: 260px; position: relative; }
+/* Grid/flex items default to min-width:auto, which refuses to shrink below the
+   canvas's own intrinsic size — if Chart.js ever mis-measures on first mount
+   (a known issue on some mobile browsers) that pushes the whole card, and the
+   page, wider than the screen. min-width:0 lets the grid track actually
+   respect its column size regardless of what the canvas reports. */
+.chart-card-main, .chart-card-side { margin-bottom: 0; min-width: 0; }
+.chart-wrap { height: 260px; position: relative; overflow: hidden; min-width: 0; }
+.chart-wrap canvas { max-width: 100% !important; }
 .donut-wrap { display: flex; align-items: center; justify-content: center; }
 .chart-empty { color: var(--text-muted); font-size: 13px; text-align: center; padding-top: 80px; }
 
