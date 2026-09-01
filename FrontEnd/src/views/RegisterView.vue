@@ -23,23 +23,25 @@
         <form @submit.prevent="handleRegister" class="auth-form">
           <div class="form-group">
             <label>{{ $t('auth.name') }}</label>
-            <input v-model="form.name" type="text" :placeholder="$t('auth.name')" required />
+            <input v-model="form.name" type="text" :placeholder="$t('auth.name')" autocomplete="name" required />
           </div>
 
           <div class="form-group">
             <label>{{ $t('auth.email') }}</label>
-            <input v-model="form.email" type="email" :placeholder="$t('auth.email')" />
+            <input v-model="form.email" type="email" :placeholder="$t('auth.email')" autocomplete="email" />
           </div>
 
+          <!-- Phone (WhatsApp OTP) temporarily hidden
           <div class="form-group">
             <label>{{ $t('auth.phone') }} <span class="optional">(for WhatsApp OTP)</span></label>
-            <input v-model="form.phone" type="tel" placeholder="e.g. 0812345678" />
+            <input v-model="form.phone" type="tel" placeholder="e.g. 0812345678" autocomplete="tel" />
           </div>
+          -->
 
           <div class="form-group">
             <label>{{ $t('auth.password') }}</label>
             <div class="password-wrap">
-              <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')" required minlength="6" />
+              <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')" autocomplete="new-password" required minlength="8" />
               <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁' }}</button>
             </div>
             <span class="field-hint">{{ $t('auth.passwordHint') }}</span>
@@ -47,7 +49,7 @@
 
           <div class="form-group">
             <label>{{ $t('auth.confirmPassword') }}</label>
-            <input v-model="form.password_confirmation" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.confirmPassword')" required />
+            <input v-model="form.password_confirmation" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.confirmPassword')" autocomplete="new-password" required />
           </div>
 
           <!-- Password strength -->

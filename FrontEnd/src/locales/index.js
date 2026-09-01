@@ -31,7 +31,7 @@ export const messages = {
       noAccount: "Don't have an account?",
       hasAccount: 'Already have an account?',
       orSeparator: 'OR',
-      passwordHint: 'Minimum 6 characters',
+      passwordHint: 'Minimum 8 characters',
     },
     dashboard: {
       title: 'My Dashboard',
@@ -202,7 +202,7 @@ export const messages = {
       noAccount: 'Belum ada akaun?',
       hasAccount: 'Sudah ada akaun?',
       orSeparator: 'ATAU',
-      passwordHint: 'Minimum 6 aksara',
+      passwordHint: 'Minimum 8 aksara',
     },
     dashboard: {
       title: 'Papan Pemuka Saya',

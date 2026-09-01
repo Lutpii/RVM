@@ -30,23 +30,24 @@
 
         <div class="separator"><span>{{ $t('auth.orSeparator') }}</span></div>
 
-        <!-- Tab switcher -->
+        <!-- Tab switcher — WhatsApp option temporarily hidden, Email-only for now
         <div class="tab-group">
           <button :class="['tab', { active: loginMethod === 'email' }]" @click="loginMethod = 'email'">Email</button>
           <button :class="['tab', { active: loginMethod === 'phone' }]" @click="loginMethod = 'phone'">WhatsApp</button>
         </div>
+        -->
 
         <!-- Email Login -->
         <form v-if="loginMethod === 'email'" @submit.prevent="handleEmailLogin" class="auth-form">
           <div class="form-group">
             <label>{{ $t('auth.email') }}</label>
-            <input v-model="form.email" type="email" :placeholder="$t('auth.email')" required />
+            <input v-model="form.email" type="email" :placeholder="$t('auth.email')" autocomplete="username" required />
           </div>
           <div class="form-group">
             <label>{{ $t('auth.password') }}</label>
             <div class="password-wrap">
               <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')"
-                required />
+                autocomplete="current-password" required />
               <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁' }}</button>
             </div>
           </div>
@@ -57,12 +58,12 @@
           </button>
         </form>
 
-        <!-- WhatsApp OTP Login -->
+        <!-- WhatsApp OTP Login — temporarily hidden
         <div v-else class="auth-form">
           <div v-if="!otpSent">
             <div class="form-group">
               <label>{{ $t('auth.phone') }}</label>
-              <input v-model="form.phone" type="tel" placeholder="e.g. 0812345678" />
+              <input v-model="form.phone" type="tel" placeholder="e.g. 0812345678" autocomplete="tel" />
             </div>
             <div v-if="error" class="error-msg">{{ error }}</div>
             <button class="submit-btn whatsapp-btn" @click="handleSendOtp" :disabled="loading">
@@ -74,7 +75,7 @@
             <p class="otp-info">{{ $t('auth.otpSent') }}</p>
             <div class="form-group">
               <label>OTP Code</label>
-              <input v-model="form.otp" type="text" maxlength="6" placeholder="Enter 6-digit OTP" class="otp-input" />
+              <input v-model="form.otp" type="text" maxlength="6" placeholder="Enter 6-digit OTP" class="otp-input" autocomplete="one-time-code" />
             </div>
             <div v-if="error" class="error-msg">{{ error }}</div>
             <button class="submit-btn" @click="handleVerifyOtp" :disabled="loading">
@@ -84,6 +85,7 @@
             <button class="resend-btn" @click="otpSent = false">Resend OTP</button>
           </div>
         </div>
+        -->
 
         <!-- Register link -->
         <p class="switch-link">
