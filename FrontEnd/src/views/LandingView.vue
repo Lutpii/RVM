@@ -215,7 +215,7 @@ function goToScan() {
 .start-btn {
   width: 100%;
   padding: 16px 24px;
-  background: var(--accent-green);
+  background: #15803d; /* was var(--accent-green); darkened for 4.5:1 contrast with white text */
   color: white;
   border: none;
   border-radius: var(--radius);
@@ -243,7 +243,7 @@ function goToScan() {
   gap: 10px;
 }
 .auth-link {
-  color: var(--accent-blue);
+  color: #7b93ff; /* was var(--accent-blue); brightened for 4.5:1 contrast on dark theme */
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -257,7 +257,14 @@ function goToScan() {
   padding: 12px 20px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary); /* was var(--text-muted); clears 4.5:1 in both themes */
 }
-.step-label { color: var(--accent-blue); }
+.step-label { color: #7b93ff; } /* was var(--accent-blue) */
+
+/* --accent-blue has no light-theme override, so the dark-tuned color above
+   also fails once the background flips to white — override again here. */
+[data-theme="light"] .auth-link,
+[data-theme="light"] .step-label {
+  color: #3f5fee;
+}
 </style>

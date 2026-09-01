@@ -10,6 +10,19 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('chart.js') || id.includes('vue-chartjs')) return 'vendor-charts'
+            if (id.includes('jsqr')) return 'vendor-qr'
+            return 'vendor'
+          }
+        },
+      },
+    },
+  },
   server: {
     host: true,
     port: 5173,

@@ -1,22 +1,22 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 
-// Views
-import LandingView        from '@/views/LandingView.vue'
-import LoginView          from '@/views/LoginView.vue'
-import RegisterView       from '@/views/RegisterView.vue'
-import DashboardView      from '@/views/DashboardView.vue'
-import ScanView           from '@/views/ScanView.vue'
-import RvmSessionView     from '@/views/RvmSessionView.vue'
-import SessionSummaryView from '@/views/SessionSummaryView.vue'
-import AdminView          from '@/views/AdminView.vue'
-import UserSettingsView   from '@/views/UserSettingsView.vue'
-import NotFoundView       from '@/views/NotFoundView.vue'
-import KioskLandingView      from '@/views/KioskLandingView.vue'
-import KioskQrView           from '@/views/KioskQrView.vue'
-import GoogleCallbackView    from '@/views/GoogleCallbackView.vue'
-import WelcomeView           from '@/views/WelcomeView.vue'
-import GoodbyeView           from '@/views/GoodbyeView.vue'
+// Views (lazy-loaded — each becomes its own chunk, fetched only when visited)
+const LandingView        = () => import('@/views/LandingView.vue')
+const LoginView          = () => import('@/views/LoginView.vue')
+const RegisterView       = () => import('@/views/RegisterView.vue')
+const DashboardView      = () => import('@/views/DashboardView.vue')
+const ScanView           = () => import('@/views/ScanView.vue')
+const RvmSessionView     = () => import('@/views/RvmSessionView.vue')
+const SessionSummaryView = () => import('@/views/SessionSummaryView.vue')
+const AdminView          = () => import('@/views/AdminView.vue')
+const UserSettingsView   = () => import('@/views/UserSettingsView.vue')
+const NotFoundView       = () => import('@/views/NotFoundView.vue')
+const KioskLandingView      = () => import('@/views/KioskLandingView.vue')
+const KioskQrView           = () => import('@/views/KioskQrView.vue')
+const GoogleCallbackView    = () => import('@/views/GoogleCallbackView.vue')
+const WelcomeView           = () => import('@/views/WelcomeView.vue')
+const GoodbyeView           = () => import('@/views/GoodbyeView.vue')
 
 const routes = [
   // ── Kiosk routes (RVM machine side — no auth required) ──────────────────
