@@ -26,7 +26,8 @@ RVM/
 │   ├── ai_service/            ← Python Flask + YOLOv8 microservice
 │   │   ├── app.py
 │   │   ├── model/               ← working copies of trained weights (see AI Service below)
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── .env.example         ← AI_API_KEY, ALLOWED_ORIGINS (copy to .env)
 │   └── .env.example
 │
 ├── database/
@@ -105,8 +106,9 @@ Edit `.env` and fill in at least:
 | `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Your MySQL credentials (`DB_DATABASE=rvm_db` by default) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | Only needed for "Sign in with Google" — see [Google OAuth Setup](#-google-oauth-setup) |
 | `FONNTE_API_TOKEN` / `FONNTE_SENDER` | Only needed for WhatsApp OTP — see [WhatsApp OTP](#-whatsapp-otp-fonnte) |
-| `AI_SERVICE_URL` / `AI_SERVICE_KEY` | Where the Flask AI service runs — defaults are fine for local dev |
-| `FRONTEND_URL` | Where the Vue dev server runs (`https://localhost:5173` by default) — used to build the Google OAuth redirect and the QR-code deep link, **not** for CORS (CORS is wide open in `config/cors.php`) |
+| `AI_SERVICE_URL` | Where the Flask AI service runs — default (`http://localhost:5000`) is fine for local dev |
+| `AI_SERVICE_KEY` | **Required, no default.** Shared secret with the AI service — generate your own (e.g. `openssl rand -base64 32`) and set the identical value in `ai_service/.env` (see Step 3) |
+| `FRONTEND_URL` | Where the Vue dev server runs (`https://localhost:5173` by default) — used to build the Google OAuth redirect and the QR-code deep link, **not** for CORS. CORS is restricted to `localhost`/private-network origins on ports 5173/4173 (`config/cors.php`), not wide open |
 
 Then start the API:
 
@@ -122,6 +124,12 @@ php artisan serve
 ```bash
 cd BackEnd/ai_service
 pip install -r requirements.txt
+cp .env.example .env
+```
+
+Edit `ai_service/.env` and set `AI_API_KEY` to the **same value** you put in `BackEnd/.env`'s `AI_SERVICE_KEY` above — the service refuses to start if this is missing (no fallback default).
+
+```bash
 python app.py
 # Runs on http://localhost:5000
 ```
@@ -181,6 +189,8 @@ UPDATE users SET role = 'admin', is_verified = 1 WHERE email = 'you@example.com'
 
 ## 📱 WhatsApp OTP (Fonnte)
 
+> **Currently hidden from the UI.** The Login/Register forms' WhatsApp tab is commented out pending further work on that flow; the backend endpoints (`send-otp`/`verify-otp`) and Fonnte integration below still work if you re-enable it.
+
 1. Register at [fonnte.com](https://fonnte.com)
 2. Connect your WhatsApp number to a Fonnte device
 3. Copy the API token into `.env` → `FONNTE_API_TOKEN`
@@ -203,10 +213,10 @@ Class names come from the model itself when a model is loaded; `['aluminum', 'pl
 
 **To use a real trained model**, place your weights at any of the paths above (matching filename matters — `best_exp6.pt` takes priority over `best.pt`) and restart `python app.py`.
 
-**Test the AI service directly:**
+**Test the AI service directly** (replace `$AI_API_KEY` with the value from `ai_service/.env`):
 ```bash
 curl -X POST http://localhost:5000/classify \
-  -H "X-API-Key: rvm_ai_secret_key_2024" \
+  -H "X-API-Key: $AI_API_KEY" \
   -F "image=@test_image.jpg"
 ```
 
@@ -222,7 +232,10 @@ curl -X POST http://localhost:5000/classify \
 | POST | `/api/auth/send-otp` | Send WhatsApp OTP |
 | POST | `/api/auth/verify-otp` | Verify WhatsApp OTP |
 | POST | `/api/auth/refresh` | Refresh session |
-| GET  | `/api/auth/google/redirect` | Get Google OAuth redirect URL |
+| GET  | `/api/auth/google/redirect` | Get this server's own `/auth/google/start` URL (see below) |
+| GET  | `/auth/google/start` | Not under `/api` — sets the CSRF nonce cookie and redirects to Google. Must be reached by a real browser navigation, not an XHR call, so the cookie lands on this server's actual host |
+| GET  | `/auth/google/callback` | Google redirects back here after consent; verifies state/nonce, then redirects to the frontend with a one-time exchange code |
+| POST | `/api/auth/google/exchange` | Frontend redeems the exchange code for the real bearer token (single-use, ~60s TTL) |
 
 ### QR / Machines (public)
 | Method | Endpoint | Description |
@@ -267,7 +280,7 @@ curl -X POST http://localhost:5000/classify \
 | GET | `/api/admin/stats` | Aggregate stats |
 | GET | `/api/admin/logs` | Admin action log |
 | GET/PUT | `/api/admin/reward-config` | View/update per-material point rates |
-| POST | `/api/admin/reset-bin-alerts` | Reset bins that are ≥90% full |
+| POST | `/api/admin/request-bin-collection` | Log a collection request for bins ≥90% full — does **not** change bin levels (a bin isn't empty just because someone was asked to come empty it; use `PUT /api/admin/machines/{id}/bin-levels` once it genuinely has been) |
 | GET | `/api/admin/export-csv` | Export data as CSV |
 | GET | `/api/admin/chart-data` | Chart/analytics data |
 
@@ -307,12 +320,12 @@ English (default) and Bahasa Indonesia — toggle with the `EN / ID` button on a
 - Dark / light theme toggle
 - Bilingual (EN / ID)
 - Google OAuth + email/password auth
-- WhatsApp OTP verification (Fonnte)
+- WhatsApp OTP verification (Fonnte) — implemented, currently hidden from the UI (see [WhatsApp OTP](#-whatsapp-otp-fonnte))
 - QR code session linking (kiosk flow)
 - Full RVM recycling flow (bin check → lid → insert → conveyor → capture → classify → weigh → complete/reject)
 - AI material classification (YOLOv8, with mock-mode fallback)
 - Points system (earned / deducted) with admin-configurable rates
-- Bin level monitoring + reset alerts
+- Bin level monitoring + dismissable full-bin alerts
 - RVM locator with machine coordinates
 - Session summary
 - Admin panel (users, machines, sessions, transactions, stats, CSV export)
@@ -337,6 +350,8 @@ For a full production deployment to a Raspberry Pi 4 (Nginx, MariaDB, systemd se
 | QR scan / kiosk login doesn't work after importing `rvm_db.sql` | You likely skipped the two `ALTER TABLE` statements in [Step 1, Option B](#step-1--clone--database) — the dump predates the `kiosk_token` column. |
 | `php artisan migrate` fails with "table already exists" | You mixed the two database options — either import the SQL dump **or** run migrations from an empty database, not both. |
 | Google login redirects to the wrong place | Check `FRONTEND_URL` and `GOOGLE_REDIRECT_URI` in `.env` match what you registered in Google Cloud Console. |
+| Google login lands on `/#/login?error=google_auth_failed` | The CSRF nonce cookie didn't survive the round trip — almost always means `/auth/google/start` (see [API Endpoints](#-api-endpoints-reference)) wasn't reached by a real browser navigation to this server's actual host (e.g. something is proxying or rewriting that request). It must be hit directly, not through the Vite dev proxy. |
+| AI service won't start: `AI_API_KEY is not set` | Copy `ai_service/.env.example` to `ai_service/.env` and set `AI_API_KEY` to the same value as `BackEnd/.env`'s `AI_SERVICE_KEY` (see [Step 3](#step-3--python-ai-service)) — there's no default. |
 
 ---
 
