@@ -414,7 +414,14 @@ class AdminController extends Controller
 
         return response()->streamDownload(function () use ($transactions) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status']);
+            // Excel on Windows expects a UTF-8 BOM and CRLF line endings for a
+            // double-clicked CSV to split into columns reliably — fputcsv()
+            // defaults to bare "\n", which Excel can misparse (seen in practice
+            // as the header row landing whole in column A while data rows split
+            // fine, since PHP's default matches enough of Excel's heuristics to
+            // pass for plain data but not for the header).
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status'], eol: "\r\n");
             foreach ($transactions as $t) {
                 fputcsv($handle, [
                     $t->id,
@@ -428,7 +435,7 @@ class AdminController extends Controller
                     $t->is_valid ? \App\Services\CarbonService::forMaterial($t->material_selected) : 0.0,
                     $t->points_earned,
                     $t->is_valid ? 'OK' : 'REJECTED',
-                ]);
+                ], eol: "\r\n");
             }
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"{$filename}\""]);
