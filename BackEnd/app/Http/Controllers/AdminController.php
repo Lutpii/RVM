@@ -55,15 +55,28 @@ class AdminController extends Controller
         $activeSessions    = RecyclingSession::where('status', 'active')->count();
         $totalTransactions = Transaction::count();
         $totalPointsGiven  = Transaction::where('is_valid', 1)->sum('points_earned');
-        $totalWeight       = Transaction::where('is_valid', 1)->sum('weight_grams');
         $activeUsers       = User::where('role', 'user')->whereHas('recyclingSessions')->count();
         $redemptionsToday  = Transaction::where('is_valid', 1)->whereDate('created_at', today())->count();
 
+        $materialCounts = Transaction::where('is_valid', 1)
+            ->selectRaw('material_selected, COUNT(*) as count')
+            ->groupBy('material_selected')
+            ->pluck('count', 'material_selected');
+
+        $totalCarbonSaved = 0.0;
+        foreach ($materialCounts as $material => $count) {
+            $totalCarbonSaved += $count * \App\Services\CarbonService::forMaterial($material);
+        }
+
         $materialStats = Transaction::where('is_valid', 1)
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->selectRaw('material_selected, COUNT(*) as count, SUM(weight_grams) as total_weight, SUM(points_earned) as total_points')
+            ->selectRaw('material_selected, COUNT(*) as count, SUM(points_earned) as total_points')
             ->groupBy('material_selected')
-            ->get();
+            ->get()
+            ->map(function ($row) {
+                $row->total_carbon_kg = round($row->count * \App\Services\CarbonService::forMaterial($row->material_selected), 3);
+                return $row;
+            });
 
         $recentSessions = RecyclingSession::with(['user', 'machine'])
             ->latest()
@@ -85,17 +98,17 @@ class AdminController extends Controller
             ->get(['id','name','aluminum_level','plastic_level','glass_level','paper_level']);
 
         return [
-                'total_users'        => $totalUsers,
-                'total_machines'     => $totalMachines,
-                'active_sessions'    => $activeSessions,
-                'total_transactions' => $totalTransactions,
-                'total_points_given' => $totalPointsGiven,
-                'total_weight_kg'    => round($totalWeight / 1000, 2),
-                'active_users'       => $activeUsers,
-                'redemptions_today'  => $redemptionsToday,
-                'material_stats'     => $materialStats,
-                'recent_sessions'    => $recentSessions,
-                'full_bins'          => $fullBins,
+                'total_users'          => $totalUsers,
+                'total_machines'       => $totalMachines,
+                'active_sessions'      => $activeSessions,
+                'total_transactions'   => $totalTransactions,
+                'total_points_given'   => $totalPointsGiven,
+                'total_carbon_saved_kg'=> round($totalCarbonSaved, 2),
+                'active_users'         => $activeUsers,
+                'redemptions_today'    => $redemptionsToday,
+                'material_stats'       => $materialStats,
+                'recent_sessions'      => $recentSessions,
+                'full_bins'            => $fullBins,
         ];
     }
 
@@ -337,7 +350,7 @@ class AdminController extends Controller
 
         $raw = \App\Models\Transaction::where('is_valid', 1)
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->selectRaw('DATE(created_at) as day, material_selected, SUM(weight_grams) as total_weight')
+            ->selectRaw('DATE(created_at) as day, material_selected, COUNT(*) as count')
             ->groupBy('day', 'material_selected')
             ->get()
             ->groupBy('day');
@@ -345,15 +358,15 @@ class AdminController extends Controller
         $datasets = [];
         foreach ($materials as $mat) {
             $datasets[$mat] = $days->map(fn($d) =>
-                (int) ($raw->get($d)?->firstWhere('material_selected', $mat)?->total_weight ?? 0)
+                round(($raw->get($d)?->firstWhere('material_selected', $mat)?->count ?? 0) * \App\Services\CarbonService::forMaterial($mat), 3)
             )->values();
         }
 
-        // Category breakdown totals
-        $breakdown = \App\Models\Transaction::where('is_valid', 1)
-            ->selectRaw('material_selected, SUM(weight_grams) as total_weight')
+        // Category breakdown totals (kg CO2e saved, all-time, per material)
+        $breakdownCounts = \App\Models\Transaction::where('is_valid', 1)
+            ->selectRaw('material_selected, COUNT(*) as count')
             ->groupBy('material_selected')
-            ->pluck('total_weight', 'material_selected');
+            ->pluck('count', 'material_selected');
 
         // Today vs yesterday counts
         $today     = now()->toDateString();
@@ -383,10 +396,10 @@ class AdminController extends Controller
             'labels'    => $labels,
             'datasets'  => $datasets,
             'breakdown' => [
-                'plastic'  => (int) ($breakdown['plastic']  ?? 0),
-                'aluminum' => (int) ($breakdown['aluminum'] ?? 0),
-                'paper'    => (int) ($breakdown['paper']    ?? 0),
-                'glass'    => (int) ($breakdown['glass']    ?? 0),
+                'plastic'  => round(($breakdownCounts['plastic']  ?? 0) * \App\Services\CarbonService::forMaterial('plastic'), 3),
+                'aluminum' => round(($breakdownCounts['aluminum'] ?? 0) * \App\Services\CarbonService::forMaterial('aluminum'), 3),
+                'paper'    => round(($breakdownCounts['paper']    ?? 0) * \App\Services\CarbonService::forMaterial('paper'), 3),
+                'glass'    => round(($breakdownCounts['glass']    ?? 0) * \App\Services\CarbonService::forMaterial('glass'), 3),
             ],
             'overview'  => $overview,
         ];
@@ -401,7 +414,7 @@ class AdminController extends Controller
 
         return response()->streamDownload(function () use ($transactions) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Weight (g)', 'Points Earned', 'Status']);
+            fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status']);
             foreach ($transactions as $t) {
                 fputcsv($handle, [
                     $t->id,
@@ -412,7 +425,7 @@ class AdminController extends Controller
                     $t->ai_detected_type ?? '—',
                     round(($t->ai_confidence ?? 0) * 100),
                     $t->is_valid ? 'Valid' : 'Rejected',
-                    $t->weight_grams,
+                    $t->is_valid ? \App\Services\CarbonService::forMaterial($t->material_selected) : 0.0,
                     $t->points_earned,
                     $t->is_valid ? 'OK' : 'REJECTED',
                 ]);

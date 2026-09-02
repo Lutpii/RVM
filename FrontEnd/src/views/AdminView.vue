@@ -151,14 +151,14 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Material</th><th>Items</th><th>Total Weight</th><th>Points</th>
+                      <th>Material</th><th>Items</th><th>Carbon Saved</th><th>Points</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="mat in materialStats" :key="mat.material_selected">
                       <td>{{ getMaterialIcon(mat.material_selected) }} {{ capitalize(mat.material_selected) }}</td>
                       <td>{{ mat.count }}</td>
-                      <td>{{ (mat.total_weight / 1000).toFixed(2) }} kg</td>
+                      <td>{{ mat.total_carbon_kg.toFixed(3) }} kg</td>
                       <td class="pts-green">{{ mat.total_points }}</td>
                     </tr>
                     <tr v-if="!materialStats.length">
@@ -726,7 +726,7 @@ const barChartOptions = {
     y: {
       ticks: { color: '#9ca3af' },
       grid: { color: 'rgba(255,255,255,0.05)' },
-      title: { display: true, text: 'Weight (g)', color: '#6b7280', font: { size: 11 } },
+      title: { display: true, text: 'Carbon Saved (kg)', color: '#6b7280', font: { size: 11 } },
     },
   },
 }
@@ -782,7 +782,7 @@ const statsCards = computed(() => [
   { icon: '👥', label: 'Total Users',    value: statsData.value.total_users    || 0 },
   { icon: '🏭', label: 'Machines',       value: statsData.value.total_machines || 0 },
   { icon: '🔄', label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
-  { icon: '⚖️', label: 'Weight (kg)',    value: statsData.value.total_weight_kg || 0 },
+  { icon: '🌍', label: 'Carbon Saved (kg)', value: statsData.value.total_carbon_saved_kg || 0 },
   { icon: '⭐', label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
   { icon: '📦', label: 'Transactions',  value: statsData.value.total_transactions || 0 },
 ])
