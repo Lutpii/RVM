@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AdminController extends Controller
 {
@@ -405,42 +409,63 @@ class AdminController extends Controller
         ];
     }
 
-    // Export all transactions as CSV
-    public function exportCsv(Request $request)
+    // Export all transactions as a formatted Excel workbook (bordered table,
+    // auto-sized columns — a plain CSV has no styling capability at all).
+    public function exportExcel(Request $request)
     {
         $transactions = Transaction::with(['user', 'machine'])->latest()->get();
-        $filename = 'rvm_report_' . now()->format('Y-m-d') . '.csv';
+        $filename = 'rvm_report_' . now()->format('Y-m-d') . '.xlsx';
         $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported {$transactions->count()} transactions");
 
-        return response()->streamDownload(function () use ($transactions) {
-            $handle = fopen('php://output', 'w');
-            // A double-clicked CSV on Windows is split by Excel's REGIONAL LIST
-            // SEPARATOR, not necessarily a comma — on any locale whose decimal
-            // symbol is a comma (common outside the US/UK), Windows defaults
-            // that separator to a semicolon, so every comma-delimited row
-            // (header and data alike) lands unsplit in column A. The "sep=,"
-            // directive is Excel's own override for exactly this, independent
-            // of the reader's Windows locale.
-            fwrite($handle, "\xEF\xBB\xBF");
-            fwrite($handle, "sep=,\r\n");
-            fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status'], eol: "\r\n");
-            foreach ($transactions as $t) {
-                fputcsv($handle, [
-                    $t->id,
-                    $t->created_at?->toDateTimeString(),
-                    $t->user?->name ?? 'Guest',
-                    $t->machine?->name ?? '—',
-                    $t->material_selected,
-                    $t->ai_detected_type ?? '—',
-                    round(($t->ai_confidence ?? 0) * 100),
-                    $t->is_valid ? 'Valid' : 'Rejected',
-                    $t->is_valid ? \App\Services\CarbonService::forMaterial($t->material_selected) : 0.0,
-                    $t->points_earned,
-                    $t->is_valid ? 'OK' : 'REJECTED',
-                ], eol: "\r\n");
-            }
-            fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"{$filename}\""]);
+        $headers = ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status'];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray($headers, null, 'A1');
+
+        $row = 2;
+        foreach ($transactions as $t) {
+            $sheet->fromArray([
+                $t->id,
+                $t->created_at?->toDateTimeString(),
+                $t->user?->name ?? 'Guest',
+                $t->machine?->name ?? '—',
+                $t->material_selected,
+                $t->ai_detected_type ?? '—',
+                round(($t->ai_confidence ?? 0) * 100),
+                $t->is_valid ? 'Valid' : 'Rejected',
+                $t->is_valid ? \App\Services\CarbonService::forMaterial($t->material_selected) : 0.0,
+                $t->points_earned,
+                $t->is_valid ? 'OK' : 'REJECTED',
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        $lastCol = chr(ord('A') + count($headers) - 1); // 11 headers -> 'K'
+        $lastRow = max($row - 1, 1);
+        $range = "A1:{$lastCol}{$lastRow}";
+
+        $sheet->getStyle($range)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
+        $sheet->getStyle("A1:{$lastCol}1")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        if ($lastRow >= 2) {
+            $sheet->getStyle("A2:{$lastCol}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+        }
+
+        foreach (range('A', $lastCol) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        // Row height is intentionally left unset — Excel auto-fits row height
+        // to content by default, so there's nothing to configure for that.
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     private function log(User $admin, string $action, string $targetType, int $targetId, string $details): void

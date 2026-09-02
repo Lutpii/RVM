@@ -186,9 +186,9 @@
           <div class="section-card">
             <h3 class="card-title-bar"><span class="title-sq"></span> ADMIN CONTROLS</h3>
             <div class="controls-grid">
-              <button class="ctrl-card" @click="exportCsv">
+              <button class="ctrl-card" @click="exportExcel">
                 <span class="ctrl-card-icon ctrl-blue">📤</span>
-                <span class="ctrl-card-label">Export Report (CSV)</span>
+                <span class="ctrl-card-label">Export Report (Excel)</span>
               </button>
               <button class="ctrl-card" @click="resetAllAlerts">
                 <span class="ctrl-card-icon ctrl-yellow">🔕</span>
@@ -1033,13 +1033,13 @@ function changeSessionsPerPage() {
 }
 
 // ── Admin Controls ──
-async function exportCsv() {
+async function exportExcel() {
   try {
-    const res = await api.get('/admin/export-csv', { responseType: 'blob' })
+    const res = await api.get('/admin/export-excel', { responseType: 'blob' })
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')
     a.href = url
-    a.download = `rvm_report_${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `rvm_report_${new Date().toISOString().slice(0, 10)}.xlsx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
