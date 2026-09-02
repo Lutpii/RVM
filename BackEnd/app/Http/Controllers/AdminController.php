@@ -117,11 +117,23 @@ class AdminController extends Controller
     }
 
     // Users management
+    private const USER_SORTABLE_COLUMNS = [
+        'id', 'name', 'email', 'total_points', 'role', 'is_verified', 'created_at',
+    ];
+
     public function users(Request $request): JsonResponse
     {
         $search = trim((string) $request->query('search', ''));
 
-        $query = User::orderByDesc('id');
+        // Never interpolate the raw query param as a column name — resolve
+        // it through this allowlist first, so an unrecognized or malicious
+        // value can only ever fall back to the default sort.
+        $sortColumn = in_array($request->query('sort'), self::USER_SORTABLE_COLUMNS, true)
+            ? $request->query('sort')
+            : 'id';
+        $sortDirection = $request->query('direction') === 'asc' ? 'asc' : 'desc';
+
+        $query = User::orderBy($sortColumn, $sortDirection);
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")

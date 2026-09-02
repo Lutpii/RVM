@@ -300,7 +300,14 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>ID</th><th>Name</th><th>Email</th><th>Points</th><th>Role</th><th>Verified</th><th>Created</th><th>Actions</th>
+                  <th class="sortable" @click="sortUsersBy('id')">ID{{ usersSortIndicator('id') }}</th>
+                  <th class="sortable" @click="sortUsersBy('name')">Name{{ usersSortIndicator('name') }}</th>
+                  <th class="sortable" @click="sortUsersBy('email')">Email{{ usersSortIndicator('email') }}</th>
+                  <th class="sortable" @click="sortUsersBy('total_points')">Points{{ usersSortIndicator('total_points') }}</th>
+                  <th class="sortable" @click="sortUsersBy('role')">Role{{ usersSortIndicator('role') }}</th>
+                  <th class="sortable" @click="sortUsersBy('is_verified')">Verified{{ usersSortIndicator('is_verified') }}</th>
+                  <th class="sortable" @click="sortUsersBy('created_at')">Created{{ usersSortIndicator('created_at') }}</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -656,6 +663,8 @@ const usersPage = ref(1)
 const usersPerPage = ref(15)
 const usersTotal = ref(0)
 const usersLastPage = ref(1)
+const usersSortColumn = ref('id')
+const usersSortDirection = ref('desc')
 
 const txPage = ref(1)
 const txPerPage = ref(15)
@@ -899,6 +908,7 @@ async function fetchTabData(tab, showSpinner = false) {
       if (showSpinner) loadingUsers.value = true
       const res = await api.get('/admin/users', { params: {
         page: usersPage.value, per_page: usersPerPage.value, search: userSearch.value || undefined,
+        sort: usersSortColumn.value, direction: usersSortDirection.value,
       } })
       users.value = res.data.users?.data || []
       usersTotal.value    = res.data.users?.total ?? 0
@@ -1001,6 +1011,20 @@ function goToUsersPage(page) {
 function changeUsersPerPage() {
   usersPage.value = 1
   fetchTabData('users', true)
+}
+function sortUsersBy(column) {
+  if (usersSortColumn.value === column) {
+    usersSortDirection.value = usersSortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    usersSortColumn.value = column
+    usersSortDirection.value = 'asc'
+  }
+  usersPage.value = 1
+  fetchTabData('users', true)
+}
+function usersSortIndicator(column) {
+  if (usersSortColumn.value !== column) return ''
+  return usersSortDirection.value === 'asc' ? ' ▲' : ' ▼'
 }
 
 function searchTransactions() {
@@ -1571,6 +1595,8 @@ onUnmounted(() => {
   color: var(--text-muted); font-size: 11px;
   font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
 }
+.data-table th.sortable { cursor: pointer; user-select: none; }
+.data-table th.sortable:hover { color: var(--text-primary); }
 .data-table td {
   padding: 10px 12px; border-bottom: 1px solid var(--border);
   color: var(--text-primary); vertical-align: middle;
