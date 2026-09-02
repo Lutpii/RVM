@@ -225,6 +225,7 @@
               {{ rvm.selectedMaterial }}
             </p>
             <p class="earned-text">{{ rvm.isGuest ? 'Points Donated' : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
+            <p class="carbon-text">🌍 Carbon Saved: {{ itemCarbon.toFixed(3) }} kg CO2</p>
           </div>
           <div class="action-buttons">
             <button class="end-btn" @click="confirmEndSession">
@@ -322,6 +323,7 @@ const lidOpen        = ref(false)
 const conveyorPos    = ref(0)
 const itemWeight     = ref(0)
 const itemPoints     = ref(0)
+const itemCarbon     = ref(0)
 const aiDetected     = ref('')
 const aiConfidence   = ref(0)
 const deductedPoints = ref(10)
@@ -629,7 +631,7 @@ async function simulateInsert() {
     itemWeight.value = 0
     itemPoints.value = 0
     rvm.setStep('item_unknown')
-    rvm.recordLocalTransaction({ material: 'unknown', weight: 0, points: 0, isValid: false, deducted: 0 })
+    rvm.recordLocalTransaction({ material: 'unknown', weight: 0, points: 0, isValid: false, deducted: 0, carbon: 0 })
     return
   }
 
@@ -662,10 +664,12 @@ async function simulateInsert() {
         points_earned: itemPoints.value,
       })
       displayPoints.value = completeRes.total_points || (displayPoints.value + itemPoints.value)
+      itemCarbon.value = completeRes.carbon_saved || 0
     } catch {
       displayPoints.value += itemPoints.value
+      itemCarbon.value = 0
     }
-    rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: itemWeight.value, points: itemPoints.value, isValid: true })
+    rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: itemWeight.value, points: itemPoints.value, isValid: true, carbon: itemCarbon.value })
     rvm.setStep('complete')
   } else {
     // Show mismatch screen first so user sees what AI detected
@@ -685,7 +689,7 @@ async function simulateInsert() {
       deductedPoints.value = 10
       displayPoints.value  = Math.max(0, displayPoints.value - 10)
     }
-    rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: 0, points: 0, isValid: false, deducted: deductedPoints.value })
+    rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: 0, points: 0, isValid: false, deducted: deductedPoints.value, carbon: 0 })
     rvm.setStep('rejected')
   }
 }
@@ -1133,6 +1137,7 @@ onMounted(() => {
 }
 .result-box p { color: var(--text-secondary); font-size: 14px; margin: 4px 0; }
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
+.carbon-text    { color: var(--accent-blue) !important; font-weight: 700; font-size: 14px !important; }
 .deduction-text { color: var(--accent-red) !important; font-weight: 700; font-size: 16px !important; }
 
 .points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }

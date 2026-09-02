@@ -79,8 +79,8 @@ export const useRvmStore = defineStore('rvm', () => {
     return { success: true }
   }
 
-  function recordLocalTransaction({ material, weight, points, isValid, deducted = 0 }) {
-    localSummary.value.transactions.push({ material, weight, points_earned: points, points_deducted: deducted, is_valid: isValid })
+  function recordLocalTransaction({ material, weight, points, isValid, deducted = 0, carbon = 0 }) {
+    localSummary.value.transactions.push({ material, weight, points_earned: points, points_deducted: deducted, is_valid: isValid, carbon_saved: carbon })
     if (isValid) {
       localSummary.value.total_items++
       localSummary.value.points_earned += points

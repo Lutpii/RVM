@@ -306,6 +306,7 @@ class TransactionController extends Controller
             'total_points'   => $user->fresh()->total_points,
             'weight_grams'   => $weightGrams,
             'material'       => $materialUsed,
+            'carbon_saved'   => \App\Services\CarbonService::forMaterial($materialUsed),
             'step'           => 'complete',
         ]);
     }
