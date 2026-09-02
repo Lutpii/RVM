@@ -162,7 +162,11 @@ async function goHome() {
   setKioskToken(null)
   rvm.resetSession()
   if (isKiosk && machineCode) {
-    await auth.logout()
+    // The kiosk was never really "logged in" — it only ever held a transient
+    // kiosk_token for the scanned user (see KioskAuthMiddleware). Calling
+    // auth.logout() here would delete this BROWSER's own real login, if it
+    // happens to have one — e.g. a phone used to view the kiosk QR screen
+    // once and to scan+log in another time, sharing this one localStorage.
     router.push({ path: '/thank-you', query: { redirect: `/kiosk/${machineCode}`, name: displayName, theme: currentTheme } })
   } else {
     await auth.logout()
