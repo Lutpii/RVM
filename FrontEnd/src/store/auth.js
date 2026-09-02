@@ -80,7 +80,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function loginWithGoogle() {
-    const res = await api.get('/auth/google/redirect')
+    // Reached through the Vite dev proxy, which rewrites the Host header to
+    // its own backend target — the backend can't infer a caller-reachable
+    // address from that alone (e.g. a phone on the same hotspot), so this
+    // browser's own known-good hostname is passed through explicitly.
+    const res = await api.get('/auth/google/redirect', { params: { host: window.location.hostname } })
     if (res.data.url) {
       window.location.href = res.data.url
     }

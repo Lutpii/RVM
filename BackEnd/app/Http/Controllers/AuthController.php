@@ -181,14 +181,48 @@ class AuthController extends Controller
         ]);
     }
 
-    // Step 1/2: called via the frontend's proxied axios client, so the browser's
-    // apparent host here is the FRONTEND's (e.g. localhost:5173), not this
-    // server's real one. Just hands back this server's own real, absolute URL
-    // — computed from the request itself, so it's correct in every environment
-    // (local, ngrok, production) without hardcoding a host anywhere.
+    // Step 1/2: called via the frontend's proxied axios client. The Vite dev
+    // proxy rewrites the Host header to its own backend target, so
+    // $request->root() here would reflect that internal target (127.0.0.1),
+    // not an address the caller can actually reach — wrong for anyone not on
+    // the same machine, e.g. a phone on the same hotspot as a LAN-IP-hosted
+    // frontend. The frontend passes its own window.location.hostname, which
+    // it always knows correctly regardless of the proxy; this server's own
+    // real port (config, not inferred) is combined with it. Falls back to
+    // $request->root() when no host is given (e.g. direct/non-proxied calls).
     public function googleRedirect(Request $request): JsonResponse
     {
-        return response()->json(['success' => true, 'url' => $request->root() . '/auth/google/start']);
+        $root = $this->resolveBackendRoot($request, $request->query('host'));
+        return response()->json(['success' => true, 'url' => $root . '/auth/google/start']);
+    }
+
+    // Single source of truth for "what address can the caller use to reach
+    // this backend directly" — shared by googleRedirect(), googleStart(), and
+    // googleCallback() so all three agree on the same host.
+    //
+    // Priority:
+    // 1. PUBLIC_BACKEND_URL (e.g. an ngrok tunnel) — required whenever the
+    //    caller is a phone on a private IP: Google's OAuth flatly rejects a
+    //    redirect_uri on a private/LAN address ("device_id and device_name
+    //    are required for private IP"), so nothing inferred from the request
+    //    can ever satisfy Google in that case — only a real public HTTPS
+    //    tunnel does.
+    // 2. $host (a hostname the frontend told us, e.g. window.location.hostname
+    //    when called through the Vite proxy) + this server's own configured
+    //    port — for a direct LAN IP with no tunnel (works for anything except
+    //    Google login itself, per the above).
+    // 3. $request->root() — plain localhost, single machine, nothing proxied.
+    private function resolveBackendRoot(Request $request, ?string $host = null): string
+    {
+        if ($publicUrl = config('services.public_backend_url')) {
+            return rtrim($publicUrl, '/');
+        }
+        if ($host) {
+            // php artisan serve only ever serves plain HTTP, regardless of
+            // whether the (proxied) frontend is HTTPS.
+            return 'http://' . $host . ':' . config('services.backend_port');
+        }
+        return $request->root();
     }
 
     // Step 2/2: reached via a real top-level browser navigation straight to
@@ -212,7 +246,12 @@ class AuthController extends Controller
         $nonce = Str::random(40);
         Cache::put("oauth_state:{$state}", $nonce, now()->addMinutes(10));
 
-        $url = Socialite::driver('google')->stateless()->with(['state' => $state])->redirect()->getTargetUrl();
+        // Must match what googleCallback() below computes, or the token
+        // exchange rejects it as a mismatch. Whatever this resolves to must
+        // still be pre-registered as an authorized redirect URI in the
+        // Google Cloud Console project.
+        $redirectUri = $this->resolveBackendRoot($request) . '/auth/google/callback';
+        $url = Socialite::driver('google')->stateless()->with(['state' => $state])->redirectUrl($redirectUri)->redirect()->getTargetUrl();
 
         // Secure flag follows the actual request scheme — local dev runs plain
         // HTTP (php artisan serve), where a Secure cookie would silently never
@@ -238,7 +277,9 @@ class AuthController extends Controller
         }
 
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
+            // Must match the redirectUrl googleStart() sent to Google exactly.
+            $redirectUri = $this->resolveBackendRoot($request) . '/auth/google/callback';
+            $googleUser = Socialite::driver('google')->stateless()->redirectUrl($redirectUri)->user();
 
             $user = User::updateOrCreate(
                 ['google_id' => $googleUser->getId()],
