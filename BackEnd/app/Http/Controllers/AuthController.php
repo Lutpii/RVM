@@ -324,10 +324,26 @@ class AuthController extends Controller
             'phone'        => $user->phone,
             'avatar_url'   => $user->avatar_url,
             'total_points' => $user->total_points,
+            'total_carbon_saved' => $this->totalCarbonSavedFor($user),
             'role'         => $user->role,
             'is_verified'  => $user->is_verified,
             'theme_preference' => $user->theme_preference,
             'created_at'   => $user->created_at,
         ];
+    }
+
+    private function totalCarbonSavedFor(User $user): float
+    {
+        $counts = \App\Models\Transaction::where('user_id', $user->id)
+            ->where('is_valid', 1)
+            ->selectRaw('material_selected, COUNT(*) as count')
+            ->groupBy('material_selected')
+            ->pluck('count', 'material_selected');
+
+        $total = 0.0;
+        foreach ($counts as $material => $count) {
+            $total += $count * \App\Services\CarbonService::forMaterial($material);
+        }
+        return round($total, 3);
     }
 }

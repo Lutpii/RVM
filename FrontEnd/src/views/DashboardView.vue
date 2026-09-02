@@ -23,6 +23,7 @@
       <p class="points-label">{{ $t('dashboard.totalPoints') }}</p>
       <div class="points-number">{{ auth.user?.total_points || 0 }}</div>
       <p class="points-sub">♻️ Keep recycling to earn more!</p>
+      <p class="carbon-sub">🌍 {{ (auth.user?.total_carbon_saved || 0).toFixed(2) }} kg CO2 saved</p>
     </div>
 
     <!-- Quick action -->
@@ -303,6 +304,7 @@ onMounted(async () => {
 .points-label { color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 8px; }
 .points-number { color: white; font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
 .points-sub { color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 8px; }
+.carbon-sub { color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px; }
 
 .section-pad { padding: 20px 16px 0; }
 .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; }
