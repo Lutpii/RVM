@@ -300,7 +300,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>ID</th><th>Name</th><th>Email / Phone</th><th>Points</th><th>Role</th><th>Verified</th><th>Actions</th>
+                  <th>ID</th><th>Name</th><th>Email</th><th>Points</th><th>Role</th><th>Verified</th><th>Created</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,13 +316,14 @@
                   <td class="pts-green">{{ user.total_points?.toLocaleString() }}</td>
                   <td><span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span></td>
                   <td>{{ user.is_verified ? '✅' : '❌' }}</td>
+                  <td class="muted small">{{ formatDate(user.created_at) }}</td>
                   <td>
                     <button class="action-btn edit-btn" @click="editUser(user)">Edit</button>
                     <button class="action-btn del-btn" @click="deleteUser(user.id)">Delete</button>
                   </td>
                 </tr>
                 <tr v-if="!users.length">
-                  <td colspan="7" class="empty-cell">No users found</td>
+                  <td colspan="8" class="empty-cell">No users found</td>
                 </tr>
               </tbody>
             </table>

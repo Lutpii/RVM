@@ -121,7 +121,7 @@ class AdminController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
 
-        $query = User::orderByDesc('total_points');
+        $query = User::orderByDesc('id');
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
