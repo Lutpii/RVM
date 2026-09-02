@@ -74,19 +74,21 @@
             </div>
           </div>
 
-          <div v-if="selectedMachineId === machine.id" class="machine-expanded">
-            <div class="map-embed">
-              <iframe
-                v-if="machine.latitude && machine.longitude"
-                :src="`https://maps.google.com/maps?q=${machine.latitude},${machine.longitude}&z=15&output=embed`"
-                width="100%" height="160" frameborder="0" style="border-radius:8px;"
-                allowfullscreen
-              ></iframe>
-              <div v-else class="no-map">📍 Location not set for this machine</div>
+          <div class="machine-expanded-wrap" :class="{ expanded: selectedMachineId === machine.id }">
+            <div class="machine-expanded-inner">
+              <div v-if="selectedMachineId === machine.id" class="machine-expanded">
+                <div class="map-embed">
+                  <template v-if="machine.latitude && machine.longitude">
+                    <div ref="mapContainer" class="leaflet-map"></div>
+                    <span class="map-attribution">© OpenStreetMap contributors</span>
+                  </template>
+                  <div v-else class="no-map">📍 Location not set for this machine</div>
+                </div>
+                <a :href="getDirectionsUrl(machine)" target="_blank" class="directions-btn">
+                  🗺️ Get Directions
+                </a>
+              </div>
             </div>
-            <a :href="getDirectionsUrl(machine)" target="_blank" class="directions-btn">
-              🗺️ Get Directions
-            </a>
           </div>
         </div>
       </div>
@@ -120,11 +122,27 @@
 </template>
 
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, inject, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import markerIconUrl from 'leaflet/dist/images/marker-icon.png'
+import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
+
+// Leaflet's default marker icon paths are relative and break once bundled by Vite.
+// Icon.Default._getIconUrl always prepends an auto-detected imagePath even when the
+// url options below are overridden, doubling the path — deleting it falls back to
+// the base Icon behavior, which uses these urls as-is.
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl,
+})
 
 const router      = useRouter()
 const auth        = useAuthStore()
@@ -159,6 +177,48 @@ function getBinClass(level) {
 function selectMachine(machine) {
   selectedMachineId.value = selectedMachineId.value === machine.id ? null : machine.id
 }
+
+const mapContainer = ref(null)
+let leafletMap = null
+
+function destroyMap() {
+  if (leafletMap) {
+    leafletMap.remove()
+    leafletMap = null
+  }
+}
+
+watch(selectedMachineId, async (id) => {
+  destroyMap()
+  if (id == null) return
+
+  const machine = machines.value.find(m => m.id === id)
+  if (!machine?.latitude || !machine?.longitude) return
+
+  await nextTick()
+  // mapContainer is declared on an element inside v-for, so Vue always binds it
+  // as an array of matching elements rather than a single node.
+  const container = Array.isArray(mapContainer.value) ? mapContainer.value[0] : mapContainer.value
+  if (!container) return
+
+  leafletMap = L.map(container, {
+    zoomControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    attributionControl: false,
+  }).setView([machine.latitude, machine.longitude], 16)
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(leafletMap)
+  L.marker([machine.latitude, machine.longitude]).addTo(leafletMap)
+
+  // The card's reveal is a CSS grid-row transition (0.25s) — Leaflet measures its
+  // container size on init, which is still animating at that point, so tiles render
+  // into the wrong viewport until we force a re-measure once the transition settles.
+  setTimeout(() => leafletMap?.invalidateSize(), 300)
+})
+
+onUnmounted(destroyMap)
 
 function getDirectionsUrl(machine) {
   if (machine.latitude && machine.longitude) {
@@ -302,7 +362,16 @@ onMounted(async () => {
 .bin-full-tag { background: var(--accent-red); color: white; font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
 
 /* Machine expanded */
+.machine-expanded-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.machine-expanded-wrap.expanded { grid-template-rows: 1fr; }
+.machine-expanded-inner { overflow: hidden; }
 .machine-expanded { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.leaflet-map { height: 160px; border-radius: 8px; }
+.map-attribution { display: block; margin-top: 4px; font-size: 10px; color: var(--text-muted); text-align: right; }
 .no-map { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; background: var(--bg-hover); border-radius: 8px; }
 .directions-btn {
   display: block; text-align: center; margin-top: 8px;
