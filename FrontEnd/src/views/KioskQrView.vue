@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, inject, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
@@ -90,6 +90,7 @@ import { useRvmStore } from '@/store/rvm'
 const router      = useRouter()
 const route       = useRoute()
 const rvm         = useRvmStore()
+const setTheme    = inject('setTheme')
 const machineCode = route.params.machineCode || 'RVM-001'
 
 const state          = ref('waiting') // waiting | scanned | expired
@@ -147,7 +148,7 @@ function startPoll() {
         // default light if they've never set a preference. Landing/QR screens
         // stay light regardless (they don't use theme variables).
         const scannedTheme = res.data.theme_preference || 'light'
-        document.documentElement.setAttribute('data-theme', scannedTheme)
+        setTheme(scannedTheme)
 
         if (res.data.kiosk_token) {
           // Authenticated kiosk session — real user, real API calls
@@ -247,7 +248,7 @@ function startAsGuest() {
   rvm.startGuestSession(machineCode)
   if (rvm.session) rvm.session.user_name = 'Guest'
   // Guests default to light mode.
-  document.documentElement.setAttribute('data-theme', 'light')
+  setTheme('light')
   router.push({
     path: '/welcome',
     query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest', theme: 'light' },

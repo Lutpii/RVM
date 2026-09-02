@@ -20,13 +20,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 
-const router = useRouter()
-const route  = useRoute()
-const auth   = useAuthStore()
+const router   = useRouter()
+const route    = useRoute()
+const auth     = useAuthStore()
+const setTheme = inject('setTheme')
 
 // On the kiosk, the kiosk's own browser session isn't logged in (only holds a
 // kiosk_token) — the ended session's name comes via ?name= instead.
@@ -37,14 +38,14 @@ onMounted(() => {
   // this browser's own session (regular web login), or the ending session's
   // theme passed via ?theme= (this browser isn't logged in on the kiosk,
   // only the phone was).
-  document.documentElement.setAttribute('data-theme', route.query.theme || auth.user?.theme_preference || 'light')
+  setTheme(route.query.theme || auth.user?.theme_preference || 'light')
 
   const target = route.query.redirect || '/'
   setTimeout(() => {
     // Back to the kiosk's default look for whoever arrives next — regular
     // web navigation (non-kiosk) keeps whatever the browser had instead.
     if (target.startsWith('/kiosk/')) {
-      document.documentElement.setAttribute('data-theme', 'light')
+      setTheme('light')
     }
     router.replace(target)
   }, 3000)
