@@ -66,6 +66,10 @@
           <span class="row-label">{{ rvm.isGuest ? 'Points Donated' : $t('summary.pointsEarned') }}</span>
           <span class="row-value earned">+{{ earnedPoints }}</span>
         </div>
+        <div class="summary-row highlight">
+          <span class="row-label">🌍 Carbon Saved</span>
+          <span class="row-value earned">{{ (summary.carbon_saved || 0).toFixed(3) }} kg CO2</span>
+        </div>
       </div>
 
       <!-- Loading state -->
@@ -170,7 +174,9 @@ function computeFromTransactions(txns) {
   const total_items = txns.filter(t => t.is_valid).length
   const points_earned = txns.reduce((sum, t) =>
     sum + (t.is_valid ? (t.points_earned || 0) : -(t.points_deducted || 0)), 0)
-  return { total_items, points_earned }
+  const carbon_saved = txns.reduce((sum, t) =>
+    sum + (t.is_valid ? (t.carbon_saved || 0) : 0), 0)
+  return { total_items, points_earned, carbon_saved }
 }
 
 onMounted(async () => {
@@ -180,13 +186,14 @@ onMounted(async () => {
   // Guest mode: build summary from local data, no API call
   if (rvm.isGuest) {
     const transactions = local.transactions
-    const { total_items, points_earned } = computeFromTransactions(transactions)
+    const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
     summary.value = {
       user_name:    'Guest',
       session_code: rvm.session?.session_code || ('GUEST-' + Date.now().toString(36).toUpperCase()),
       start_points: 0,
       end_points:   0,
       points_earned,
+      carbon_saved,
       total_items,
       transactions,
     }
@@ -198,38 +205,41 @@ onMounted(async () => {
       const data = await rvm.getSummary()
       const apiSummary = data?.summary
       const transactions = apiSummary?.transactions?.length ? apiSummary.transactions : local.transactions
-      const { total_items, points_earned } = computeFromTransactions(transactions)
+      const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
       summary.value = {
         user_name:    apiSummary?.user_name || auth.user?.name || 'User',
         session_code: apiSummary?.session_code || rvm.session?.session_code,
         start_points: apiSummary?.start_points ?? local.start_points,
         end_points:   apiSummary?.end_points ?? computedEnd,
         points_earned,
+        carbon_saved,
         total_items,
         transactions,
       }
     } catch {
       const transactions = local.transactions
-      const { total_items, points_earned } = computeFromTransactions(transactions)
+      const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
       summary.value = {
         user_name:    auth.user?.name || 'User',
         session_code: rvm.session?.session_code,
         start_points: rvm.session?.start_points ?? local.start_points,
         end_points:   rvm.session?.end_points ?? computedEnd,
         points_earned,
+        carbon_saved,
         total_items,
         transactions,
       }
     }
   } else {
     const transactions = local.transactions
-    const { total_items, points_earned } = computeFromTransactions(transactions)
+    const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
     summary.value = {
       user_name:    auth.user?.name || 'User',
       session_code: 'LOCAL-' + Date.now().toString(36).toUpperCase(),
       start_points: local.start_points,
       end_points:   computedEnd,
       points_earned,
+      carbon_saved,
       total_items,
       transactions,
     }

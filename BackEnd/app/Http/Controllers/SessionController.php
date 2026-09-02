@@ -146,6 +146,7 @@ class SessionController extends Controller
                     'points_earned'  => $t->points_earned,
                     'points_deducted'=> $t->points_deducted,
                     'is_valid'       => $t->is_valid,
+                    'carbon_saved'   => $t->is_valid ? \App\Services\CarbonService::forMaterial($t->material_selected) : 0.0,
                 ]),
             ],
         ]);
