@@ -414,13 +414,15 @@ class AdminController extends Controller
 
         return response()->streamDownload(function () use ($transactions) {
             $handle = fopen('php://output', 'w');
-            // Excel on Windows expects a UTF-8 BOM and CRLF line endings for a
-            // double-clicked CSV to split into columns reliably — fputcsv()
-            // defaults to bare "\n", which Excel can misparse (seen in practice
-            // as the header row landing whole in column A while data rows split
-            // fine, since PHP's default matches enough of Excel's heuristics to
-            // pass for plain data but not for the header).
+            // A double-clicked CSV on Windows is split by Excel's REGIONAL LIST
+            // SEPARATOR, not necessarily a comma — on any locale whose decimal
+            // symbol is a comma (common outside the US/UK), Windows defaults
+            // that separator to a semicolon, so every comma-delimited row
+            // (header and data alike) lands unsplit in column A. The "sep=,"
+            // directive is Excel's own override for exactly this, independent
+            // of the reader's Windows locale.
             fwrite($handle, "\xEF\xBB\xBF");
+            fwrite($handle, "sep=,\r\n");
             fputcsv($handle, ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status'], eol: "\r\n");
             foreach ($transactions as $t) {
                 fputcsv($handle, [
