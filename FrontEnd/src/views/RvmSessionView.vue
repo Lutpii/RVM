@@ -610,6 +610,11 @@ async function simulateInsert() {
     })
     aiDetected.value   = res.ai_detected || rvm.selectedMaterial || 'plastic'
     aiConfidence.value = res.confidence || 0
+    // Guests never call complete() (see processStep's isGuest branch, which
+    // mocks it locally with no carbon_saved) — classify() is the one real,
+    // non-mocked call guests make, so its carbon_saved is captured here as a
+    // fallback. A logged-in complete() response overrides this below.
+    itemCarbon.value = res.carbon_saved ?? 0
     // Valid unless the AI couldn't recognize the material at all
     isValid = aiDetected.value !== 'unknown'
     rvm.setSelectedMaterial(aiDetected.value)
@@ -664,10 +669,11 @@ async function simulateInsert() {
         points_earned: itemPoints.value,
       })
       displayPoints.value = completeRes.total_points || (displayPoints.value + itemPoints.value)
-      itemCarbon.value = completeRes.carbon_saved || 0
+      // completeRes has no carbon_saved for guests (mocked, no DB record) —
+      // keep the value classify() already set instead of zeroing it out.
+      itemCarbon.value = completeRes.carbon_saved ?? itemCarbon.value
     } catch {
       displayPoints.value += itemPoints.value
-      itemCarbon.value = 0
     }
     rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: itemWeight.value, points: itemPoints.value, isValid: true, carbon: itemCarbon.value })
     rvm.setStep('complete')

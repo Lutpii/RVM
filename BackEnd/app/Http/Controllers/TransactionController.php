@@ -407,6 +407,12 @@ class TransactionController extends Controller
             'ai_detected'     => $detected,
             'confidence'      => $aiResult['confidence'] ?? 0,
             'all_predictions' => $aiResult['all_predictions'] ?? [],
+            // Guests never hit complete() (no DB record — see
+            // RvmStore.processStep's isGuest branch), which is where a
+            // logged-in session's carbon_saved comes from. This is the one
+            // real (non-mocked) call guests make with the material already
+            // known, so it's included here instead for the guest flow to use.
+            'carbon_saved'    => \App\Services\CarbonService::forMaterial($detected),
         ]);
     }
 
