@@ -16,7 +16,8 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('chart.js') || id.includes('vue-chartjs')) return 'vendor-charts'
-            if (id.includes('jsqr')) return 'vendor-qr'
+            if (id.includes('jsqr') || id.includes('/qrcode/')) return 'vendor-qr'
+            if (id.includes('axios')) return 'vendor-axios'
             return 'vendor'
           }
         },
