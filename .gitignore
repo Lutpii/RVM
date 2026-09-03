@@ -35,8 +35,10 @@ venv/
 # ========================
 BackEnd/storage/logs/
 BackEnd/storage/framework/cache/
-BackEnd/storage/framework/sessions/
-BackEnd/storage/framework/views/
+BackEnd/storage/framework/sessions/*
+!BackEnd/storage/framework/sessions/.gitignore
+BackEnd/storage/framework/views/*
+!BackEnd/storage/framework/views/.gitignore
 BackEnd/storage/app/public/
 BackEnd/public/hot
 BackEnd/public/storage
