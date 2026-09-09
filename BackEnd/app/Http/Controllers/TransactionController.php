@@ -6,6 +6,7 @@ use App\Models\Transaction;
 use App\Models\RecyclingSession;
 use App\Models\RvmMachine;
 use App\Models\PointsHistory;
+use App\Models\DetectionLog;
 use App\Services\AiService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -158,6 +159,20 @@ class TransactionController extends Controller
         $aiResult = $this->ai->classify($request->image_path);
         $detected = $aiResult['material'] ?? $selected ?? 'plastic';
         $confidence = $aiResult['confidence'] ?? 0;
+
+        // Log every classification attempt (independent of whether this
+        // transaction goes on to complete() or reject()) so exhibition data
+        // isn't lost when a session is abandoned mid-flow.
+        DetectionLog::create([
+            'image_path'       => $request->image_path,
+            'ai_detected_type' => $aiResult['material'] ?? null,
+            'ai_confidence'    => $aiResult['confidence'] ?? null,
+            'is_mock'          => $aiResult['mock'] ?? false,
+            'is_guest'         => false,
+            'session_id'       => $session->id,
+            'user_id'          => $session->user_id,
+            'machine_id'       => $session->machine_id,
+        ]);
 
         // Unknown detections are never valid; otherwise, valid unless it mismatches a pre-selection
         if ($detected === 'unknown') {
@@ -400,6 +415,14 @@ class TransactionController extends Controller
 
         $aiResult = $this->ai->classify($request->image_path);
         $detected = $aiResult['material'] ?? 'unknown';
+
+        DetectionLog::create([
+            'image_path'       => $request->image_path,
+            'ai_detected_type' => $aiResult['material'] ?? null,
+            'ai_confidence'    => $aiResult['confidence'] ?? null,
+            'is_mock'          => $aiResult['mock'] ?? false,
+            'is_guest'         => true,
+        ]);
 
         return response()->json([
             'success'         => true,
