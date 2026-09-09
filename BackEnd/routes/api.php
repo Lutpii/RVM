@@ -98,5 +98,6 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
         Route::post('/request-bin-collection', [AdminController::class, 'requestBinCollection']);
         Route::get('/export-excel', [AdminController::class, 'exportExcel']);
         Route::get('/chart-data', [AdminController::class, 'chartData']);
+        Route::get('/detection-logs', [AdminController::class, 'detectionLogs']);
     });
 });

@@ -7,6 +7,7 @@ use App\Models\RvmMachine;
 use App\Models\RecyclingSession;
 use App\Models\Transaction;
 use App\Models\AdminLog;
+use App\Models\DetectionLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -296,6 +297,21 @@ class AdminController extends Controller
 
         $transactions = $query->paginate($this->resolvePerPage($request));
         return response()->json(['success' => true, 'transactions' => $transactions]);
+    }
+
+    public function detectionLogs(Request $request): JsonResponse
+    {
+        $query = DetectionLog::with(['user', 'machine'])->latest();
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->query('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->query('date_to'));
+        }
+
+        $logs = $query->paginate($this->resolvePerPage($request));
+        return response()->json(['success' => true, 'detection_logs' => $logs]);
     }
 
     public function stats(): JsonResponse
