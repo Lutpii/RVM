@@ -47,6 +47,65 @@ class AdminDetectionLogsTest extends TestCase
         $response->assertJsonCount(2, 'detection_logs.data');
     }
 
+    /**
+     * created_at is not mass-assignable (DetectionLog only lists the detection
+     * fields in $fillable), so backdating has to bypass fill() and set the
+     * attribute directly. save() on an existing row only touches updated_at.
+     */
+    private function makeLogDated(string $date, array $overrides = []): DetectionLog
+    {
+        $log = DetectionLog::create(array_merge([
+            'image_path' => 'captures/dated.jpg', 'ai_detected_type' => 'plastic', 'is_guest' => true,
+        ], $overrides));
+        $log->created_at = $date;
+        $log->save();
+
+        return $log;
+    }
+
+    public function test_listing_detection_logs_respects_the_date_filter(): void
+    {
+        $this->actingAsAdmin();
+        $this->makeLogDated('2026-09-01 10:00:00', ['image_path' => 'captures/old.jpg']);
+        $this->makeLogDated('2026-09-08 10:00:00', ['image_path' => 'captures/recent.jpg']);
+
+        $response = $this->getJson('/api/admin/detection-logs?date_from=2026-09-05&date_to=2026-09-09')->assertOk();
+
+        $response->assertJsonCount(1, 'detection_logs.data');
+        $response->assertJsonPath('detection_logs.data.0.image_path', 'captures/recent.jpg');
+    }
+
+    public function test_export_respects_the_date_filter(): void
+    {
+        $this->actingAsAdmin();
+        $this->makeLogDated('2026-09-01 10:00:00', ['image_path' => 'captures/old.jpg']);
+        $this->makeLogDated('2026-09-08 10:00:00', ['image_path' => 'captures/recent.jpg']);
+
+        $response = $this->get('/api/admin/detection-logs/export?date_from=2026-09-05&date_to=2026-09-09')->assertOk();
+
+        $lines = array_filter(explode("\n", trim($response->streamedContent())));
+        $this->assertCount(2, $lines, 'Expected a header row plus exactly one in-range data row');
+        $this->assertSame('captures/recent.jpg', str_getcsv($lines[1])[0]);
+    }
+
+    /**
+     * The review gallery fires one image request per row, so the generic 60/min
+     * 'api' limit would 429 an admin halfway through a single page. Asserting
+     * the effective header (not just that the route carries the middleware)
+     * catches the easy mistake of adding throttle:detection-review while the
+     * api middleware group's tighter throttle:api still wraps it.
+     */
+    public function test_detection_log_routes_use_the_generous_review_throttle(): void
+    {
+        $this->actingAsAdmin();
+        $log = DetectionLog::create(['image_path' => 'captures/a.jpg', 'is_guest' => true]);
+
+        $this->getJson('/api/admin/detection-logs')->assertHeader('X-RateLimit-Limit', 600);
+        $this->get('/api/admin/detection-logs/export')->assertHeader('X-RateLimit-Limit', 600);
+        $this->patchJson("/api/admin/detection-logs/{$log->id}", ['ground_truth_correct' => true])
+            ->assertHeader('X-RateLimit-Limit', 600);
+    }
+
     public function test_non_admin_cannot_list_detection_logs(): void
     {
         $user = $this->makeUser(); // default role is 'user', not 'admin'

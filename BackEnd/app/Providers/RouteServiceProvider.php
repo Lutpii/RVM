@@ -37,6 +37,19 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->ip());
         });
 
+        // The admin Detection Review tab is inherently request-bursty: opening
+        // one page of the gallery fires 1 list request plus one authenticated
+        // image fetch per row (up to 200 with the largest page size), and each
+        // Correct/Incorrect click adds a PATCH. Reviewing a couple of pages a
+        // minute blows straight through the generic 60/min 'api' limit, and the
+        // failure is silent and misleading (a 429'd thumbnail just renders as a
+        // "photo missing" placeholder). These routes all sit behind
+        // admin + auth:sanctum, so keying by user id is safe and a generous cap
+        // costs nothing — only an authenticated admin can reach them at all.
+        RateLimiter::for('detection-review', function (Request $request) {
+            return Limit::perMinute(600)->by($request->user()?->id);
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

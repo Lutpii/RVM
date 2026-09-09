@@ -388,9 +388,10 @@ class TransactionController extends Controller
         ]);
     }
 
-    // Guest-safe hardware actions (no auth, no session, no points/DB writes) —
+    // Guest-safe hardware actions (no auth, no session, no points writes) —
     // lets the kiosk's "Continue as Guest" flow still drive the real camera,
-    // AI classification, and sorting servo.
+    // AI classification, and sorting servo. hardwareClassify() does write one
+    // detection_logs row per classification, for exhibition accuracy review.
     public function hardwareCapture(Request $request): JsonResponse
     {
         $request->validate([

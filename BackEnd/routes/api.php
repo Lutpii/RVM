@@ -39,7 +39,9 @@ Route::get('/machines/{id}', [MachineController::class, 'show']);
 
 // Hardware-only actions (camera capture, AI classify, servo sort) — no login
 // required, used by the kiosk's "Continue as Guest" flow so the physical
-// machine still works for guests. No points/DB records are created here.
+// machine still works for guests. No points/session records are created here;
+// /hardware/classify does write one detection_logs row per classification, for
+// exhibition accuracy review.
 Route::post('/hardware/capture', [TransactionController::class, 'hardwareCapture']);
 Route::post('/hardware/classify', [TransactionController::class, 'hardwareClassify']);
 Route::post('/hardware/sort', [TransactionController::class, 'hardwareSort']);
@@ -98,9 +100,16 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
         Route::post('/request-bin-collection', [AdminController::class, 'requestBinCollection']);
         Route::get('/export-excel', [AdminController::class, 'exportExcel']);
         Route::get('/chart-data', [AdminController::class, 'chartData']);
-        Route::get('/detection-logs', [AdminController::class, 'detectionLogs']);
-        Route::patch('/detection-logs/{id}', [AdminController::class, 'reviewDetectionLog']);
-        Route::get('/detection-logs/{id}/image', [AdminController::class, 'detectionLogImage']);
-        Route::get('/detection-logs/export', [AdminController::class, 'exportDetectionLogs']);
+        // Own throttle (see RouteServiceProvider) — the Detection Review tab
+        // fires one image request per gallery row, which the generic 60/min
+        // 'api' limit would 429 halfway through a single page. Unlike the
+        // qr-status route this *loosens* the cap, so the api middleware group's
+        // throttle:api has to come off too or it would still bind at 60.
+        Route::middleware('throttle:detection-review')->withoutMiddleware('throttle:api')->group(function () {
+            Route::get('/detection-logs', [AdminController::class, 'detectionLogs']);
+            Route::patch('/detection-logs/{id}', [AdminController::class, 'reviewDetectionLog']);
+            Route::get('/detection-logs/{id}/image', [AdminController::class, 'detectionLogImage']);
+            Route::get('/detection-logs/export', [AdminController::class, 'exportDetectionLogs']);
+        });
     });
 });

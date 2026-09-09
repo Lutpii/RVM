@@ -8,6 +8,7 @@ use App\Models\RecyclingSession;
 use App\Models\Transaction;
 use App\Models\AdminLog;
 use App\Models\DetectionLog;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -299,16 +300,26 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'transactions' => $transactions]);
     }
 
-    public function detectionLogs(Request $request): JsonResponse
+    /**
+     * Shared by the list and the CSV export so both honour the same date
+     * window — an export that ignored the filter next to it would quietly mix
+     * dev/test rows into the exhibition accuracy figures.
+     */
+    private function filterDetectionLogsByDate(Builder $query, Request $request): Builder
     {
-        $query = DetectionLog::with(['user', 'machine'])->latest();
-
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->query('date_from'));
         }
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->query('date_to'));
         }
+
+        return $query;
+    }
+
+    public function detectionLogs(Request $request): JsonResponse
+    {
+        $query = $this->filterDetectionLogsByDate(DetectionLog::with(['user', 'machine'])->latest(), $request);
 
         $logs = $query->paginate($this->resolvePerPage($request));
         return response()->json(['success' => true, 'detection_logs' => $logs]);
@@ -323,6 +334,10 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Detection log not found.'], 404);
         }
 
+        // Deliberately no $this->log(...) here, unlike the other mutating admin
+        // actions: an exhibition review pass marks hundreds of photos in one
+        // sitting, which would bury every other entry in the 50-per-page
+        // admin_logs view. reviewed_at on the row is the audit trail instead.
         $log->update([
             'ground_truth_correct' => $request->boolean('ground_truth_correct'),
             'reviewed_at'          => now(),
@@ -353,7 +368,7 @@ class AdminController extends Controller
     // of analysis: one row per detection event, not per completed transaction.
     public function exportDetectionLogs(Request $request)
     {
-        $logs = DetectionLog::latest()->get();
+        $logs = $this->filterDetectionLogsByDate(DetectionLog::latest(), $request)->get();
         $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs");
 
         $filename = 'detection_logs_' . now()->format('Y-m-d') . '.csv';
