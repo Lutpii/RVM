@@ -314,6 +314,23 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'detection_logs' => $logs]);
     }
 
+    public function reviewDetectionLog(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['ground_truth_correct' => 'required|boolean']);
+
+        $log = DetectionLog::find($id);
+        if (!$log) {
+            return response()->json(['success' => false, 'message' => 'Detection log not found.'], 404);
+        }
+
+        $log->update([
+            'ground_truth_correct' => $request->boolean('ground_truth_correct'),
+            'reviewed_at'          => now(),
+        ]);
+
+        return response()->json(['success' => true, 'detection_log' => $log]);
+    }
+
     public function stats(): JsonResponse
     {
         return $this->dashboard(request());

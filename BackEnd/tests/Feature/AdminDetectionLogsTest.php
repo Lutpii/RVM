@@ -54,4 +54,24 @@ class AdminDetectionLogsTest extends TestCase
 
         $this->getJson('/api/admin/detection-logs')->assertStatus(403);
     }
+
+    public function test_admin_can_mark_a_detection_log_correct(): void
+    {
+        $this->actingAsAdmin();
+        $log = DetectionLog::create(['image_path' => 'captures/a.jpg', 'ai_detected_type' => 'plastic', 'is_guest' => true]);
+
+        $response = $this->patchJson("/api/admin/detection-logs/{$log->id}", ['ground_truth_correct' => true])
+            ->assertOk();
+
+        $response->assertJsonPath('detection_log.ground_truth_correct', true);
+        $this->assertNotNull($log->fresh()->reviewed_at);
+    }
+
+    public function test_reviewing_a_missing_detection_log_returns_404(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->patchJson('/api/admin/detection-logs/999999', ['ground_truth_correct' => false])
+            ->assertStatus(404);
+    }
 }

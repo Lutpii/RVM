@@ -99,5 +99,6 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
         Route::get('/export-excel', [AdminController::class, 'exportExcel']);
         Route::get('/chart-data', [AdminController::class, 'chartData']);
         Route::get('/detection-logs', [AdminController::class, 'detectionLogs']);
+        Route::patch('/detection-logs/{id}', [AdminController::class, 'reviewDetectionLog']);
     });
 });
