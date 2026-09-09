@@ -24,7 +24,7 @@ class SessionController extends Controller
         $machine = RvmMachine::find($request->machine_id);
 
         if ($machine->status !== 'active') {
-            return response()->json(['success' => false, 'message' => 'This machine is not currently active.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.machine_not_active')], 400);
         }
 
         // Check for existing active session
@@ -32,7 +32,7 @@ class SessionController extends Controller
             ->where('status', 'active')->first();
 
         if ($existing) {
-            return response()->json(['success' => false, 'message' => 'You already have an active session.', 'session_code' => $existing->session_code], 400);
+            return response()->json(['success' => false, 'message' => __('messages.active_session_exists'), 'session_code' => $existing->session_code], 400);
         }
 
         $sessionCode = 'RVM-' . strtoupper(Str::random(12));
@@ -51,7 +51,7 @@ class SessionController extends Controller
 
         return response()->json([
             'success'      => true,
-            'message'      => 'Session started successfully.',
+            'message'      => __('messages.session_started'),
             'session_code' => $sessionCode,
             'session'      => $this->formatSession($session, $user, $machine),
         ]);
@@ -66,7 +66,7 @@ class SessionController extends Controller
             ->first();
 
         if (!$session) {
-            return response()->json(['success' => false, 'message' => 'Session not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.session_not_found')], 404);
         }
 
         return response()->json([
@@ -85,7 +85,7 @@ class SessionController extends Controller
             ->first();
 
         if (!$session) {
-            return response()->json(['success' => false, 'message' => 'Active session not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.active_session_not_found')], 404);
         }
 
         $user = $request->user()->fresh();
@@ -109,7 +109,7 @@ class SessionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Session ended successfully.',
+            'message' => __('messages.session_ended'),
             'session' => $this->formatSession($session->fresh(), $user->fresh(), $session->machine),
         ]);
     }
@@ -123,7 +123,7 @@ class SessionController extends Controller
             ->first();
 
         if (!$session) {
-            return response()->json(['success' => false, 'message' => 'Session not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.session_not_found')], 404);
         }
 
         $user = $request->user();

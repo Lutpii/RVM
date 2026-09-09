@@ -19,11 +19,11 @@ class QrController extends Controller
         $machine = RvmMachine::where('machine_code', $machineCode)->first();
 
         if (!$machine) {
-            return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.machine_not_found')], 404);
         }
 
         if ($machine->status !== 'active') {
-            return response()->json(['success' => false, 'message' => 'Machine is not active.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.machine_inactive')], 400);
         }
 
         // Expire only genuinely time-expired pending QRs for this machine
@@ -80,7 +80,7 @@ class QrController extends Controller
         $qrSession = QrSession::with(['machine', 'scannedUser'])->where('qr_token', $token)->first();
 
         if (!$qrSession) {
-            return response()->json(['success' => false, 'message' => 'QR token not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.qr_token_not_found')], 404);
         }
 
         // expires_at means two different things depending on status: for a
@@ -146,12 +146,12 @@ class QrController extends Controller
             ->first();
 
         if (!$qrSession) {
-            return response()->json(['success' => false, 'message' => 'Invalid or expired QR code.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.qr_invalid_or_expired')], 400);
         }
 
         if (Carbon::now()->isAfter($qrSession->expires_at)) {
             $qrSession->update(['status' => 'expired']);
-            return response()->json(['success' => false, 'message' => 'QR code has expired. Please scan a new one.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.qr_expired')], 400);
         }
 
         $user = $request->user();
@@ -169,7 +169,7 @@ class QrController extends Controller
 
         return response()->json([
             'success'    => true,
-            'message'    => 'QR scanned successfully. Session ready.',
+            'message'    => __('messages.qr_scanned'),
             'machine_id' => $machine->id,
             'machine'    => [
                 'id'            => $machine->id,

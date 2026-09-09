@@ -54,7 +54,7 @@ class TransactionController extends Controller
             return response()->json([
                 'success'    => false,
                 'bin_full'   => true,
-                'message'    => "The {$material} bin is full. Please choose a different material.",
+                'message'    => __('messages.bin_full', ['material' => __('messages.materials.' . $material)]),
                 'bin_level'  => $level,
             ]);
         }
@@ -63,7 +63,7 @@ class TransactionController extends Controller
             'success'   => true,
             'bin_full'  => false,
             'bin_level' => $level,
-            'message'   => 'Bin has space. Proceeding to open lid.',
+            'message'   => __('messages.bin_has_space'),
         ]);
     }
 
@@ -77,7 +77,7 @@ class TransactionController extends Controller
         // Simulate lid opening delay (in real hardware, trigger GPIO)
         return response()->json([
             'success' => true,
-            'message' => 'Lid is opening. Please wait...',
+            'message' => __('messages.lid_opening'),
             'step'    => 'lid_opening',
         ]);
     }
@@ -95,7 +95,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success'  => true,
-            'message'  => 'Item received. Starting conveyor...',
+            'message'  => __('messages.item_received'),
             'step'     => 'item_inserted',
             'material' => $request->material_selected,
         ]);
@@ -110,7 +110,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Conveyor running. Moving item to scanning station...',
+            'message' => __('messages.conveyor_running'),
             'step'    => 'conveyor',
         ]);
     }
@@ -135,7 +135,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success'    => true,
-            'message'    => 'Image captured successfully.',
+            'message'    => __('messages.image_captured'),
             'step'       => 'image_captured',
             'image_path' => $imagePath,
         ]);
@@ -188,7 +188,7 @@ class TransactionController extends Controller
             'ai_detected'       => $detected,
             'confidence'        => $confidence,
             'all_predictions'   => $aiResult['all_predictions'] ?? [],
-            'message'           => 'Item classified successfully.',
+            'message'           => __('messages.item_classified'),
             'step'              => 'validated',
         ]);
     }
@@ -235,7 +235,7 @@ class TransactionController extends Controller
             'weight_grams'  => $weightGrams,
             'points_earned' => $pointsEarned,
             'material'      => $material,
-            'message'       => "You earned {$pointsEarned} points!",
+            'message'       => __('messages.points_earned_message', ['points' => $pointsEarned]),
             'step'          => 'weighed',
         ]);
     }
@@ -261,7 +261,7 @@ class TransactionController extends Controller
         if (!$pending) {
             return response()->json([
                 'success' => false,
-                'message' => 'No weighed item is pending for this session. Please weigh an item first.',
+                'message' => __('messages.no_pending_item'),
             ], 400);
         }
         $weightGrams  = $pending['weight_grams'];
@@ -315,7 +315,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success'        => true,
-            'message'        => 'Transaction completed successfully!',
+            'message'        => __('messages.transaction_completed'),
             'transaction_id' => $transaction->id,
             'points_earned'  => $pointsEarned,
             'total_points'   => $user->fresh()->total_points,
@@ -378,7 +378,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success'          => false,
-            'message'          => 'Item rejected. Points deducted.',
+            'message'          => __('messages.item_rejected'),
             'transaction_id'   => $transaction->id,
             'points_deducted'  => $deduction,
             'total_points'     => $user->fresh()->total_points,
@@ -460,6 +460,6 @@ class TransactionController extends Controller
 
     private function sessionError(): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => 'Active session not found.'], 404);
+        return response()->json(['success' => false, 'message' => __('messages.active_session_not_found')], 404);
     }
 }

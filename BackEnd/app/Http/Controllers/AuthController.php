@@ -57,7 +57,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $request->phone ? 'Registration successful. OTP sent to WhatsApp.' : 'Registration successful.',
+            'message' => $request->phone ? __('messages.register_success_otp_sent') : __('messages.register_success'),
             'token'   => $token,
             'user'    => $this->formatUser($user),
         ], 201);
@@ -82,7 +82,7 @@ class AuthController extends Controller
         $throttleKey = 'login:' . Str::lower($request->email ?? $request->phone);
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
-            return response()->json(['success' => false, 'message' => "Too many login attempts. Try again in {$seconds} seconds."], 429);
+            return response()->json(['success' => false, 'message' => __('messages.too_many_login_attempts', ['seconds' => $seconds])], 429);
         }
 
         $user = $request->email
@@ -91,7 +91,7 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             RateLimiter::hit($throttleKey, 60);
-            return response()->json(['success' => false, 'message' => 'Invalid credentials.'], 401);
+            return response()->json(['success' => false, 'message' => __('messages.invalid_credentials')], 401);
         }
 
         RateLimiter::clear($throttleKey);
@@ -99,7 +99,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Login successful.',
+            'message' => __('messages.login_success'),
             'token'   => $token,
             'user'    => $this->formatUser($user),
         ]);
@@ -121,18 +121,18 @@ class AuthController extends Controller
         $sendKey = 'otp-send:' . $request->phone;
         if (RateLimiter::tooManyAttempts($sendKey, 3)) {
             $seconds = RateLimiter::availableIn($sendKey);
-            return response()->json(['success' => false, 'message' => "Too many OTP requests. Try again in {$seconds} seconds."], 429);
+            return response()->json(['success' => false, 'message' => __('messages.too_many_otp_requests', ['seconds' => $seconds])], 429);
         }
 
         $user = User::where('phone', $request->phone)->first();
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Phone number not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.phone_not_found')], 404);
         }
 
         RateLimiter::hit($sendKey, 600);
         $this->generateAndSendOtp($user);
 
-        return response()->json(['success' => true, 'message' => 'OTP sent to your WhatsApp.']);
+        return response()->json(['success' => true, 'message' => __('messages.otp_sent')]);
     }
 
     // Verify OTP
@@ -152,7 +152,7 @@ class AuthController extends Controller
         $verifyKey = 'otp-verify:' . $request->phone;
         if (RateLimiter::tooManyAttempts($verifyKey, 5)) {
             $seconds = RateLimiter::availableIn($verifyKey);
-            return response()->json(['success' => false, 'message' => "Too many attempts. Try again in {$seconds} seconds."], 429);
+            return response()->json(['success' => false, 'message' => __('messages.too_many_otp_attempts', ['seconds' => $seconds])], 429);
         }
 
         $user = User::where('phone', $request->phone)->first();
@@ -161,11 +161,11 @@ class AuthController extends Controller
         // here (cast to string) since hash_equals() rejects a null needle/haystack.
         if (!$user || !hash_equals((string) $user->otp_code, (string) $request->otp)) {
             RateLimiter::hit($verifyKey, 300);
-            return response()->json(['success' => false, 'message' => 'Invalid OTP.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.invalid_otp')], 400);
         }
 
         if (Carbon::now()->isAfter($user->otp_expires_at)) {
-            return response()->json(['success' => false, 'message' => 'OTP has expired.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.otp_expired')], 400);
         }
 
         RateLimiter::clear($verifyKey);
@@ -175,7 +175,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Phone verified successfully.',
+            'message' => __('messages.phone_verified'),
             'token'   => $token,
             'user'    => $this->formatUser($user),
         ]);
@@ -310,12 +310,12 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), ['code' => 'required|string']);
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => 'Invalid request.'], 422);
+            return response()->json(['success' => false, 'message' => __('messages.invalid_request')], 422);
         }
 
         $payload = Cache::pull("oauth_code:{$request->code}");
         if (!$payload) {
-            return response()->json(['success' => false, 'message' => 'This sign-in link has expired or was already used.'], 400);
+            return response()->json(['success' => false, 'message' => __('messages.oauth_code_expired')], 400);
         }
 
         return response()->json(['success' => true, 'token' => $payload['token'], 'user' => $payload['user']]);
@@ -331,7 +331,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['success' => true, 'message' => 'Logged out successfully.']);
+        return response()->json(['success' => true, 'message' => __('messages.logout_success')]);
     }
 
     // Refresh token
