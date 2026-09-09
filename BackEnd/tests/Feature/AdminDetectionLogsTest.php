@@ -100,4 +100,29 @@ class AdminDetectionLogsTest extends TestCase
 
         $this->get("/api/admin/detection-logs/{$log->id}/image")->assertStatus(404);
     }
+
+    public function test_export_produces_a_csv_with_expected_columns(): void
+    {
+        $this->actingAsAdmin();
+        DetectionLog::create([
+            'image_path' => 'captures/a.jpg', 'ai_detected_type' => 'plastic',
+            'ai_confidence' => 0.8, 'is_guest' => true, 'ground_truth_correct' => true,
+        ]);
+
+        $response = $this->get('/api/admin/detection-logs/export')->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $lines = array_filter(explode("\n", trim($response->streamedContent())));
+        $header = str_getcsv($lines[0]);
+        $row    = str_getcsv($lines[1]);
+
+        $this->assertSame(
+            ['image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock', 'ground_truth_correct', 'created_at'],
+            $header
+        );
+        $this->assertSame('captures/a.jpg', $row[0]);
+        $this->assertSame('plastic', $row[1]);
+        $this->assertSame('1', $row[3]); // is_guest
+        $this->assertSame('1', $row[5]); // ground_truth_correct
+    }
 }

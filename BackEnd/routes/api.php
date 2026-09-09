@@ -101,5 +101,6 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
         Route::get('/detection-logs', [AdminController::class, 'detectionLogs']);
         Route::patch('/detection-logs/{id}', [AdminController::class, 'reviewDetectionLog']);
         Route::get('/detection-logs/{id}/image', [AdminController::class, 'detectionLogImage']);
+        Route::get('/detection-logs/export', [AdminController::class, 'exportDetectionLogs']);
     });
 });

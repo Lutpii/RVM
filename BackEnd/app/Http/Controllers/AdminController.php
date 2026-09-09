@@ -349,6 +349,33 @@ class AdminController extends Controller
         }, 200, ['Content-Type' => $mimeType]);
     }
 
+    // Separate from exportExcel() (transactions) — this is a different unit
+    // of analysis: one row per detection event, not per completed transaction.
+    public function exportDetectionLogs(Request $request)
+    {
+        $logs = DetectionLog::latest()->get();
+        $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs");
+
+        $filename = 'detection_logs_' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($logs) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock', 'ground_truth_correct', 'created_at']);
+            foreach ($logs as $log) {
+                fputcsv($handle, [
+                    $log->image_path,
+                    $log->ai_detected_type,
+                    $log->ai_confidence,
+                    $log->is_guest ? '1' : '0',
+                    $log->is_mock ? '1' : '0',
+                    is_null($log->ground_truth_correct) ? '' : ($log->ground_truth_correct ? '1' : '0'),
+                    $log->created_at?->toDateTimeString(),
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
     public function stats(): JsonResponse
     {
         return $this->dashboard(request());
