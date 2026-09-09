@@ -462,37 +462,58 @@
         </div>
       </div>
 
+      <!-- ── DETECTION REVIEW ── -->
       <div v-if="activeTab === 'detection'" class="tab-content">
-        <div class="filters-row">
-          <input type="date" v-model="detectionDateFrom" @change="fetchTabData('detection', true)" />
-          <input type="date" v-model="detectionDateTo" @change="fetchTabData('detection', true)" />
-          <button class="ctrl-btn" @click="exportDetectionLogsCsv">⬇️ Export CSV</button>
-        </div>
-
-        <div v-if="loadingDetectionLogs" class="loading-spinner">Loading…</div>
-        <div v-else class="detection-grid">
-          <div v-for="log in detectionLogs" :key="log.id" class="detection-card">
-            <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" alt="capture" />
-            <div v-else class="detection-thumb placeholder">📷</div>
-            <div class="detection-meta">
-              <div class="detection-badges">
-                <span v-if="log.is_mock" class="badge badge-warning">Mock</span>
-                <span class="badge">{{ log.is_guest ? 'Guest' : 'Login' }}</span>
-              </div>
-              <p>{{ log.ai_detected_type || 'unknown' }} — {{ Math.round((log.ai_confidence || 0) * 100) }}%</p>
-              <p class="detection-time">{{ log.created_at }}</p>
-            </div>
-            <div class="detection-actions">
-              <button :class="['review-btn', { active: log.ground_truth_correct === true }]" @click="markGroundTruth(log, true)">✔️ Correct</button>
-              <button :class="['review-btn', 'reject', { active: log.ground_truth_correct === false }]" @click="markGroundTruth(log, false)">✖️ Incorrect</button>
+        <div class="section-card">
+          <div class="card-header">
+            <h3 class="card-title-bar"><span class="title-sq"></span> DETECTION REVIEW</h3>
+            <div class="filters-row">
+              <label class="filter-label">From
+                <input type="date" v-model="detectionDateFrom" @change="filterDetection" class="filter-select" />
+              </label>
+              <label class="filter-label">To
+                <input type="date" v-model="detectionDateTo" @change="filterDetection" class="filter-select" />
+              </label>
+              <button class="ctrl-btn" @click="exportDetectionLogsCsv">⬇️ Export CSV</button>
             </div>
           </div>
-        </div>
-
-        <div class="pagination" v-if="detectionLastPage > 1">
-          <button :disabled="detectionPage <= 1" @click="detectionPage--; fetchTabData('detection', true)">‹ Prev</button>
-          <span>{{ paginationLabel({ currentPage: detectionPage, perPage: detectionPerPage, total: detectionTotal }) }}</span>
-          <button :disabled="detectionPage >= detectionLastPage" @click="detectionPage++; fetchTabData('detection', true)">Next ›</button>
+          <div v-if="loadingDetectionLogs" class="loading-overlay"><div class="spinner-lg"></div></div>
+          <div v-else-if="!detectionLogs.length" class="empty-cell">No detection logs found</div>
+          <div v-else class="detection-grid">
+            <div v-for="log in detectionLogs" :key="log.id" class="detection-card">
+              <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" alt="capture" />
+              <div v-else class="detection-thumb placeholder">📷</div>
+              <div class="detection-meta">
+                <div class="detection-badges">
+                  <span v-if="log.is_mock" class="badge badge-warning">Mock</span>
+                  <span class="badge">{{ log.is_guest ? 'Guest' : 'Login' }}</span>
+                </div>
+                <p class="detection-result">{{ log.ai_detected_type || 'unknown' }} — {{ Math.round((log.ai_confidence || 0) * 100) }}%</p>
+                <p class="detection-time">{{ formatDate(log.created_at) }}</p>
+              </div>
+              <div class="detection-actions" :title="reviewDisabledReason(log)">
+                <button :class="['review-btn', { active: log.ground_truth_correct === true }]"
+                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, true)">✔️ Correct</button>
+                <button :class="['review-btn', 'reject', { active: log.ground_truth_correct === false }]"
+                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, false)">✖️ Incorrect</button>
+              </div>
+            </div>
+          </div>
+          <div class="pagination-bar">
+            <span class="pagination-label">{{ paginationLabel({ currentPage: detectionPage, perPage: detectionPerPage, total: detectionTotal }) }}</span>
+            <div class="pagination-controls">
+              <select v-model.number="detectionPerPage" @change="changeDetectionPerPage" class="filter-select">
+                <option :value="15">15 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+                <option :value="100">100 / page</option>
+                <option :value="200">200 / page</option>
+              </select>
+              <button class="action-btn" :disabled="detectionPage <= 1" @click="goToDetectionPage(detectionPage - 1)">← Prev</button>
+              <span class="pagination-page">Page {{ detectionPage }} of {{ detectionLastPage }}</span>
+              <button class="action-btn" :disabled="detectionPage >= detectionLastPage" @click="goToDetectionPage(detectionPage + 1)">Next →</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -980,6 +1001,7 @@ async function fetchTabData(tab, showSpinner = false) {
       detectionLogs.value     = res.data.detection_logs?.data || []
       detectionTotal.value    = res.data.detection_logs?.total ?? 0
       detectionLastPage.value = res.data.detection_logs?.last_page ?? 1
+      releaseThumbnails(detectionLogs.value)
       detectionLogs.value.forEach(loadThumbnail)
     }
     tabFetchedAt[tab] = Date.now()
@@ -994,9 +1016,39 @@ async function fetchTabData(tab, showSpinner = false) {
   }
 }
 
+/**
+ * Frees the object URLs of thumbnails that are no longer on screen — without
+ * this, paging through hundreds of exhibition photos pins every blob in memory
+ * for the lifetime of the page. Rows still being displayed are kept so the 30s
+ * auto-refresh doesn't re-download (and visibly re-flash) the whole gallery;
+ * pass no argument to release everything.
+ */
+function releaseThumbnails(keepLogs = []) {
+  const keep = new Set(keepLogs.map(log => String(log.id)))
+  for (const [id, url] of Object.entries(thumbnails.value)) {
+    if (keep.has(id)) continue
+    if (url) URL.revokeObjectURL(url)
+    delete thumbnails.value[id]
+  }
+}
+
+// A mock classification (or a row whose guest flow never uploaded an image) has
+// no real photo behind it — the material/confidence were fabricated, so there
+// is nothing an admin can honestly mark correct or incorrect.
+function isReviewable(log) {
+  return !log.is_mock && !!log.image_path
+}
+
+function reviewDisabledReason(log) {
+  return isReviewable(log) ? '' : 'Mock result with no real photo — nothing to review'
+}
+
 async function loadThumbnail(log) {
   if (thumbnails.value[log.id] !== undefined) return
   thumbnails.value[log.id] = null
+  // Guest rows that never uploaded a photo would 404 every time — don't spend a
+  // request (or a console error) on a row we already know has no image.
+  if (!log.image_path) return
   try {
     const res = await api.get(`/admin/detection-logs/${log.id}/image`, { responseType: 'blob' })
     thumbnails.value[log.id] = URL.createObjectURL(res.data)
@@ -1017,7 +1069,15 @@ async function markGroundTruth(log, correct) {
 
 async function exportDetectionLogsCsv() {
   try {
-    const res = await api.get('/admin/detection-logs/export', { responseType: 'blob' })
+    // Same date window as the list above it — the Export button sits inside the
+    // filter row, so an unfiltered dump would quietly pull in dev/test rows.
+    const res = await api.get('/admin/detection-logs/export', {
+      params: {
+        date_from: detectionDateFrom.value || undefined,
+        date_to: detectionDateTo.value || undefined,
+      },
+      responseType: 'blob',
+    })
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')
     a.href = url
@@ -1148,6 +1208,19 @@ function goToSessionsPage(page) {
 function changeSessionsPerPage() {
   sessionsPage.value = 1
   fetchTabData('sessions', true)
+}
+
+function filterDetection() {
+  detectionPage.value = 1
+  fetchTabData('detection', true)
+}
+function goToDetectionPage(page) {
+  detectionPage.value = page
+  fetchTabData('detection', true)
+}
+function changeDetectionPerPage() {
+  detectionPage.value = 1
+  fetchTabData('detection', true)
 }
 
 // ── Admin Controls ──
@@ -1357,6 +1430,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
   if (clockTimer) clearInterval(clockTimer)
+  releaseThumbnails()
 })
 </script>
 
@@ -1801,18 +1875,49 @@ onUnmounted(() => {
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
 /* ── Detection Review ── */
-.filters-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.filters-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.filter-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-muted);
+}
 .detection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-.detection-card { background: var(--card-bg, #1a1f2e); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
-.detection-thumb { width: 100%; height: 160px; object-fit: cover; background: #0e1220; }
+.detection-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-primary); border-radius: 10px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.detection-thumb { width: 100%; height: 160px; object-fit: cover; background: var(--bg-hover); }
 .detection-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; }
 .detection-meta { padding: 10px 12px; }
 .detection-badges { display: flex; gap: 6px; margin-bottom: 6px; }
-.detection-time { color: #9ca3af; font-size: 12px; }
+.detection-result { font-size: 13px; font-weight: 600; }
+.detection-time { color: var(--text-muted); font-size: 12px; }
 .detection-actions { display: flex; gap: 8px; padding: 0 12px 12px; }
-.review-btn { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: transparent; color: inherit; cursor: pointer; }
+.review-btn {
+  flex: 1; padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-hover);
+  color: var(--text-secondary); cursor: pointer; font-size: 12px;
+}
 .review-btn.active { background: var(--accent-green); border-color: var(--accent-green); color: #0e1220; }
-.review-btn.reject.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+.review-btn.reject.active { background: var(--accent-red); border-color: var(--accent-red); color: #fff; }
+.review-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* .badge-warning marks a *fabricated* (mock) AI result, so it has to read as a
+   warning at a glance — those rows can't be honestly scored. */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  background: var(--bg-hover); border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.badge-warning {
+  /* Solid fill rather than the tinted .status-maintenance treatment: amber text
+     on the light theme's white card is barely readable, and this badge has to
+     be impossible to miss. */
+  background: var(--accent-yellow);
+  border-color: var(--accent-yellow);
+  color: #1a1200; font-weight: 700; letter-spacing: 0.3px;
+}
 
 /* ── Confirm modal ── */
 .confirm-modal { width: 340px; }
