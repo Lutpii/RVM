@@ -462,6 +462,40 @@
         </div>
       </div>
 
+      <div v-if="activeTab === 'detection'" class="tab-content">
+        <div class="filters-row">
+          <input type="date" v-model="detectionDateFrom" @change="fetchTabData('detection', true)" />
+          <input type="date" v-model="detectionDateTo" @change="fetchTabData('detection', true)" />
+          <button class="ctrl-btn" @click="exportDetectionLogsCsv">⬇️ Export CSV</button>
+        </div>
+
+        <div v-if="loadingDetectionLogs" class="loading-spinner">Loading…</div>
+        <div v-else class="detection-grid">
+          <div v-for="log in detectionLogs" :key="log.id" class="detection-card">
+            <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" alt="capture" />
+            <div v-else class="detection-thumb placeholder">📷</div>
+            <div class="detection-meta">
+              <div class="detection-badges">
+                <span v-if="log.is_mock" class="badge badge-warning">Mock</span>
+                <span class="badge">{{ log.is_guest ? 'Guest' : 'Login' }}</span>
+              </div>
+              <p>{{ log.ai_detected_type || 'unknown' }} — {{ Math.round((log.ai_confidence || 0) * 100) }}%</p>
+              <p class="detection-time">{{ log.created_at }}</p>
+            </div>
+            <div class="detection-actions">
+              <button :class="['review-btn', { active: log.ground_truth_correct === true }]" @click="markGroundTruth(log, true)">✔️ Correct</button>
+              <button :class="['review-btn', 'reject', { active: log.ground_truth_correct === false }]" @click="markGroundTruth(log, false)">✖️ Incorrect</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pagination" v-if="detectionLastPage > 1">
+          <button :disabled="detectionPage <= 1" @click="detectionPage--; fetchTabData('detection', true)">‹ Prev</button>
+          <span>{{ paginationLabel({ currentPage: detectionPage, perPage: detectionPerPage, total: detectionTotal }) }}</span>
+          <button :disabled="detectionPage >= detectionLastPage" @click="detectionPage++; fetchTabData('detection', true)">Next ›</button>
+        </div>
+      </div>
+
       </div>
     </main>
 
@@ -652,7 +686,7 @@ const tabError = ref('')   // surfaced error message per tab
 // Skip re-fetching a tab if it was loaded this recently — makes rapid tab
 // switching feel instant instead of flashing a spinner every click.
 const TAB_STALE_MS = 10000
-const tabFetchedAt = reactive({ dashboard: 0, transactions: 0, users: 0, machines: 0, sessions: 0 })
+const tabFetchedAt = reactive({ dashboard: 0, transactions: 0, users: 0, machines: 0, sessions: 0, detection: 0 })
 
 const userSearch = ref('')
 const txSearch = ref('')
@@ -675,6 +709,16 @@ const sessionsPage = ref(1)
 const sessionsPerPage = ref(15)
 const sessionsTotal = ref(0)
 const sessionsLastPage = ref(1)
+
+const loadingDetectionLogs = ref(false)
+const detectionLogs      = ref([])
+const detectionPage      = ref(1)
+const detectionPerPage   = ref(15)
+const detectionTotal     = ref(0)
+const detectionLastPage  = ref(1)
+const detectionDateFrom  = ref('')
+const detectionDateTo    = ref('')
+const thumbnails         = ref({})
 
 const editingUser = ref(null)
 const editingMachine = ref(null)
@@ -760,6 +804,7 @@ const navItems = [
   { id: 'users',        icon: '👥', label: 'Users' },
   { id: 'machines',     icon: '🏭', label: 'Machines' },
   { id: 'sessions',     icon: '📋', label: 'Sessions' },
+  { id: 'detection',    icon: '🔍', label: 'Detection Review' },
 ]
 
 const binTypes = [
@@ -925,6 +970,17 @@ async function fetchTabData(tab, showSpinner = false) {
       sessions.value = res.data.sessions?.data || []
       sessionsTotal.value    = res.data.sessions?.total ?? 0
       sessionsLastPage.value = res.data.sessions?.last_page ?? 1
+    } else if (tab === 'detection') {
+      if (showSpinner) loadingDetectionLogs.value = true
+      const res = await api.get('/admin/detection-logs', { params: {
+        page: detectionPage.value, per_page: detectionPerPage.value,
+        date_from: detectionDateFrom.value || undefined,
+        date_to: detectionDateTo.value || undefined,
+      } })
+      detectionLogs.value     = res.data.detection_logs?.data || []
+      detectionTotal.value    = res.data.detection_logs?.total ?? 0
+      detectionLastPage.value = res.data.detection_logs?.last_page ?? 1
+      detectionLogs.value.forEach(loadThumbnail)
     }
     tabFetchedAt[tab] = Date.now()
   } catch (err) {
@@ -932,9 +988,46 @@ async function fetchTabData(tab, showSpinner = false) {
     tabError.value = msg
     console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
   } finally {
-    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingTransactions }
+    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingTransactions, loadingDetectionLogs }
     const flagName = resolveLoadingFlag(tab)
     if (flagName) flags[flagName].value = false
+  }
+}
+
+async function loadThumbnail(log) {
+  if (thumbnails.value[log.id] !== undefined) return
+  thumbnails.value[log.id] = null
+  try {
+    const res = await api.get(`/admin/detection-logs/${log.id}/image`, { responseType: 'blob' })
+    thumbnails.value[log.id] = URL.createObjectURL(res.data)
+  } catch {
+    thumbnails.value[log.id] = null
+  }
+}
+
+async function markGroundTruth(log, correct) {
+  try {
+    await api.patch(`/admin/detection-logs/${log.id}`, { ground_truth_correct: correct })
+    log.ground_truth_correct = correct
+    showToast(correct ? 'Marked correct.' : 'Marked incorrect.', 'success')
+  } catch {
+    showToast('Failed to save review.', 'error')
+  }
+}
+
+async function exportDetectionLogsCsv() {
+  try {
+    const res = await api.get('/admin/detection-logs/export', { responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `detection_logs_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    showToast('Export failed. Please try again.', 'error')
   }
 }
 
@@ -1706,6 +1799,20 @@ onUnmounted(() => {
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* ── Detection Review ── */
+.filters-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.detection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.detection-card { background: var(--card-bg, #1a1f2e); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+.detection-thumb { width: 100%; height: 160px; object-fit: cover; background: #0e1220; }
+.detection-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; }
+.detection-meta { padding: 10px 12px; }
+.detection-badges { display: flex; gap: 6px; margin-bottom: 6px; }
+.detection-time { color: #9ca3af; font-size: 12px; }
+.detection-actions { display: flex; gap: 8px; padding: 0 12px 12px; }
+.review-btn { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: transparent; color: inherit; cursor: pointer; }
+.review-btn.active { background: var(--accent-green); border-color: var(--accent-green); color: #0e1220; }
+.review-btn.reject.active { background: #ef4444; border-color: #ef4444; color: #fff; }
 
 /* ── Confirm modal ── */
 .confirm-modal { width: 340px; }

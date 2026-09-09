@@ -4,6 +4,7 @@ const TAB_LOADING_FLAG = {
   users: 'loadingUsers',
   machines: 'loadingMachines',
   sessions: 'loadingSessions',
+  detection: 'loadingDetectionLogs',
 }
 
 export function resolveLoadingFlag(tab) {
