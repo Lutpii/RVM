@@ -331,6 +331,23 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'detection_log' => $log]);
     }
 
+    public function detectionLogImage(int $id)
+    {
+        $log = DetectionLog::find($id);
+        if (!$log || !$log->image_path) {
+            abort(404);
+        }
+
+        $fullPath = storage_path('app/public/' . $log->image_path);
+        if (!file_exists($fullPath)) {
+            abort(404);
+        }
+
+        return response()->stream(function () use ($fullPath) {
+            readfile($fullPath);
+        });
+    }
+
     public function stats(): JsonResponse
     {
         return $this->dashboard(request());

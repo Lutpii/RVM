@@ -74,4 +74,30 @@ class AdminDetectionLogsTest extends TestCase
         $this->patchJson('/api/admin/detection-logs/999999', ['ground_truth_correct' => false])
             ->assertStatus(404);
     }
+
+    public function test_admin_can_fetch_a_detection_log_image(): void
+    {
+        $this->actingAsAdmin();
+        // detectionLogImage() reads via storage_path() directly (matching
+        // AiService::classify()'s existing convention), not the Storage
+        // facade's fake-able path resolution — so this writes a real file
+        // and must clean it up itself rather than relying on Storage::fake().
+        \Illuminate\Support\Facades\Storage::disk('public')->put('captures/review-test.jpg', 'fake-jpeg-bytes');
+        $log = DetectionLog::create(['image_path' => 'captures/review-test.jpg', 'is_guest' => true]);
+
+        try {
+            $response = $this->get("/api/admin/detection-logs/{$log->id}/image")->assertOk();
+            $this->assertSame('fake-jpeg-bytes', $response->streamedContent());
+        } finally {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete('captures/review-test.jpg');
+        }
+    }
+
+    public function test_missing_image_file_returns_404(): void
+    {
+        $this->actingAsAdmin();
+        $log = DetectionLog::create(['image_path' => 'captures/does-not-exist.jpg', 'is_guest' => true]);
+
+        $this->get("/api/admin/detection-logs/{$log->id}/image")->assertStatus(404);
+    }
 }
