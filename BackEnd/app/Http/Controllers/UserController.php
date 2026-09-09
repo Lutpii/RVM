@@ -50,11 +50,43 @@ class UserController extends Controller
 
     public function pointsHistory(Request $request): JsonResponse
     {
-        $history = PointsHistory::where('user_id', $request->user()->id)
+        $history = PointsHistory::with('transaction')
+            ->where('user_id', $request->user()->id)
             ->orderByDesc('created_at')
             ->paginate(20);
 
+        // Built fresh in the current request's locale rather than read from
+        // the stored `description` column — that column is written once, in
+        // whatever language was active at transaction time, and would stay
+        // frozen in that language forever otherwise (e.g. a user who
+        // recycles today and switches language tomorrow would see old
+        // entries stuck in the old language).
+        $history->getCollection()->transform(function (PointsHistory $entry) {
+            $entry->description = $this->describeHistoryEntry($entry);
+            return $entry;
+        });
+
         return response()->json(['success' => true, 'history' => $history]);
+    }
+
+    private function describeHistoryEntry(PointsHistory $entry): string
+    {
+        $t = $entry->transaction;
+        if (!$t) {
+            return $entry->description; // fallback for any orphaned/legacy row
+        }
+
+        if ($entry->type === 'earned') {
+            return __('messages.recycled_item', [
+                'weight'   => $t->weight_grams,
+                'material' => __('messages.materials.' . $t->material_selected),
+            ]);
+        }
+
+        return __('messages.invalid_item', [
+            'selected' => __('messages.materials.' . $t->material_selected),
+            'detected' => __('messages.materials.' . ($t->ai_detected_type ?? 'unknown')),
+        ]);
     }
 
     public function sessions(Request $request): JsonResponse

@@ -13,6 +13,15 @@ const api = axios.create({
 let _clearAuthFn = null
 export function registerClearAuth(fn) { _clearAuthFn = fn }
 
+// Sends the user's chosen UI language on every request so the backend can
+// localize response messages (login/OTP/session errors, step messages,
+// etc.) — read fresh per-request rather than cached, since the user can
+// switch language mid-session via UserSettingsView without a page reload.
+api.interceptors.request.use((config) => {
+  config.headers['X-App-Locale'] = localStorage.getItem('rvm_lang') || 'en'
+  return config
+})
+
 let _kioskMode = false
 export function setKioskToken(token) {
   _kioskMode = !!token
