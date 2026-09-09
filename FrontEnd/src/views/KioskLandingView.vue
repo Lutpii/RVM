@@ -4,20 +4,20 @@
 
     <div class="kiosk-content">
       <div class="rvm-logo">♻️</div>
-      <h1 class="rvm-title">Reverse Vending Machine</h1>
-      <p class="rvm-subtitle">Smart Recycling System</p>
+      <h1 class="rvm-title">{{ $t('app.name') }}</h1>
+      <p class="rvm-subtitle">{{ $t('kioskLanding.subtitle') }}</p>
 
       <div class="machine-badge">
         <span class="machine-dot"></span>
-        <span>{{ machineName }} &nbsp;·&nbsp; {{ machineLocation }}</span>
+        <span>{{ machineName }} &nbsp;·&nbsp; {{ machineLocation || $t('kioskLanding.loading') }}</span>
       </div>
 
       <button class="start-btn" @click="goToQr">
         <span class="start-icon">▶</span>
-        Start Recycling
+        {{ $t('dashboard.startRecycling') }}
       </button>
 
-      <p class="hint-text">Scan the QR code with your phone to begin</p>
+      <p class="hint-text">{{ $t('kioskLanding.hint') }}</p>
     </div>
 
     <div class="kiosk-footer">
@@ -37,7 +37,7 @@ const route  = useRoute()
 
 const machineCode     = route.params.machineCode || 'RVM-001'
 const machineName     = ref('RVM Machine')
-const machineLocation = ref('Loading...')
+const machineLocation = ref('')
 
 onMounted(async () => {
   try {

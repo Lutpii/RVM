@@ -2,8 +2,8 @@
   <div class="scan-page">
     <div class="scan-header">
       <RouterLink to="/dashboard" class="back-btn">← {{ $t('nav.dashboard') }}</RouterLink>
-      <h2>Scan RVM QR Code</h2>
-      <p>Point your camera at the QR code on the machine</p>
+      <h2>{{ $t('scan.title') }}</h2>
+      <p>{{ $t('scan.subtitle') }}</p>
     </div>
 
     <div class="scan-body">
@@ -54,7 +54,7 @@
           </div>
 
           <div class="camera-status" v-if="cameraActive">
-            <span class="pulse-dot"></span> Camera active — point at QR code
+            <span class="pulse-dot"></span> {{ $t('scan.cameraActiveStatus') }}
           </div>
           <div class="camera-status error" v-if="cameraError">
             ⚠ {{ cameraError }}
@@ -66,13 +66,13 @@
             @click="toggleCamera"
             :disabled="loading"
           >
-            <span v-if="!cameraActive">📷 Open Camera</span>
-            <span v-else>✕ Close Camera</span>
+            <span v-if="!cameraActive">📷 {{ $t('scan.openCamera') }}</span>
+            <span v-else>✕ {{ $t('scan.closeCamera') }}</span>
           </button>
-          <p v-else class="insecure-note">📷 Camera unavailable — enter the token manually below</p>
+          <p v-else class="insecure-note">📷 {{ $t('scan.cameraUnavailable') }}</p>
         </div>
 
-        <div class="divider-text">— OR ENTER MANUALLY —</div>
+        <div class="divider-text">{{ $t('scan.orManual') }}</div>
 
         <!-- <p class="scan-hint">Enter the session token shown on the machine screen:</p> -->
 
@@ -80,7 +80,7 @@
           <input
             v-model="token"
             type="text"
-            placeholder="Enter QR token (from machine screen)"
+            :placeholder="$t('scan.tokenPlaceholder')"
             class="token-input"
             @keyup.enter="handleScan"
           />
@@ -91,7 +91,7 @@
 
         <button class="scan-btn" @click="handleScan" :disabled="loading || !token">
           <span v-if="loading" class="spinner"></span>
-          {{ loading ? 'Connecting...' : '🔗 Connect to Machine' }}
+          {{ loading ? $t('scan.connecting') : `🔗 ${$t('scan.connectBtn')}` }}
         </button>
 
         <!-- Machine list shortcut
@@ -123,6 +123,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore }  from '@/store/rvm'
 import api from '@/services/api'
@@ -132,6 +133,7 @@ const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 const rvm    = useRvmStore()
+const { t }  = useI18n()
 
 const token           = ref('')
 const loading         = ref(false)
@@ -169,7 +171,7 @@ async function startCamera() {
 
   // Camera API requires HTTPS or localhost (secure context)
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-    cameraError.value = 'Camera requires HTTPS. Open the app via https:// or enter the token manually below.'
+    cameraError.value = t('scan.httpsRequired')
     return
   }
 
@@ -182,13 +184,13 @@ async function startCamera() {
     scanInterval = setInterval(scanFrame, 200)
   } catch (e) {
     if (e.name === 'NotAllowedError') {
-      cameraError.value = 'Camera permission denied. Please allow camera access and try again.'
+      cameraError.value = t('scan.permissionDenied')
     } else if (e.name === 'NotFoundError') {
-      cameraError.value = 'No camera found on this device.'
+      cameraError.value = t('scan.noCameraFound')
     } else if (e.name === 'NotReadableError' || e.message?.toLowerCase().includes('in use')) {
-      cameraError.value = 'Camera is in use by another app. Close it and try again.'
+      cameraError.value = t('scan.cameraInUse')
     } else {
-      cameraError.value = 'Could not access camera: ' + e.message
+      cameraError.value = t('scan.cameraAccessError', { message: e.message })
     }
   }
 }
@@ -267,7 +269,7 @@ async function handleScan() {
   try {
     const res = await api.post('/qr/scan', { token: token.value.trim() })
     if (res.data.success) {
-      success.value = 'Connected! Returning to dashboard...'
+      success.value = t('scan.connected')
       rvm.setMachine(res.data.machine)
 
       try {
@@ -285,13 +287,13 @@ async function handleScan() {
           return
         }
         success.value = ''
-        error.value = errData?.message || 'Failed to start session.'
+        error.value = errData?.message || t('scan.failedStartSession')
       }
     } else {
-      error.value = res.data.message || 'Invalid QR code.'
+      error.value = res.data.message || t('scan.invalidQr')
     }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Failed to connect to machine.'
+    error.value = e.response?.data?.message || t('scan.failedConnect')
   } finally {
     loading.value = false
   }

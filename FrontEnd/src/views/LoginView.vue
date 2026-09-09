@@ -74,15 +74,15 @@
           <div v-else>
             <p class="otp-info">{{ $t('auth.otpSent') }}</p>
             <div class="form-group">
-              <label>OTP Code</label>
-              <input v-model="form.otp" type="text" maxlength="6" placeholder="Enter 6-digit OTP" class="otp-input" autocomplete="one-time-code" />
+              <label>{{ $t('auth.otpLabel') }}</label>
+              <input v-model="form.otp" type="text" maxlength="6" :placeholder="$t('auth.otpPlaceholder')" class="otp-input" autocomplete="one-time-code" />
             </div>
             <div v-if="error" class="error-msg">{{ error }}</div>
             <button class="submit-btn" @click="handleVerifyOtp" :disabled="loading">
               <span v-if="loading" class="spinner"></span>
               {{ loading ? '...' : $t('auth.verifyOtp') }}
             </button>
-            <button class="resend-btn" @click="otpSent = false">Resend OTP</button>
+            <button class="resend-btn" @click="otpSent = false">{{ $t('auth.resendOtp') }}</button>
           </div>
         </div>
         -->
@@ -108,7 +108,7 @@ const route = useRoute()
 const auth = useAuthStore()
 const theme = inject('theme')
 const toggleTheme = inject('toggleTheme')
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const loginMethod = ref('email')
 const form = ref({ email: '', password: '', phone: '', otp: '' })
@@ -130,10 +130,10 @@ async function handleEmailLogin() {
     if (res.success) {
       router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
     } else {
-      error.value = res.message || 'Login failed.'
+      error.value = res.message || t('auth.loginFailed')
     }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Login failed.'
+    error.value = e.response?.data?.message || t('auth.loginFailed')
   } finally {
     loading.value = false
   }
@@ -147,7 +147,7 @@ async function handleGoogle() {
 }
 
 async function handleSendOtp() {
-  if (!form.value.phone) { error.value = 'Please enter phone number.'; return }
+  if (!form.value.phone) { error.value = t('auth.phoneRequired'); return }
   loading.value = true
   error.value = ''
   try {
@@ -155,7 +155,7 @@ async function handleSendOtp() {
     if (res.success) { otpSent.value = true }
     else { error.value = res.message }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Failed to send OTP.'
+    error.value = e.response?.data?.message || t('auth.otpFailedSend')
   } finally {
     loading.value = false
   }
@@ -169,7 +169,7 @@ async function handleVerifyOtp() {
     if (res.success) { router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } }) }
     else { error.value = res.message }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Invalid OTP.'
+    error.value = e.response?.data?.message || t('auth.otpInvalid')
   } finally {
     loading.value = false
   }

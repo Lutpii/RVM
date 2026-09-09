@@ -4,28 +4,28 @@
 
     <!-- Header -->
     <div class="qr-header">
-      <button class="back-btn" @click="$router.push(`/kiosk/${machineCode}`)">← Back</button>
+      <button class="back-btn" @click="$router.push(`/kiosk/${machineCode}`)">← {{ $t('kioskQr.back') }}</button>
       <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
       <span class="machine-label">{{ machineCode }}</span>
     </div>
 
     <!-- WAITING — show QR -->
     <div v-if="state === 'waiting'" class="qr-content">
-      <h2 class="qr-title">Scan to Start Recycling</h2>
-      <p class="qr-sub">Open your phone camera and scan the QR code below</p>
+      <h2 class="qr-title">{{ $t('kioskQr.title') }}</h2>
+      <p class="qr-sub">{{ $t('kioskQr.subtitle') }}</p>
 
       <div class="qr-box">
         <div v-if="loadingQr" class="qr-loading">
           <div class="spinner"></div>
-          <span>Generating QR...</span>
+          <span>{{ $t('kioskQr.generating') }}</span>
         </div>
         <img
           v-else-if="qrSvgSrc"
           :src="qrSvgSrc"
           class="qr-image"
-          alt="QR Code"
+          :alt="$t('kioskQr.qrAlt')"
         />
-        <div v-else class="qr-error">Failed to load QR</div>
+        <div v-else class="qr-error">{{ $t('kioskQr.failedLoad') }}</div>
 
         <!-- Animated scan corners -->
         <div class="corner tl"></div>
@@ -34,29 +34,29 @@
         <div class="corner br"></div>
       </div>
 
-      <div class="qr-url" v-if="currentToken">Token: {{ currentToken }}</div>
+      <div class="qr-url" v-if="currentToken">{{ $t('kioskQr.tokenLabel') }}: {{ currentToken }}</div>
 
       <div class="qr-steps">
-        <div class="step"><span class="step-num">1</span> Open this URL on your phone</div>
-        <div class="step"><span class="step-num">2</span> Login to your RVM account</div>
-        <div class="step"><span class="step-num">3</span> Session will start automatically</div>
+        <div class="step"><span class="step-num">1</span> {{ $t('kioskQr.step1') }}</div>
+        <div class="step"><span class="step-num">2</span> {{ $t('kioskQr.step2') }}</div>
+        <div class="step"><span class="step-num">3</span> {{ $t('kioskQr.step3') }}</div>
       </div>
 
       <div class="timer-bar">
         <div class="timer-fill" :style="{ width: timerPct + '%' }"></div>
       </div>
-      <p class="timer-text">QR expires in {{ expiresInSec }}s — will auto-refresh</p>
+      <p class="timer-text">{{ $t('kioskQr.expiresIn', { seconds: expiresInSec }) }}</p>
 
       <div class="guest-divider">
         <span class="guest-divider-line"></span>
-        <span class="guest-divider-text">or</span>
+        <span class="guest-divider-text">{{ $t('kioskQr.or') }}</span>
         <span class="guest-divider-line"></span>
       </div>
 
       <button class="guest-btn" @click="startAsGuest">
         <svg class="guest-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
-        Continue as Guest
-        <span class="guest-btn-note">Points will be donated</span>
+        {{ $t('kioskQr.continueGuest') }}
+        <span class="guest-btn-note">{{ $t('kioskQr.pointsDonated') }}</span>
       </button>
     </div>
 
@@ -65,18 +65,18 @@
       <div class="success-ring">
         <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
       </div>
-      <h2 class="qr-title green">Session Started!</h2>
+      <h2 class="qr-title green">{{ $t('kioskQr.sessionStarted') }}</h2>
       <p class="qr-sub" v-if="scannedUser">
-        Welcome, <strong>{{ scannedUser }}</strong>
+        {{ $t('kioskQr.welcomeLabel') }} <strong>{{ scannedUser }}</strong>
       </p>
-      <p class="qr-sub">Redirecting to selection...</p>
+      <p class="qr-sub">{{ $t('kioskQr.redirecting') }}</p>
     </div>
 
     <!-- EXPIRED -->
     <div v-else-if="state === 'expired'" class="qr-content">
       <div class="expired-icon">⏱</div>
-      <h2 class="qr-title">QR Code Expired</h2>
-      <p class="qr-sub">Generating a new one...</p>
+      <h2 class="qr-title">{{ $t('kioskQr.expired') }}</h2>
+      <p class="qr-sub">{{ $t('kioskQr.generatingNew') }}</p>
     </div>
   </div>
 </template>
@@ -84,6 +84,7 @@
 <script setup>
 import { ref, inject, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
 
@@ -91,6 +92,7 @@ const router      = useRouter()
 const route       = useRoute()
 const rvm         = useRvmStore()
 const setTheme    = inject('setTheme')
+const { t }       = useI18n()
 const machineCode = route.params.machineCode || 'RVM-001'
 
 const state          = ref('waiting') // waiting | scanned | expired
@@ -139,7 +141,7 @@ function startPoll() {
       const res = await api.get(`/qr/status/${currentToken.value}`)
       if (!isActive) return
       if (res.data.status === 'scanned') {
-        scannedUser.value = res.data.user_name || 'User'
+        scannedUser.value = res.data.user_name || t('kioskQr.defaultUserName')
         state.value = 'scanned'
         clearIntervals()
         isActive = false
@@ -210,11 +212,11 @@ function startPoll() {
           paper_level:    machineData.bins?.paper    ?? 0,
         } : null
         rvm.startGuestSession(machineCode, md)
-        if (rvm.session) rvm.session.user_name = 'Guest'
+        if (rvm.session) rvm.session.user_name = t('kioskQr.guestName')
         // scannedTheme already defaulted to 'light' above (guests have no saved preference).
         router.push({
           path: '/welcome',
-          query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest', theme: scannedTheme },
+          query: { redirect: `/kiosk/${machineCode}/session`, name: t('kioskQr.guestName'), theme: scannedTheme },
         })
       } else if (res.data.status === 'expired') {
         handleExpiry()
@@ -246,12 +248,12 @@ function clearIntervals() {
 function startAsGuest() {
   clearIntervals()
   rvm.startGuestSession(machineCode)
-  if (rvm.session) rvm.session.user_name = 'Guest'
+  if (rvm.session) rvm.session.user_name = t('kioskQr.guestName')
   // Guests default to light mode.
   setTheme('light')
   router.push({
     path: '/welcome',
-    query: { redirect: `/kiosk/${machineCode}/session`, name: 'Guest', theme: 'light' },
+    query: { redirect: `/kiosk/${machineCode}/session`, name: t('kioskQr.guestName'), theme: 'light' },
   })
 }
 

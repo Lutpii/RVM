@@ -9,8 +9,8 @@
         <div class="welcome-icon">♻️</div>
       </div>
 
-      <h1 class="welcome-title">Welcome, <span class="user-name">{{ userName }}</span>!</h1>
-      <p class="welcome-sub">Let's get recycling.</p>
+      <h1 class="welcome-title">{{ $t('welcome.greeting') }} <span class="user-name">{{ userName }}</span>!</h1>
+      <p class="welcome-sub">{{ $t('welcome.subtitle') }}</p>
 
       <div class="progress-bar">
         <div class="progress-fill"></div>
@@ -22,16 +22,18 @@
 <script setup>
 import { computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 
 const router   = useRouter()
 const route    = useRoute()
 const auth     = useAuthStore()
 const setTheme = inject('setTheme')
+const { t }    = useI18n()
 
 // On the kiosk, the kiosk's own browser session isn't logged in (only holds a
 // kiosk_token) — the phone-scanned user's name comes via ?name= instead.
-const userName = computed(() => auth.user?.name || route.query.name || 'there')
+const userName = computed(() => auth.user?.name || route.query.name || t('welcome.guestName'))
 
 onMounted(() => {
   // Default to light. A logged-in user's own dark preference wins — either

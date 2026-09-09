@@ -71,17 +71,17 @@
 
         <!-- OTP verification step -->
         <div v-if="showOtp" class="otp-section">
-          <div class="separator"><span>Verify WhatsApp</span></div>
+          <div class="separator"><span>{{ $t('auth.verifyWhatsapp') }}</span></div>
           <p class="otp-info">{{ $t('auth.otpSent') }}</p>
           <div class="form-group">
-            <label>OTP Code</label>
-            <input v-model="otpCode" type="text" maxlength="6" placeholder="Enter 6-digit OTP" class="otp-input" />
+            <label>{{ $t('auth.otpLabel') }}</label>
+            <input v-model="otpCode" type="text" maxlength="6" :placeholder="$t('auth.otpPlaceholder')" class="otp-input" />
           </div>
           <button class="submit-btn whatsapp-btn" @click="handleVerifyOtp" :disabled="loading">
             {{ $t('auth.verifyOtp') }}
           </button>
           <button type="button" class="resend-btn" @click="handleResendOtp" :disabled="loading">
-            Resend OTP
+            {{ $t('auth.resendOtp') }}
           </button>
         </div>
 
@@ -105,7 +105,7 @@ const route       = useRoute()
 const auth        = useAuthStore()
 const theme       = inject('theme')
 const toggleTheme = inject('toggleTheme')
-const { locale }  = useI18n()
+const { locale, t } = useI18n()
 
 const form    = ref({ name: '', email: '', phone: '', password: '', password_confirmation: '' })
 const loading = ref(false)
@@ -156,7 +156,7 @@ const strengthWidth = computed(() => {
 })
 
 const strengthLabel = computed(() => {
-  const map = { weak: 'Weak', medium: 'Medium', strong: 'Strong' }
+  const map = { weak: t('auth.strengthWeak'), medium: t('auth.strengthMedium'), strong: t('auth.strengthStrong') }
   return map[strengthClass.value]
 })
 
@@ -165,12 +165,12 @@ async function handleRegister() {
   success.value = ''
 
   if (!form.value.email && !form.value.phone) {
-    error.value = 'Please provide either email or phone number.'
+    error.value = t('auth.emailOrPhoneRequired')
     return
   }
 
   if (form.value.password !== form.value.password_confirmation) {
-    error.value = 'Passwords do not match.'
+    error.value = t('auth.passwordMismatch')
     return
   }
 
@@ -187,23 +187,23 @@ async function handleRegister() {
     if (res.success) {
       if (form.value.phone) {
         showOtp.value  = true
-        success.value  = 'Account created! Please verify your WhatsApp.'
+        success.value  = t('auth.accountCreatedVerify')
       } else {
         clearDraft()
-        success.value = 'Account created! Redirecting to dashboard...'
+        success.value = t('auth.accountCreatedRedirect')
         setTimeout(() => {
           router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
         }, 1200)
       }
     } else {
-      error.value = res.message || 'Registration failed.'
+      error.value = res.message || t('auth.registrationFailed')
     }
   } catch (e) {
     const errs = e.response?.data?.errors
     if (errs) {
       error.value = Object.values(errs).flat().join(' ')
     } else {
-      error.value = e.response?.data?.message || 'Registration failed.'
+      error.value = e.response?.data?.message || t('auth.registrationFailed')
     }
   } finally {
     loading.value = false
@@ -226,7 +226,7 @@ async function handleVerifyOtp() {
       error.value = res.message
     }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Invalid OTP.'
+    error.value = e.response?.data?.message || t('auth.otpInvalid')
   } finally {
     loading.value = false
   }
@@ -239,12 +239,12 @@ async function handleResendOtp() {
   try {
     const res = await auth.sendOtp(form.value.phone)
     if (res.success) {
-      success.value = 'A new OTP has been sent to your WhatsApp.'
+      success.value = t('auth.otpResent')
     } else {
-      error.value = res.message || 'Failed to resend OTP.'
+      error.value = res.message || t('auth.otpResendFailed')
     }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Failed to resend OTP.'
+    error.value = e.response?.data?.message || t('auth.otpResendFailed')
   } finally {
     loading.value = false
   }
@@ -269,7 +269,7 @@ onMounted(() => {
     form.value.email = auth.user.email || form.value.email
     form.value.phone = auth.user.phone
     showOtp.value = true
-    success.value = 'Account created! Please verify your WhatsApp.'
+    success.value = t('auth.accountCreatedVerify')
   }
 })
 </script>

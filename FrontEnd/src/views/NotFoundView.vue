@@ -3,8 +3,8 @@
     <div class="nf-content">
       <div class="nf-icon">♻️</div>
       <h1>404</h1>
-      <p>Oops! This page got recycled.</p>
-      <RouterLink to="/" class="home-btn">← Go Back Home</RouterLink>
+      <p>{{ $t('notFound.message') }}</p>
+      <RouterLink to="/" class="home-btn">← {{ $t('notFound.homeBtn') }}</RouterLink>
     </div>
   </div>
 </template>

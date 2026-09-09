@@ -2,7 +2,7 @@
   <div class="summary-page">
     <div class="summary-header">
       <h1>{{ $t('app.name') }}</h1>
-      <p v-if="auth.user">Welcome, {{ auth.user.name }}</p>
+      <p v-if="auth.user">{{ $t('summary.welcomeLabel') }} {{ auth.user.name }}</p>
       <div class="header-badges">
         <div class="badge">
           <span class="badge-label">{{ $t('session.totalPoints') }}</span>
@@ -26,7 +26,7 @@
         <div class="confetti" v-for="i in 12" :key="i" :style="confettiStyle(i)"></div>
       </div>
 
-      <h2 class="summary-title">{{ rvm.isGuest ? 'Thank You for Recycling!' : $t('summary.title') }}</h2>
+      <h2 class="summary-title">{{ rvm.isGuest ? $t('summary.guestThankYou') : $t('summary.title') }}</h2>
 
       <div v-if="rvm.isGuest" class="donation-banner">
         <svg class="donation-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -34,8 +34,8 @@
           <path d="M12 22c0-7-3-10-8-11 0 7 3 11 8 11Z"/>
         </svg>
         <div class="donation-text">
-          <strong>{{ earnedPoints }} points donated</strong>
-          <span>Your recycling contribution makes a difference!</span>
+          <strong>{{ $t('summary.pointsDonatedCount', { points: earnedPoints }) }}</strong>
+          <span>{{ $t('summary.guestContribution') }}</span>
         </div>
       </div>
 
@@ -63,11 +63,11 @@
           </div>
         </template>
         <div class="summary-row highlight">
-          <span class="row-label">{{ rvm.isGuest ? 'Points Donated' : $t('summary.pointsEarned') }}</span>
+          <span class="row-label">{{ rvm.isGuest ? $t('summary.pointsDonatedLabel') : $t('summary.pointsEarned') }}</span>
           <span class="row-value earned">+{{ earnedPoints }}</span>
         </div>
         <div class="summary-row highlight">
-          <span class="row-label">🌍 Carbon Saved</span>
+          <span class="row-label">🌍 {{ $t('summary.carbonSaved') }}</span>
           <span class="row-value earned">{{ (summary.carbon_saved || 0).toFixed(3) }} kg CO2</span>
         </div>
       </div>
@@ -75,12 +75,12 @@
       <!-- Loading state -->
       <div v-else class="summary-loading">
         <div class="spinner-lg"></div>
-        <p>Loading summary...</p>
+        <p>{{ $t('summary.loading') }}</p>
       </div>
 
       <!-- Transactions breakdown -->
       <div v-if="summary?.transactions?.length" class="transactions-wrap">
-        <h3 class="breakdown-title">Items Recycled</h3>
+        <h3 class="breakdown-title">{{ $t('summary.itemsRecycled') }}</h3>
         <div v-for="(t, i) in summary.transactions" :key="i" class="txn-row">
           <svg v-if="materialIconSvg(t.material)" class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(t.material)"></svg>
           <svg v-else class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -104,7 +104,7 @@
     </div>
 
     <div class="rvm-footer">
-      {{ $t('session.currentStep') }}: <strong class="step-label">Complete</strong>
+      {{ $t('session.currentStep') }}: <strong class="step-label">{{ $t('session.stepComplete') }}</strong>
     </div>
   </div>
 </template>
@@ -112,6 +112,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
 import { setKioskToken } from '@/services/api'
@@ -120,6 +121,7 @@ const router = useRouter()
 const route  = useRoute()
 const auth = useAuthStore()
 const rvm = useRvmStore()
+const { t } = useI18n()
 
 const summary = ref(null)
 const finalPoints = computed(() => summary.value?.end_points ?? 0)
@@ -154,7 +156,7 @@ function confettiStyle(i) {
 async function goHome() {
   const machineCode  = rvm.guestMachineCode || route.params.machineCode
   const isKiosk      = route.path.startsWith('/kiosk/')
-  const displayName  = summary.value?.user_name || auth.user?.name || 'Guest'
+  const displayName  = summary.value?.user_name || auth.user?.name || t('summary.guestName')
   // Carry the theme this session was actually shown in through to the
   // goodbye splash — GoodbyeView.vue resets to light afterward for whoever
   // arrives next.
@@ -192,7 +194,7 @@ onMounted(async () => {
     const transactions = local.transactions
     const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
     summary.value = {
-      user_name:    'Guest',
+      user_name:    t('summary.guestName'),
       session_code: rvm.session?.session_code || ('GUEST-' + Date.now().toString(36).toUpperCase()),
       start_points: 0,
       end_points:   0,
@@ -211,7 +213,7 @@ onMounted(async () => {
       const transactions = apiSummary?.transactions?.length ? apiSummary.transactions : local.transactions
       const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
       summary.value = {
-        user_name:    apiSummary?.user_name || auth.user?.name || 'User',
+        user_name:    apiSummary?.user_name || auth.user?.name || t('summary.defaultUserName'),
         session_code: apiSummary?.session_code || rvm.session?.session_code,
         start_points: apiSummary?.start_points ?? local.start_points,
         end_points:   apiSummary?.end_points ?? computedEnd,
@@ -224,7 +226,7 @@ onMounted(async () => {
       const transactions = local.transactions
       const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
       summary.value = {
-        user_name:    auth.user?.name || 'User',
+        user_name:    auth.user?.name || t('summary.defaultUserName'),
         session_code: rvm.session?.session_code,
         start_points: rvm.session?.start_points ?? local.start_points,
         end_points:   rvm.session?.end_points ?? computedEnd,
@@ -238,7 +240,7 @@ onMounted(async () => {
     const transactions = local.transactions
     const { total_items, points_earned, carbon_saved } = computeFromTransactions(transactions)
     summary.value = {
-      user_name:    auth.user?.name || 'User',
+      user_name:    auth.user?.name || t('summary.defaultUserName'),
       session_code: 'LOCAL-' + Date.now().toString(36).toUpperCase(),
       start_points: local.start_points,
       end_points:   computedEnd,

@@ -6,7 +6,7 @@
         <div class="avatar" v-if="auth.user">{{ auth.user.name?.charAt(0)?.toUpperCase() }}</div>
         <div class="user-info">
           <span class="user-name">{{ auth.user?.name }}</span>
-          <span class="user-role">{{ auth.user?.role === 'admin' ? '⚙️ Admin' : '♻️ Recycler' }}</span>
+          <span class="user-role">{{ auth.user?.role === 'admin' ? `⚙️ ${$t('dashboard.roleAdmin')}` : `♻️ ${$t('dashboard.roleRecycler')}` }}</span>
         </div>
       </RouterLink>
       <div class="nav-right">
@@ -22,8 +22,8 @@
       <div class="points-bg"></div>
       <p class="points-label">{{ $t('dashboard.totalPoints') }}</p>
       <div class="points-number">{{ auth.user?.total_points || 0 }}</div>
-      <p class="points-sub">♻️ Keep recycling to earn more!</p>
-      <p class="carbon-sub">🌍 {{ (auth.user?.total_carbon_saved || 0).toFixed(2) }} kg CO2 saved</p>
+      <p class="points-sub">♻️ {{ $t('dashboard.keepRecycling') }}</p>
+      <p class="carbon-sub">🌍 {{ $t('dashboard.carbonSaved', { value: (auth.user?.total_carbon_saved || 0).toFixed(2) }) }}</p>
     </div>
 
     <!-- Quick action -->
@@ -32,7 +32,7 @@
         <span class="scan-icon">📷</span>
         <div>
           <strong>{{ $t('dashboard.startRecycling') }}</strong>
-          <span>Scan QR at the machine</span>
+          <span>{{ $t('dashboard.scanHint') }}</span>
         </div>
         <span class="arrow">→</span>
       </RouterLink>
@@ -83,10 +83,10 @@
                     <div ref="mapContainer" class="leaflet-map"></div>
                     <span class="map-attribution">© OpenStreetMap contributors</span>
                   </template>
-                  <div v-else class="no-map">📍 Location not set for this machine</div>
+                  <div v-else class="no-map">📍 {{ $t('dashboard.locationNotSet') }}</div>
                 </div>
                 <a :href="getDirectionsUrl(machine)" target="_blank" class="directions-btn">
-                  🗺️ Get Directions
+                  🗺️ {{ $t('dashboard.getDirections') }}
                 </a>
               </div>
             </div>
@@ -102,7 +102,7 @@
         <div class="spinner-sm"></div>
       </div>
       <div v-else-if="recentHistory.length === 0" class="empty-state">
-        <p>No recycling activity yet. Start recycling to earn points!</p>
+        <p>{{ $t('dashboard.emptyState') }}</p>
       </div>
       <div v-else class="activity-list">
         <div v-for="h in recentHistory" :key="h.id" class="activity-item">

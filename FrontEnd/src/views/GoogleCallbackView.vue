@@ -2,11 +2,11 @@
   <div class="callback-page">
     <div v-if="error" class="error-box">
       <p>{{ error }}</p>
-      <RouterLink to="/login">Back to Login</RouterLink>
+      <RouterLink to="/login">{{ $t('googleCallback.backToLogin') }}</RouterLink>
     </div>
     <div v-else class="loading-box">
       <div class="spinner"></div>
-      <p>Signing you in...</p>
+      <p>{{ $t('googleCallback.signingIn') }}</p>
     </div>
   </div>
 </template>
@@ -14,12 +14,14 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 
 const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
+const { t }  = useI18n()
 const error  = ref('')
 
 onMounted(async () => {
@@ -27,7 +29,7 @@ onMounted(async () => {
   const err  = route.query.error
 
   if (err || !code) {
-    error.value = 'Google sign-in failed. Please try again.'
+    error.value = t('googleCallback.failed')
     return
   }
 
@@ -45,7 +47,7 @@ onMounted(async () => {
     sessionStorage.removeItem('rvm_post_login_redirect')
     router.replace({ path: '/welcome', query: { redirect: redirect || '/dashboard' } })
   } catch {
-    error.value = 'Google sign-in failed. Please try again.'
+    error.value = t('googleCallback.failed')
   }
 })
 </script>

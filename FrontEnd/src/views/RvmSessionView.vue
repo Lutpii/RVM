@@ -10,12 +10,12 @@
         <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
       </div>
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
-      <p class="welcome-text" v-if="auth.user">Welcome, {{ auth.user.name }}</p>
-      <p class="welcome-text" v-else-if="rvm.session?.user_name && !rvm.isGuest">Welcome, {{ rvm.session.user_name }}</p>
-      <p class="welcome-text guest-label" v-else-if="rvm.isGuest">Guest — Points will be donated</p>
+      <p class="welcome-text" v-if="auth.user">{{ $t('session.welcomeLabel') }} {{ auth.user.name }}</p>
+      <p class="welcome-text" v-else-if="rvm.session?.user_name && !rvm.isGuest">{{ $t('session.welcomeLabel') }} {{ rvm.session.user_name }}</p>
+      <p class="welcome-text guest-label" v-else-if="rvm.isGuest">{{ $t('session.guestLabel') }}</p>
       <div class="header-badges">
         <div class="badge points-badge">
-          <span class="badge-label">{{ rvm.isGuest ? 'Donating' : $t('session.totalPoints') }}</span>
+          <span class="badge-label">{{ rvm.isGuest ? $t('session.donating') : $t('session.totalPoints') }}</span>
           <span class="badge-value points-animate">{{ displayPoints }}</span>
         </div>
         <div class="badge status-badge">
@@ -132,17 +132,17 @@
               <div class="camera-countdown" v-if="cameraCountdown > 0">{{ cameraCountdown }}</div>
             </div>
             <h2 class="step-status">{{ $t('session.capturingImage') }}</h2>
-            <p class="step-sub">{{ cameraCountdown > 0 ? `Auto-capture in ${cameraCountdown}s` : 'Uploading...' }}</p>
+            <p class="step-sub">{{ cameraCountdown > 0 ? $t('session.autoCaptureIn', { seconds: cameraCountdown }) : $t('session.uploading') }}</p>
           </template>
 
           <!-- File upload preview -->
           <template v-else-if="cameraMode === 'upload'">
             <canvas ref="canvasRef" style="display:none"></canvas>
             <div class="camera-container">
-              <img v-if="capturedImageDataUrl" :src="capturedImageDataUrl" class="camera-video" alt="preview" style="object-fit:contain;background:#111" />
+              <img v-if="capturedImageDataUrl" :src="capturedImageDataUrl" class="camera-video" :alt="$t('session.previewAlt')" style="object-fit:contain;background:#111" />
             </div>
-            <h2 class="step-status">Uploading Image...</h2>
-            <p class="step-sub">Processing your file</p>
+            <h2 class="step-status">{{ $t('session.uploadingImage') }}</h2>
+            <p class="step-sub">{{ $t('session.processingFile') }}</p>
           </template>
         </div>
 
@@ -165,7 +165,7 @@
           </div>
           <h2 class="step-status green">{{ $t('session.itemValid') }}</h2>
           <div v-if="annotatedImageDataUrl" class="bbox-preview">
-            <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
+            <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
           </div>
           <p class="step-sub">{{ $t('session.selected') }}: {{ rvm.selectedMaterial }}</p>
           <p class="step-sub">
@@ -173,7 +173,7 @@
             <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
             {{ aiDetected }}
           </p>
-          <p class="step-sub" v-if="aiConfidence > 0">Confidence: {{ (aiConfidence * 100).toFixed(1) }}%</p>
+          <p class="step-sub" v-if="aiConfidence > 0">{{ $t('session.confidence', { percent: (aiConfidence * 100).toFixed(1) }) }}</p>
         </div>
 
         <!-- VALIDATE step - Invalid -->
@@ -183,17 +183,17 @@
           </div>
           <h2 class="step-status red">{{ $t('session.itemInvalid') }}</h2>
           <div v-if="annotatedImageDataUrl" class="bbox-preview">
-            <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
+            <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
           </div>
           <div class="result-box">
             <p>{{ $t('session.selected') }}: <strong>{{ rvm.selectedMaterial }}</strong></p>
             <p>
-              AI Detected:
+              {{ $t('session.aiDetected') }}:
               <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
               <strong>{{ aiDetected }}</strong>
             </p>
-            <p v-if="aiConfidence > 0">Confidence: {{ (aiConfidence * 100).toFixed(1) }}%</p>
-            <p class="deduction-text">-10 points will be deducted</p>
+            <p v-if="aiConfidence > 0">{{ $t('session.confidence', { percent: (aiConfidence * 100).toFixed(1) }) }}</p>
+            <p class="deduction-text">{{ $t('session.deductionNotice', { points: 10 }) }}</p>
           </div>
         </div>
 
@@ -224,8 +224,8 @@
               <svg v-if="materialIconSvg(rvm.selectedMaterial)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(rvm.selectedMaterial)"></svg>
               {{ rvm.selectedMaterial }}
             </p>
-            <p class="earned-text">{{ rvm.isGuest ? 'Points Donated' : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
-            <p class="carbon-text">🌍 Carbon Saved: {{ itemCarbon.toFixed(3) }} kg CO2</p>
+            <p class="earned-text">{{ rvm.isGuest ? $t('session.pointsDonatedLabel') : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
+            <p class="carbon-text">🌍 {{ $t('session.carbonSavedLabel') }}: {{ itemCarbon.toFixed(3) }} kg CO2</p>
           </div>
           <div class="action-buttons">
             <button class="end-btn" @click="confirmEndSession">
@@ -249,9 +249,9 @@
             </svg>
             <div class="return-slot"></div>
           </div>
-          <h2 class="step-status red">Item Not Recognized</h2>
+          <h2 class="step-status red">{{ $t('session.itemNotRecognized') }}</h2>
           <div v-if="annotatedImageDataUrl" class="bbox-preview">
-            <img :src="annotatedImageDataUrl" class="bbox-img" alt="AI detection" />
+            <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
           </div>
           <div class="result-box">
             <p>{{ $t('session.pointsEarned') }}: +0</p>
@@ -263,7 +263,7 @@
             </button>
             <button class="recycle-btn" @click="rvm.resetTransaction()">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-              Retry Another Item
+              {{ $t('session.retryAnother') }}
             </button>
           </div>
         </div>
@@ -283,7 +283,7 @@
             </p>
             <p class="deduction-text">{{ $t('session.pointsDeducted') }}: -{{ deductedPoints }}</p>
           </div>
-          <p class="reject-hint">Please select the correct material type</p>
+          <p class="reject-hint">{{ $t('session.selectCorrectType') }}</p>
           <button class="recycle-btn" @click="rvm.resetTransaction()">{{ $t('session.tryAgain') }}</button>
         </div>
 
@@ -314,7 +314,7 @@ const isKioskRoute    = computed(() => route.path.startsWith('/kiosk/'))
 const kioskMachineCode = computed(() => route.params.machineCode)
 const theme    = inject('theme')
 const toggleTheme = inject('toggleTheme')
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const displayPoints  = ref(auth.user?.total_points ?? rvm.session?.current_points ?? 0)
 // Seed start_points for local summary tracking
@@ -486,8 +486,8 @@ async function handleFileUpload(event) {
 onBeforeUnmount(() => stopCamera())
 
 const statusText = computed(() => {
-  if (['insert'].includes(rvm.currentStep)) return 'Ready'
-  return 'Processing'
+  if (['insert'].includes(rvm.currentStep)) return t('session.ready')
+  return t('session.processing')
 })
 
 const statusClass = computed(() => {
@@ -502,10 +502,10 @@ const progressWidth = computed(() => {
 
 const currentStepLabel = computed(() => {
   const map = {
-    selection: 'Selection', bin_check: 'Bin Check', lid: 'Lid Open',
-    insert: 'Insert', conveyor: 'Conveyor', camera: 'Camera',
-    classify: 'Classify', validate_ok: 'Weight', validate_fail: 'Validate',
-    weigh: 'Weight', complete: 'Complete', rejected: 'Rejected', item_unknown: 'Not Recognized',
+    selection: t('session.stepSelection'), bin_check: t('session.stepBinCheck'), lid: t('session.stepLid'),
+    insert: t('session.stepInsert'), conveyor: t('session.stepConveyor'), camera: t('session.stepCamera'),
+    classify: t('session.stepClassify'), validate_ok: t('session.stepWeight'), validate_fail: t('session.stepValidate'),
+    weigh: t('session.stepWeight'), complete: t('session.stepComplete'), rejected: t('session.stepRejected'), item_unknown: t('session.stepItemUnknown'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
