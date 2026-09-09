@@ -343,9 +343,10 @@ class AdminController extends Controller
             abort(404);
         }
 
+        $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
         return response()->stream(function () use ($fullPath) {
             readfile($fullPath);
-        });
+        }, 200, ['Content-Type' => $mimeType]);
     }
 
     public function stats(): JsonResponse
