@@ -4,7 +4,7 @@ export const messages = {
     app: { name: 'Reverse Vending Machine', tagline: 'Smart Recycling' },
     nav: { dashboard: 'Dashboard', logout: 'Logout', login: 'Login', register: 'Register', admin: 'Admin Panel' },
     appNav: { home: 'Home', activity: 'Activity', scan: 'Scan', rewards: 'Rewards', account: 'Account' },
-    activity: { title: 'Activity', empty: 'No activity yet.' },
+    activity: { title: 'Activity', empty: 'No activity yet.', loadError: 'Some activity could not be loaded. Showing what did load.', session: 'Recycling session {code}' },
     rewards: { comingSoon: 'Rewards are coming soon — check back later!' },
     landing: {
       welcome: 'Welcome to Smart Recycling!',
@@ -310,7 +310,7 @@ export const messages = {
     app: { name: 'Reverse Vending Machine', tagline: 'Kitar Semula Pintar' },
     nav: { dashboard: 'Papan Pemuka', logout: 'Log Keluar', login: 'Log Masuk', register: 'Daftar', admin: 'Panel Pentadbir' },
     appNav: { home: 'Utama', activity: 'Aktiviti', scan: 'Imbas', rewards: 'Ganjaran', account: 'Akaun' },
-    activity: { title: 'Aktiviti', empty: 'Belum ada aktiviti.' },
+    activity: { title: 'Aktiviti', empty: 'Belum ada aktiviti.', loadError: 'Sebahagian aktiviti tidak dapat dimuatkan. Memaparkan apa yang berjaya dimuatkan.', session: 'Sesi kitar semula {code}' },
     rewards: { comingSoon: 'Ganjaran akan hadir tidak lama lagi — sila semak semula kemudian!' },
     landing: {
       welcome: 'Selamat Datang ke Kitar Semula Pintar!',

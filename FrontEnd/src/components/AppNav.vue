@@ -32,7 +32,7 @@ const activeKey = computed(() => resolveActiveNavKey(route.name))
   position: fixed;
   bottom: 0; left: 0; right: 0;
   padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
-  z-index: 20;
+  z-index: 1000;
 }
 .nav-item {
   display: flex; flex-direction: column; align-items: center; gap: 2px;

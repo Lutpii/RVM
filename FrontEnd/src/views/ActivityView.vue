@@ -3,6 +3,8 @@
   <div class="activity-page">
     <h1 class="page-title">{{ $t('activity.title') }}</h1>
 
+    <p v-if="!loading && hasLoadError" class="load-error-notice">{{ $t('activity.loadError') }}</p>
+
     <div v-if="loading" class="loading-placeholder">
       <div class="spinner-sm"></div>
     </div>
@@ -13,7 +15,7 @@
       <div v-for="entry in feed" :key="entry.id" class="activity-item">
         <div class="activity-icon">{{ entry.kind === 'session' ? '♻️' : (entry.pointsChange > 0 ? '➕' : '➖') }}</div>
         <div class="activity-info">
-          <span class="activity-desc">{{ entry.description }}</span>
+          <span class="activity-desc">{{ entry.kind === 'session' ? $t('activity.session', { code: entry.description }) : entry.description }}</span>
           <span class="activity-time">{{ formatTime(entry.timestamp) }}</span>
         </div>
         <span v-if="entry.pointsChange != null" :class="['activity-pts', entry.pointsChange > 0 ? 'pts-green' : 'pts-red']">
@@ -25,12 +27,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { mergeActivityFeed } from '@/utils/activityFeed'
 
 const feed    = ref([])
 const loading = ref(true)
+
+const pointsHistoryFailed = ref(false)
+const sessionsFailed      = ref(false)
+const hasLoadError = computed(() => pointsHistoryFailed.value || sessionsFailed.value)
 
 function formatTime(ts) {
   if (!ts) return ''
@@ -45,12 +51,18 @@ onMounted(async () => {
   try {
     const res = await api.get('/user/points-history')
     pointsHistory = res.data.history?.data || []
-  } catch { pointsHistory = [] }
+  } catch {
+    pointsHistory = []
+    pointsHistoryFailed.value = true
+  }
 
   try {
     const res = await api.get('/user/sessions')
     sessions = res.data.sessions?.data || []
-  } catch { sessions = [] }
+  } catch {
+    sessions = []
+    sessionsFailed.value = true
+  }
 
   feed.value = mergeActivityFeed(pointsHistory, sessions)
   loading.value = false
@@ -61,6 +73,11 @@ onMounted(async () => {
 .activity-page { padding: 20px 16px 32px; max-width: 640px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
 .loading-placeholder { display: flex; justify-content: center; padding: 24px; }
+.load-error-notice {
+  font-size: 12px; color: var(--accent-yellow);
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 12px; margin-bottom: 12px;
+}
 .empty-state {
   text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px;
   background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);
