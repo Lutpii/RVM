@@ -143,6 +143,31 @@ class RewardRedeemTest extends TestCase
         $second->assertStatus(422);
     }
 
+    public function test_redeem_is_blocked_when_authenticated_via_kiosk_token(): void
+    {
+        $user = $this->makeUser(['total_points' => 100]);
+        $item = RewardItem::create(['name' => 'Coffee Voucher', 'points_cost' => 30, 'stock' => 5, 'is_active' => true]);
+
+        $machine = \App\Models\RvmMachine::create([
+            'machine_code' => 'RVM-KIOSK-' . uniqid(), 'name' => 'Kiosk Test Machine',
+            'location_name' => 'Test Lobby', 'status' => 'active',
+        ]);
+        $kioskToken = 'kiosk-' . uniqid();
+        \App\Models\QrSession::create([
+            'machine_id' => $machine->id, 'qr_token' => 'qr-' . uniqid(),
+            'kiosk_token' => $kioskToken, 'status' => 'scanned',
+            'scanned_by' => $user->id, 'expires_at' => now()->addMinutes(5),
+        ]);
+
+        $this->withHeaders(['X-Kiosk-Token' => $kioskToken])
+            ->postJson("/api/user/reward-items/{$item->id}/redeem")
+            ->assertStatus(403);
+
+        $this->assertEquals(100, $user->fresh()->total_points);
+        $this->assertEquals(5, $item->fresh()->stock);
+        $this->assertEquals(0, RewardRedemption::count());
+    }
+
     public function test_deleting_a_reward_item_leaves_its_redemption_history_intact(): void
     {
         $user = $this->makeUser();

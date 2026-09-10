@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\RewardConfigService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -14,8 +15,9 @@ class AdminRewardConfigTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Clean up persistent reward_config.json so tests start fresh
-        $path = storage_path('app/reward_config.json');
+        // Clean up the isolated testing reward-config file (REWARD_CONFIG_FILENAME
+        // in phpunit.xml) so tests start fresh — never the real admin-configured one.
+        $path = app(RewardConfigService::class)->path();
         if (file_exists($path)) {
             unlink($path);
         }

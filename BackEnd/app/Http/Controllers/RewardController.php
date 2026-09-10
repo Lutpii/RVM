@@ -36,6 +36,14 @@ class RewardController extends Controller
 
     public function redeem(Request $request, int $id): JsonResponse
     {
+        // A kiosk_token proves "this device is near a scanned session," not "this is
+        // the account holder acting with full intent" (see KioskAuthMiddleware) — never
+        // let it spend the scanned user's points, even though it's fine for reading the
+        // catalog/history on this same route group.
+        if ($request->attributes->get('via_kiosk_token')) {
+            return response()->json(['success' => false, 'message' => 'Redemption is only available from your own account, not a shared kiosk.'], 403);
+        }
+
         return DB::transaction(function () use ($request, $id) {
             $item = RewardItem::where('id', $id)->lockForUpdate()->first();
             if (!$item) {

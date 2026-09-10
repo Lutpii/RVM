@@ -45,8 +45,10 @@
         <p>{{ $t('rewards.confirmBody', { points: confirmingItem.points_cost }) }}</p>
         <p v-if="redeemError" class="redeem-error">{{ redeemError }}</p>
         <div class="confirm-actions">
-          <button class="cancel-btn" @click="confirmingItem = null">{{ $t('rewards.confirmCancel') }}</button>
-          <button class="redeem-btn" @click="redeem(confirmingItem)">{{ $t('rewards.confirmYes') }}</button>
+          <button class="cancel-btn" :disabled="redeemingId === confirmingItem.id" @click="confirmingItem = null">{{ $t('rewards.confirmCancel') }}</button>
+          <button class="redeem-btn" :disabled="redeemingId === confirmingItem.id" @click="redeem(confirmingItem)">
+            {{ redeemingId === confirmingItem.id ? $t('rewards.redeeming') : $t('rewards.confirmYes') }}
+          </button>
         </div>
       </div>
     </div>

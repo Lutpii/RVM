@@ -64,7 +64,10 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
     Route::get('/user/sessions', [UserController::class, 'sessions']);
     Route::get('/user/reward-items', [RewardController::class, 'index']);
     Route::post('/user/reward-items/{id}/redeem', [RewardController::class, 'redeem']);
-    Route::get('/user/redemptions', [RewardController::class, 'history']);
+    // Named /user/reward-redemptions, not /user/redemptions: that path is already
+    // used by UserSettingsView.vue's unrelated (currently dead) points→cash
+    // redemption feature, which expects a plain array response.
+    Route::get('/user/reward-redemptions', [RewardController::class, 'history']);
 
     // Recycling Sessions
     Route::post('/sessions/start', [SessionController::class, 'start']);

@@ -67,7 +67,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await api.get('/user/redemptions')
+    const res = await api.get('/user/reward-redemptions')
     redemptions = res.data.redemptions?.data || []
   } catch {
     redemptions = []

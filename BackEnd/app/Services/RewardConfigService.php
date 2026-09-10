@@ -11,9 +11,14 @@ class RewardConfigService
         'paper'    => 3,
     ];
 
+    public function path(): string
+    {
+        return storage_path('app/' . config('rewards.config_filename', 'reward_config.json'));
+    }
+
     public function load(): array
     {
-        $path = storage_path('app/reward_config.json');
+        $path = $this->path();
         if (file_exists($path)) {
             $decoded = json_decode(file_get_contents($path), true);
             if ($decoded && is_array($decoded)) return $decoded;
@@ -23,6 +28,6 @@ class RewardConfigService
 
     public function save(array $config): void
     {
-        file_put_contents(storage_path('app/reward_config.json'), json_encode($config));
+        file_put_contents($this->path(), json_encode($config));
     }
 }

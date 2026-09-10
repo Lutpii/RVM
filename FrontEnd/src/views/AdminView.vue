@@ -1545,25 +1545,44 @@ function openAddRewardItem() {
   showAddRewardItem.value = true
 }
 
+// The API returns valid_from/valid_until as UTC ISO strings (e.g. "...T06:30:00.000000Z").
+// A <input type="datetime-local"> has no timezone concept — its value is read/written
+// as literal local wall-clock digits. Slicing the UTC string directly (the old code)
+// fed UTC digits into a local-time field, so re-opening the edit form after saving
+// showed a value shifted by the app's UTC offset, and saving again shifted it further.
+// Reading the instant's LOCAL getters instead round-trips correctly.
+function toDatetimeLocalValue(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function openEditRewardItem(item) {
   editingRewardItem.value = {
     ...item,
-    valid_from: item.valid_from ? item.valid_from.slice(0, 16) : '',
-    valid_until: item.valid_until ? item.valid_until.slice(0, 16) : '',
+    valid_from: toDatetimeLocalValue(item.valid_from),
+    valid_until: toDatetimeLocalValue(item.valid_until),
   }
   rewardItemImageFile.value = null
   rewardItemError.value = ''
 }
 
 function buildRewardItemFormData(source) {
+  // Always append the nullable fields, even empty — the backend's global
+  // ConvertEmptyStringsToNull middleware turns '' into null before validation,
+  // so this is how an admin clears stock/valid_from/valid_until/description/
+  // category on an edit (omitting the key entirely, as before, meant Laravel's
+  // validate() never saw it, so $item->update() left the old value in place —
+  // an item could gain a stock cap or an expiry but never lose one).
   const fd = new FormData()
   fd.append('name', source.name.trim())
-  if (source.description) fd.append('description', source.description)
-  if (source.category) fd.append('category', source.category)
+  fd.append('description', source.description || '')
+  fd.append('category', source.category || '')
   fd.append('points_cost', source.points_cost)
-  if (source.stock !== '' && source.stock !== null && source.stock !== undefined) fd.append('stock', source.stock)
-  if (source.valid_from) fd.append('valid_from', source.valid_from)
-  if (source.valid_until) fd.append('valid_until', source.valid_until)
+  fd.append('stock', source.stock === '' || source.stock === null || source.stock === undefined ? '' : source.stock)
+  fd.append('valid_from', source.valid_from || '')
+  fd.append('valid_until', source.valid_until || '')
   fd.append('is_active', source.is_active ? '1' : '0')
   if (rewardItemImageFile.value) fd.append('image', rewardItemImageFile.value)
   return fd

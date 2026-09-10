@@ -29,7 +29,7 @@ class RewardHistoryTest extends TestCase
         RewardRedemption::create(['user_id' => $someoneElse->id, 'reward_item_id' => $item->id, 'reward_name' => 'Item', 'points_spent' => 10]);
 
         Sanctum::actingAs($me, ['*']);
-        $res = $this->getJson('/api/user/redemptions')->assertOk();
+        $res = $this->getJson('/api/user/reward-redemptions')->assertOk();
 
         $rows = $res->json('redemptions.data');
         $this->assertCount(1, $rows);
