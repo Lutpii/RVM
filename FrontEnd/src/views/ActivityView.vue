@@ -36,7 +36,8 @@ const loading = ref(true)
 
 const pointsHistoryFailed = ref(false)
 const sessionsFailed      = ref(false)
-const hasLoadError = computed(() => pointsHistoryFailed.value || sessionsFailed.value)
+const redemptionsFailed   = ref(false)
+const hasLoadError = computed(() => pointsHistoryFailed.value || sessionsFailed.value || redemptionsFailed.value)
 
 function formatTime(ts) {
   if (!ts) return ''
@@ -47,6 +48,7 @@ function formatTime(ts) {
 onMounted(async () => {
   let pointsHistory = []
   let sessions = []
+  let redemptions = []
 
   try {
     const res = await api.get('/user/points-history')
@@ -64,7 +66,15 @@ onMounted(async () => {
     sessionsFailed.value = true
   }
 
-  feed.value = mergeActivityFeed(pointsHistory, sessions)
+  try {
+    const res = await api.get('/user/redemptions')
+    redemptions = res.data.redemptions?.data || []
+  } catch {
+    redemptions = []
+    redemptionsFailed.value = true
+  }
+
+  feed.value = mergeActivityFeed(pointsHistory, sessions, redemptions)
   loading.value = false
 })
 </script>
