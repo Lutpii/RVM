@@ -8,6 +8,7 @@ describe('resolveLoadingFlag', () => {
     expect(resolveLoadingFlag('users')).toBe('loadingUsers')
     expect(resolveLoadingFlag('machines')).toBe('loadingMachines')
     expect(resolveLoadingFlag('sessions')).toBe('loadingSessions')
+    expect(resolveLoadingFlag('rewards')).toBe('loadingRewardItems')
   })
 
   it('returns null for an unknown tab', () => {

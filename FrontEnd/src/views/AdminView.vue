@@ -517,6 +517,41 @@
         </div>
       </div>
 
+      <!-- ── REWARDS ── -->
+      <div v-if="activeTab === 'rewards'" class="tab-content">
+        <div class="section-card">
+          <div class="card-header">
+            <h3 class="card-title-bar"><span class="title-sq"></span> REWARD CATALOG</h3>
+            <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
+          </div>
+          <div v-if="loadingRewardItems" class="loading-overlay"><div class="spinner-lg"></div></div>
+          <div v-else class="machines-grid">
+            <div v-for="item in rewardItems" :key="item.id" class="machine-admin-card">
+              <img v-if="item.image_url" :src="item.image_url" alt="" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px" />
+              <div class="machine-admin-header">
+                <div>
+                  <strong>{{ item.name }}</strong>
+                  <span v-if="item.category" class="machine-code-badge">{{ item.category }}</span>
+                </div>
+                <span :class="['status-badge', item.is_active ? 'status-active' : 'status-inactive']">
+                  {{ item.is_active ? 'active' : 'inactive' }}
+                </span>
+              </div>
+              <p class="machine-loc" v-if="item.description">{{ item.description }}</p>
+              <p class="machine-loc">⭐ {{ item.points_cost }} pts · {{ item.stock === null ? 'Unlimited stock' : `${item.stock} in stock` }}</p>
+              <div class="machine-actions">
+                <button class="action-btn edit-btn" @click="openEditRewardItem(item)">Edit</button>
+                <button class="action-btn del-btn" @click="deleteRewardItem(item.id)">Delete</button>
+              </div>
+            </div>
+            <div v-if="!rewardItems.length" class="empty-machines">
+              <p>No reward items yet. Add your first one.</p>
+              <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       </div>
     </main>
 
@@ -593,6 +628,52 @@
           <button class="action-btn edit-btn" @click="addMachine" :disabled="savingMachine">
             {{ savingMachine ? 'Adding...' : 'Add Machine' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Add Reward Modal ── -->
+    <div v-if="showAddRewardItem" class="modal-overlay" @click.self="showAddRewardItem = false">
+      <div class="modal">
+        <h3>Add Reward</h3>
+        <div class="form-group"><label>Name *</label><input v-model="newRewardItem.name" type="text" /></div>
+        <div class="form-group"><label>Description</label><input v-model="newRewardItem.description" type="text" /></div>
+        <div class="form-group"><label>Category</label><input v-model="newRewardItem.category" type="text" placeholder="e.g. Food Voucher" /></div>
+        <div class="form-group"><label>Points Cost *</label><input v-model.number="newRewardItem.points_cost" type="number" min="1" /></div>
+        <div class="form-group"><label>Stock (blank = unlimited)</label><input v-model="newRewardItem.stock" type="number" min="0" /></div>
+        <div class="form-row">
+          <div class="form-group"><label>Available From</label><input v-model="newRewardItem.valid_from" type="datetime-local" /></div>
+          <div class="form-group"><label>Available Until</label><input v-model="newRewardItem.valid_until" type="datetime-local" /></div>
+        </div>
+        <div class="form-group"><label>Active</label><select v-model="newRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
+        <div class="form-group"><label>Image</label><input type="file" accept="image/jpeg,image/png" @change="e => rewardItemImageFile = e.target.files[0] || null" /></div>
+        <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
+        <div class="modal-actions">
+          <button class="action-btn" @click="showAddRewardItem = false">Cancel</button>
+          <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="addRewardItem">{{ savingRewardItem ? '...' : 'Add' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Edit Reward Modal ── -->
+    <div v-if="editingRewardItem" class="modal-overlay" @click.self="editingRewardItem = null">
+      <div class="modal">
+        <h3>Edit Reward</h3>
+        <div class="form-group"><label>Name *</label><input v-model="editingRewardItem.name" type="text" /></div>
+        <div class="form-group"><label>Description</label><input v-model="editingRewardItem.description" type="text" /></div>
+        <div class="form-group"><label>Category</label><input v-model="editingRewardItem.category" type="text" /></div>
+        <div class="form-group"><label>Points Cost *</label><input v-model.number="editingRewardItem.points_cost" type="number" min="1" /></div>
+        <div class="form-group"><label>Stock (blank = unlimited)</label><input v-model="editingRewardItem.stock" type="number" min="0" /></div>
+        <div class="form-row">
+          <div class="form-group"><label>Available From</label><input v-model="editingRewardItem.valid_from" type="datetime-local" /></div>
+          <div class="form-group"><label>Available Until</label><input v-model="editingRewardItem.valid_until" type="datetime-local" /></div>
+        </div>
+        <div class="form-group"><label>Active</label><select v-model="editingRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
+        <div class="form-group"><label>Replace Image</label><input type="file" accept="image/jpeg,image/png" @change="e => rewardItemImageFile = e.target.files[0] || null" /></div>
+        <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
+        <div class="modal-actions">
+          <button class="action-btn" @click="editingRewardItem = null">Cancel</button>
+          <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="saveRewardItem">{{ savingRewardItem ? '...' : 'Save' }}</button>
         </div>
       </div>
     </div>
@@ -732,6 +813,7 @@ const sessionsTotal = ref(0)
 const sessionsLastPage = ref(1)
 
 const loadingDetectionLogs = ref(false)
+const loadingRewardItems = ref(false)
 const detectionLogs      = ref([])
 const detectionPage      = ref(1)
 const detectionPerPage   = ref(15)
@@ -740,6 +822,14 @@ const detectionLastPage  = ref(1)
 const detectionDateFrom  = ref('')
 const detectionDateTo    = ref('')
 const thumbnails         = ref({})
+
+const rewardItems = ref([])
+const showAddRewardItem = ref(false)
+const editingRewardItem = ref(null)
+const newRewardItem = ref({ name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true })
+const rewardItemImageFile = ref(null)
+const rewardItemError = ref('')
+const savingRewardItem = ref(false)
 
 const editingUser = ref(null)
 const editingMachine = ref(null)
@@ -826,6 +916,7 @@ const navItems = [
   { id: 'machines',     icon: '🏭', label: 'Machines' },
   { id: 'sessions',     icon: '📋', label: 'Sessions' },
   { id: 'detection',    icon: '🔍', label: 'Detection Review' },
+  { id: 'rewards',      icon: '🎁', label: 'Rewards' },
 ]
 
 const binTypes = [
@@ -1003,6 +1094,10 @@ async function fetchTabData(tab, showSpinner = false) {
       detectionLastPage.value = res.data.detection_logs?.last_page ?? 1
       releaseThumbnails(detectionLogs.value)
       detectionLogs.value.forEach(loadThumbnail)
+    } else if (tab === 'rewards') {
+      if (showSpinner) loadingRewardItems.value = true
+      const res = await api.get('/admin/reward-items')
+      rewardItems.value = res.data.reward_items || []
     }
     tabFetchedAt[tab] = Date.now()
   } catch (err) {
@@ -1010,7 +1105,7 @@ async function fetchTabData(tab, showSpinner = false) {
     tabError.value = msg
     console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
   } finally {
-    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingTransactions, loadingDetectionLogs }
+    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingTransactions, loadingDetectionLogs, loadingRewardItems }
     const flagName = resolveLoadingFlag(tab)
     if (flagName) flags[flagName].value = false
   }
@@ -1384,6 +1479,92 @@ async function deleteMachine(id) {
     await api.delete(`/admin/machines/${id}`)
     adminMachines.value = adminMachines.value.filter(m => m.id !== id)
   } catch { showToast('Failed to delete machine.', 'error') }
+}
+
+function openAddRewardItem() {
+  newRewardItem.value = { name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true }
+  rewardItemImageFile.value = null
+  rewardItemError.value = ''
+  showAddRewardItem.value = true
+}
+
+function openEditRewardItem(item) {
+  editingRewardItem.value = {
+    ...item,
+    valid_from: item.valid_from ? item.valid_from.slice(0, 16) : '',
+    valid_until: item.valid_until ? item.valid_until.slice(0, 16) : '',
+  }
+  rewardItemImageFile.value = null
+  rewardItemError.value = ''
+}
+
+function buildRewardItemFormData(source) {
+  const fd = new FormData()
+  fd.append('name', source.name.trim())
+  if (source.description) fd.append('description', source.description)
+  if (source.category) fd.append('category', source.category)
+  fd.append('points_cost', source.points_cost)
+  if (source.stock !== '' && source.stock !== null && source.stock !== undefined) fd.append('stock', source.stock)
+  if (source.valid_from) fd.append('valid_from', source.valid_from)
+  if (source.valid_until) fd.append('valid_until', source.valid_until)
+  fd.append('is_active', source.is_active ? '1' : '0')
+  if (rewardItemImageFile.value) fd.append('image', rewardItemImageFile.value)
+  return fd
+}
+
+async function addRewardItem() {
+  if (!newRewardItem.value.name?.trim()) {
+    rewardItemError.value = 'Name is required.'
+    return
+  }
+  savingRewardItem.value = true
+  rewardItemError.value = ''
+  try {
+    const res = await api.post('/admin/reward-items', buildRewardItemFormData(newRewardItem.value), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    rewardItems.value.unshift(res.data.reward_item)
+    showAddRewardItem.value = false
+    showToast(`Reward "${res.data.reward_item.name}" added.`)
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to add reward.')
+  } finally {
+    savingRewardItem.value = false
+  }
+}
+
+async function saveRewardItem() {
+  if (!editingRewardItem.value.name?.trim()) {
+    rewardItemError.value = 'Name is required.'
+    return
+  }
+  savingRewardItem.value = true
+  rewardItemError.value = ''
+  try {
+    const fd = buildRewardItemFormData(editingRewardItem.value)
+    fd.append('_method', 'PUT')
+    const res = await api.post(`/admin/reward-items/${editingRewardItem.value.id}`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const idx = rewardItems.value.findIndex(r => r.id === editingRewardItem.value.id)
+    if (idx > -1) rewardItems.value[idx] = res.data.reward_item
+    editingRewardItem.value = null
+    showToast(`Reward "${res.data.reward_item.name}" saved.`)
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to save reward.')
+  } finally {
+    savingRewardItem.value = false
+  }
+}
+
+async function deleteRewardItem(id) {
+  if (!(await askConfirm('Delete this reward? This cannot be undone.'))) return
+  try {
+    await api.delete(`/admin/reward-items/${id}`)
+    rewardItems.value = rewardItems.value.filter(r => r.id !== id)
+  } catch { showToast('Failed to delete reward.', 'error') }
 }
 
 async function resetBins(machine) {
