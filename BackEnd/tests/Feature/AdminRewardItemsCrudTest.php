@@ -50,6 +50,7 @@ class AdminRewardItemsCrudTest extends TestCase
         $this->assertNotNull($item->image_path);
         \Illuminate\Support\Facades\Storage::disk('public')->assertExists($item->image_path);
         $this->assertEquals(1, AdminLog::where('action', 'create_reward_item')->count());
+        $this->assertNotNull($res->json('reward_item.image_url'));
     }
 
     public function test_creates_a_reward_item_without_an_image(): void

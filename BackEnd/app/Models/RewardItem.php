@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class RewardItem extends Model
 {
@@ -16,6 +17,13 @@ class RewardItem extends Model
         'valid_until' => 'datetime',
         'is_active'  => 'boolean',
     ];
+
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? Storage::url($this->image_path) : null;
+    }
 
     public function redemptions() { return $this->hasMany(RewardRedemption::class); }
 
