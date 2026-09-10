@@ -8,6 +8,7 @@ use App\Http\Controllers\MachineController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\QrController;
+use App\Http\Controllers\RewardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +62,7 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::get('/user/points-history', [UserController::class, 'pointsHistory']);
     Route::get('/user/sessions', [UserController::class, 'sessions']);
+    Route::get('/user/reward-items', [RewardController::class, 'index']);
 
     // Recycling Sessions
     Route::post('/sessions/start', [SessionController::class, 'start']);
