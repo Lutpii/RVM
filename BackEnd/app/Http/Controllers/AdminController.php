@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\AdminLog;
 use App\Models\DetectionLog;
 use App\Models\RewardItem;
+use App\Models\RewardRedemption;
 use App\Mail\BinCollectionRequested;
 use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
@@ -490,6 +491,15 @@ class AdminController extends Controller
         $this->log($request->user(), 'delete_reward_item', 'reward_item', $id, "Deleted reward item: {$item->name}");
         $item->delete();
         return response()->json(['success' => true, 'message' => 'Reward item deleted.']);
+    }
+
+    public function redemptions(Request $request): JsonResponse
+    {
+        $redemptions = RewardRedemption::with('user')
+            ->orderByDesc('created_at')
+            ->paginate($this->resolvePerPage($request));
+
+        return response()->json(['success' => true, 'redemptions' => $redemptions]);
     }
 
     // Notify that a physical collection has been requested for full bins —
