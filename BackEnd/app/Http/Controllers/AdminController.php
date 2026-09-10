@@ -11,6 +11,8 @@ use App\Models\DetectionLog;
 use App\Models\RewardItem;
 use App\Models\RewardRedemption;
 use App\Mail\BinCollectionRequested;
+use App\Mail\FormalReportGenerated;
+use App\Services\FormalReportService;
 use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -618,54 +620,18 @@ class AdminController extends Controller
         ];
     }
 
-    // Export all transactions as a formatted Excel workbook (bordered table,
-    // auto-sized columns — a plain CSV has no styling capability at all).
+    // Export a formal report (header, per-machine summary, transaction
+    // details — see FormalReportService) as an Excel workbook, optionally
+    // filtered to a date range. Shares its report-building logic with
+    // emailExcelReport() below so both always produce identical reports.
     public function exportExcel(Request $request)
     {
-        $transactions = Transaction::with(['user', 'machine'])->latest()->get();
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo);
         $filename = 'rvm_report_' . now()->format('Y-m-d') . '.xlsx';
-        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported {$transactions->count()} transactions");
-
-        $headers = ['ID', 'Time', 'User', 'Machine', 'Material', 'AI Detected', 'AI Confidence %', 'Valid', 'Carbon Saved (kg)', 'Points Earned', 'Status'];
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->fromArray($headers, null, 'A1');
-
-        $row = 2;
-        foreach ($transactions as $t) {
-            $sheet->fromArray([
-                $t->id,
-                $t->created_at?->toDateTimeString(),
-                $t->user?->name ?? 'Guest',
-                $t->machine?->name ?? '—',
-                $t->material_selected,
-                $t->ai_detected_type ?? '—',
-                round(($t->ai_confidence ?? 0) * 100),
-                $t->is_valid ? 'Valid' : 'Rejected',
-                $t->is_valid ? \App\Services\CarbonService::forMaterial($t->material_selected) : 0.0,
-                $t->points_earned,
-                $t->is_valid ? 'OK' : 'REJECTED',
-            ], null, "A{$row}");
-            $row++;
-        }
-
-        $lastCol = chr(ord('A') + count($headers) - 1); // 11 headers -> 'K'
-        $lastRow = max($row - 1, 1);
-        $range = "A1:{$lastCol}{$lastRow}";
-
-        $sheet->getStyle($range)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
-        $sheet->getStyle("A1:{$lastCol}1")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        if ($lastRow >= 2) {
-            $sheet->getStyle("A2:{$lastCol}{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-        }
-
-        foreach (range('A', $lastCol) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-        // Row height is intentionally left unset — Excel auto-fits row height
-        // to content by default, so there's nothing to configure for that.
+        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported formal report ({$dateFrom} to {$dateTo})");
 
         $writer = new Xlsx($spreadsheet);
 
@@ -675,6 +641,47 @@ class AdminController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
+    }
+
+    // Builds the same formal report as exportExcel() but delivers it as an
+    // email attachment instead of a browser download — for sending straight
+    // to an external recipient (e.g. SWCorp) without a manual download/
+    // re-upload step.
+    public function emailExcelReport(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
+        $dateFrom = $validated['date_from'] ?? null;
+        $dateTo = $validated['date_to'] ?? null;
+
+        $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo);
+        $writer = new Xlsx($spreadsheet);
+
+        ob_start();
+        $writer->save('php://output');
+        $xlsxContents = ob_get_clean();
+
+        $filename = 'rvm_report_' . now()->format('Y-m-d') . '.xlsx';
+        $periodLabel = ($dateFrom ?: 'earliest') . ' to ' . ($dateTo ?: 'latest');
+
+        // Unlike requestBinCollection()'s best-effort notification (where the
+        // logged request is the real deliverable), sending the report IS this
+        // endpoint's entire job — a swallowed failure here would leave an
+        // admin believing SWCorp received a report that never sent.
+        try {
+            Mail::to($validated['email'])->send(new FormalReportGenerated($periodLabel, $xlsxContents, $filename));
+        } catch (\Throwable $e) {
+            Log::warning('Formal report email failed to send', ['error' => $e->getMessage(), 'to' => $validated['email']]);
+            return response()->json(['success' => false, 'message' => 'Failed to send the report email. Please check the address and try again.'], 502);
+        }
+
+        $this->log($request->user(), 'email_formal_report', 'transactions', 0, "Emailed formal report ({$periodLabel}) to {$validated['email']}");
+
+        return response()->json(['success' => true, 'message' => 'Report emailed to ' . $validated['email'] . '.']);
     }
 
     private function log(User $admin, string $action, string $targetType, int $targetId, string $details): void

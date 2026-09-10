@@ -111,6 +111,7 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
         Route::get('/redemptions', [AdminController::class, 'redemptions']);
         Route::post('/request-bin-collection', [AdminController::class, 'requestBinCollection']);
         Route::get('/export-excel', [AdminController::class, 'exportExcel']);
+        Route::post('/export-excel/email', [AdminController::class, 'emailExcelReport']);
         Route::get('/chart-data', [AdminController::class, 'chartData']);
         // Own throttle (see RouteServiceProvider) — the Detection Review tab
         // fires one image request per gallery row, which the generic 60/min

@@ -182,14 +182,29 @@
             </div>
           </div>
 
+          <!-- Formal Report -->
+          <div class="section-card">
+            <h3 class="card-title-bar"><span class="title-sq"></span> FORMAL REPORT</h3>
+            <div class="report-filters">
+              <div class="form-group">
+                <label>From</label>
+                <input v-model="reportDateFrom" type="date" />
+              </div>
+              <div class="form-group">
+                <label>To</label>
+                <input v-model="reportDateTo" type="date" />
+              </div>
+            </div>
+            <div class="report-actions">
+              <button class="action-btn" @click="exportExcel">📤 Download Report</button>
+              <button class="action-btn edit-btn" @click="openEmailReportModal">✉️ Send via Email</button>
+            </div>
+          </div>
+
           <!-- Admin Controls -->
           <div class="section-card">
             <h3 class="card-title-bar"><span class="title-sq"></span> ADMIN CONTROLS</h3>
             <div class="controls-grid">
-              <button class="ctrl-card" @click="exportExcel">
-                <span class="ctrl-card-icon ctrl-blue">📤</span>
-                <span class="ctrl-card-label">Export Report (Excel)</span>
-              </button>
               <button class="ctrl-card" @click="resetAllAlerts">
                 <span class="ctrl-card-icon ctrl-yellow">🔕</span>
                 <span class="ctrl-card-label">Dismiss Alerts</span>
@@ -770,6 +785,24 @@
       </div>
     </div>
 
+    <!-- ── Email Report Modal ── -->
+    <div v-if="showEmailReportModal" class="modal-overlay" @click.self="showEmailReportModal = false">
+      <div class="modal">
+        <h3>Send Report via Email</h3>
+        <div class="form-group">
+          <label>Recipient Email *</label>
+          <input v-model="emailReportAddress" type="email" placeholder="e.g. swcorp@example.com" />
+        </div>
+        <p v-if="emailReportError" class="form-error">{{ emailReportError }}</p>
+        <div class="modal-actions">
+          <button class="action-btn" :disabled="sendingReportEmail" @click="showEmailReportModal = false">Cancel</button>
+          <button class="action-btn edit-btn" :disabled="sendingReportEmail" @click="sendReportEmail">
+            {{ sendingReportEmail ? 'Sending...' : 'Send' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Confirm modal (replaces native confirm()) ── -->
     <div v-if="confirmState.show" class="modal-overlay" @click.self="settleConfirm(false)">
       <div class="modal confirm-modal">
@@ -894,6 +927,13 @@ const editingUser = ref(null)
 const editingMachine = ref(null)
 const showAddMachine = ref(false)
 const savingMachine = ref(false)
+
+const reportDateFrom = ref('')
+const reportDateTo = ref('')
+const showEmailReportModal = ref(false)
+const emailReportAddress = ref('')
+const sendingReportEmail = ref(false)
+const emailReportError = ref('')
 
 // ── Confirm modal + toast (replaces native confirm()/alert()) ──
 const confirmState = ref({ show: false, message: '', variant: 'danger', resolve: null })
@@ -1410,7 +1450,10 @@ function changeDetectionPerPage() {
 // ── Admin Controls ──
 async function exportExcel() {
   try {
-    const res = await api.get('/admin/export-excel', { responseType: 'blob' })
+    const res = await api.get('/admin/export-excel', {
+      responseType: 'blob',
+      params: { date_from: reportDateFrom.value || undefined, date_to: reportDateTo.value || undefined },
+    })
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')
     a.href = url
@@ -1421,6 +1464,35 @@ async function exportExcel() {
     URL.revokeObjectURL(url)
   } catch {
     showToast('Export failed. Please try again.', 'error')
+  }
+}
+
+function openEmailReportModal() {
+  emailReportAddress.value = ''
+  emailReportError.value = ''
+  showEmailReportModal.value = true
+}
+
+async function sendReportEmail() {
+  if (!emailReportAddress.value.trim()) {
+    emailReportError.value = 'Email address is required.'
+    return
+  }
+  sendingReportEmail.value = true
+  emailReportError.value = ''
+  try {
+    const res = await api.post('/admin/export-excel/email', {
+      email: emailReportAddress.value.trim(),
+      date_from: reportDateFrom.value || undefined,
+      date_to: reportDateTo.value || undefined,
+    })
+    showEmailReportModal.value = false
+    showToast(res.data.message || 'Report emailed.')
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    emailReportError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to send report.')
+  } finally {
+    sendingReportEmail.value = false
   }
 }
 
@@ -1935,6 +2007,12 @@ onUnmounted(() => {
 .sys-val-green  { color: #00e5a0; }
 .sys-val-yellow { color: #f59e0b; }
 .sys-val-red    { color: #ef4444; }
+
+/* ── Formal Report ── */
+.report-filters {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;
+}
+.report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ── Admin Controls ── */
 .controls-grid {
