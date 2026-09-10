@@ -550,6 +550,41 @@
             </div>
           </div>
         </div>
+
+        <div class="section-card">
+          <h3 class="card-title-bar"><span class="title-sq"></span> REDEMPTION HISTORY</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>User</th><th>Reward</th><th>Points Spent</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in adminRedemptions" :key="r.id">
+                  <td>{{ r.user?.name || '—' }}</td>
+                  <td>{{ r.reward_name }}</td>
+                  <td class="pts-red">-{{ r.points_spent }}</td>
+                  <td class="muted small">{{ formatDate(r.created_at) }}</td>
+                </tr>
+                <tr v-if="!adminRedemptions.length">
+                  <td colspan="4" class="empty-cell">No redemptions yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-bar">
+            <span class="pagination-label">{{ paginationLabel({ currentPage: redemptionsPage, perPage: redemptionsPerPage, total: redemptionsTotal }) }}</span>
+            <div class="pagination-controls">
+              <select v-model.number="redemptionsPerPage" @change="changeRedemptionsPerPage" class="filter-select">
+                <option :value="15">15 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+              </select>
+              <button class="action-btn" :disabled="redemptionsPage <= 1" @click="goToRedemptionsPage(redemptionsPage - 1)">← Prev</button>
+              <span class="pagination-page">Page {{ redemptionsPage }} of {{ redemptionsLastPage }}</span>
+              <button class="action-btn" :disabled="redemptionsPage >= redemptionsLastPage" @click="goToRedemptionsPage(redemptionsPage + 1)">Next →</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       </div>
@@ -831,6 +866,12 @@ const rewardItemImageFile = ref(null)
 const rewardItemError = ref('')
 const savingRewardItem = ref(false)
 
+const adminRedemptions = ref([])
+const redemptionsPage = ref(1)
+const redemptionsPerPage = ref(15)
+const redemptionsTotal = ref(0)
+const redemptionsLastPage = ref(1)
+
 const editingUser = ref(null)
 const editingMachine = ref(null)
 const showAddMachine = ref(false)
@@ -1098,6 +1139,12 @@ async function fetchTabData(tab, showSpinner = false) {
       if (showSpinner) loadingRewardItems.value = true
       const res = await api.get('/admin/reward-items')
       rewardItems.value = res.data.reward_items || []
+      const redemptionsRes = await api.get('/admin/redemptions', { params: {
+        page: redemptionsPage.value, per_page: redemptionsPerPage.value,
+      } })
+      adminRedemptions.value      = redemptionsRes.data.redemptions?.data || []
+      redemptionsTotal.value      = redemptionsRes.data.redemptions?.total ?? 0
+      redemptionsLastPage.value   = redemptionsRes.data.redemptions?.last_page ?? 1
     }
     tabFetchedAt[tab] = Date.now()
   } catch (err) {
@@ -1303,6 +1350,16 @@ function goToSessionsPage(page) {
 function changeSessionsPerPage() {
   sessionsPage.value = 1
   fetchTabData('sessions', true)
+}
+
+function goToRedemptionsPage(page) {
+  redemptionsPage.value = page
+  fetchTabData('rewards')
+}
+
+function changeRedemptionsPerPage() {
+  redemptionsPage.value = 1
+  fetchTabData('rewards')
 }
 
 function filterDetection() {
@@ -2151,6 +2208,7 @@ onUnmounted(() => {
 .small  { font-size: 11px; }
 .muted  { color: var(--text-muted); }
 .pts-green { color: var(--accent-green); font-weight: 600; }
+.pts-red { color: var(--accent-red); font-weight: 600; }
 
 .mobile-menu-btn {
   display: none; background: none; border: none;
