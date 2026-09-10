@@ -254,6 +254,9 @@ curl -X POST http://localhost:5000/classify \
 | GET/PUT | `/api/user/profile` | Get/update profile |
 | GET | `/api/user/points-history` | Points history |
 | GET | `/api/user/sessions` | Past recycling sessions |
+| GET | `/api/user/reward-items` | Reward catalog |
+| POST | `/api/user/reward-items/{id}/redeem` | Redeem a reward (spends points, transactional) |
+| GET | `/api/user/reward-redemptions` | Own redemption history |
 | POST | `/api/sessions/start` | Start a recycling session |
 | GET | `/api/sessions/{sessionCode}` | Session detail |
 | POST | `/api/sessions/{sessionCode}/end` | End a session |
@@ -280,6 +283,8 @@ curl -X POST http://localhost:5000/classify \
 | GET | `/api/admin/stats` | Aggregate stats |
 | GET | `/api/admin/logs` | Admin action log |
 | GET/PUT | `/api/admin/reward-config` | View/update per-material point rates |
+| GET/POST/PUT/DELETE | `/api/admin/reward-items`, `/api/admin/reward-items/{id}` | Manage the reward catalog (incl. image upload) |
+| GET | `/api/admin/redemptions` | All users' redemption history |
 | POST | `/api/admin/request-bin-collection` | Log a collection request for bins ≥90% full — does **not** change bin levels (a bin isn't empty just because someone was asked to come empty it; use `PUT /api/admin/machines/{id}/bin-levels` once it genuinely has been) |
 | GET | `/api/admin/export-csv` | Export data as CSV |
 | GET | `/api/admin/chart-data` | Chart/analytics data |

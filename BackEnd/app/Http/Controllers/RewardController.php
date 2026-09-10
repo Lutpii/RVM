@@ -81,7 +81,9 @@ class RewardController extends Controller
             PointsHistory::create([
                 'user_id'       => $user->id,
                 'points_change' => -$item->points_cost,
-                'balance_after' => $user->fresh()->total_points,
+                // decrement() already updates the in-memory attribute — no need
+                // for a fresh() round-trip to read back what was just written.
+                'balance_after' => $user->total_points,
                 'type'          => 'redeemed',
                 'description'   => "Redeemed: {$item->name}",
             ]);
@@ -89,7 +91,7 @@ class RewardController extends Controller
             return response()->json([
                 'success'      => true,
                 'message'      => 'Reward redeemed.',
-                'total_points' => $user->fresh()->total_points,
+                'total_points' => $user->total_points,
                 'redemption'   => $redemption,
             ]);
         });

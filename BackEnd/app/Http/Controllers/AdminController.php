@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -413,9 +414,10 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'config' => $config]);
     }
 
-    public function rewardItems(): JsonResponse
+    public function rewardItems(Request $request): JsonResponse
     {
-        return response()->json(['success' => true, 'reward_items' => RewardItem::latest()->get()]);
+        $items = RewardItem::latest()->paginate($this->resolvePerPage($request));
+        return response()->json(['success' => true, 'reward_items' => $items]);
     }
 
     public function createRewardItem(Request $request): JsonResponse
@@ -469,6 +471,7 @@ class AdminController extends Controller
             'image'        => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
+        $oldImagePath = $item->image_path;
         if ($request->hasFile('image')) {
             $validated['image_path'] = $request->file('image')->store('reward-images', 'public');
         }
@@ -479,6 +482,13 @@ class AdminController extends Controller
         }
 
         $item->update($validated);
+
+        // Replacing the image leaves the old file with nothing referencing it —
+        // delete it after the update succeeds, not before (a failed validate()
+        // above must never orphan the still-in-use original).
+        if ($request->hasFile('image') && $oldImagePath) {
+            Storage::disk('public')->delete($oldImagePath);
+        }
         $this->log($request->user(), 'update_reward_item', 'reward_item', $id, "Updated reward item: {$item->name}");
         return response()->json(['success' => true, 'reward_item' => $item->fresh()]);
     }
@@ -489,6 +499,9 @@ class AdminController extends Controller
         if (!$item) return response()->json(['success' => false, 'message' => 'Reward item not found.'], 404);
 
         $this->log($request->user(), 'delete_reward_item', 'reward_item', $id, "Deleted reward item: {$item->name}");
+        if ($item->image_path) {
+            Storage::disk('public')->delete($item->image_path);
+        }
         $item->delete();
         return response()->json(['success' => true, 'message' => 'Reward item deleted.']);
     }

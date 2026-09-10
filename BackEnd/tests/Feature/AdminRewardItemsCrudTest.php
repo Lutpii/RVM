@@ -32,7 +32,8 @@ class AdminRewardItemsCrudTest extends TestCase
         RewardItem::create(['name' => 'Item B', 'points_cost' => 20, 'is_active' => false]);
 
         $res = $this->getJson('/api/admin/reward-items')->assertOk();
-        $this->assertCount(2, $res->json('reward_items'));
+        $this->assertCount(2, $res->json('reward_items.data'));
+        $this->assertEquals(2, $res->json('reward_items.total'));
     }
 
     public function test_creates_a_reward_item_with_an_image_and_logs_it(): void
@@ -88,6 +89,51 @@ class AdminRewardItemsCrudTest extends TestCase
 
         $this->assertNull(RewardItem::find($item->id));
         $this->assertEquals(1, AdminLog::where('action', 'delete_reward_item')->count());
+    }
+
+    public function test_updating_a_reward_item_with_a_new_image_deletes_the_old_one(): void
+    {
+        $this->actingAsAdmin();
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $oldPath = UploadedFile::fake()->image('old.jpg')->store('reward-images', 'public');
+        $item = RewardItem::create(['name' => 'Old Photo', 'points_cost' => 10, 'is_active' => true, 'image_path' => $oldPath]);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($oldPath);
+
+        $this->postJson("/api/admin/reward-items/{$item->id}", [
+            '_method' => 'PUT', 'name' => 'Old Photo', 'points_cost' => 10,
+            'image' => UploadedFile::fake()->image('new.jpg'),
+        ])->assertOk();
+
+        $item->refresh();
+        $this->assertNotEquals($oldPath, $item->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($oldPath);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($item->image_path);
+    }
+
+    public function test_updating_a_reward_item_without_a_new_image_keeps_the_existing_one(): void
+    {
+        $this->actingAsAdmin();
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $path = UploadedFile::fake()->image('photo.jpg')->store('reward-images', 'public');
+        $item = RewardItem::create(['name' => 'Has Photo', 'points_cost' => 10, 'is_active' => true, 'image_path' => $path]);
+
+        $this->putJson("/api/admin/reward-items/{$item->id}", ['name' => 'Has Photo', 'points_cost' => 20])->assertOk();
+
+        $this->assertEquals($path, $item->fresh()->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($path);
+    }
+
+    public function test_deleting_a_reward_item_deletes_its_image(): void
+    {
+        $this->actingAsAdmin();
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $path = UploadedFile::fake()->image('photo.jpg')->store('reward-images', 'public');
+        $item = RewardItem::create(['name' => 'Doomed With Photo', 'points_cost' => 10, 'is_active' => true, 'image_path' => $path]);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($path);
+
+        $this->deleteJson("/api/admin/reward-items/{$item->id}")->assertOk();
+
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($path);
     }
 
     public function test_non_admin_cannot_access_reward_items_admin_endpoints(): void

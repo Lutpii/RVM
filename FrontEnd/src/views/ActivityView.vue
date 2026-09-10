@@ -13,9 +13,9 @@
     </div>
     <div v-else class="activity-list">
       <div v-for="entry in feed" :key="entry.id" class="activity-item">
-        <div class="activity-icon">{{ entry.kind === 'session' ? '♻️' : (entry.pointsChange > 0 ? '➕' : '➖') }}</div>
+        <div class="activity-icon">{{ entry.kind === 'session' ? '♻️' : (entry.kind === 'redemption' ? '🎁' : (entry.pointsChange > 0 ? '➕' : '➖')) }}</div>
         <div class="activity-info">
-          <span class="activity-desc">{{ entry.kind === 'session' ? $t('activity.session', { code: entry.description }) : entry.description }}</span>
+          <span class="activity-desc">{{ entry.kind === 'session' ? $t('activity.session', { code: entry.description }) : (entry.kind === 'redemption' ? $t('activity.redemption', { name: entry.description }) : entry.description) }}</span>
           <span class="activity-time">{{ formatTime(entry.timestamp) }}</span>
         </div>
         <span v-if="entry.pointsChange != null" :class="['activity-pts', entry.pointsChange > 0 ? 'pts-green' : 'pts-red']">

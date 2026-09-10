@@ -72,6 +72,7 @@ function setTheme(value) {
 provide('theme', theme)
 provide('toggleTheme', toggleTheme)
 provide('setTheme', setTheme)
+provide('showToast', showToast)
 
 watch(theme, (val) => {
   document.documentElement.setAttribute('data-theme', val)

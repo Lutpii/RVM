@@ -549,6 +549,19 @@
               <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
             </div>
           </div>
+          <div class="pagination-bar" v-if="rewardItems.length">
+            <span class="pagination-label">{{ paginationLabel({ currentPage: rewardItemsPage, perPage: rewardItemsPerPage, total: rewardItemsTotal }) }}</span>
+            <div class="pagination-controls">
+              <select v-model.number="rewardItemsPerPage" @change="changeRewardItemsPerPage" class="filter-select">
+                <option :value="15">15 / page</option>
+                <option :value="25">25 / page</option>
+                <option :value="50">50 / page</option>
+              </select>
+              <button class="action-btn" :disabled="rewardItemsPage <= 1" @click="goToRewardItemsPage(rewardItemsPage - 1)">← Prev</button>
+              <span class="pagination-page">Page {{ rewardItemsPage }} of {{ rewardItemsLastPage }}</span>
+              <button class="action-btn" :disabled="rewardItemsPage >= rewardItemsLastPage" @click="goToRewardItemsPage(rewardItemsPage + 1)">Next →</button>
+            </div>
+          </div>
         </div>
 
         <div class="section-card">
@@ -859,6 +872,10 @@ const detectionDateTo    = ref('')
 const thumbnails         = ref({})
 
 const rewardItems = ref([])
+const rewardItemsPage = ref(1)
+const rewardItemsPerPage = ref(15)
+const rewardItemsTotal = ref(0)
+const rewardItemsLastPage = ref(1)
 const showAddRewardItem = ref(false)
 const editingRewardItem = ref(null)
 const newRewardItem = ref({ name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true })
@@ -1137,8 +1154,12 @@ async function fetchTabData(tab, showSpinner = false) {
       detectionLogs.value.forEach(loadThumbnail)
     } else if (tab === 'rewards') {
       if (showSpinner) loadingRewardItems.value = true
-      const res = await api.get('/admin/reward-items')
-      rewardItems.value = res.data.reward_items || []
+      const res = await api.get('/admin/reward-items', { params: {
+        page: rewardItemsPage.value, per_page: rewardItemsPerPage.value,
+      } })
+      rewardItems.value        = res.data.reward_items?.data || []
+      rewardItemsTotal.value   = res.data.reward_items?.total ?? 0
+      rewardItemsLastPage.value = res.data.reward_items?.last_page ?? 1
       const redemptionsRes = await api.get('/admin/redemptions', { params: {
         page: redemptionsPage.value, per_page: redemptionsPerPage.value,
       } })
@@ -1350,6 +1371,16 @@ function goToSessionsPage(page) {
 function changeSessionsPerPage() {
   sessionsPage.value = 1
   fetchTabData('sessions', true)
+}
+
+function goToRewardItemsPage(page) {
+  rewardItemsPage.value = page
+  fetchTabData('rewards')
+}
+
+function changeRewardItemsPerPage() {
+  rewardItemsPage.value = 1
+  fetchTabData('rewards')
 }
 
 function goToRedemptionsPage(page) {
@@ -1599,9 +1630,12 @@ async function addRewardItem() {
     const res = await api.post('/admin/reward-items', buildRewardItemFormData(newRewardItem.value), {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    rewardItems.value.unshift(res.data.reward_item)
     showAddRewardItem.value = false
     showToast(`Reward "${res.data.reward_item.name}" added.`)
+    // Refetch rather than unshift locally: the list is now paginated, so a
+    // local splice would leave rewardItemsTotal/rewardItemsLastPage stale.
+    rewardItemsPage.value = 1
+    await fetchTabData('rewards')
   } catch (e) {
     const errors = e.response?.data?.errors
     rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to add reward.')
@@ -1639,7 +1673,10 @@ async function deleteRewardItem(id) {
   if (!(await askConfirm('Delete this reward? This cannot be undone.'))) return
   try {
     await api.delete(`/admin/reward-items/${id}`)
-    rewardItems.value = rewardItems.value.filter(r => r.id !== id)
+    // Deleting the last item on a page beyond page 1 would otherwise leave an
+    // empty grid with no obvious way back — step back a page in that case.
+    if (rewardItems.value.length === 1 && rewardItemsPage.value > 1) rewardItemsPage.value -= 1
+    await fetchTabData('rewards')
   } catch { showToast('Failed to delete reward.', 'error') }
 }
 

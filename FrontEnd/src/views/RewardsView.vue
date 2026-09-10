@@ -30,10 +30,10 @@
           </div>
           <button
             class="redeem-btn"
-            :disabled="!item.is_available || auth.user.total_points < item.points_cost || redeemingId === item.id"
+            :disabled="!item.is_available || (auth.user?.total_points || 0) < item.points_cost || redeemingId === item.id"
             @click="confirmingItem = item; redeemError = ''"
           >
-            {{ redeemingId === item.id ? $t('rewards.redeeming') : (auth.user.total_points < item.points_cost ? $t('rewards.insufficientPoints') : $t('rewards.redeemBtn')) }}
+            {{ redeemingId === item.id ? $t('rewards.redeeming') : ((auth.user?.total_points || 0) < item.points_cost ? $t('rewards.insufficientPoints') : $t('rewards.redeemBtn')) }}
           </button>
         </div>
       </div>
@@ -56,13 +56,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 const { t } = useI18n()
 const auth = useAuthStore()
+const showToast = inject('showToast')
 const items = ref([])
 const loading = ref(true)
 const loadError = ref(false)
@@ -102,6 +103,7 @@ async function redeem(item) {
     const res = await api.post(`/user/reward-items/${item.id}/redeem`)
     auth.updatePoints(res.data.total_points)
     confirmingItem.value = null
+    showToast?.(t('rewards.redeemSuccess'))
     await fetchItems()
   } catch (err) {
     redeemError.value = err.response?.data?.message || t('rewards.redeemFailed')
