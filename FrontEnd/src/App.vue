@@ -150,7 +150,7 @@ body {
   border-left: 4px solid var(--accent-green);
   color: var(--text-primary); padding: 12px 18px;
   border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  font-size: 13.5px; z-index: 300; max-width: 90vw;
+  font-size: 13.5px; z-index: 1100; max-width: 90vw;
 }
 .toast.error { border-left-color: var(--accent-red); }
 .toast-icon { font-size: 14px; flex-shrink: 0; }
