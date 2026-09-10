@@ -63,6 +63,7 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
     Route::get('/user/points-history', [UserController::class, 'pointsHistory']);
     Route::get('/user/sessions', [UserController::class, 'sessions']);
     Route::get('/user/reward-items', [RewardController::class, 'index']);
+    Route::post('/user/reward-items/{id}/redeem', [RewardController::class, 'redeem']);
 
     // Recycling Sessions
     Route::post('/sessions/start', [SessionController::class, 'start']);
