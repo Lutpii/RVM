@@ -3,6 +3,8 @@
   <div class="rewards-page">
     <h1 class="page-title">{{ $t('rewards.title') }}</h1>
 
+    <p v-if="!loading && loadError" class="load-error-notice">{{ $t('rewards.loadError') }}</p>
+
     <div v-if="categories.length > 1" class="category-chips">
       <button
         v-for="cat in categories" :key="cat"
@@ -29,7 +31,7 @@
           <button
             class="redeem-btn"
             :disabled="!item.is_available || auth.user.total_points < item.points_cost || redeemingId === item.id"
-            @click="confirmingItem = item"
+            @click="confirmingItem = item; redeemError = ''"
           >
             {{ redeemingId === item.id ? $t('rewards.redeeming') : (auth.user.total_points < item.points_cost ? $t('rewards.insufficientPoints') : $t('rewards.redeemBtn')) }}
           </button>
@@ -41,6 +43,7 @@
       <div class="confirm-modal">
         <h3>{{ $t('rewards.confirmTitle') }}</h3>
         <p>{{ $t('rewards.confirmBody', { points: confirmingItem.points_cost }) }}</p>
+        <p v-if="redeemError" class="redeem-error">{{ redeemError }}</p>
         <div class="confirm-actions">
           <button class="cancel-btn" @click="confirmingItem = null">{{ $t('rewards.confirmCancel') }}</button>
           <button class="redeem-btn" @click="redeem(confirmingItem)">{{ $t('rewards.confirmYes') }}</button>
@@ -52,15 +55,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const items = ref([])
 const loading = ref(true)
+const loadError = ref(false)
 const activeCategory = ref('__all__')
 const confirmingItem = ref(null)
 const redeemingId = ref(null)
+const redeemError = ref('')
 
 const categories = computed(() => {
   const set = new Set(items.value.map(i => i.category).filter(Boolean))
@@ -74,11 +81,13 @@ const filteredItems = computed(() => {
 
 async function fetchItems() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await api.get('/user/reward-items')
     items.value = res.data.reward_items || []
   } catch {
     items.value = []
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -86,13 +95,14 @@ async function fetchItems() {
 
 async function redeem(item) {
   redeemingId.value = item.id
+  redeemError.value = ''
   try {
     const res = await api.post(`/user/reward-items/${item.id}/redeem`)
     auth.updatePoints(res.data.total_points)
     confirmingItem.value = null
     await fetchItems()
-  } catch {
-    confirmingItem.value = null
+  } catch (err) {
+    redeemError.value = err.response?.data?.message || t('rewards.redeemFailed')
   } finally {
     redeemingId.value = null
   }
@@ -112,7 +122,15 @@ onMounted(fetchItems)
 }
 .chip.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
 
+.load-error-notice {
+  font-size: 12px; color: var(--accent-yellow);
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 12px; margin-bottom: 12px;
+}
+
 .loading-placeholder { display: flex; justify-content: center; padding: 24px; }
+.spinner-sm { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .empty-state {
   text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px;
   background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);
@@ -144,6 +162,7 @@ onMounted(fetchItems)
 }
 .confirm-modal h3 { color: var(--text-primary); margin-bottom: 8px; }
 .confirm-modal p { color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; }
+.confirm-modal p.redeem-error { color: var(--accent-red); font-weight: 600; }
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .cancel-btn {
   padding: 8px 14px; border-radius: 8px; font-size: 13px; background: var(--bg-hover);

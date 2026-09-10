@@ -9,6 +9,7 @@ export const messages = {
       comingSoon: 'Rewards are coming soon — check back later!',
       title: 'Rewards',
       empty: 'No rewards available right now.',
+      loadError: 'Rewards could not be loaded. Please try again.',
       pointsCost: '{points} pts',
       stockLeft: '{count} left',
       unlimitedStock: 'Unlimited',
@@ -20,6 +21,7 @@ export const messages = {
       confirmYes: 'Yes, redeem',
       confirmCancel: 'Cancel',
       redeemSuccess: 'Reward redeemed!',
+      redeemFailed: 'Redemption failed. Please try again.',
       allCategory: 'All',
     },
     landing: {
@@ -332,6 +334,7 @@ export const messages = {
       comingSoon: 'Ganjaran akan hadir tidak lama lagi — sila semak semula kemudian!',
       title: 'Ganjaran',
       empty: 'Tiada ganjaran tersedia buat masa ini.',
+      loadError: 'Ganjaran tidak dapat dimuatkan. Sila cuba lagi.',
       pointsCost: '{points} mata',
       stockLeft: 'Baki {count}',
       unlimitedStock: 'Tanpa had',
@@ -343,6 +346,7 @@ export const messages = {
       confirmYes: 'Ya, tebus',
       confirmCancel: 'Batal',
       redeemSuccess: 'Ganjaran berjaya ditebus!',
+      redeemFailed: 'Tebusan gagal. Sila cuba lagi.',
       allCategory: 'Semua',
     },
     landing: {
