@@ -48,7 +48,11 @@ _MODEL_CANDIDATES = [
     _HERE.parent.parent / 'best.pt',
     _HERE / 'model' / 'best.pt',
 ]
-MODEL_PATH = next((str(p) for p in _MODEL_CANDIDATES if p.exists()), str(_MODEL_CANDIDATES[0]))
+# MODEL_PATH in .env overrides the auto-detected candidate list, for swapping
+# in a different trained model (e.g. a new experiment) without editing code.
+MODEL_PATH = os.environ.get('MODEL_PATH') or next(
+    (str(p) for p in _MODEL_CANDIDATES if p.exists()), str(_MODEL_CANDIDATES[0])
+)
 
 _FALLBACK_CLASSES = ['aluminum', 'plastic', 'glass', 'paper']
 
