@@ -8,11 +8,14 @@ use App\Models\RecyclingSession;
 use App\Models\Transaction;
 use App\Models\AdminLog;
 use App\Models\DetectionLog;
+use App\Mail\BinCollectionRequested;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -439,6 +442,19 @@ class AdminController extends Controller
             ->get();
 
         $this->log($request->user(), 'request_bin_collection', 'system', 0, "Collection requested for {$machines->count()} machine(s)");
+
+        // Best-effort — a flaky mail provider shouldn't block the admin's request
+        // from being logged and acknowledged, since that's this endpoint's real
+        // job; the audit-log entry above is the source of truth either way.
+        $notificationEmail = config('services.pbt.notification_email');
+        if ($machines->isNotEmpty() && $notificationEmail) {
+            try {
+                Mail::to($notificationEmail)->send(new BinCollectionRequested($machines));
+            } catch (\Throwable $e) {
+                Log::warning('Bin collection notification email failed to send', ['error' => $e->getMessage()]);
+            }
+        }
+
         return response()->json(['success' => true, 'message' => 'Bin collection request sent.', 'affected' => $machines->count()]);
     }
 

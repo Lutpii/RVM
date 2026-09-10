@@ -18,6 +18,11 @@ return [
         'sender' => env('FONNTE_SENDER'),
     ],
 
+    // PBT (Pihak Berkuasa Tempatan) bin-collection notification recipient
+    'pbt' => [
+        'notification_email' => env('PBT_NOTIFICATION_EMAIL'),
+    ],
+
     // Python AI Service — no fallback default: a missing key must fail loudly,
     // not silently resolve to a value that's public knowledge from the repo.
     'ai' => [
