@@ -525,26 +525,26 @@
             <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
           </div>
           <div v-if="loadingRewardItems" class="loading-overlay"><div class="spinner-lg"></div></div>
-          <div v-else class="machines-grid">
-            <div v-for="item in rewardItems" :key="item.id" class="machine-admin-card">
+          <div v-else class="reward-admin-grid">
+            <div v-for="item in rewardItems" :key="item.id" class="reward-admin-card">
               <img v-if="item.image_url" :src="item.image_url" alt="" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px" />
-              <div class="machine-admin-header">
+              <div class="reward-admin-header">
                 <div>
                   <strong>{{ item.name }}</strong>
-                  <span v-if="item.category" class="machine-code-badge">{{ item.category }}</span>
+                  <span v-if="item.category" class="reward-admin-badge">{{ item.category }}</span>
                 </div>
                 <span :class="['status-badge', item.is_active ? 'status-active' : 'status-inactive']">
                   {{ item.is_active ? 'active' : 'inactive' }}
                 </span>
               </div>
-              <p class="machine-loc" v-if="item.description">{{ item.description }}</p>
-              <p class="machine-loc">⭐ {{ item.points_cost }} pts · {{ item.stock === null ? 'Unlimited stock' : `${item.stock} in stock` }}</p>
-              <div class="machine-actions">
+              <p class="reward-admin-sub" v-if="item.description">{{ item.description }}</p>
+              <p class="reward-admin-sub">⭐ {{ item.points_cost }} pts · {{ item.stock === null ? 'Unlimited stock' : `${item.stock} in stock` }}</p>
+              <div class="reward-admin-actions">
                 <button class="action-btn edit-btn" @click="openEditRewardItem(item)">Edit</button>
                 <button class="action-btn del-btn" @click="deleteRewardItem(item.id)">Delete</button>
               </div>
             </div>
-            <div v-if="!rewardItems.length" class="empty-machines">
+            <div v-if="!rewardItems.length" class="empty-rewards">
               <p>No reward items yet. Add your first one.</p>
               <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
             </div>
@@ -806,6 +806,7 @@ import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
 import { validateMachineName } from '@/utils/admin/validateMachine.js'
 import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
 import { isFresh } from '@/utils/admin/tabFreshness.js'
+import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   ArcElement, Tooltip, Legend
@@ -1576,19 +1577,6 @@ function openAddRewardItem() {
   showAddRewardItem.value = true
 }
 
-// The API returns valid_from/valid_until as UTC ISO strings (e.g. "...T06:30:00.000000Z").
-// A <input type="datetime-local"> has no timezone concept — its value is read/written
-// as literal local wall-clock digits. Slicing the UTC string directly (the old code)
-// fed UTC digits into a local-time field, so re-opening the edit form after saving
-// showed a value shifted by the app's UTC offset, and saving again shifted it further.
-// Reading the instant's LOCAL getters instead round-trips correctly.
-function toDatetimeLocalValue(isoString) {
-  if (!isoString) return ''
-  const d = new Date(isoString)
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
 function openEditRewardItem(item) {
   editingRewardItem.value = {
     ...item,
@@ -2104,11 +2092,40 @@ onUnmounted(() => {
 .text-red    { color: var(--accent-red) !important; }
 .text-muted-sm { color: var(--text-muted) !important; font-size: 11px; }
 .machine-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Rewards (own names — visually identical to Machines above by design,
+   but kept separate so a future Machines-only restyle can't silently
+   change the Rewards tab too) ── */
+.reward-admin-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;
+}
+.reward-admin-card {
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+}
+.reward-admin-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 6px;
+}
+.reward-admin-badge {
+  display: inline-block; background: var(--bg-card);
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-family: monospace;
+  color: var(--text-muted); margin-left: 8px;
+}
+.reward-admin-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.reward-admin-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
 .empty-machines {
   grid-column: 1 / -1; text-align: center;
   color: var(--text-muted); padding: 40px;
 }
 .empty-machines p { margin-bottom: 14px; }
+.empty-rewards {
+  grid-column: 1 / -1; text-align: center;
+  color: var(--text-muted); padding: 40px;
+}
+.empty-rewards p { margin-bottom: 14px; }
 
 /* ── Badges ── */
 .status-badge {

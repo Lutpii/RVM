@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api, { registerClearAuth } from '@/services/api'
+import { resolveCachedPoints } from '@/utils/resolveCachedPoints'
 
 export const useAuthStore = defineStore('auth', () => {
   const user  = ref(JSON.parse(localStorage.getItem('rvm_user') || 'null'))
@@ -10,12 +11,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin    = computed(() => user.value?.role === 'admin')
 
   function setAuth(userData, tokenValue) {
-    // Restore cached points if backend returns a lower value (e.g. session just ended)
-    const cachedPts = localStorage.getItem(`rvm_pts_${userData.id}`)
-    if (cachedPts !== null) {
-      const cached = parseInt(cachedPts)
-      if (!isNaN(cached) && cached > (userData.total_points ?? 0)) {
-        userData = { ...userData, total_points: cached }
+    // Restore cached points if backend returns a lower value (e.g. a kiosk
+    // session just ended and logout raced ahead of the backend committing the
+    // points update) — see resolveCachedPoints for why this only trusts a
+    // short, recent window rather than any cached value.
+    const raw = localStorage.getItem(`rvm_pts_${userData.id}`)
+    if (raw !== null) {
+      const resolved = resolveCachedPoints(raw, userData.total_points)
+      if (resolved !== userData.total_points) {
+        userData = { ...userData, total_points: resolved }
       }
       localStorage.removeItem(`rvm_pts_${userData.id}`)
     }
@@ -52,9 +56,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function clearAuth() {
-    // Save points per-user before clearing so re-login restores them if backend is stale
+    // Save points per-user before clearing so re-login restores them if backend is stale.
+    // setAuth() only honors this within CACHE_MAX_AGE_MS of savedAt.
     if (user.value?.id != null && user.value?.total_points != null) {
-      localStorage.setItem(`rvm_pts_${user.value.id}`, user.value.total_points)
+      localStorage.setItem(`rvm_pts_${user.value.id}`, JSON.stringify({
+        points: user.value.total_points, savedAt: Date.now(),
+      }))
     }
     user.value  = null
     token.value = null
