@@ -8,6 +8,7 @@ use App\Models\RecyclingSession;
 use App\Models\Transaction;
 use App\Models\AdminLog;
 use App\Models\DetectionLog;
+use App\Models\RewardItem;
 use App\Mail\BinCollectionRequested;
 use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
@@ -409,6 +410,86 @@ class AdminController extends Controller
         $this->log($request->user(), 'update_reward_config', 'system', 0, 'Updated reward points configuration');
 
         return response()->json(['success' => true, 'config' => $config]);
+    }
+
+    public function rewardItems(): JsonResponse
+    {
+        return response()->json(['success' => true, 'reward_items' => RewardItem::latest()->get()]);
+    }
+
+    public function createRewardItem(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'         => 'required|string|max:150',
+            'description'  => 'nullable|string',
+            'category'     => 'nullable|string|max:50',
+            'points_cost'  => 'required|integer|min:1',
+            'stock'        => 'nullable|integer|min:0',
+            'valid_from'   => 'nullable|date',
+            'valid_until'  => 'nullable|date|after_or_equal:valid_from',
+            'is_active'    => 'nullable|boolean',
+            'image'        => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
+        ]);
+
+        $imagePath = $request->hasFile('image')
+            ? $request->file('image')->store('reward-images', 'public')
+            : null;
+
+        $item = RewardItem::create([
+            'name'        => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'category'    => $validated['category'] ?? null,
+            'image_path'  => $imagePath,
+            'points_cost' => $validated['points_cost'],
+            'stock'       => $validated['stock'] ?? null,
+            'valid_from'  => $validated['valid_from'] ?? null,
+            'valid_until' => $validated['valid_until'] ?? null,
+            'is_active'   => $request->boolean('is_active', true),
+        ]);
+
+        $this->log($request->user(), 'create_reward_item', 'reward_item', $item->id, "Created reward item: {$item->name}");
+        return response()->json(['success' => true, 'reward_item' => $item], 201);
+    }
+
+    public function updateRewardItem(Request $request, int $id): JsonResponse
+    {
+        $item = RewardItem::find($id);
+        if (!$item) return response()->json(['success' => false, 'message' => 'Reward item not found.'], 404);
+
+        $validated = $request->validate([
+            'name'         => 'sometimes|required|string|max:150',
+            'description'  => 'nullable|string',
+            'category'     => 'nullable|string|max:50',
+            'points_cost'  => 'sometimes|required|integer|min:1',
+            'stock'        => 'nullable|integer|min:0',
+            'valid_from'   => 'nullable|date',
+            'valid_until'  => 'nullable|date|after_or_equal:valid_from',
+            'is_active'    => 'nullable|boolean',
+            'image'        => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image_path'] = $request->file('image')->store('reward-images', 'public');
+        }
+        unset($validated['image']);
+
+        if ($request->has('is_active')) {
+            $validated['is_active'] = $request->boolean('is_active');
+        }
+
+        $item->update($validated);
+        $this->log($request->user(), 'update_reward_item', 'reward_item', $id, "Updated reward item: {$item->name}");
+        return response()->json(['success' => true, 'reward_item' => $item->fresh()]);
+    }
+
+    public function deleteRewardItem(Request $request, int $id): JsonResponse
+    {
+        $item = RewardItem::find($id);
+        if (!$item) return response()->json(['success' => false, 'message' => 'Reward item not found.'], 404);
+
+        $this->log($request->user(), 'delete_reward_item', 'reward_item', $id, "Deleted reward item: {$item->name}");
+        $item->delete();
+        return response()->json(['success' => true, 'message' => 'Reward item deleted.']);
     }
 
     // Notify that a physical collection has been requested for full bins —

@@ -101,6 +101,10 @@ Route::middleware(['kiosk.auth', 'auth:sanctum'])->group(function () {
         Route::get('/logs', [AdminController::class, 'logs']);
         Route::get('/reward-config', [AdminController::class, 'getRewardConfig']);
         Route::put('/reward-config', [AdminController::class, 'updateRewardConfig']);
+        Route::get('/reward-items', [AdminController::class, 'rewardItems']);
+        Route::post('/reward-items', [AdminController::class, 'createRewardItem']);
+        Route::put('/reward-items/{id}', [AdminController::class, 'updateRewardItem']);
+        Route::delete('/reward-items/{id}', [AdminController::class, 'deleteRewardItem']);
         Route::post('/request-bin-collection', [AdminController::class, 'requestBinCollection']);
         Route::get('/export-excel', [AdminController::class, 'exportExcel']);
         Route::get('/chart-data', [AdminController::class, 'chartData']);
