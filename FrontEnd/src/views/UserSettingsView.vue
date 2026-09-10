@@ -1,18 +1,6 @@
 <template>
   <div class="settings-page">
 
-    <!-- Top nav -->
-    <div class="top-nav">
-      <div class="nav-left">
-        <button class="back-btn" @click="router.push('/dashboard')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
-        </button>
-        <span class="nav-title">{{ $t('settings.title') }}</span>
-      </div>
-    </div>
-
     <!-- Profile hero -->
     <div class="profile-hero">
       <div class="profile-bg"></div>
@@ -540,23 +528,6 @@ onMounted(async () => {
 
 <style scoped>
 .settings-page { min-height: 100vh; background: var(--bg-primary); }
-
-/* ── Top nav ── */
-.top-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 10;
-}
-.nav-left { display: flex; align-items: center; gap: 10px; }
-.back-btn {
-  background: var(--bg-card); border: 1px solid var(--border);
-  color: var(--text-primary); padding: 7px 10px; border-radius: 8px;
-  cursor: pointer; display: flex; align-items: center;
-}
-.back-btn:hover { background: var(--bg-hover); }
-.nav-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
 
 /* ── Profile hero ── */
 .profile-hero {
