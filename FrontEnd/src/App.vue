@@ -1,6 +1,9 @@
 <template>
   <div :class="['app-root', theme]" :data-theme="theme">
-    <RouterView />
+    <AppNav v-if="showAppNav" />
+    <main :class="['app-content', { 'app-content-with-nav': showAppNav }]">
+      <RouterView />
+    </main>
 
     <Transition name="toast-fade">
       <div v-if="toastState.show" :class="['toast', toastState.type]" role="status">
@@ -12,13 +15,16 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, watch } from 'vue'
-import { RouterView } from 'vue-router'
+import { ref, computed, provide, onMounted, watch } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import AppNav from '@/components/AppNav.vue'
 
 const theme = ref(localStorage.getItem('rvm_theme') || 'dark')
 const auth  = useAuthStore()
+const route = useRoute()
+const showAppNav = computed(() => route.meta.showAppNav === true)
 
 const toastState = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
@@ -119,6 +125,11 @@ body {
 }
 
 .app-root { min-height: 100vh; }
+
+.app-content-with-nav { padding-bottom: 76px; }
+@media (min-width: 769px) {
+  .app-content-with-nav { padding-bottom: 0; }
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
