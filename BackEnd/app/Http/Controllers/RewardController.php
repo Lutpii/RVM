@@ -8,7 +8,6 @@ use App\Models\RewardRedemption;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class RewardController extends Controller
 {
@@ -26,7 +25,7 @@ class RewardController extends Controller
             'name'         => $item->name,
             'description'  => $item->description,
             'category'     => $item->category,
-            'image_url'    => $item->image_path ? Storage::url($item->image_path) : null,
+            'image_url'    => $item->image_url,
             'points_cost'  => $item->points_cost,
             'stock'        => $item->stock,
             'valid_from'   => $item->valid_from,

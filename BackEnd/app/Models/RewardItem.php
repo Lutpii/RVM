@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class RewardItem extends Model
 {
@@ -20,9 +19,13 @@ class RewardItem extends Model
 
     protected $appends = ['image_url'];
 
+    // A relative path (not Storage::url(), which prepends config('filesystems.disks.public.url')
+    // i.e. APP_URL) so this works regardless of APP_URL drift between environments (this project's
+    // dev setup serves the Vue frontend and Laravel backend on different origins/ports, proxied —
+    // see vite.config.js's /storage proxy entry) and avoids mixed-content blocks on the HTTPS dev server.
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image_path ? Storage::url($this->image_path) : null;
+        return $this->image_path ? '/storage/' . $this->image_path : null;
     }
 
     public function redemptions() { return $this->hasMany(RewardRedemption::class); }
