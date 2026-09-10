@@ -252,6 +252,19 @@
         </div>
       </div>
 
+      <!-- Admin Panel -->
+      <div v-if="auth.isAdmin" class="form-card">
+        <h3 class="form-title">{{ $t('nav.admin') }}</h3>
+        <p class="form-hint">{{ $t('settings.adminPanelHint') }}</p>
+        <RouterLink to="/admin" class="full-btn save-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          {{ $t('nav.admin') }}
+        </RouterLink>
+      </div>
+
       <!-- Logout -->
       <div class="form-card">
         <h3 class="form-title">{{ $t('settings.session') }}</h3>
@@ -302,7 +315,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
@@ -639,6 +652,7 @@ onMounted(async () => {
   font-size: 14px; font-weight: 700; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: opacity 0.2s;
+  text-decoration: none;
 }
 .full-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .full-btn:not(:disabled):hover { opacity: 0.88; }
