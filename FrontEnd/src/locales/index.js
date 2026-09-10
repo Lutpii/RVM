@@ -3,6 +3,9 @@ export const messages = {
   en: {
     app: { name: 'Reverse Vending Machine', tagline: 'Smart Recycling' },
     nav: { dashboard: 'Dashboard', logout: 'Logout', login: 'Login', register: 'Register', admin: 'Admin Panel' },
+    appNav: { home: 'Home', activity: 'Activity', scan: 'Scan', rewards: 'Rewards', account: 'Account' },
+    activity: { title: 'Activity', empty: 'No activity yet.' },
+    rewards: { comingSoon: 'Rewards are coming soon — check back later!' },
     landing: {
       welcome: 'Welcome to Smart Recycling!',
       subtitle: 'Turn your recyclables into rewards',
@@ -304,8 +307,11 @@ export const messages = {
     },
   },
   my: {
-    app: { name: 'Mesin Kitar Semula Terbalik', tagline: 'Kitar Semula Pintar' },
+    app: { name: 'Reverse Vending Machine', tagline: 'Kitar Semula Pintar' },
     nav: { dashboard: 'Papan Pemuka', logout: 'Log Keluar', login: 'Log Masuk', register: 'Daftar', admin: 'Panel Pentadbir' },
+    appNav: { home: 'Utama', activity: 'Aktiviti', scan: 'Imbas', rewards: 'Ganjaran', account: 'Akaun' },
+    activity: { title: 'Aktiviti', empty: 'Belum ada aktiviti.' },
+    rewards: { comingSoon: 'Ganjaran akan hadir tidak lama lagi — sila semak semula kemudian!' },
     landing: {
       welcome: 'Selamat Datang ke Kitar Semula Pintar!',
       subtitle: 'Tukar bahan kitar semula anda kepada hadiah',
