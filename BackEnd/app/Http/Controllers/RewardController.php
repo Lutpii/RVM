@@ -87,4 +87,13 @@ class RewardController extends Controller
             ]);
         });
     }
+
+    public function history(Request $request): JsonResponse
+    {
+        $redemptions = RewardRedemption::where('user_id', $request->user()->id)
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return response()->json(['success' => true, 'redemptions' => $redemptions]);
+    }
 }
