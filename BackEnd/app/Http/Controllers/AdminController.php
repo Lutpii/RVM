@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\AdminLog;
 use App\Models\DetectionLog;
 use App\Mail\BinCollectionRequested;
+use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -23,23 +24,6 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AdminController extends Controller
 {
-    private const DEFAULT_REWARD_CONFIG = [
-        'plastic'  => 5,
-        'aluminum' => 8,
-        'glass'    => 5,
-        'paper'    => 3,
-    ];
-
-    private function loadRewardConfig(): array
-    {
-        $path = storage_path('app/reward_config.json');
-        if (file_exists($path)) {
-            $decoded = json_decode(file_get_contents($path), true);
-            if ($decoded && is_array($decoded)) return $decoded;
-        }
-        return self::DEFAULT_REWARD_CONFIG;
-    }
-
     private const ALLOWED_PER_PAGE = [15, 25, 50, 100, 200];
     private const CACHE_TTL_SECONDS = 15;
 
@@ -406,12 +390,12 @@ class AdminController extends Controller
     }
 
     // Reward Points Configuration
-    public function getRewardConfig(): JsonResponse
+    public function getRewardConfig(RewardConfigService $rewardConfig): JsonResponse
     {
-        return response()->json(['success' => true, 'config' => $this->loadRewardConfig()]);
+        return response()->json(['success' => true, 'config' => $rewardConfig->load()]);
     }
 
-    public function updateRewardConfig(Request $request): JsonResponse
+    public function updateRewardConfig(Request $request, RewardConfigService $rewardConfig): JsonResponse
     {
         $request->validate([
             'plastic'  => 'required|integer|min:0|max:9999',
@@ -421,7 +405,7 @@ class AdminController extends Controller
         ]);
 
         $config = $request->only(['plastic', 'aluminum', 'glass', 'paper']);
-        file_put_contents(storage_path('app/reward_config.json'), json_encode($config));
+        $rewardConfig->save($config);
         $this->log($request->user(), 'update_reward_config', 'system', 0, 'Updated reward points configuration');
 
         return response()->json(['success' => true, 'config' => $config]);
