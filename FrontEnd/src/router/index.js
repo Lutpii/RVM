@@ -11,6 +11,8 @@ const RvmSessionView     = () => import('@/views/RvmSessionView.vue')
 const SessionSummaryView = () => import('@/views/SessionSummaryView.vue')
 const AdminView          = () => import('@/views/AdminView.vue')
 const UserSettingsView   = () => import('@/views/UserSettingsView.vue')
+const ActivityView       = () => import('@/views/ActivityView.vue')
+const RewardsView        = () => import('@/views/RewardsView.vue')
 const NotFoundView       = () => import('@/views/NotFoundView.vue')
 const KioskLandingView      = () => import('@/views/KioskLandingView.vue')
 const KioskQrView           = () => import('@/views/KioskQrView.vue')
@@ -91,7 +93,13 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { title: 'Dashboard - RVM', requiresAuth: true },
+    meta: { title: 'Dashboard - RVM', requiresAuth: true, showAppNav: true },
+  },
+  {
+    path: '/activity',
+    name: 'activity',
+    component: ActivityView,
+    meta: { title: 'Activity - RVM', requiresAuth: true, showAppNav: true },
   },
   {
     path: '/scan',
@@ -112,10 +120,16 @@ const routes = [
     meta: { title: 'Session Summary - RVM', requiresAuth: true },
   },
   {
+    path: '/rewards',
+    name: 'rewards',
+    component: RewardsView,
+    meta: { title: 'Rewards - RVM', requiresAuth: true, showAppNav: true },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: UserSettingsView,
-    meta: { title: 'Settings - RVM', requiresAuth: true },
+    meta: { title: 'Settings - RVM', requiresAuth: true, showAppNav: true },
   },
   {
     path: '/admin',
