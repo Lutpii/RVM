@@ -13,7 +13,11 @@ class RewardConfigService
 
     public function path(): string
     {
-        return storage_path('app/' . config('rewards.config_filename', 'reward_config.json'));
+        // ?: not the config() default arg: that default only applies when the key is
+        // absent, not when config/rewards.php loaded but resolved it to '' or null
+        // (e.g. a stale config:cache from before this file existed) — which would
+        // silently fall back to the real filename this isolation exists to avoid.
+        return storage_path('app/' . (config('rewards.config_filename') ?: 'reward_config.json'));
     }
 
     public function load(): array
