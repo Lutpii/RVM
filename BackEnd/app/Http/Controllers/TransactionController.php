@@ -194,7 +194,7 @@ class TransactionController extends Controller
     }
 
     // Step 7: Weigh item
-    public function weigh(Request $request): JsonResponse
+    public function weigh(Request $request, \App\Services\RewardConfigService $rewardConfig): JsonResponse
     {
         $request->validate([
             'session_code'      => 'required|string',
@@ -218,7 +218,7 @@ class TransactionController extends Controller
             'unknown'             => 0,
             default               => rand(9, 49),
         };
-        $pointsEarned  = self::calcPoints();
+        $pointsEarned  = $rewardConfig->load()[$material] ?? self::calcPoints();
 
         // Server-authoritative result for this session's pending item — complete()
         // reads this back instead of trusting client-supplied weight/points, so a
