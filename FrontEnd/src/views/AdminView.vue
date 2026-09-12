@@ -7,20 +7,17 @@
     <aside :class="['sidebar', { collapsed: sidebarCollapsed, 'mobile-open': mobileSidebarOpen }]">
       <div class="sidebar-header">
         <PhRecycle class="sidebar-logo" weight="regular" aria-hidden="true" />
-        <span class="sidebar-title" v-if="!sidebarCollapsed">RVM Admin</span>
-        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
-          {{ sidebarCollapsed ? '→' : '←' }}
-        </button>
+        <span class="sidebar-title">RVM Admin</span>
       </div>
       <nav class="sidebar-nav">
         <button v-for="item in navItems" :key="item.id"
           :class="['nav-item', { active: activeTab === item.id }]"
           @click="switchTab(item.id)">
           <component :is="item.icon" class="nav-icon" weight="regular" aria-hidden="true" />
-          <span class="nav-label" v-if="!sidebarCollapsed || mobileSidebarOpen">{{ item.label }}</span>
+          <span class="nav-label">{{ item.label }}</span>
         </button>
       </nav>
-      <div class="sidebar-footer" v-if="!sidebarCollapsed || mobileSidebarOpen">
+      <div class="sidebar-footer">
         <div class="admin-info">
           <div class="admin-avatar">{{ auth.user?.name?.charAt(0) || 'A' }}</div>
           <div>
@@ -37,6 +34,17 @@
           <button class="logout-btn-sm" @click="handleLogout">Logout</button>
         </div>
       </div>
+
+      <!-- Floating edge toggle — sits on the sidebar/content border so it stays
+           in the same fixed spot regardless of collapsed state, instead of
+           living inside the header where it used to get squeezed among the
+           icon-only nav once collapsed. Desktop only (hidden on mobile below;
+           the mobile drawer is a full-width overlay, not a collapsible rail). -->
+      <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed"
+        :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+        <PhCaretLeft v-if="!sidebarCollapsed" weight="bold" aria-hidden="true" />
+        <PhCaretRight v-else weight="bold" aria-hidden="true" />
+      </button>
     </aside>
 
     <!-- Main content -->
@@ -856,6 +864,7 @@ import api from '@/services/api'
 import { materialIconSvg } from '@/utils/materialIcons'
 import {
   PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
+  PhCaretLeft, PhCaretRight,
   PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhMagnifyingGlass, PhGift,
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
@@ -1846,6 +1855,7 @@ onUnmounted(() => {
 
 /* ── Sidebar ── */
 .sidebar {
+  position: relative;
   width: 220px;
   min-height: 100vh;
   background: var(--bg-secondary);
@@ -1857,6 +1867,22 @@ onUnmounted(() => {
 }
 .sidebar.collapsed { width: 60px; }
 
+/* Title/labels/footer fade together with the width transition (both
+   directions — collapsing used to remove them instantly via v-if while
+   expanding animated in, a jarring asymmetry) rather than being
+   mounted/unmounted; each is individually clipped so oversized content
+   never visually spills past the collapsed 60px rail. */
+.sidebar-title, .nav-label, .sidebar-footer {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .sidebar-footer {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -1866,7 +1892,23 @@ onUnmounted(() => {
 }
 .sidebar-logo { font-size: 20px; flex-shrink: 0; color: var(--accent-green); }
 .sidebar-title { font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 1; white-space: nowrap; overflow: hidden; }
-.collapse-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+
+/* Floating edge toggle — always the same fixed spot on the sidebar's right
+   border, regardless of collapsed state (previously lived inside
+   .sidebar-header and got squeezed among the icon-only nav once collapsed). */
+.collapse-btn {
+  position: absolute;
+  top: 20px; right: -12px;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer; font-size: 12px;
+  z-index: 10;
+  transition: background 0.2s, color 0.2s;
+}
+.collapse-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; justify-content: flex-start; }
 .nav-item {
@@ -1880,7 +1922,7 @@ onUnmounted(() => {
 .nav-icon { font-size: 18px; flex-shrink: 0; }
 .nav-label { white-space: nowrap; overflow: hidden; }
 
-.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); overflow: hidden; }
 .admin-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .admin-avatar {
   width: 32px; height: 32px; border-radius: 50%;
@@ -2384,6 +2426,7 @@ onUnmounted(() => {
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, 8px); }
 @media (prefers-reduced-motion: reduce) {
   .toast-fade-enter-active, .toast-fade-leave-active { transition: none; }
+  .sidebar, .sidebar-title, .nav-label, .sidebar-footer { transition: none; }
 }
 
 /* ── Loading ── */
