@@ -1,5 +1,5 @@
 <template>
-  <div class="kiosk-landing" data-theme="kiosk">
+  <div class="kiosk-landing" data-theme="light">
     <div class="kiosk-bg"></div>
 
     <div class="kiosk-content">
@@ -120,10 +120,10 @@ function goToQr() {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* This kiosk surface is always black (data-theme="kiosk" on the view
-     root, above) — white-alpha here is intentional, not an oversight. */
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  /* Light kiosk surface (data-theme="light" on the view root, above) —
+     dark-alpha here matches the light background, not an oversight. */
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 999px;
   padding: 8px 20px;
   color: var(--text-secondary);
