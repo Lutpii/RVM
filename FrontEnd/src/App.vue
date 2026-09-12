@@ -20,10 +20,12 @@ import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import AppNav from '@/components/AppNav.vue'
+import { useLenisScroll } from '@/composables/useLenisScroll'
 
 const theme = ref(localStorage.getItem('rvm_theme') || 'dark')
 const auth  = useAuthStore()
 const route = useRoute()
+useLenisScroll()
 const showAppNav = computed(() => route.meta.showAppNav === true)
 
 const toastState = ref({ show: false, message: '', type: 'success' })
