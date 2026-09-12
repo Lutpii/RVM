@@ -6,7 +6,7 @@
     <!-- Sidebar -->
     <aside :class="['sidebar', { collapsed: sidebarCollapsed, 'mobile-open': mobileSidebarOpen }]">
       <div class="sidebar-header">
-        <span class="sidebar-logo">♻️</span>
+        <PhRecycle class="sidebar-logo" weight="regular" aria-hidden="true" />
         <span class="sidebar-title" v-if="!sidebarCollapsed">RVM Admin</span>
         <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
           {{ sidebarCollapsed ? '→' : '←' }}
@@ -16,7 +16,7 @@
         <button v-for="item in navItems" :key="item.id"
           :class="['nav-item', { active: activeTab === item.id }]"
           @click="switchTab(item.id)">
-          <span class="nav-icon">{{ item.icon }}</span>
+          <component :is="item.icon" class="nav-icon" weight="regular" aria-hidden="true" />
           <span class="nav-label" v-if="!sidebarCollapsed || mobileSidebarOpen">{{ item.label }}</span>
         </button>
       </nav>
@@ -29,8 +29,11 @@
           </div>
         </div>
         <div class="sidebar-actions">
-          <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
-          <RouterLink to="/dashboard" class="ctrl-btn">👤 User View</RouterLink>
+          <button class="ctrl-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+            <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
+            <PhMoon v-else weight="regular" aria-hidden="true" />
+          </button>
+          <RouterLink to="/dashboard" class="ctrl-btn"><PhUser weight="regular" aria-hidden="true" /> User View</RouterLink>
           <button class="logout-btn-sm" @click="handleLogout">Logout</button>
         </div>
       </div>
@@ -40,13 +43,15 @@
     <main class="admin-main">
       <div class="admin-topbar">
         <div style="display:flex;align-items:center;gap:10px">
-          <button class="mobile-menu-btn" @click="mobileSidebarOpen = !mobileSidebarOpen; sidebarCollapsed = false">☰</button>
+          <button class="mobile-menu-btn" @click="mobileSidebarOpen = !mobileSidebarOpen; sidebarCollapsed = false" aria-label="Toggle sidebar menu">
+            <PhList weight="regular" aria-hidden="true" />
+          </button>
           <h2 class="page-title">{{ currentNavItem?.label }}</h2>
         </div>
         <div class="topbar-right">
           <span class="live-dot" v-if="isLive"></span>
           <span class="last-updated">Updated: {{ lastUpdated }}</span>
-          <button class="refresh-btn" @click="fetchTabData(activeTab, true)">🔄 Refresh</button>
+          <button class="refresh-btn" @click="fetchTabData(activeTab, true)"><PhArrowsClockwise weight="regular" aria-hidden="true" /> Refresh</button>
         </div>
       </div>
 
@@ -55,8 +60,10 @@
 
       <!-- Global error banner -->
       <div v-if="tabError" class="error-banner">
-        ⚠️ {{ tabError }}
-        <button class="error-close" @click="tabError = ''">✕</button>
+        <PhWarning weight="regular" aria-hidden="true" /> {{ tabError }}
+        <button class="error-close" @click="tabError = ''" aria-label="Dismiss error">
+          <PhX weight="regular" aria-hidden="true" />
+        </button>
       </div>
 
       <!-- ── DASHBOARD ── -->
@@ -72,7 +79,7 @@
           <!-- Waste overview cards -->
           <div class="overview-cards">
             <div class="overview-card" v-for="mat in overviewMaterials" :key="mat.key">
-              <div class="ov-icon">{{ mat.icon }}</div>
+              <svg v-if="materialIconSvg(mat.key)" class="ov-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(mat.key)"></svg>
               <div class="ov-label">{{ mat.label }}</div>
               <div class="ov-count">{{ (overviewData[mat.key]?.today ?? 0).toLocaleString() }}</div>
               <div class="ov-sub">collected today</div>
@@ -86,7 +93,7 @@
           <!-- Stats grid -->
           <div class="stats-grid">
             <div class="stat-card" v-for="stat in statsCards" :key="stat.label">
-              <div class="stat-icon">{{ stat.icon }}</div>
+              <component :is="stat.icon" class="stat-icon" weight="regular" aria-hidden="true" />
               <div class="stat-info">
                 <div class="stat-value" :style="stat.color ? { color: stat.color } : {}">{{ stat.value }}</div>
                 <div class="stat-label">{{ stat.label }}</div>
@@ -95,7 +102,7 @@
             <!-- Machine Status card -->
             <div class="stat-card machine-status-card">
               <div>
-                <div class="ms-icon">🤖</div>
+                <PhRobot class="ms-icon" weight="regular" aria-hidden="true" />
                 <div class="ms-label">MACHINE STATUS</div>
                 <div :class="['ms-status', activeMachines > 0 ? 'ms-online' : 'ms-offline']">
                   {{ activeMachines > 0 ? 'ONLINE' : 'OFFLINE' }}
@@ -128,7 +135,7 @@
             <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> BIN ALERTS (≥ 90%)</h3>
             <div class="alert-list">
               <div v-for="machine in fullBins" :key="machine.id" class="alert-item">
-                <span class="alert-icon">🚨</span>
+                <PhWarningOctagon class="alert-icon" weight="regular" aria-hidden="true" />
                 <strong>{{ machine.name }}</strong>
                 <div class="alert-bins">
                   <span v-if="machine.aluminum_level >= 90" class="bin-tag">Aluminum {{ machine.aluminum_level }}%</span>
@@ -156,7 +163,10 @@
                   </thead>
                   <tbody>
                     <tr v-for="mat in materialStats" :key="mat.material_selected">
-                      <td>{{ getMaterialIcon(mat.material_selected) }} {{ capitalize(mat.material_selected) }}</td>
+                      <td>
+                        <svg v-if="materialIconSvg(mat.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(mat.material_selected)"></svg>
+                        {{ capitalize(mat.material_selected) }}
+                      </td>
                       <td>{{ mat.count }}</td>
                       <td>{{ mat.total_carbon_kg.toFixed(3) }} kg</td>
                       <td class="pts-green">{{ mat.total_points }}</td>
@@ -171,7 +181,7 @@
 
             <!-- System Status -->
             <div class="section-card" style="margin-bottom:0">
-              <h3 class="card-title-bar"><span class="title-sq"></span> ⚙️ SYSTEM STATUS</h3>
+              <h3 class="card-title-bar"><span class="title-sq"></span> <PhGear weight="regular" aria-hidden="true" /> SYSTEM STATUS</h3>
               <div class="sys-grid">
                 <div v-for="item in systemStatusItems" :key="item.label" class="sys-item">
                   <span :class="['sys-dot', 'sys-dot-' + item.color]"></span>
@@ -196,8 +206,8 @@
               </div>
             </div>
             <div class="report-actions">
-              <button class="action-btn" @click="exportExcel">📤 Download Report</button>
-              <button class="action-btn edit-btn" @click="openEmailReportModal">✉️ Send via Email</button>
+              <button class="action-btn" @click="exportExcel"><PhDownloadSimple weight="regular" aria-hidden="true" /> Download Report</button>
+              <button class="action-btn edit-btn" @click="openEmailReportModal"><PhEnvelopeSimple weight="regular" aria-hidden="true" /> Send via Email</button>
             </div>
           </div>
 
@@ -206,15 +216,15 @@
             <h3 class="card-title-bar"><span class="title-sq"></span> ADMIN CONTROLS</h3>
             <div class="controls-grid">
               <button class="ctrl-card" @click="resetAllAlerts">
-                <span class="ctrl-card-icon ctrl-yellow">🔕</span>
+                <PhBellSlash class="ctrl-card-icon ctrl-yellow" weight="regular" aria-hidden="true" />
                 <span class="ctrl-card-label">Dismiss Alerts</span>
               </button>
               <button class="ctrl-card" @click="switchTab('machines')">
-                <span class="ctrl-card-icon ctrl-purple">🏭</span>
+                <PhFactory class="ctrl-card-icon ctrl-purple" weight="regular" aria-hidden="true" />
                 <span class="ctrl-card-label">View Machine Report</span>
               </button>
               <button class="ctrl-card" @click="requestBinCollection">
-                <span class="ctrl-card-icon ctrl-gray">🗑️</span>
+                <PhTrash class="ctrl-card-icon ctrl-gray" weight="regular" aria-hidden="true" />
                 <span class="ctrl-card-label">Request Bin Collection</span>
               </button>
             </div>
@@ -257,7 +267,7 @@
                   <td class="mono">{{ formatUserId(tx.user) }}</td>
                   <td>
                     <span class="item-cell">
-                      {{ getMaterialIcon(tx.material_selected) }}
+                      <svg v-if="materialIconSvg(tx.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(tx.material_selected)"></svg>
                       {{ capitalize(tx.material_selected) }}
                     </span>
                   </td>
@@ -337,7 +347,10 @@
                   <td class="muted">{{ user.email || user.phone }}</td>
                   <td class="pts-green">{{ user.total_points?.toLocaleString() }}</td>
                   <td><span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span></td>
-                  <td>{{ user.is_verified ? '✅' : '❌' }}</td>
+                  <td>
+                    <PhCheckCircle v-if="user.is_verified" class="verified-icon verified-yes" weight="regular" aria-hidden="true" />
+                    <PhXCircle v-else class="verified-icon verified-no" weight="regular" aria-hidden="true" />
+                  </td>
                   <td class="muted small">{{ formatDate(user.created_at) }}</td>
                   <td>
                     <button class="action-btn edit-btn" @click="editUser(user)">Edit</button>
@@ -375,7 +388,10 @@
           <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> REWARD POINTS CONFIGURATION</h3>
           <div class="reward-materials">
             <div class="reward-mat-card" v-for="mat in rewardMaterials" :key="mat.key">
-              <div class="reward-mat-label">{{ mat.icon }} {{ mat.label }}</div>
+              <div class="reward-mat-label">
+                <svg v-if="materialIconSvg(mat.key)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(mat.key)"></svg>
+                {{ mat.label }}
+              </div>
               <div class="reward-mat-control">
                 <input class="reward-input" type="number" v-model.number="rewardEditValues[mat.key]" min="0" max="9999" />
                 <button class="update-btn" @click="updateReward(mat.key)" :disabled="savingReward === mat.key">
@@ -401,10 +417,13 @@
                 </div>
                 <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
               </div>
-              <p class="machine-loc">📍 {{ machine.location_name || 'No location set' }}</p>
+              <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ machine.location_name || 'No location set' }}</p>
               <div class="bin-admin-grid">
                 <div v-for="bin in binTypes" :key="bin.id" class="bin-admin">
-                  <span>{{ bin.icon }} {{ bin.label }}</span>
+                  <span>
+                    <svg v-if="materialIconSvg(bin.id)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(bin.id)"></svg>
+                    {{ bin.label }}
+                  </span>
                   <div class="bin-bar-sm">
                     <div :class="['bin-fill-sm', getBinClass(machine[bin.id + '_level'])]"
                       :style="{ width: machine[bin.id + '_level'] + '%' }"></div>
@@ -489,7 +508,7 @@
               <label class="filter-label">To
                 <input type="date" v-model="detectionDateTo" @change="filterDetection" class="filter-select" />
               </label>
-              <button class="ctrl-btn" @click="exportDetectionLogsCsv">⬇️ Export CSV</button>
+              <button class="ctrl-btn" @click="exportDetectionLogsCsv"><PhDownloadSimple weight="regular" aria-hidden="true" /> Export CSV</button>
             </div>
           </div>
           <div v-if="loadingDetectionLogs" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -497,7 +516,7 @@
           <div v-else class="detection-grid">
             <div v-for="log in detectionLogs" :key="log.id" class="detection-card">
               <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" alt="capture" />
-              <div v-else class="detection-thumb placeholder">📷</div>
+              <PhCamera v-else class="detection-thumb placeholder" weight="regular" aria-hidden="true" />
               <div class="detection-meta">
                 <div class="detection-badges">
                   <span v-if="log.is_mock" class="badge badge-warning">Mock</span>
@@ -508,9 +527,9 @@
               </div>
               <div class="detection-actions" :title="reviewDisabledReason(log)">
                 <button :class="['review-btn', { active: log.ground_truth_correct === true }]"
-                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, true)">✔️ Correct</button>
+                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, true)"><PhCheck weight="regular" aria-hidden="true" /> Correct</button>
                 <button :class="['review-btn', 'reject', { active: log.ground_truth_correct === false }]"
-                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, false)">✖️ Incorrect</button>
+                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, false)"><PhX weight="regular" aria-hidden="true" /> Incorrect</button>
               </div>
             </div>
           </div>
@@ -553,7 +572,7 @@
                 </span>
               </div>
               <p class="reward-admin-sub" v-if="item.description">{{ item.description }}</p>
-              <p class="reward-admin-sub">⭐ {{ item.points_cost }} pts · {{ item.stock === null ? 'Unlimited stock' : `${item.stock} in stock` }}</p>
+              <p class="reward-admin-sub"><PhStar weight="regular" aria-hidden="true" /> {{ item.points_cost }} pts · {{ item.stock === null ? 'Unlimited stock' : `${item.stock} in stock` }}</p>
               <div class="reward-admin-actions">
                 <button class="action-btn edit-btn" @click="openEditRewardItem(item)">Edit</button>
                 <button class="action-btn del-btn" @click="deleteRewardItem(item.id)">Delete</button>
@@ -820,7 +839,8 @@
     <!-- ── Toast (replaces native alert()) ── -->
     <Transition name="toast-fade">
       <div v-if="toastState.show" :class="['toast', toastState.type]" role="status">
-        <span class="toast-icon">{{ toastState.type === 'error' ? '⚠️' : '✅' }}</span>
+        <PhWarning v-if="toastState.type === 'error'" class="toast-icon" weight="regular" aria-hidden="true" />
+        <PhCheckCircle v-else class="toast-icon" weight="regular" aria-hidden="true" />
         {{ toastState.message }}
       </div>
     </Transition>
@@ -833,6 +853,14 @@ import { ref, reactive, computed, inject, onMounted, onUnmounted, nextTick, watc
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import { materialIconSvg } from '@/utils/materialIcons'
+import {
+  PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
+  PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhMagnifyingGlass, PhGift,
+  PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
+  PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
+  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin,
+} from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { paginationLabel } from '@/utils/admin/paginationLabel.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
@@ -1009,34 +1037,34 @@ let refreshTimer = null
 
 // ── Config ──
 const navItems = [
-  { id: 'dashboard',    icon: '📊', label: 'Dashboard' },
-  { id: 'transactions', icon: '📑', label: 'Transactions' },
-  { id: 'users',        icon: '👥', label: 'Users' },
-  { id: 'machines',     icon: '🏭', label: 'Machines' },
-  { id: 'sessions',     icon: '📋', label: 'Sessions' },
-  { id: 'detection',    icon: '🔍', label: 'Detection Review' },
-  { id: 'rewards',      icon: '🎁', label: 'Rewards' },
+  { id: 'dashboard',    icon: PhChartBar,        label: 'Dashboard' },
+  { id: 'transactions', icon: PhReceipt,         label: 'Transactions' },
+  { id: 'users',        icon: PhUsers,           label: 'Users' },
+  { id: 'machines',     icon: PhFactory,         label: 'Machines' },
+  { id: 'sessions',     icon: PhClipboardText,   label: 'Sessions' },
+  { id: 'detection',    icon: PhMagnifyingGlass, label: 'Detection Review' },
+  { id: 'rewards',      icon: PhGift,            label: 'Rewards' },
 ]
 
 const binTypes = [
-  { id: 'aluminum', icon: '🥫', label: 'Aluminum' },
-  { id: 'plastic',  icon: '🧴', label: 'Plastic'  },
-  { id: 'glass',    icon: '🍶', label: 'Glass'    },
-  { id: 'paper',    icon: '📄', label: 'Paper'    },
+  { id: 'aluminum', label: 'Aluminum' },
+  { id: 'plastic',  label: 'Plastic'  },
+  { id: 'glass',    label: 'Glass'    },
+  { id: 'paper',    label: 'Paper'    },
 ]
 
 const rewardMaterials = [
-  { key: 'plastic',  icon: '🧴', label: 'Plastic Bottle (pts)' },
-  { key: 'aluminum', icon: '🥫', label: 'Aluminium Can (pts)'  },
-  { key: 'paper',    icon: '📄', label: 'Paper / Card (pts)'   },
-  { key: 'glass',    icon: '🍶', label: 'Glass Bottle (pts)'   },
+  { key: 'plastic',  label: 'Plastic Bottle (pts)' },
+  { key: 'aluminum', label: 'Aluminium Can (pts)'  },
+  { key: 'paper',    label: 'Paper / Card (pts)'   },
+  { key: 'glass',    label: 'Glass Bottle (pts)'   },
 ]
 
 const overviewMaterials = [
-  { key: 'plastic',  icon: '🧴', label: 'PLASTIC BOTTLES'   },
-  { key: 'aluminum', icon: '🥫', label: 'ALUMINIUM CANS'    },
-  { key: 'paper',    icon: '📄', label: 'PAPER / RECYCLABLES'},
-  { key: 'glass',    icon: '🍶', label: 'GLASS BOTTLES'     },
+  { key: 'plastic',  label: 'PLASTIC BOTTLES'   },
+  { key: 'aluminum', label: 'ALUMINIUM CANS'    },
+  { key: 'paper',    label: 'PAPER / RECYCLABLES'},
+  { key: 'glass',    label: 'GLASS BOTTLES'     },
 ]
 
 const COMPARTMENTS = { plastic: 'A', aluminum: 'B', paper: 'C', glass: 'D' }
@@ -1045,12 +1073,12 @@ const COMPARTMENTS = { plastic: 'A', aluminum: 'B', paper: 'C', glass: 'D' }
 const currentNavItem = computed(() => navItems.find(n => n.id === activeTab.value))
 
 const statsCards = computed(() => [
-  { icon: '👥', label: 'Total Users',    value: statsData.value.total_users    || 0 },
-  { icon: '🏭', label: 'Machines',       value: statsData.value.total_machines || 0 },
-  { icon: '🔄', label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
-  { icon: '🌍', label: 'Carbon Saved (kg)', value: statsData.value.total_carbon_saved_kg || 0 },
-  { icon: '⭐', label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
-  { icon: '📦', label: 'Transactions',  value: statsData.value.total_transactions || 0 },
+  { icon: PhUsers,           label: 'Total Users',    value: statsData.value.total_users    || 0 },
+  { icon: PhFactory,         label: 'Machines',       value: statsData.value.total_machines || 0 },
+  { icon: PhArrowsClockwise, label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
+  { icon: PhGlobe,           label: 'Carbon Saved (kg)', value: statsData.value.total_carbon_saved_kg || 0 },
+  { icon: PhStar,            label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
+  { icon: PhPackage,         label: 'Transactions',  value: statsData.value.total_transactions || 0 },
 ])
 
 const activeMachines = computed(() =>
@@ -1093,9 +1121,6 @@ const systemStatusItems = computed(() => {
 })
 
 // ── Helpers ──
-function getMaterialIcon(mat) {
-  return { aluminum: '🥫', plastic: '🧴', glass: '🍶', paper: '📄' }[mat] || '♻️'
-}
 
 function getBinClass(level) {
   if (level >= 90) return 'bin-danger'
@@ -1816,7 +1841,7 @@ onUnmounted(() => {
   padding: 16px 12px;
   border-bottom: 1px solid var(--border);
 }
-.sidebar-logo { font-size: 20px; flex-shrink: 0; }
+.sidebar-logo { font-size: 20px; flex-shrink: 0; color: var(--accent-green); }
 .sidebar-title { font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 1; white-space: nowrap; overflow: hidden; }
 .collapse-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
 
@@ -1899,13 +1924,13 @@ onUnmounted(() => {
   border-radius: var(--radius); padding: 14px;
   display: flex; align-items: center; gap: 12px;
 }
-.stat-icon { font-size: 24px; }
+.stat-icon { font-size: 24px; color: var(--accent-blue); }
 .stat-value { font-size: 22px; font-weight: 800; color: var(--text-primary); }
 .stat-label { font-size: 12px; color: var(--text-muted); }
 
 /* Machine Status card */
 .machine-status-card { align-items: flex-start; }
-.ms-icon { font-size: 26px; margin-bottom: 6px; }
+.ms-icon { font-size: 26px; margin-bottom: 6px; color: var(--accent-blue); }
 .ms-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; margin-bottom: 6px; }
 .ms-status { font-size: 20px; font-weight: 900; letter-spacing: .04em; margin-bottom: 4px; }
 .ms-online  { color: #00e5a0; }
@@ -1961,7 +1986,7 @@ onUnmounted(() => {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 12px; padding: 20px 22px;
 }
-.ov-icon { font-size: 26px; margin-bottom: 10px; }
+.ov-icon { width: 26px; height: 26px; margin-bottom: 10px; color: var(--text-secondary); }
 .ov-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; margin-bottom: 8px; }
 .ov-count { font-size: 36px; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
 .ov-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
@@ -2028,9 +2053,9 @@ onUnmounted(() => {
 .ctrl-card:hover { background: var(--bg-secondary); border-color: var(--accent-blue); }
 .ctrl-card-icon { font-size: 20px; padding: 8px; border-radius: 8px; flex-shrink: 0; }
 .ctrl-blue   { background: rgba(78, 110, 242, 0.15); }
-.ctrl-yellow { background: rgba(245, 158, 11, 0.15); }
-.ctrl-purple { background: rgba(168, 85, 247, 0.15); }
-.ctrl-gray   { background: rgba(107, 114, 128, 0.15); }
+.ctrl-yellow { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+.ctrl-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+.ctrl-gray   { background: rgba(107, 114, 128, 0.15); color: var(--text-secondary); }
 .ctrl-card-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
 
 /* ── Reward Config ── */
@@ -2091,6 +2116,7 @@ onUnmounted(() => {
 }
 
 .item-cell { display: flex; align-items: center; gap: 6px; }
+.material-icon-inline { width: 1em; height: 1em; vertical-align: -0.125em; flex-shrink: 0; }
 
 .filter-select {
   padding: 7px 10px; background: var(--bg-hover);
@@ -2105,7 +2131,7 @@ onUnmounted(() => {
   background: rgba(239, 68, 68, 0.05);
   border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;
 }
-.alert-icon { font-size: 18px; }
+.alert-icon { font-size: 18px; color: var(--accent-red); }
 .alert-bins { display: flex; gap: 6px; flex-wrap: wrap; margin-left: 4px; }
 .bin-tag {
   background: var(--accent-red); color: white;
@@ -2129,6 +2155,9 @@ onUnmounted(() => {
   color: var(--text-primary); vertical-align: middle;
 }
 .data-table tr:hover td { background: var(--bg-hover); }
+.verified-icon { font-size: 16px; vertical-align: -3px; }
+.verified-yes { color: var(--accent-green); }
+.verified-no  { color: var(--accent-red); }
 .empty-cell { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
 
 /* ── Users ── */
@@ -2276,7 +2305,7 @@ onUnmounted(() => {
   overflow: hidden; display: flex; flex-direction: column;
 }
 .detection-thumb { width: 100%; height: 160px; object-fit: cover; background: var(--bg-hover); }
-.detection-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; }
+.detection-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--text-muted); }
 .detection-meta { padding: 10px 12px; }
 .detection-badges { display: flex; gap: 6px; margin-bottom: 6px; }
 .detection-result { font-size: 13px; font-weight: 600; }
@@ -2326,7 +2355,8 @@ onUnmounted(() => {
   font-size: 13.5px; z-index: 300; max-width: 90vw;
 }
 .toast.error { border-left-color: var(--accent-red); }
-.toast-icon { font-size: 14px; flex-shrink: 0; }
+.toast-icon { font-size: 14px; flex-shrink: 0; color: var(--accent-green); }
+.toast.error .toast-icon { color: var(--accent-red); }
 .toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, 8px); }
 @media (prefers-reduced-motion: reduce) {
