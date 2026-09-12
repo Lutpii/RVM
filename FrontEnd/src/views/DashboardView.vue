@@ -34,7 +34,7 @@
           <!-- Bin levels -->
           <div class="bin-levels">
             <div v-for="bin in binTypes" :key="bin.id" class="bin-item">
-              <svg v-if="materialIconSvg(bin.id)" class="bin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(bin.id)"></svg>
+              <svg v-if="materialIconSvg(bin.id)" class="bin-icon" role="img" :aria-label="$t('session.' + bin.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(bin.id)"></svg>
               <div class="bin-bar-wrap">
                 <div class="bin-bar">
                   <div :class="['bin-fill', getBinClass(machine[bin.id + '_level'])]"
