@@ -4,9 +4,9 @@
       <div class="auth-header">
         <RouterLink to="/" class="back-btn">←</RouterLink>
         <div class="header-controls">
-          <button class="ctrl-btn" @click="toggleTheme()">
-            <PhSun v-if="theme === 'dark'" weight="regular" />
-            <PhMoon v-else weight="regular" />
+          <button class="ctrl-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('auth.switchToLight') : $t('auth.switchToDark')">
+            <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
+            <PhMoon v-else weight="regular" aria-hidden="true" />
           </button>
           <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
         </div>
@@ -45,9 +45,9 @@
             <label>{{ $t('auth.password') }}</label>
             <div class="password-wrap">
               <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')" autocomplete="new-password" required minlength="8" />
-              <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">
-                <PhEyeSlash v-if="showPwd" weight="regular" />
-                <PhEye v-else weight="regular" />
+              <button type="button" class="pwd-toggle" @click="showPwd = !showPwd" :aria-label="showPwd ? $t('auth.hidePassword') : $t('auth.showPassword')">
+                <PhEyeSlash v-if="showPwd" weight="regular" aria-hidden="true" />
+                <PhEye v-else weight="regular" aria-hidden="true" />
               </button>
             </div>
             <span class="field-hint">{{ $t('auth.passwordHint') }}</span>
@@ -334,7 +334,7 @@ onMounted(() => {
 }
 .form-group input:focus { border-color: var(--accent-blue); }
 .password-wrap { position: relative; }
-.pwd-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; }
+.pwd-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-secondary); }
 .password-strength { margin-bottom: 12px; }
 .strength-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 4px; }
 .strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; }

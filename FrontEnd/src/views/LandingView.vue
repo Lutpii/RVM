@@ -3,9 +3,9 @@
     <!-- Header gradient -->
     <div class="rvm-header">
       <div class="header-controls">
-        <button class="theme-btn" @click="toggleTheme()">
-          <PhSun v-if="theme === 'dark'" weight="regular" />
-          <PhMoon v-else weight="regular" />
+        <button class="theme-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('landing.switchToLight') : $t('landing.switchToDark')">
+          <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
+          <PhMoon v-else weight="regular" aria-hidden="true" />
         </button>
         <button class="lang-btn" @click="toggleLang">
           {{ locale === 'en' ? 'MY' : 'EN' }}

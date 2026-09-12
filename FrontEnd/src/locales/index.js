@@ -33,6 +33,8 @@ export const messages = {
       startBtn: 'Click to Start Recycling',
       step: 'Landing',
       status: 'Welcome',
+      switchToLight: 'Switch to light mode',
+      switchToDark: 'Switch to dark mode',
     },
     auth: {
       loginTitle: 'Login to RVM',
@@ -71,6 +73,10 @@ export const messages = {
       strengthWeak: 'Weak',
       strengthMedium: 'Medium',
       strengthStrong: 'Strong',
+      switchToLight: 'Switch to light mode',
+      switchToDark: 'Switch to dark mode',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
     },
     dashboard: {
       title: 'My Dashboard',
@@ -349,6 +355,8 @@ export const messages = {
       startBtn: 'Klik untuk Mula Kitar Semula',
       step: 'Laman Utama',
       status: 'Selamat Datang',
+      switchToLight: 'Tukar ke mod cerah',
+      switchToDark: 'Tukar ke mod gelap',
     },
     auth: {
       loginTitle: 'Log Masuk ke RVM',
@@ -387,6 +395,10 @@ export const messages = {
       strengthWeak: 'Lemah',
       strengthMedium: 'Sederhana',
       strengthStrong: 'Kuat',
+      switchToLight: 'Tukar ke mod cerah',
+      switchToDark: 'Tukar ke mod gelap',
+      showPassword: 'Tunjukkan kata laluan',
+      hidePassword: 'Sembunyikan kata laluan',
     },
     dashboard: {
       title: 'Papan Pemuka Saya',

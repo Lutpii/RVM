@@ -5,9 +5,9 @@
       <div class="auth-header">
         <RouterLink to="/" class="back-btn">←</RouterLink>
         <div class="header-controls">
-          <button class="ctrl-btn" @click="toggleTheme()">
-            <PhSun v-if="theme === 'dark'" weight="regular" />
-            <PhMoon v-else weight="regular" />
+          <button class="ctrl-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('auth.switchToLight') : $t('auth.switchToDark')">
+            <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
+            <PhMoon v-else weight="regular" aria-hidden="true" />
           </button>
           <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
         </div>
@@ -51,9 +51,9 @@
             <div class="password-wrap">
               <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')"
                 autocomplete="current-password" required />
-              <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">
-                <PhEyeSlash v-if="showPwd" weight="regular" />
-                <PhEye v-else weight="regular" />
+              <button type="button" class="pwd-toggle" @click="showPwd = !showPwd" :aria-label="showPwd ? $t('auth.hidePassword') : $t('auth.showPassword')">
+                <PhEyeSlash v-if="showPwd" weight="regular" aria-hidden="true" />
+                <PhEye v-else weight="regular" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -366,6 +366,7 @@ async function handleVerifyOtp() {
   border: none;
   cursor: pointer;
   font-size: 16px;
+  color: var(--text-secondary);
 }
 
 .error-msg {
