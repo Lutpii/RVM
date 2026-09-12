@@ -66,3 +66,9 @@ Thumbs.db
 *.suo
 *.user
 .claude/
+
+# ========================
+# Graphify (local knowledge-graph tooling)
+# ========================
+graphify-out/cost.json
+graphify-out/cache/
