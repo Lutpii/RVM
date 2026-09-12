@@ -117,6 +117,11 @@ onMounted(() => {
   --shadow:        0 4px 24px rgba(0,0,0,0.1);
 }
 
+/* Config-only for now (Phase 1-2) — nothing sets this yet. Wiring it up
+   later means giving `theme` (see setTheme() above, ~line 60) a real
+   'kiosk' value: setting document.documentElement's data-theme attribute
+   directly won't work, for the same reason documented there — App.vue's
+   own :data-theme="theme" binding on .app-root always wins. */
 [data-theme="kiosk"] {
   --bg-primary: #000000;
 }
