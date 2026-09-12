@@ -5,13 +5,13 @@
       <div class="points-bg"></div>
       <p class="points-label">{{ $t('dashboard.totalPoints') }}</p>
       <div class="points-number">{{ auth.user?.total_points || 0 }}</div>
-      <p class="points-sub">♻️ {{ $t('dashboard.keepRecycling') }}</p>
-      <p class="carbon-sub">🌍 {{ $t('dashboard.carbonSaved', { value: (auth.user?.total_carbon_saved || 0).toFixed(2) }) }}</p>
+      <p class="points-sub"><PhRecycle class="points-sub-icon" weight="regular" /> {{ $t('dashboard.keepRecycling') }}</p>
+      <p class="carbon-sub"><PhGlobe class="points-sub-icon" weight="regular" /> {{ $t('dashboard.carbonSaved', { value: (auth.user?.total_carbon_saved || 0).toFixed(2) }) }}</p>
     </div>
 
     <!-- Nearby machines map -->
     <div class="section-pad">
-      <h3 class="section-title">📍 {{ $t('dashboard.nearbyMachines') }}</h3>
+      <h3 class="section-title"><PhMapPin class="points-sub-icon" weight="regular" /> {{ $t('dashboard.nearbyMachines') }}</h3>
 
       <div class="map-placeholder" v-if="loadingMachines">
         <div class="map-loading">
@@ -26,7 +26,7 @@
             <div class="machine-dot" :class="machine.status === 'active' ? 'dot-green' : 'dot-red'"></div>
             <div class="machine-info">
               <strong>{{ machine.name }}</strong>
-              <span>📍 {{ machine.location_name }}</span>
+              <span><PhMapPin class="points-sub-icon" weight="regular" /> {{ machine.location_name }}</span>
             </div>
             <span class="machine-code">{{ machine.machine_code }}</span>
           </div>
@@ -34,7 +34,7 @@
           <!-- Bin levels -->
           <div class="bin-levels">
             <div v-for="bin in binTypes" :key="bin.id" class="bin-item">
-              <span class="bin-icon">{{ bin.icon }}</span>
+              <svg v-if="materialIconSvg(bin.id)" class="bin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(bin.id)"></svg>
               <div class="bin-bar-wrap">
                 <div class="bin-bar">
                   <div :class="['bin-fill', getBinClass(machine[bin.id + '_level'])]"
@@ -54,10 +54,10 @@
                     <div ref="mapContainer" class="leaflet-map"></div>
                     <span class="map-attribution">© OpenStreetMap contributors</span>
                   </template>
-                  <div v-else class="no-map">📍 {{ $t('dashboard.locationNotSet') }}</div>
+                  <div v-else class="no-map"><PhMapPin class="points-sub-icon" weight="regular" /> {{ $t('dashboard.locationNotSet') }}</div>
                 </div>
                 <a :href="getDirectionsUrl(machine)" target="_blank" class="directions-btn">
-                  🗺️ {{ $t('dashboard.getDirections') }}
+                  <PhMapTrifold class="points-sub-icon" weight="regular" /> {{ $t('dashboard.getDirections') }}
                 </a>
               </div>
             </div>
@@ -79,6 +79,8 @@ import 'leaflet/dist/leaflet.css'
 import markerIconUrl from 'leaflet/dist/images/marker-icon.png'
 import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
+import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold } from '@phosphor-icons/vue'
+import { materialIconSvg } from '@/utils/materialIcons'
 
 // Leaflet's default marker icon paths are relative and break once bundled by Vite.
 // Icon.Default._getIconUrl always prepends an auto-detected imagePath even when the
@@ -98,10 +100,10 @@ const loadingMachines    = ref(true)
 const selectedMachineId  = ref(null)
 
 const binTypes = [
-  { id: 'aluminum', icon: '🥫' },
-  { id: 'plastic',  icon: '🧴' },
-  { id: 'glass',    icon: '🍶' },
-  { id: 'paper',    icon: '📄' },
+  { id: 'aluminum' },
+  { id: 'plastic' },
+  { id: 'glass' },
+  { id: 'paper' },
 ]
 
 function getBinClass(level) {
@@ -197,6 +199,7 @@ onMounted(async () => {
 
 .section-pad { padding: 20px 16px 0; }
 .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; }
+.points-sub-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
 
 /* Machines */
 .map-placeholder { background: var(--bg-card); border-radius: var(--radius); padding: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
@@ -224,7 +227,7 @@ onMounted(async () => {
 /* Bin levels */
 .bin-levels { display: flex; flex-direction: column; gap: 6px; }
 .bin-item { display: flex; align-items: center; gap: 8px; }
-.bin-icon { font-size: 14px; width: 20px; text-align: center; }
+.bin-icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-secondary); }
 .bin-bar-wrap { flex: 1; display: flex; align-items: center; gap: 6px; }
 .bin-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .bin-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
