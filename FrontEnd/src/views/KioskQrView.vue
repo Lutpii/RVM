@@ -279,6 +279,7 @@ onBeforeUnmount(() => {
 .kiosk-qr {
   min-height: 100vh;
   background: var(--bg-primary);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
