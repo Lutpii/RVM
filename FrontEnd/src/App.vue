@@ -2,7 +2,11 @@
   <div :class="['app-root', theme]" :data-theme="theme">
     <AppNav v-if="showAppNav" />
     <main :class="['app-content', { 'app-content-with-nav': showAppNav }]">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
     </main>
 
     <Transition name="toast-fade">
