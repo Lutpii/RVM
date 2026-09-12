@@ -1,7 +1,9 @@
 <template>
   <div class="scan-page">
     <div class="scan-header">
-      <RouterLink to="/dashboard" class="back-btn">← {{ $t('nav.dashboard') }}</RouterLink>
+      <RouterLink to="/dashboard" class="back-btn" :aria-label="$t('nav.dashboard')">
+        <PhArrowLeft weight="bold" aria-hidden="true" />
+      </RouterLink>
       <h2>{{ $t('scan.title') }}</h2>
       <p>{{ $t('scan.subtitle') }}</p>
     </div>
@@ -132,7 +134,7 @@ import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore }  from '@/store/rvm'
-import { PhCamera, PhLink, PhWarning, PhX } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhCamera, PhLink, PhWarning, PhX } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import jsQR from 'jsqr'
 
@@ -381,7 +383,17 @@ onUnmounted(() => {
 <style scoped>
 .scan-page { min-height: 100vh; background: var(--bg-primary); display: flex; flex-direction: column; }
 .scan-header { background: var(--grad-header); padding: 20px 20px 24px; text-align: center; position: relative; }
-.back-btn { position: absolute; left: 16px; top: 18px; color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; }
+.back-btn {
+  position: absolute; left: 16px; top: 16px;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.2);
+  border-radius: 50%;
+  color: white; font-size: 18px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.back-btn:hover, .back-btn:focus-visible { background: rgba(0,0,0,0.32); }
 .scan-header h2 { color: white; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .scan-header p  { color: rgba(255,255,255,0.8); font-size: 13px; }
 .scan-body { flex: 1; padding: 24px 16px; }
