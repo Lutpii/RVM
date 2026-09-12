@@ -1922,27 +1922,34 @@ onUnmounted(() => {
 .nav-icon { font-size: 18px; flex-shrink: 0; }
 .nav-label { white-space: nowrap; overflow: hidden; }
 
+/* min-width on the two inner blocks below keeps them at their natural
+   expanded-width layout even while the 60px-collapsed .sidebar clips them
+   via this overflow:hidden — without it, the text inside would reflow
+   (wrap) at the narrower width, changing .sidebar-footer's own height and
+   making it visibly shift position (opacity alone doesn't stop that). */
 .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); overflow: hidden; }
-.admin-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.admin-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; min-width: 190px; }
 .admin-avatar {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--grad-header); color: white;
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 14px; flex-shrink: 0;
 }
-.admin-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.admin-role { font-size: 11px; color: var(--text-muted); }
-.sidebar-actions { display: flex; flex-direction: column; gap: 6px; }
+.admin-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.admin-role { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.sidebar-actions { display: flex; flex-direction: column; gap: 6px; min-width: 190px; }
 .ctrl-btn {
   background: var(--bg-card); border: 1px solid var(--border);
   color: var(--text-secondary); padding: 6px 10px;
   border-radius: 6px; cursor: pointer; font-size: 12px;
   text-decoration: none; text-align: center;
+  white-space: nowrap;
 }
 .logout-btn-sm {
   background: none; border: 1px solid var(--accent-red);
   color: var(--accent-red); padding: 6px 10px;
   border-radius: 6px; cursor: pointer; font-size: 12px;
+  white-space: nowrap;
 }
 
 /* ── Main ── */
