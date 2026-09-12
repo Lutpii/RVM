@@ -4,7 +4,10 @@
       <div class="auth-header">
         <RouterLink to="/" class="back-btn">←</RouterLink>
         <div class="header-controls">
-          <button class="ctrl-btn" @click="toggleTheme()">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
+          <button class="ctrl-btn" @click="toggleTheme()">
+            <PhSun v-if="theme === 'dark'" weight="regular" />
+            <PhMoon v-else weight="regular" />
+          </button>
           <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
         </div>
         <h1>{{ $t('app.name') }}</h1>
@@ -42,7 +45,10 @@
             <label>{{ $t('auth.password') }}</label>
             <div class="password-wrap">
               <input v-model="form.password" :type="showPwd ? 'text' : 'password'" :placeholder="$t('auth.password')" autocomplete="new-password" required minlength="8" />
-              <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">{{ showPwd ? '🙈' : '👁' }}</button>
+              <button type="button" class="pwd-toggle" @click="showPwd = !showPwd">
+                <PhEyeSlash v-if="showPwd" weight="regular" />
+                <PhEye v-else weight="regular" />
+              </button>
             </div>
             <span class="field-hint">{{ $t('auth.passwordHint') }}</span>
           </div>
@@ -99,6 +105,7 @@ import { ref, computed, inject, onMounted, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
+import { PhSun, PhMoon, PhEye, PhEyeSlash } from '@phosphor-icons/vue'
 
 const router      = useRouter()
 const route       = useRoute()
