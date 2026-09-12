@@ -73,7 +73,7 @@
         <div v-else-if="rvm.currentStep === 'conveyor'" key="conveyor" class="step-content centered">
           <div class="conveyor-wrap">
             <div class="conveyor-track">
-              <div class="conveyor-item" :style="{ left: conveyorPos + '%' }">
+              <div class="conveyor-item" :style="{ transform: `translateY(-50%) translateX(${conveyorPos}%)` }">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="conveyor-item-icon">
                   <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/>
                   <path d="M3 8.5v7L12 20l9-4.5v-7"/>
@@ -176,27 +176,6 @@
           <p class="step-sub" v-if="aiConfidence > 0">{{ $t('session.confidence', { percent: (aiConfidence * 100).toFixed(1) }) }}</p>
         </div>
 
-        <!-- VALIDATE step - Invalid -->
-        <div v-else-if="rvm.currentStep === 'validate_fail'" key="validate_fail" class="step-content centered">
-          <div class="result-icon invalid">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-          </div>
-          <h2 class="step-status red">{{ $t('session.itemInvalid') }}</h2>
-          <div v-if="annotatedImageDataUrl" class="bbox-preview">
-            <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
-          </div>
-          <div class="result-box">
-            <p>{{ $t('session.selected') }}: <strong>{{ rvm.selectedMaterial }}</strong></p>
-            <p>
-              {{ $t('session.aiDetected') }}:
-              <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
-              <strong>{{ aiDetected }}</strong>
-            </p>
-            <p v-if="aiConfidence > 0">{{ $t('session.confidence', { percent: (aiConfidence * 100).toFixed(1) }) }}</p>
-            <p class="deduction-text">{{ $t('session.deductionNotice', { points: 10 }) }}</p>
-          </div>
-        </div>
-
         <!-- WEIGH step (points calculation — no physical scale on this hardware) -->
         <div v-else-if="rvm.currentStep === 'weigh'" key="weigh" class="step-content centered">
           <div class="points-icon">
@@ -268,25 +247,6 @@
           </div>
         </div>
 
-        <!-- REJECTED step -->
-        <div v-else-if="rvm.currentStep === 'rejected'" key="rejected" class="step-content centered">
-          <div class="result-icon invalid pulse-red">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-          </div>
-          <h2 class="step-status red">{{ $t('session.itemRejected') }}</h2>
-          <div class="result-box">
-            <p>{{ $t('session.selected') }}: {{ rvm.selectedMaterial }}</p>
-            <p>
-              {{ $t('session.aiDetected') }}:
-              <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
-              {{ aiDetected }}
-            </p>
-            <p class="deduction-text">{{ $t('session.pointsDeducted') }}: -{{ deductedPoints }}</p>
-          </div>
-          <p class="reject-hint">{{ $t('session.selectCorrectType') }}</p>
-          <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">{{ $t('session.tryAgain') }}</button>
-        </div>
-
       </Transition>
     </div>
 
@@ -327,7 +287,6 @@ const itemPoints     = ref(0)
 const itemCarbon     = ref(0)
 const aiDetected     = ref('')
 const aiConfidence   = ref(0)
-const deductedPoints = ref(10)
 
 // Small per-class icons shown next to a material name. Fixed lookup only —
 // never interpolates the detected string into markup — so it's safe to render via v-html.
@@ -505,8 +464,8 @@ const currentStepLabel = computed(() => {
   const map = {
     selection: t('session.stepSelection'), bin_check: t('session.stepBinCheck'), lid: t('session.stepLid'),
     insert: t('session.stepInsert'), conveyor: t('session.stepConveyor'), camera: t('session.stepCamera'),
-    classify: t('session.stepClassify'), validate_ok: t('session.stepWeight'), validate_fail: t('session.stepValidate'),
-    weigh: t('session.stepWeight'), complete: t('session.stepComplete'), rejected: t('session.stepRejected'), item_unknown: t('session.stepItemUnknown'),
+    classify: t('session.stepClassify'), validate_ok: t('session.stepWeight'),
+    weigh: t('session.stepWeight'), complete: t('session.stepComplete'), item_unknown: t('session.stepItemUnknown'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -603,7 +562,6 @@ async function simulateInsert() {
   await delay(1950)
 
   // Step 1: Classify — AI detects the material type (no pre-selection)
-  let isValid = true
   try {
     const res = await rvm.processStep('classify', {
       material_selected: rvm.selectedMaterial,
@@ -616,8 +574,6 @@ async function simulateInsert() {
     // non-mocked call guests make, so its carbon_saved is captured here as a
     // fallback. A logged-in complete() response overrides this below.
     itemCarbon.value = res.carbon_saved ?? 0
-    // Valid unless the AI couldn't recognize the material at all
-    isValid = aiDetected.value !== 'unknown'
     rvm.setSelectedMaterial(aiDetected.value)
     if (capturedImageDataUrl.value && res.all_predictions?.length) {
       annotatedImageDataUrl.value = await drawBoundingBoxes(capturedImageDataUrl.value, res.all_predictions)
@@ -625,7 +581,6 @@ async function simulateInsert() {
   } catch {
     aiDetected.value = rvm.selectedMaterial || 'plastic'
     rvm.setSelectedMaterial(aiDetected.value)
-    isValid = true
   }
 
   if (aiDetected.value === 'unknown') {
@@ -641,64 +596,45 @@ async function simulateInsert() {
     return
   }
 
-  if (isValid) {
-    rvm.setStep('validate_ok')
-    await delay(1950)
-    rvm.setStep('weigh')
+  // Every other detected material is valid — this flow has no manual
+  // pre-selection step to mismatch against, so "unknown" (handled above)
+  // is the only invalidity condition there is.
+  rvm.setStep('validate_ok')
+  await delay(1950)
+  rvm.setStep('weigh')
 
-    // Step 2: Weigh — fallback to random weight if API fails
-    try {
-      const weighRes = await rvm.processStep('weigh', {
-        material_selected: rvm.selectedMaterial,
-        ai_detected_type: aiDetected.value,
-      })
-      itemWeight.value = weighRes.weight_grams || (Math.floor(Math.random() * 400) + 50)
-      itemPoints.value = weighRes.points_earned || randomPointsFallback()
-    } catch {
-      itemWeight.value = Math.floor(Math.random() * 400) + 50
-      itemPoints.value = randomPointsFallback()
-    }
-    await delay(2600)
-
-    // Step 3: Complete — always call API to save to DB
-    try {
-      const completeRes = await rvm.processStep('complete', {
-        material_selected: rvm.selectedMaterial,
-        ai_detected_type: aiDetected.value,
-        ai_confidence: aiConfidence.value,
-        weight_grams: itemWeight.value,
-        points_earned: itemPoints.value,
-      })
-      displayPoints.value = completeRes.total_points || (displayPoints.value + itemPoints.value)
-      // completeRes has no carbon_saved for guests (mocked, no DB record) —
-      // keep the value classify() already set instead of zeroing it out.
-      itemCarbon.value = completeRes.carbon_saved ?? itemCarbon.value
-    } catch {
-      displayPoints.value += itemPoints.value
-    }
-    rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: itemWeight.value, points: itemPoints.value, isValid: true, carbon: itemCarbon.value })
-    rvm.setStep('complete')
-  } else {
-    // Show mismatch screen first so user sees what AI detected
-    rvm.setStep('validate_fail')
-    await delay(2600)
-
-    // Step 3b: Reject — always call API to save deduction
-    try {
-      const rejectRes = await rvm.processStep('reject', {
-        material_selected: rvm.selectedMaterial,
-        ai_detected_type: aiDetected.value,
-        ai_confidence: aiConfidence.value,
-      })
-      deductedPoints.value = rejectRes.points_deducted || 10
-      displayPoints.value  = rejectRes.total_points || (displayPoints.value - deductedPoints.value)
-    } catch {
-      deductedPoints.value = 10
-      displayPoints.value  = Math.max(0, displayPoints.value - 10)
-    }
-    rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: 0, points: 0, isValid: false, deducted: deductedPoints.value, carbon: 0 })
-    rvm.setStep('rejected')
+  // Step 2: Weigh — fallback to random weight if API fails
+  try {
+    const weighRes = await rvm.processStep('weigh', {
+      material_selected: rvm.selectedMaterial,
+      ai_detected_type: aiDetected.value,
+    })
+    itemWeight.value = weighRes.weight_grams || (Math.floor(Math.random() * 400) + 50)
+    itemPoints.value = weighRes.points_earned || randomPointsFallback()
+  } catch {
+    itemWeight.value = Math.floor(Math.random() * 400) + 50
+    itemPoints.value = randomPointsFallback()
   }
+  await delay(2600)
+
+  // Step 3: Complete — always call API to save to DB
+  try {
+    const completeRes = await rvm.processStep('complete', {
+      material_selected: rvm.selectedMaterial,
+      ai_detected_type: aiDetected.value,
+      ai_confidence: aiConfidence.value,
+      weight_grams: itemWeight.value,
+      points_earned: itemPoints.value,
+    })
+    displayPoints.value = completeRes.total_points || (displayPoints.value + itemPoints.value)
+    // completeRes has no carbon_saved for guests (mocked, no DB record) —
+    // keep the value classify() already set instead of zeroing it out.
+    itemCarbon.value = completeRes.carbon_saved ?? itemCarbon.value
+  } catch {
+    displayPoints.value += itemPoints.value
+  }
+  rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: itemWeight.value, points: itemPoints.value, isValid: true, carbon: itemCarbon.value })
+  rvm.setStep('complete')
 }
 
 async function confirmEndSession() {
@@ -862,16 +798,16 @@ onMounted(() => {
 .scan-corners::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
 .scan-line {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #4e9ef5, transparent);
+  inset: 12px;
+  background-image: linear-gradient(90deg, transparent, #4e9ef5, transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
   animation: scan-move 2s ease-in-out infinite;
 }
 @keyframes scan-move {
-  0%   { top: 12px; }
-  50%  { top: calc(100% - 14px); }
-  100% { top: 12px; }
+  0%   { background-position: 0 0%; }
+  50%  { background-position: 0 100%; }
+  100% { background-position: 0 0%; }
 }
 .camera-countdown {
   position: absolute;
@@ -1031,8 +967,9 @@ onMounted(() => {
 .conveyor-item {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
-  transition: left 0.1s linear;
+  left: 0;
+  width: 100%;
+  transition: transform 0.1s linear;
   line-height: 1;
 }
 .conveyor-item-icon {
@@ -1090,7 +1027,6 @@ onMounted(() => {
 }
 .result-icon svg { width: 36px; height: 36px; }
 .result-icon.valid   { background: #22c55e; color: white; }
-.result-icon.invalid { background: #ef4444; color: white; }
 
 /* Item being returned to the user (unrecognized item) */
 .return-anim {
@@ -1137,20 +1073,6 @@ onMounted(() => {
   100% { transform: scale(1.5); opacity: 0; }
 }
 
-.pulse-red { position: relative; }
-.pulse-red::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(239,68,68,0.6);
-  animation: pulse-red 1.5s ease-out 2;
-}
-@keyframes pulse-red {
-  0%   { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
 .step-status { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
 .step-status.green { color: var(--accent-green); }
 .step-status.red   { color: var(--accent-red); }
@@ -1169,7 +1091,6 @@ onMounted(() => {
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
 .carbon-text    { color: var(--accent-blue) !important; font-weight: 700; font-size: 14px !important; }
 .carbon-icon    { vertical-align: -2px; margin-right: 2px; }
-.deduction-text { color: var(--accent-red) !important; font-weight: 700; font-size: 16px !important; }
 
 .points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }
 
@@ -1235,8 +1156,6 @@ onMounted(() => {
   vertical-align: -2px;
   margin-right: 4px;
 }
-.reject-hint { color: var(--text-muted); font-size: 13px; margin: 8px 0; }
-
 .rvm-footer {
   background: var(--bg-card);
   border-top: 1px solid var(--border);

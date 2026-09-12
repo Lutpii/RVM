@@ -23,7 +23,7 @@ export const useRvmStore = defineStore('rvm', () => {
   const steps = [
     'landing', 'qr', 'selection', 'bin_check', 'lid',
     'insert', 'conveyor', 'camera', 'classify', 'validate',
-    'weigh', 'complete', 'rejected', 'summary'
+    'weigh', 'complete', 'summary'
   ]
 
   function setStep(step) { currentStep.value = step }
@@ -72,9 +72,6 @@ export const useRvmStore = defineStore('rvm', () => {
     }
     if (stepName === 'complete') {
       return { success: true, points_earned: payload.points_earned || 0, total_points: 0, step: 'complete' }
-    }
-    if (stepName === 'reject') {
-      return { success: false, points_deducted: 0, total_points: 0, step: 'rejected' }
     }
     return { success: true }
   }
@@ -156,10 +153,8 @@ export const useRvmStore = defineStore('rvm', () => {
       // No points/DB record for guests, but the physical servo still sorts
       // the item — fire-and-forget so a slow/offline AI service can't stall
       // the on-screen flow.
-      if (stepName === 'complete' || stepName === 'reject') {
-        const material = stepName === 'reject'
-          ? 'reject'
-          : (payload.ai_detected_type || payload.material_selected || 'reject')
+      if (stepName === 'complete') {
+        const material = payload.ai_detected_type || payload.material_selected || 'reject'
         api.post('/hardware/sort', { material }).catch(() => {})
       }
       return _guestMockStep(stepName, payload)
@@ -173,7 +168,6 @@ export const useRvmStore = defineStore('rvm', () => {
       classify: '/transactions/classify',
       weigh:    '/transactions/weigh',
       complete: '/transactions/complete',
-      reject:   '/transactions/reject',
     }
 
     const endpoint = endpoints[stepName]
