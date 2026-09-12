@@ -6,7 +6,7 @@
       <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
 
       <div class="welcome-icon-float">
-        <div class="welcome-icon">♻️</div>
+        <PhRecycle class="welcome-icon" weight="regular" />
       </div>
 
       <h1 class="welcome-title">{{ $t('welcome.greeting') }} <span class="user-name">{{ userName }}</span>!</h1>
@@ -24,6 +24,7 @@ import { computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
+import { PhRecycle } from '@phosphor-icons/vue'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -90,7 +91,10 @@ onMounted(() => {
 }
 
 .welcome-icon-float {
-  animation: float 4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  /* Bounded, not infinite — this screen auto-redirects after 3s (see
+     onMounted below), so 2 cycles (8s) is a safety ceiling in case that
+     redirect is ever delayed, not the expected play time. */
+  animation: float 4s cubic-bezier(0.45, 0, 0.55, 1) 2;
 }
 
 .welcome-icon {
@@ -135,13 +139,15 @@ onMounted(() => {
 
 .progress-fill {
   height: 100%;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
   background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
   border-radius: 2px;
   animation: fillProgress 3s linear forwards;
 }
 
 @keyframes fillProgress {
-  to { width: 100%; }
+  to { transform: scaleX(1); }
 }
 </style>
