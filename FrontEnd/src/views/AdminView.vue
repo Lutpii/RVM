@@ -884,6 +884,19 @@ const toggleTheme = inject('toggleTheme')
 const activeTab = ref('dashboard')
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
+
+// Nothing else ties mobileSidebarOpen to actual viewport width — if it's
+// left true (e.g. opened the drawer on a phone, then rotated to landscape
+// or resized past the 768px breakpoint) it stays true at desktop width too,
+// where `.sidebar-footer`'s `v-if="!sidebarCollapsed || mobileSidebarOpen"`
+// then renders full content into a `.sidebar.collapsed` 60px-wide rail —
+// the footer overflows/wraps instead of collapsing. Reset on resize so a
+// desktop-width view can never inherit a stale mobile-open state.
+function handleResize() {
+  if (window.innerWidth > 768 && mobileSidebarOpen.value) {
+    mobileSidebarOpen.value = false
+  }
+}
 const lastUpdated = ref('—')
 const isLive = ref(true)
 
@@ -1791,6 +1804,7 @@ function updateClock() {
 onMounted(async () => {
   updateClock()
   clockTimer = setInterval(updateClock, 1000)
+  window.addEventListener('resize', handleResize)
   // Load all tabs in parallel so switching is instant and machines are available immediately
   await Promise.allSettled([
     fetchTabData('dashboard', true),
@@ -1809,6 +1823,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
   if (clockTimer) clearInterval(clockTimer)
+  window.removeEventListener('resize', handleResize)
   releaseThumbnails()
 })
 </script>
