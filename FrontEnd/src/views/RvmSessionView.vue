@@ -284,7 +284,7 @@
             <p class="deduction-text">{{ $t('session.pointsDeducted') }}: -{{ deductedPoints }}</p>
           </div>
           <p class="reject-hint">{{ $t('session.selectCorrectType') }}</p>
-          <button class="recycle-btn" @click="rvm.resetTransaction()">{{ $t('session.tryAgain') }}</button>
+          <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">{{ $t('session.tryAgain') }}</button>
         </div>
 
       </Transition>
