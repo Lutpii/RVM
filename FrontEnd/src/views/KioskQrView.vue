@@ -1,5 +1,5 @@
 <template>
-  <div class="kiosk-qr">
+  <div class="kiosk-qr" data-theme="light">
     <div class="kiosk-bg"></div>
 
     <!-- Header -->
@@ -43,7 +43,7 @@
       </div>
 
       <div class="timer-bar">
-        <div class="timer-fill" :style="{ width: timerPct + '%' }"></div>
+        <div class="timer-fill" :style="{ transform: 'scaleX(' + (timerPct / 100) + ')' }"></div>
       </div>
       <p class="timer-text">{{ $t('kioskQr.expiresIn', { seconds: expiresInSec }) }}</p>
 
@@ -74,7 +74,7 @@
 
     <!-- EXPIRED -->
     <div v-else-if="state === 'expired'" class="qr-content">
-      <div class="expired-icon">⏱</div>
+      <PhHourglass class="expired-icon" weight="regular" />
       <h2 class="qr-title">{{ $t('kioskQr.expired') }}</h2>
       <p class="qr-sub">{{ $t('kioskQr.generatingNew') }}</p>
     </div>
@@ -87,6 +87,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
+import { PhHourglass } from '@phosphor-icons/vue'
 
 const router      = useRouter()
 const route       = useRoute()
@@ -148,7 +149,8 @@ function startPoll() {
 
         // Apply the scanned user's theme for the rest of this kiosk session —
         // default light if they've never set a preference. Landing/QR screens
-        // stay light regardless (they don't use theme variables).
+        // stay light regardless, via their own data-theme="light" attribute
+        // (see .kiosk-qr's root element) — independent of this app-wide theme.
         const scannedTheme = res.data.theme_preference || 'light'
         setTheme(scannedTheme)
 
@@ -276,7 +278,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .kiosk-qr {
   min-height: 100vh;
-  background: #f0f4f8;
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -337,10 +339,10 @@ onBeforeUnmount(() => {
 .qr-title {
   font-size: 36px;
   font-weight: 800;
-  color: #1a202c;
+  color: var(--text-primary);
   margin: 0;
 }
-.qr-title.green { color: #22c55e; }
+.qr-title.green { color: var(--accent-green); }
 .qr-sub {
   font-size: 16px;
   color: rgba(26,32,44,0.6);
@@ -352,7 +354,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 260px;
   height: 260px;
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -373,8 +375,8 @@ onBeforeUnmount(() => {
 }
 .spinner {
   width: 36px; height: 36px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #4e6ef2;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent-blue);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -383,7 +385,7 @@ onBeforeUnmount(() => {
 .corner {
   position: absolute;
   width: 24px; height: 24px;
-  border-color: #4e6ef2;
+  border-color: var(--accent-blue);
   border-style: solid;
   border-width: 0;
 }
@@ -437,8 +439,10 @@ onBeforeUnmount(() => {
 }
 .timer-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4e6ef2, #22c55e);
-  transition: width 1s linear;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+  transition: transform 1s linear;
   border-radius: 2px;
 }
 .timer-text {
@@ -453,13 +457,13 @@ onBeforeUnmount(() => {
   width: 120px; height: 120px;
   border-radius: 50%;
   background: rgba(34,197,94,0.15);
-  border: 3px solid #22c55e;
+  border: 3px solid var(--accent-green);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 40px rgba(34,197,94,0.3);
   animation: pop 0.4s ease;
 }
 @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.success-icon { width: 52px; height: 52px; color: #22c55e; }
+.success-icon { width: 52px; height: 52px; color: var(--accent-green); }
 .redirect-hint { color: rgba(26,32,44,0.4); font-size: 14px; margin: 0; }
 
 /* Expired */
