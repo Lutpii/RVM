@@ -115,6 +115,10 @@ onMounted(() => {
   --shadow:        0 4px 24px rgba(0,0,0,0.1);
 }
 
+[data-theme="kiosk"] {
+  --bg-primary: #000000;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
