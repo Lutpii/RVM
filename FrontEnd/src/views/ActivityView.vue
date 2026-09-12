@@ -13,7 +13,12 @@
     </div>
     <div v-else class="activity-list">
       <div v-for="entry in feed" :key="entry.id" class="activity-item">
-        <div class="activity-icon">{{ entry.kind === 'session' ? '♻️' : (entry.kind === 'redemption' ? '🎁' : (entry.pointsChange > 0 ? '➕' : '➖')) }}</div>
+        <div class="activity-icon" aria-hidden="true">
+          <PhRecycle v-if="entry.kind === 'session'" class="icon-session" weight="regular" />
+          <PhGift v-else-if="entry.kind === 'redemption'" class="icon-redemption" weight="regular" />
+          <PhPlus v-else-if="entry.pointsChange > 0" class="icon-positive" weight="regular" />
+          <PhMinus v-else class="icon-negative" weight="regular" />
+        </div>
         <div class="activity-info">
           <span class="activity-desc">{{ entry.kind === 'session' ? $t('activity.session', { code: entry.description }) : (entry.kind === 'redemption' ? $t('activity.redemption', { name: entry.description }) : entry.description) }}</span>
           <span class="activity-time">{{ formatTime(entry.timestamp) }}</span>
@@ -28,6 +33,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { PhGift, PhMinus, PhPlus, PhRecycle } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import { mergeActivityFeed } from '@/utils/activityFeed'
 
@@ -95,7 +101,11 @@ onMounted(async () => {
 .activity-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
 .activity-item:last-child { border-bottom: none; }
-.activity-icon { font-size: 16px; flex-shrink: 0; }
+.activity-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-secondary); }
+.activity-icon :deep(svg) { display: block; width: 100%; height: 100%; }
+.icon-session, .icon-positive { color: var(--accent-green); }
+.icon-redemption { color: var(--accent-blue); }
+.icon-negative { color: var(--accent-red); }
 .activity-info { flex: 1; display: flex; flex-direction: column; }
 .activity-desc { font-size: 13px; color: var(--text-primary); }
 .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }

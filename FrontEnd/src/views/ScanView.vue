@@ -57,7 +57,8 @@
             <span class="pulse-dot"></span> {{ $t('scan.cameraActiveStatus') }}
           </div>
           <div class="camera-status error" v-if="cameraError">
-            ⚠ {{ cameraError }}
+            <PhWarning class="status-icon" weight="regular" aria-hidden="true" />
+            {{ cameraError }}
           </div>
 
           <button
@@ -66,10 +67,14 @@
             @click="toggleCamera"
             :disabled="loading"
           >
-            <span v-if="!cameraActive">📷 {{ $t('scan.openCamera') }}</span>
-            <span v-else>✕ {{ $t('scan.closeCamera') }}</span>
+            <PhCamera v-if="!cameraActive" class="button-icon" weight="regular" aria-hidden="true" />
+            <PhX v-else class="button-icon" weight="regular" aria-hidden="true" />
+            {{ cameraActive ? $t('scan.closeCamera') : $t('scan.openCamera') }}
           </button>
-          <p v-else class="insecure-note">📷 {{ $t('scan.cameraUnavailable') }}</p>
+          <p v-else class="insecure-note">
+            <PhCamera class="note-icon" weight="regular" aria-hidden="true" />
+            {{ $t('scan.cameraUnavailable') }}
+          </p>
         </div>
 
         <div class="divider-text">{{ $t('scan.orManual') }}</div>
@@ -91,7 +96,8 @@
 
         <button class="scan-btn" @click="handleScan" :disabled="loading || !token">
           <span v-if="loading" class="spinner"></span>
-          {{ loading ? $t('scan.connecting') : `🔗 ${$t('scan.connectBtn')}` }}
+          <PhLink v-else class="button-icon" weight="regular" aria-hidden="true" />
+          {{ loading ? $t('scan.connecting') : $t('scan.connectBtn') }}
         </button>
 
         <!-- Machine list shortcut
@@ -126,6 +132,7 @@ import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore }  from '@/store/rvm'
+import { PhCamera, PhLink, PhWarning, PhX } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import jsQR from 'jsqr'
 
@@ -451,6 +458,7 @@ onUnmounted(() => {
   margin: 8px 0 4px;
 }
 .camera-status.error { color: var(--accent-red); }
+.status-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 .pulse-dot {
   width: 8px; height: 8px; border-radius: 50%;
@@ -469,11 +477,13 @@ onUnmounted(() => {
   border-radius: var(--radius);
   color: var(--accent-blue);
   font-size: 14px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
   transition: background 0.2s, color 0.2s;
 }
 .camera-btn:hover { background: var(--accent-blue); color: white; }
 .camera-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.insecure-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; }
+.button-icon, .note-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.insecure-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; display: flex; align-items: center; gap: 6px; }
 
 .scan-hint { text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; }
 .token-input-wrap { margin-bottom: 12px; }

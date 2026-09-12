@@ -18,7 +18,9 @@
     <div v-else class="reward-grid">
       <div v-for="item in filteredItems" :key="item.id" class="reward-card">
         <img v-if="item.image_url" :src="item.image_url" class="reward-image" alt="" />
-        <div v-else class="reward-image reward-image-placeholder">🎁</div>
+        <div v-else class="reward-image reward-image-placeholder">
+          <PhGift weight="regular" aria-hidden="true" />
+        </div>
         <div class="reward-body">
           <span v-if="item.category" class="reward-category">{{ item.category }}</span>
           <strong class="reward-name">{{ item.name }}</strong>
@@ -57,6 +59,7 @@
 
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
+import { PhGift } from '@phosphor-icons/vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
@@ -143,7 +146,8 @@ onMounted(fetchItems)
 .reward-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .reward-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
 .reward-image { width: 100%; height: 100px; object-fit: cover; }
-.reward-image-placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; background: var(--bg-hover); }
+.reward-image-placeholder { display: flex; align-items: center; justify-content: center; color: var(--accent-blue); background: var(--bg-hover); }
+.reward-image-placeholder :deep(svg) { width: 32px; height: 32px; }
 .reward-body { padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .reward-category { font-size: 10px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; }
 .reward-name { font-size: 13px; color: var(--text-primary); }
