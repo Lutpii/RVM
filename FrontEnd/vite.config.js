@@ -18,6 +18,7 @@ export default defineConfig({
             if (id.includes('chart.js') || id.includes('vue-chartjs')) return 'vendor-charts'
             if (id.includes('jsqr') || id.includes('/qrcode/')) return 'vendor-qr'
             if (id.includes('axios')) return 'vendor-axios'
+            if (id.includes('@phosphor-icons')) return 'vendor-icons'
             return 'vendor'
           }
         },

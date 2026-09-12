@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@phosphor-icons/vue": "^2.2.1",
     "@vueuse/core": "^10.7.0",
     "axios": "^1.6.2",
     "chart.js": "^4.5.1",

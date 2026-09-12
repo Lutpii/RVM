@@ -1,9 +1,11 @@
+import { PhHouse, PhScroll, PhCamera, PhGift, PhUser } from '@phosphor-icons/vue'
+
 export const NAV_ITEMS = [
-  { key: 'home',     labelKey: 'appNav.home',     icon: '🏠', routeName: 'dashboard' },
-  { key: 'activity', labelKey: 'appNav.activity', icon: '📜', routeName: 'activity' },
-  { key: 'scan',     labelKey: 'appNav.scan',     icon: '📷', routeName: 'scan', isCenter: true },
-  { key: 'rewards',  labelKey: 'appNav.rewards',  icon: '🎁', routeName: 'rewards' },
-  { key: 'account',  labelKey: 'appNav.account',  icon: '👤', routeName: 'settings' },
+  { key: 'home',     labelKey: 'appNav.home',     icon: PhHouse,  routeName: 'dashboard' },
+  { key: 'activity', labelKey: 'appNav.activity', icon: PhScroll, routeName: 'activity' },
+  { key: 'scan',     labelKey: 'appNav.scan',     icon: PhCamera, routeName: 'scan', isCenter: true },
+  { key: 'rewards',  labelKey: 'appNav.rewards',  icon: PhGift,   routeName: 'rewards' },
+  { key: 'account',  labelKey: 'appNav.account',  icon: PhUser,   routeName: 'settings' },
 ]
 
 export function resolveActiveNavKey(routeName) {

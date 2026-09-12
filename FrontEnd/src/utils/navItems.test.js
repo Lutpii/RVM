@@ -10,6 +10,13 @@ describe('NAV_ITEMS', () => {
     const centerItems = NAV_ITEMS.filter((i) => i.isCenter)
     expect(centerItems.map((i) => i.key)).toEqual(['scan'])
   })
+
+  it('gives every item a Phosphor icon component, not an emoji string', () => {
+    NAV_ITEMS.forEach((item) => {
+      expect(typeof item.icon).not.toBe('string')
+      expect(item.icon).toBeTruthy()
+    })
+  })
 })
 
 describe('resolveActiveNavKey', () => {
