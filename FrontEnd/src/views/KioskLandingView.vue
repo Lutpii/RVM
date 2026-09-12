@@ -1,9 +1,9 @@
 <template>
-  <div class="kiosk-landing">
+  <div class="kiosk-landing" data-theme="kiosk">
     <div class="kiosk-bg"></div>
 
     <div class="kiosk-content">
-      <div class="rvm-logo">♻️</div>
+      <PhRecycle class="rvm-logo" weight="regular" />
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
       <p class="rvm-subtitle">{{ $t('kioskLanding.subtitle') }}</p>
 
@@ -12,8 +12,8 @@
         <span>{{ machineName }} &nbsp;·&nbsp; {{ machineLocation || $t('kioskLanding.loading') }}</span>
       </div>
 
-      <button class="start-btn" @click="goToQr">
-        <span class="start-icon">▶</span>
+      <button class="start-btn min-h-kiosk-touch" @click="goToQr">
+        <PhPlay class="start-icon" weight="fill" />
         {{ $t('dashboard.startRecycling') }}
       </button>
 
@@ -31,6 +31,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
+import { PhRecycle, PhPlay } from '@phosphor-icons/vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -65,7 +66,7 @@ function goToQr() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f0f4f8;
+  background: var(--bg-primary);
   position: relative;
   overflow: hidden;
 }
@@ -90,24 +91,27 @@ function goToQr() {
 .rvm-logo {
   font-size: 96px;
   filter: drop-shadow(0 0 40px rgba(34,197,94,0.5));
-  animation: float 4s ease-in-out infinite;
+  /* One-shot entrance instead of a continuous float — this screen can sit
+     idle for a long time between customers, so no animation should run
+     indefinitely on it (spec §6). */
+  animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-@keyframes float {
-  0%,100% { transform: translateY(0); }
-  50%      { transform: translateY(-14px); }
+@keyframes pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
 
 .rvm-title {
   font-size: 52px;
   font-weight: 800;
-  color: #1a202c;
+  color: var(--text-primary);
   letter-spacing: -1px;
   margin: 0;
 }
 
 .rvm-subtitle {
   font-size: 22px;
-  color: rgba(26,32,44,0.55);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -115,11 +119,11 @@ function goToQr() {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 999px;
   padding: 8px 20px;
-  color: rgba(26,32,44,0.7);
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
@@ -127,16 +131,18 @@ function goToQr() {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
-  animation: blink 1.5s ease-in-out infinite;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  /* Static, not blinking — an infinitely-looping animation on a screen
+     that can idle indefinitely violates the Pi motion budget (spec §6).
+     The badge text next to it already conveys live status; the color
+     alone still reads as "online". */
 }
-@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 
 .start-btn {
   margin-top: 20px;
   padding: 22px 64px;
-  background: linear-gradient(135deg, #4e6ef2, #22c55e);
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
   color: white;
   border: none;
   border-radius: 16px;
@@ -147,11 +153,10 @@ function goToQr() {
   align-items: center;
   gap: 14px;
   box-shadow: 0 8px 40px rgba(78,110,242,0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s;
 }
 .start-btn:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 12px 50px rgba(78,110,242,0.55);
 }
 
 .start-icon {
@@ -159,7 +164,7 @@ function goToQr() {
 }
 
 .hint-text {
-  color: rgba(26,32,44,0.4);
+  color: var(--text-muted);
   font-size: 15px;
   margin: 0;
 }
@@ -171,7 +176,7 @@ function goToQr() {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: rgba(26,32,44,0.35);
+  color: var(--text-muted);
   font-size: 13px;
 }
 
