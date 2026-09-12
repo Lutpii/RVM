@@ -27,7 +27,7 @@
 
     <!-- Progress bar -->
     <div class="progress-bar">
-      <div class="progress-fill" :style="{ width: progressWidth + '%' }"></div>
+      <div class="progress-fill" :style="{ transform: 'scaleX(' + (progressWidth / 100) + ')' }"></div>
     </div>
 
     <!-- Main Step Content -->
@@ -64,7 +64,7 @@
           </div>
           <h2 class="step-status">{{ $t('session.readyAccept') }}</h2>
           <p class="step-sub">{{ $t('session.insertItem') }}</p>
-          <button class="simulate-btn" @click="simulateInsert">
+          <button class="simulate-btn min-h-kiosk-touch" @click="simulateInsert">
             {{ $t('session.simulateBtn') }}
           </button>
         </div>
@@ -225,14 +225,14 @@
               {{ rvm.selectedMaterial }}
             </p>
             <p class="earned-text">{{ rvm.isGuest ? $t('session.pointsDonatedLabel') : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
-            <p class="carbon-text">🌍 {{ $t('session.carbonSavedLabel') }}: {{ itemCarbon.toFixed(3) }} kg CO2</p>
+            <p class="carbon-text"><PhGlobe class="carbon-icon" weight="regular" /> {{ $t('session.carbonSavedLabel') }}: {{ itemCarbon.toFixed(3) }} kg CO2</p>
           </div>
           <div class="action-buttons">
-            <button class="end-btn" @click="confirmEndSession">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
               {{ $t('session.endSession') }}
             </button>
-            <button class="recycle-btn" @click="rvm.resetTransaction()">
+            <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
               {{ $t('session.recycleAnother') }}
             </button>
@@ -257,11 +257,11 @@
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
-            <button class="end-btn" @click="confirmEndSession">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
               {{ $t('session.endSession') }}
             </button>
-            <button class="recycle-btn" @click="rvm.resetTransaction()">
+            <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
               {{ $t('session.retryAnother') }}
             </button>
@@ -304,6 +304,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
 import api, { setKioskToken } from '@/services/api'
+import { PhGlobe } from '@phosphor-icons/vue'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -782,8 +783,7 @@ onMounted(() => {
   gap: 12px;
 }
 .badge {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.22);
   border-radius: 10px;
   padding: 8px 14px;
   flex: 1;
@@ -799,8 +799,10 @@ onMounted(() => {
 }
 .progress-fill {
   height: 100%;
+  width: 100%;
+  transform-origin: left;
   background: var(--grad-header);
-  transition: width 0.6s ease;
+  transition: transform 0.6s ease;
 }
 
 .rvm-body {
@@ -1121,11 +1123,33 @@ onMounted(() => {
   100% { transform: translateY(24px);  opacity: 0; }
 }
 
-.success-pulse { animation: success-pulse 2s ease-in-out 3; }
-@keyframes success-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow:0 0 0 20px transparent; } }
+.success-pulse { position: relative; }
+.success-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(34,197,94,0.6);
+  animation: success-pulse 2s ease-out 3;
+}
+@keyframes success-pulse {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
 
-.pulse-red { animation: pulse-red 1.5s ease-in-out 2; }
-@keyframes pulse-red { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow:0 0 0 20px transparent; } }
+.pulse-red { position: relative; }
+.pulse-red::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(239,68,68,0.6);
+  animation: pulse-red 1.5s ease-out 2;
+}
+@keyframes pulse-red {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
 
 .step-status { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
 .step-status.green { color: var(--accent-green); }
@@ -1144,6 +1168,7 @@ onMounted(() => {
 .result-box p { color: var(--text-secondary); font-size: 14px; margin: 4px 0; }
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
 .carbon-text    { color: var(--accent-blue) !important; font-weight: 700; font-size: 14px !important; }
+.carbon-icon    { vertical-align: -2px; margin-right: 2px; }
 .deduction-text { color: var(--accent-red) !important; font-weight: 700; font-size: 16px !important; }
 
 .points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }
