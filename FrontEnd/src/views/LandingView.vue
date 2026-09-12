@@ -4,7 +4,8 @@
     <div class="rvm-header">
       <div class="header-controls">
         <button class="theme-btn" @click="toggleTheme()">
-          {{ theme === 'dark' ? '☀️' : '🌙' }}
+          <PhSun v-if="theme === 'dark'" weight="regular" />
+          <PhMoon v-else weight="regular" />
         </button>
         <button class="lang-btn" @click="toggleLang">
           {{ locale === 'en' ? 'MY' : 'EN' }}
@@ -23,28 +24,28 @@
     <div class="rvm-body">
       <div class="landing-content">
         <!-- Recycle icon -->
-        <div class="recycle-icon">♻️</div>
+        <PhRecycle class="recycle-icon" weight="regular" />
 
         <h2 class="welcome-title">{{ $t('landing.welcome') }}</h2>
         <p class="welcome-sub">{{ $t('landing.subtitle') }}</p>
 
         <div class="features-list">
           <div class="feature-item">
-            <span class="feature-icon">♻️</span>
+            <PhRecycle class="feature-icon" weight="regular" />
             <span>{{ $t('landing.feature1') }}</span>
           </div>
           <div class="feature-item">
-            <span class="feature-icon">🏆</span>
+            <PhTrophy class="feature-icon" weight="regular" />
             <span>{{ $t('landing.feature2') }}</span>
           </div>
           <div class="feature-item">
-            <span class="feature-icon">⚖️</span>
+            <PhScales class="feature-icon" weight="regular" />
             <span>{{ $t('landing.feature3') }}</span>
           </div>
         </div>
 
         <button class="start-btn" @click="goToScan">
-          <span class="btn-icon">♻</span>
+          <PhRecycle class="btn-icon" weight="regular" />
           {{ $t('landing.startBtn') }}
         </button>
 
@@ -70,6 +71,7 @@
 import { inject } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { PhSun, PhMoon, PhRecycle, PhTrophy, PhScales } from '@phosphor-icons/vue'
 
 const router   = useRouter()
 const theme    = inject('theme')
