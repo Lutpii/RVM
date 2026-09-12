@@ -7,7 +7,11 @@
       <div class="avatar-large">{{ auth.user?.name?.charAt(0)?.toUpperCase() }}</div>
       <div class="profile-meta">
         <strong>{{ auth.user?.name }}</strong>
-        <span class="role-badge">{{ auth.user?.role === 'admin' ? '⚙️ Admin' : '♻️ Recycler' }}</span>
+        <span class="role-badge">
+          <PhGear v-if="auth.user?.role === 'admin'" class="role-icon" weight="regular" aria-hidden="true" />
+          <PhRecycle v-else class="role-icon" weight="regular" aria-hidden="true" />
+          {{ auth.user?.role === 'admin' ? 'Admin' : 'Recycler' }}
+        </span>
       </div>
     </div>
 
@@ -16,7 +20,7 @@
       <button v-for="tab in tabs" :key="tab.key"
         :class="['tab-btn', activeTab === tab.key ? 'tab-active' : '']"
         @click="activeTab = tab.key">
-        <span class="tab-icon">{{ tab.icon }}</span>
+        <component :is="tab.icon" class="tab-icon" weight="regular" aria-hidden="true" />
         <span class="tab-label">{{ $t(tab.label) }}</span>
       </button>
     </div>
@@ -147,14 +151,14 @@
 
       <div class="rate-row">
         <div class="rate-card">
-          <span class="rate-icon">💱</span>
+          <PhArrowsLeftRight class="rate-icon" weight="regular" aria-hidden="true" />
           <div class="rate-info">
             <strong>{{ $t('settings.conversionRate') }}</strong>
             <span>{{ conversionRate.points }} pts = RM {{ conversionRate.rm.toFixed(2) }}</span>
           </div>
         </div>
         <div class="rate-card">
-          <span class="rate-icon">💰</span>
+          <PhCoins class="rate-icon" weight="regular" aria-hidden="true" />
           <div class="rate-info">
             <strong>{{ $t('settings.minRedeem') }}</strong>
             <span>{{ minRedeem }} pts min</span>
@@ -182,7 +186,10 @@
             <span class="preview-lbl">{{ $t('settings.cash') }}</span>
           </div>
         </div>
-        <div v-if="redeemMsg" :class="['msg', redeemSuccess ? 'msg-ok' : 'msg-err']">{{ redeemMsg }}</div>
+        <div v-if="redeemMsg" :class="['msg', redeemSuccess ? 'msg-ok' : 'msg-err']">
+          <PhCheckCircle v-if="redeemSuccess" class="msg-icon" weight="regular" aria-hidden="true" />
+          {{ redeemMsg }}
+        </div>
         <button class="save-btn full-btn redeem-btn"
           @click="redeemNow"
           :disabled="redeemPoints < minRedeem || redeeming || redeemPoints > (auth.user?.total_points || 0)">
@@ -233,10 +240,10 @@
         <p class="form-hint">{{ $t('settings.themeHint') }}</p>
         <div class="toggle-group">
           <button :class="['toggle-opt', theme === 'light' ? 'toggle-active' : '']" @click="setTheme('light')">
-            ☀️ {{ $t('settings.themeLight') }}
+            <PhSun class="toggle-icon" weight="regular" aria-hidden="true" /> {{ $t('settings.themeLight') }}
           </button>
           <button :class="['toggle-opt', theme === 'dark' ? 'toggle-active' : '']" @click="setTheme('dark')">
-            🌙 {{ $t('settings.themeDark') }}
+            <PhMoon class="toggle-icon" weight="regular" aria-hidden="true" /> {{ $t('settings.themeDark') }}
           </button>
         </div>
       </div>
@@ -319,6 +326,11 @@ import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import {
+  PhUser, PhGift, PhPalette, PhLock,
+  PhGear, PhRecycle, PhArrowsLeftRight, PhCoins,
+  PhSun, PhMoon, PhCheckCircle,
+} from '@phosphor-icons/vue'
 
 const router      = useRouter()
 const auth        = useAuthStore()
@@ -329,10 +341,10 @@ const { locale, t } = useI18n()
 const activeTab = ref('profile')
 
 const tabs = [
-  { key: 'profile',     icon: '👤', label: 'settings.tabProfile'     },
-  { key: 'rewards',     icon: '💎', label: 'settings.tabRewards'     },
-  { key: 'preferences', icon: '🎨', label: 'settings.tabPreferences' },
-  { key: 'account',     icon: '🔐', label: 'settings.tabAccount'     },
+  { key: 'profile',     icon: PhUser,    label: 'settings.tabProfile'     },
+  { key: 'rewards',     icon: PhGift,    label: 'settings.tabRewards'     },
+  { key: 'preferences', icon: PhPalette, label: 'settings.tabPreferences' },
+  { key: 'account',     icon: PhLock,    label: 'settings.tabAccount'     },
 ]
 
 // ── Profile ───────────────────────────────────────────────────────────────────
@@ -456,7 +468,7 @@ async function redeemNow() {
     const res = await api.post('/user/redeem', { points: redeemPoints.value })
     if (res.data.success) {
       redeemSuccess.value = true
-      redeemMsg.value = `✅ RM ${pointsToMoney(redeemPoints.value)} ${t('settings.redeemOk')}`
+      redeemMsg.value = `RM ${pointsToMoney(redeemPoints.value)} ${t('settings.redeemOk')}`
       auth.updatePoints((auth.user?.total_points || 0) - redeemPoints.value)
       redeemPoints.value = minRedeem
       await loadRedemptionHistory()
@@ -562,7 +574,8 @@ onMounted(async () => {
 }
 .profile-meta { text-align: center; position: relative; z-index: 1; }
 .profile-meta strong { display: block; color: white; font-size: 18px; font-weight: 700; }
-.role-badge { color: rgba(255,255,255,0.85); font-size: 13px; }
+.role-badge { color: rgba(255,255,255,0.85); font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+.role-icon { font-size: 14px; }
 
 /* ── Tabs ── */
 .tabs {
@@ -667,6 +680,7 @@ onMounted(async () => {
 .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; }
 .msg-ok  { background: rgba(34,197,94,0.15); color: var(--accent-green); border: 1px solid rgba(34,197,94,0.3); }
 .msg-err { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+.msg-icon { font-size: 14px; vertical-align: -2px; margin-right: 4px; }
 
 /* ── Points card ── */
 .points-card {
@@ -686,7 +700,7 @@ onMounted(async () => {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 12px;
 }
-.rate-icon { font-size: 20px; }
+.rate-icon { font-size: 20px; color: var(--text-secondary); }
 .rate-info { display: flex; flex-direction: column; }
 .rate-info strong { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
 .rate-info span { font-size: 13px; color: var(--text-primary); font-weight: 700; margin-top: 2px; }
@@ -712,6 +726,7 @@ onMounted(async () => {
   cursor: pointer; transition: all 0.2s; text-align: center;
 }
 .toggle-opt:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+.toggle-icon { font-size: 16px; vertical-align: -3px; margin-right: 2px; }
 .toggle-active { background: var(--accent-blue) !important; border-color: var(--accent-blue) !important; color: white !important; }
 
 /* ── Danger zone ── */
