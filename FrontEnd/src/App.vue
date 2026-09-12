@@ -117,13 +117,28 @@ onMounted(() => {
   --shadow:        0 4px 24px rgba(0,0,0,0.1);
 }
 
-/* Config-only for now (Phase 1-2) — nothing sets this yet. Wiring it up
-   later means giving `theme` (see setTheme() above, ~line 60) a real
-   'kiosk' value: setting document.documentElement's data-theme attribute
-   directly won't work, for the same reason documented there — App.vue's
-   own :data-theme="theme" binding on .app-root always wins. */
+/* Kiosk-exclusive views (KioskLandingView, and KioskQrView in a later
+   phase) opt in by setting data-theme="kiosk" directly on their own root
+   element — not via `theme`/setTheme() or document.documentElement (see
+   the trap documented above, ~line 60: App.vue's own :data-theme="theme"
+   binding on .app-root always wins over anything set higher up the DOM).
+   A direct match on a deeper element beats an inherited value regardless
+   of the ancestor's own specificity, so this sidesteps that trap entirely.
+   Pinned as a complete dark palette (not just --bg-primary) so this stays
+   self-contained and can't be undercut by whatever theme .app-root
+   currently has — GoodbyeView.vue's kiosk-reset path forces the app-wide
+   theme to 'light' on every session end, which would otherwise leak into
+   any --text-* or --bg-* variable this block left unpinned. */
 [data-theme="kiosk"] {
-  --bg-primary: #000000;
+  --bg-primary:    #000000;
+  --bg-secondary:  #161b22;
+  --bg-card:       #1c2333;
+  --bg-hover:      #21262d;
+  --text-primary:  #e6edf3;
+  --text-secondary:#8b949e;
+  --text-muted:    #6e7681;
+  --border:        #30363d;
+  --shadow:        0 4px 24px rgba(0,0,0,0.4);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

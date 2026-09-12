@@ -67,6 +67,7 @@ function goToQr() {
   align-items: center;
   justify-content: center;
   background: var(--bg-primary);
+  color: var(--text-primary);
   position: relative;
   overflow: hidden;
 }
@@ -119,6 +120,8 @@ function goToQr() {
   display: flex;
   align-items: center;
   gap: 8px;
+  /* This kiosk surface is always black (data-theme="kiosk" on the view
+     root, above) — white-alpha here is intentional, not an oversight. */
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 999px;
