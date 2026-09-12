@@ -7,7 +7,9 @@
       :to="{ name: item.routeName }"
       :class="['nav-item', item.isCenter ? 'nav-item-center' : '', activeKey === item.key ? 'nav-item-active' : '']"
     >
-      <span class="nav-icon">{{ item.icon }}</span>
+      <span class="nav-icon">
+        <component :is="item.icon" :size="item.isCenter ? 24 : 20" />
+      </span>
       <span class="nav-label">{{ $t(item.labelKey) }}</span>
     </RouterLink>
   </nav>
@@ -42,7 +44,6 @@ const activeKey = computed(() => resolveActiveNavKey(route.name))
   font-size: 10px;
   padding: 4px 2px;
 }
-.nav-icon { font-size: 20px; line-height: 1; }
 .nav-item-active { color: var(--accent-blue); }
 
 /* Raised center Scan button — see spec §4 and the three finance-app references */
@@ -52,7 +53,6 @@ const activeKey = computed(() => resolveActiveNavKey(route.name))
   width: 52px; height: 52px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 24px;
   margin-top: -28px;
   box-shadow: 0 4px 12px rgba(78,110,242,0.5);
   border: 4px solid var(--bg-primary);
@@ -73,7 +73,7 @@ const activeKey = computed(() => resolveActiveNavKey(route.name))
   }
   .nav-item { flex: 0 0 auto; flex-direction: row; gap: 6px; font-size: 13px; }
   .nav-item-center .nav-icon {
-    margin-top: 0; width: 34px; height: 34px; font-size: 16px; border-width: 0;
+    margin-top: 0; width: 34px; height: 34px; border-width: 0;
     box-shadow: none;
   }
 }
