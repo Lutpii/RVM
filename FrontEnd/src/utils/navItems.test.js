@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { NAV_ITEMS, resolveActiveNavKey } from './navItems.js'
+import { PhHouse, PhScroll, PhCamera, PhGift, PhUser } from '@phosphor-icons/vue'
 
 describe('NAV_ITEMS', () => {
   it('has exactly 5 items in Home, Activity, Scan, Rewards, Account order', () => {
@@ -11,11 +12,12 @@ describe('NAV_ITEMS', () => {
     expect(centerItems.map((i) => i.key)).toEqual(['scan'])
   })
 
-  it('gives every item a Phosphor icon component, not an emoji string', () => {
-    NAV_ITEMS.forEach((item) => {
-      expect(typeof item.icon).not.toBe('string')
-      expect(item.icon).toBeTruthy()
-    })
+  it('assigns the correct Phosphor icon component to each nav item', () => {
+    expect(NAV_ITEMS.find((i) => i.key === 'home').icon).toBe(PhHouse)
+    expect(NAV_ITEMS.find((i) => i.key === 'activity').icon).toBe(PhScroll)
+    expect(NAV_ITEMS.find((i) => i.key === 'scan').icon).toBe(PhCamera)
+    expect(NAV_ITEMS.find((i) => i.key === 'rewards').icon).toBe(PhGift)
+    expect(NAV_ITEMS.find((i) => i.key === 'account').icon).toBe(PhUser)
   })
 })
 
