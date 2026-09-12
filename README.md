@@ -10,7 +10,10 @@ A smart recycling management system: **Laravel 10 REST API** + **Vue.js 3 SPA** 
 RVM/
 ├── FrontEnd/                 ← Vue.js 3 SPA (Vite)
 │   ├── src/
-│   │   ├── views/             ← Pages (Landing, Login, Register, Dashboard, Kiosk, Scan, Session, Summary, Admin, Settings)
+│   │   ├── views/             ← Pages (Landing, Login, Register, Dashboard, Activity, Scan, Rewards, Session, Summary, Admin, Settings, Kiosk)
+│   │   ├── components/          ← Shared components (e.g. AppNav.vue, the bottom/top nav)
+│   │   ├── composables/          ← e.g. useLenisScroll.js (route-aware momentum scroll)
+│   │   ├── directives/           ← e.g. scrollReveal.js (the v-reveal scroll-triggered entrance directive)
 │   │   ├── store/              ← Pinia state (auth, rvm)
 │   │   ├── router/              ← Vue Router (hash mode)
 │   │   ├── services/            ← Axios API client
@@ -305,6 +308,9 @@ Defined in `TransactionController::calcPoints()` — every valid recycled item (
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Vue.js 3 + Vite + Vue Router (hash mode) + Pinia + vue-i18n |
+| Styling | Tailwind CSS (utility classes mapped onto the existing CSS-variable dark/light theme) |
+| Icons | Phosphor Icons (`@phosphor-icons/vue`) |
+| Motion | Lenis (momentum scroll, browser-only routes) + native CSS transitions (scroll-reveal, page transitions) — respects `prefers-reduced-motion` throughout |
 | Charts | Chart.js / vue-chartjs |
 | Backend | Laravel 10 (PHP 8.1) |
 | Database | MySQL 8.0 |
