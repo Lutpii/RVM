@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-page">
     <!-- Points hero card -->
-    <div class="points-hero">
+    <div class="points-hero" v-reveal>
       <div class="points-bg"></div>
       <p class="points-label">{{ $t('dashboard.totalPoints') }}</p>
       <div class="points-number">{{ auth.user?.total_points || 0 }}</div>
@@ -21,7 +21,7 @@
       </div>
 
       <div v-else class="machines-list">
-        <div v-for="machine in machines" :key="machine.id" class="machine-card" @click="selectMachine(machine)">
+        <div v-for="(machine, index) in machines" :key="machine.id" class="machine-card" v-reveal="index" @click="selectMachine(machine)">
           <div class="machine-header">
             <div class="machine-dot" :class="machine.status === 'active' ? 'dot-green' : 'dot-red'"></div>
             <div class="machine-info">

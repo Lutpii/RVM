@@ -12,7 +12,7 @@
       <p>{{ $t('activity.empty') }}</p>
     </div>
     <div v-else class="activity-list">
-      <div v-for="entry in feed" :key="entry.id" class="activity-item">
+      <div v-for="(entry, index) in feed" :key="entry.id" class="activity-item" v-reveal="index">
         <div class="activity-icon" aria-hidden="true">
           <PhRecycle v-if="entry.kind === 'session'" class="icon-session" weight="regular" />
           <PhGift v-else-if="entry.kind === 'redemption'" class="icon-redemption" weight="regular" />
