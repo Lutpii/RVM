@@ -16,7 +16,7 @@
     <div v-if="loading" class="loading-placeholder"><div class="spinner-sm"></div></div>
     <div v-else-if="!filteredItems.length" class="empty-state"><p>{{ $t('rewards.empty') }}</p></div>
     <div v-else class="reward-grid">
-      <div v-for="item in filteredItems" :key="item.id" class="reward-card">
+      <div v-for="(item, index) in filteredItems" :key="item.id" class="reward-card" v-reveal="index">
         <img v-if="item.image_url" :src="item.image_url" class="reward-image" alt="" />
         <div v-else class="reward-image reward-image-placeholder">
           <PhGift weight="regular" aria-hidden="true" />
