@@ -38,10 +38,6 @@
             <PhTrophy class="feature-icon" weight="regular" />
             <span>{{ $t('landing.feature2') }}</span>
           </div>
-          <div class="feature-item">
-            <PhScales class="feature-icon" weight="regular" />
-            <span>{{ $t('landing.feature3') }}</span>
-          </div>
         </div>
 
         <button class="start-btn" @click="goToScan">
@@ -54,8 +50,6 @@
           <RouterLink to="/login" class="auth-link">{{ $t('nav.login') }}</RouterLink>
           <span class="divider">|</span>
           <RouterLink to="/register" class="auth-link">{{ $t('nav.register') }}</RouterLink>
-          <span class="divider">|</span>
-          <RouterLink to="/dashboard" class="auth-link">{{ $t('nav.dashboard') }}</RouterLink>
         </div>
       </div>
     </div>
@@ -71,7 +65,7 @@
 import { inject } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { PhSun, PhMoon, PhRecycle, PhTrophy, PhScales } from '@phosphor-icons/vue'
+import { PhSun, PhMoon, PhRecycle, PhTrophy } from '@phosphor-icons/vue'
 
 const router   = useRouter()
 const theme    = inject('theme')

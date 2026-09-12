@@ -372,7 +372,7 @@ onMounted(() => {
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  .auth-page { padding: 12px; align-items: flex-start; padding-top: 20px; }
+  .auth-page { min-height: 100dvh; padding: 12px; align-items: center; }
   .auth-card { border-radius: 12px; }
   .auth-header { padding: 20px 16px 14px; }
   .auth-header h1 { font-size: 20px; }
