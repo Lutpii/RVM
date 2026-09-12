@@ -22,7 +22,7 @@
     <div class="summary-body">
       <!-- Trophy animation — same recycle icon as the kiosk landing screen -->
       <div class="trophy-wrap">
-        <div class="trophy">♻️</div>
+        <PhRecycle class="trophy" weight="regular" />
         <div class="confetti" v-for="i in 12" :key="i" :style="confettiStyle(i)"></div>
       </div>
 
@@ -67,7 +67,7 @@
           <span class="row-value earned">+{{ earnedPoints }}</span>
         </div>
         <div class="summary-row highlight">
-          <span class="row-label">🌍 {{ $t('summary.carbonSaved') }}</span>
+          <span class="row-label"><PhGlobe class="carbon-icon" weight="regular" /> {{ $t('summary.carbonSaved') }}</span>
           <span class="row-value earned">{{ (summary.carbon_saved || 0).toFixed(3) }} kg CO2</span>
         </div>
       </div>
@@ -98,7 +98,7 @@
         </div>
       </div>
 
-      <button class="end-btn" @click="goHome">
+      <button class="end-btn min-h-kiosk-touch" @click="goHome">
         {{ $t('summary.endSessionBtn') }}
       </button>
     </div>
@@ -116,6 +116,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
 import { setKioskToken } from '@/services/api'
+import { PhRecycle, PhGlobe } from '@phosphor-icons/vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -286,8 +287,7 @@ onMounted(async () => {
 }
 
 .badge {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 10px;
   padding: 8px 14px;
   flex: 1;
@@ -439,6 +439,11 @@ onMounted(async () => {
 .row-label {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.carbon-icon {
+  vertical-align: -2px;
+  margin-right: 2px;
 }
 
 .row-value {
