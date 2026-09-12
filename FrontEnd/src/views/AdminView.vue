@@ -885,16 +885,24 @@ const activeTab = ref('dashboard')
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
 
-// Nothing else ties mobileSidebarOpen to actual viewport width — if it's
-// left true (e.g. opened the drawer on a phone, then rotated to landscape
-// or resized past the 768px breakpoint) it stays true at desktop width too,
-// where `.sidebar-footer`'s `v-if="!sidebarCollapsed || mobileSidebarOpen"`
-// then renders full content into a `.sidebar.collapsed` 60px-wide rail —
-// the footer overflows/wraps instead of collapsing. Reset on resize so a
-// desktop-width view can never inherit a stale mobile-open state.
+// Neither ref is tied to actual viewport width on its own, but each only
+// makes sense on one side of the 768px breakpoint:
+// - mobileSidebarOpen left true past 768px makes `.sidebar-footer`'s
+//   `v-if="!sidebarCollapsed || mobileSidebarOpen"` render full content
+//   into a `.sidebar.collapsed` 60px rail — it overflows/wraps instead of
+//   collapsing.
+// - sidebarCollapsed left true at ≤768px width hides the "RVM Admin"
+//   header title (its own plain `v-if="!sidebarCollapsed"`) with the
+//   collapse button now hidden on mobile (collapse-to-icon-rail is a
+//   desktop-only affordance) — nothing on mobile could ever un-hide it.
+// Reset each one on resize past its own boundary so neither can be
+// inherited from the other layout.
 function handleResize() {
   if (window.innerWidth > 768 && mobileSidebarOpen.value) {
     mobileSidebarOpen.value = false
+  }
+  if (window.innerWidth <= 768 && sidebarCollapsed.value) {
+    sidebarCollapsed.value = false
   }
 }
 const lastUpdated = ref('—')
@@ -2432,6 +2440,12 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .mobile-menu-btn { display: block; }
   .mobile-overlay  { display: block; }
+  /* Collapse-to-icon-rail is a desktop affordance — the mobile sidebar is
+     always a full-width drawer (width: 220px !important below), so
+     "collapsing" it here only hid the header title with no other visible
+     effect. Hide the control itself rather than leave a button that does
+     something confusing. */
+  .collapse-btn { display: none; }
   .sidebar {
     position: fixed; left: 0; top: 0; bottom: 0; z-index: 200;
     transform: translateX(-100%); transition: transform .25s;
