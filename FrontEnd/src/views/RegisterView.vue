@@ -1,15 +1,8 @@
 <template>
   <div class="auth-page">
+    <RouterLink to="/" class="page-back" :aria-label="$t('notFound.homeBtn')">←</RouterLink>
     <div class="auth-card">
       <div class="auth-header">
-        <RouterLink to="/" class="back-btn">←</RouterLink>
-        <div class="header-controls">
-          <button class="ctrl-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('auth.switchToLight') : $t('auth.switchToDark')">
-            <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
-            <PhMoon v-else weight="regular" aria-hidden="true" />
-          </button>
-          <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
-        </div>
         <h1>{{ $t('app.name') }}</h1>
         <p>{{ $t('auth.registerTitle') }}</p>
       </div>
@@ -101,18 +94,16 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
-import { PhSun, PhMoon, PhEye, PhEyeSlash } from '@phosphor-icons/vue'
+import { PhEye, PhEyeSlash } from '@phosphor-icons/vue'
 
 const router      = useRouter()
 const route       = useRoute()
 const auth        = useAuthStore()
-const theme       = inject('theme')
-const toggleTheme = inject('toggleTheme')
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 const form    = ref({ name: '', email: '', phone: '', password: '', password_confirmation: '' })
 const loading = ref(false)
@@ -133,11 +124,6 @@ function clearDraft() {
 watch(() => [form.value.name, form.value.email, form.value.phone], ([name, email, phone]) => {
   sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ name, email, phone }))
 })
-
-function toggleLang() {
-  locale.value = locale.value === 'en' ? 'my' : 'en'
-  localStorage.setItem('rvm_lang', locale.value)
-}
 
 const passwordStrength = computed(() => {
   const p = form.value.password
@@ -284,6 +270,7 @@ onMounted(() => {
 <style scoped>
 .auth-page {
   min-height: 100vh;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -307,12 +294,21 @@ onMounted(() => {
   position: relative;
   text-align: center;
 }
-.back-btn { position: absolute; left: 16px; top: 16px; color: rgba(255,255,255,0.8); text-decoration: none; font-size: 14px; }
-.header-controls { position: absolute; right: 16px; top: 12px; display: flex; gap: 6px; }
-.ctrl-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 16px; cursor: pointer; font-size: 12px; }
 .auth-header h1 { color: white; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
 .auth-header p  { color: rgba(255,255,255,0.85); font-size: 14px; }
 .auth-body { padding: 24px 20px; box-sizing: border-box; }
+.page-back {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: 10;
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-primary); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); text-decoration: none; font-size: 20px;
+}
+.page-back:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
 .google-btn {
   width: 100%; padding: 12px; background: var(--bg-card);
   border: 1px solid var(--border); border-radius: var(--radius);
@@ -372,16 +368,17 @@ onMounted(() => {
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  .auth-page { min-height: 100dvh; padding: 12px; align-items: center; }
-  .auth-card { border-radius: 12px; }
-  .auth-header { padding: 20px 16px 14px; }
+  .auth-page { min-height: 100dvh; padding: 20px 16px; align-items: flex-start; box-sizing: border-box; }
+  .auth-card { max-width: 380px; margin-block: auto; border-radius: 16px; }
+  .auth-header { padding: 22px 20px 16px; }
   .auth-header h1 { font-size: 20px; }
-  .auth-body { padding: 16px; }
+  .auth-body { padding: 20px; }
   .otp-input { font-size: 18px !important; letter-spacing: 4px; }
 }
 
 @media (max-width: 360px) {
-  .auth-page { padding: 8px; }
+  .auth-page { padding: 16px 12px; }
+  .auth-body { padding: 18px; }
   .auth-header h1 { font-size: 18px; }
 }
 </style>

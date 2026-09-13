@@ -2,20 +2,16 @@
   <div class="landing-page">
     <!-- Header gradient -->
     <div class="rvm-header">
-      <div class="header-controls">
-        <button class="theme-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('landing.switchToLight') : $t('landing.switchToDark')">
-          <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
-          <PhMoon v-else weight="regular" aria-hidden="true" />
-        </button>
-        <button class="lang-btn" @click="toggleLang">
-          {{ locale === 'en' ? 'MY' : 'EN' }}
-        </button>
-      </div>
-      <h1 class="rvm-title">{{ $t('app.name') }}</h1>
-      <div class="header-badges">
-        <div class="badge status-badge">
-          <span class="badge-label">{{ $t('session.status') }}</span>
-          <span class="badge-value">{{ $t('landing.status') }}</span>
+      <div class="header-top">
+        <h1 class="rvm-title">{{ $t('app.name') }}</h1>
+        <div class="header-controls">
+          <button class="theme-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('landing.switchToLight') : $t('landing.switchToDark')">
+            <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
+            <PhMoon v-else weight="regular" aria-hidden="true" />
+          </button>
+          <button class="lang-btn" @click="toggleLang" :aria-label="locale === 'en' ? 'Switch to Bahasa Melayu' : 'Switch to English'">
+            {{ locale === 'en' ? 'MY' : 'EN' }}
+          </button>
         </div>
       </div>
     </div>
@@ -31,12 +27,16 @@
 
         <div class="features-list">
           <div class="feature-item">
-            <PhRecycle class="feature-icon" weight="regular" />
+            <PhRecycle class="feature-icon feature-icon-green" weight="regular" />
             <span>{{ $t('landing.feature1') }}</span>
           </div>
           <div class="feature-item">
-            <PhTrophy class="feature-icon" weight="regular" />
+            <PhTrophy class="feature-icon feature-icon-yellow" weight="regular" />
             <span>{{ $t('landing.feature2') }}</span>
+          </div>
+          <div class="feature-item">
+            <PhGlobe class="feature-icon feature-icon-blue" weight="regular" />
+            <span>{{ $t('landing.feature3') }}</span>
           </div>
         </div>
 
@@ -53,11 +53,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Footer step indicator -->
-    <div class="rvm-footer">
-      {{ $t('session.currentStep') }}: <strong class="step-label">{{ $t('landing.step') }}</strong>
-    </div>
   </div>
 </template>
 
@@ -65,7 +60,7 @@
 import { inject } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { PhSun, PhMoon, PhRecycle, PhTrophy } from '@phosphor-icons/vue'
+import { PhSun, PhMoon, PhRecycle, PhTrophy, PhGlobe } from '@phosphor-icons/vue'
 
 const router   = useRouter()
 const theme    = inject('theme')
@@ -98,26 +93,36 @@ function goToScan() {
 .rvm-header {
   background: var(--grad-header);
   padding: 24px 20px 20px;
-  position: relative;
   border-radius: 0 0 0 0;
 }
 
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .header-controls {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .theme-btn, .lang-btn {
   background: rgba(255,255,255,0.2);
   border: none;
   color: white;
-  padding: 6px 12px;
+  min-width: 38px;
+  min-height: 36px;
+  padding: 6px 10px;
   border-radius: 20px;
   cursor: pointer;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   backdrop-filter: blur(4px);
   transition: background 0.2s;
 }
@@ -127,26 +132,10 @@ function goToScan() {
   color: white;
   font-size: 26px;
   font-weight: 800;
-  text-align: center;
+  text-align: left;
   letter-spacing: -0.5px;
-  margin-bottom: 16px;
+  margin: 0;
 }
-
-.header-badges {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.badge {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(8px);
-  border-radius: 10px;
-  padding: 10px 16px;
-  flex: 1;
-}
-.badge-label { display: block; color: rgba(255,255,255,0.8); font-size: 11px; margin-bottom: 4px; }
-.badge-value { color: white; font-size: 18px; font-weight: 700; }
 
 .rvm-body {
   flex: 1;
@@ -165,6 +154,7 @@ function goToScan() {
 
 .recycle-icon {
   font-size: 64px;
+  color: var(--accent-green);
   margin: 0 auto 20px;
   filter: drop-shadow(0 0 24px rgba(34,197,94,0.5));
   animation: float 4s ease-in-out infinite;
@@ -206,7 +196,10 @@ function goToScan() {
   font-size: 14px;
 }
 .feature-item + .feature-item { border-top: 1px solid var(--border); }
-.feature-icon { font-size: 18px; }
+.feature-icon { font-size: 18px; flex-shrink: 0; }
+.feature-icon-green  { color: var(--accent-green); }
+.feature-icon-yellow { color: var(--accent-yellow); }
+.feature-icon-blue   { color: var(--accent-blue); }
 
 .start-btn {
   width: 100%;
@@ -247,20 +240,23 @@ function goToScan() {
 .auth-link:hover { text-decoration: underline; }
 .divider { color: var(--text-muted); }
 
-.rvm-footer {
-  background: var(--bg-card);
-  border-top: 1px solid var(--border);
-  padding: 12px 20px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-secondary); /* was var(--text-muted); clears 4.5:1 in both themes */
-}
-.step-label { color: #7b93ff; } /* was var(--accent-blue) */
-
 /* --accent-blue has no light-theme override, so the dark-tuned color above
    also fails once the background flips to white — override again here. */
-[data-theme="light"] .auth-link,
-[data-theme="light"] .step-label {
+[data-theme="light"] .auth-link {
   color: #3f5fee;
+}
+
+@media (min-width: 769px) {
+  .header-top { position: relative; justify-content: center; }
+  .rvm-title { text-align: center; }
+  .header-controls { position: absolute; right: 0; }
+}
+
+@media (max-width: 480px) {
+  .rvm-header { padding: 18px 16px 16px; }
+  .header-top { gap: 12px; margin-bottom: 14px; }
+  .rvm-title { flex: 1; min-width: 0; font-size: 21px; line-height: 1.15; }
+  .header-controls { gap: 6px; }
+  .theme-btn, .lang-btn { min-width: 36px; min-height: 36px; padding: 6px 9px; }
 }
 </style>
