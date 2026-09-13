@@ -360,9 +360,17 @@
                     <PhXCircle v-else class="verified-icon verified-no" weight="regular" aria-hidden="true" />
                   </td>
                   <td class="muted small">{{ formatDate(user.created_at) }}</td>
-                  <td>
-                    <button class="action-btn edit-btn" @click="editUser(user)">Edit</button>
-                    <button class="action-btn del-btn" @click="deleteUser(user.id)">Delete</button>
+                  <td class="user-actions-cell">
+                    <div class="user-actions">
+                      <button class="action-btn edit-btn" @click="editUser(user)">
+                        <PhPencilSimple class="user-action-icon" weight="regular" aria-hidden="true" />
+                        Edit
+                      </button>
+                      <button class="action-btn del-btn" @click="deleteUser(user.id)">
+                        <PhTrash class="user-action-icon" weight="regular" aria-hidden="true" />
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 <tr v-if="!users.length">
@@ -872,7 +880,7 @@ import {
   PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhMagnifyingGlass, PhGift,
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
-  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin,
+  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple,
 } from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { paginationLabel } from '@/utils/admin/paginationLabel.js'
@@ -2336,6 +2344,12 @@ onUnmounted(() => {
   color: var(--text-secondary); cursor: pointer;
   font-size: 12px; margin-right: 4px;
 }
+.user-actions { display: flex; align-items: center; gap: 8px; }
+.user-actions .action-btn {
+  min-height: 36px; margin-right: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.user-action-icon { width: 14px; height: 14px; flex-shrink: 0; }
 .edit-btn { border-color: var(--accent-blue); color: var(--accent-blue); }
 .del-btn  { border-color: var(--accent-red);  color: var(--accent-red);  }
 .add-btn  {
@@ -2552,5 +2566,7 @@ onUnmounted(() => {
   .section-card     { padding: 12px; }
   .admin-topbar     { padding: 10px 12px; }
   .tab-content      { padding: 12px; }
+  .user-actions     { flex-direction: column; align-items: stretch; gap: 8px; }
+  .user-actions .action-btn { min-width: 82px; min-height: 40px; padding: 8px 12px; }
 }
 </style>
