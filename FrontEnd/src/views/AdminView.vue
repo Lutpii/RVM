@@ -539,6 +539,10 @@
                 <button :class="['review-btn', 'reject', { active: log.ground_truth_correct === false }]"
                   :disabled="!isReviewable(log)" @click="markGroundTruth(log, false)"><PhX weight="regular" aria-hidden="true" /> Incorrect</button>
               </div>
+              <!-- title= tooltips need hover, which touch devices never trigger — without
+                   this, a disabled mock row's buttons look broken on mobile with zero
+                   explanation. -->
+              <p v-if="!isReviewable(log)" class="detection-disabled-note">{{ reviewDisabledReason(log) }}</p>
             </div>
           </div>
           <div class="pagination-bar">
@@ -2058,7 +2062,11 @@ onUnmounted(() => {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 12px; padding: 20px 22px;
 }
-.ov-icon { width: 26px; height: 26px; margin-bottom: 10px; color: var(--text-secondary); }
+/* stroke-width overrides the template's stroke-width="1.5" attribute (a CSS
+   property always wins over a presentation attribute) — at 26px the thin
+   stroke read as faint/small next to the 36px count below it; bumping size
+   alone without thickening the stroke would leave it looking just as frail. */
+.ov-icon { width: 36px; height: 36px; stroke-width: 2; margin-bottom: 10px; color: var(--text-secondary); }
 .ov-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; margin-bottom: 8px; }
 .ov-count { font-size: 36px; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
 .ov-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
@@ -2123,7 +2131,7 @@ onUnmounted(() => {
   transition: border-color 0.2s, background 0.2s;
 }
 .ctrl-card:hover { background: var(--bg-secondary); border-color: var(--accent-blue); }
-.ctrl-card-icon { font-size: 20px; padding: 8px; border-radius: 8px; flex-shrink: 0; }
+.ctrl-card-icon { font-size: 32px; padding: 8px; border-radius: 8px; flex-shrink: 0; }
 .ctrl-blue   { background: rgba(78, 110, 242, 0.15); }
 .ctrl-yellow { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
 .ctrl-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
@@ -2316,6 +2324,7 @@ onUnmounted(() => {
 .status-cancelled  { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
 .status-inactive   { background: rgba(107, 114, 128, 0.15); color: var(--text-muted); }
 .status-maintenance{ background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+.status-expired    { background: rgba(107, 114, 128, 0.15); color: var(--text-muted); }
 .role-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 .role-admin { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
 .role-user  { background: rgba(78, 110, 242, 0.15); color: var(--accent-blue); }
@@ -2391,6 +2400,10 @@ onUnmounted(() => {
 .review-btn.active { background: var(--accent-green); border-color: var(--accent-green); color: #0e1220; }
 .review-btn.reject.active { background: var(--accent-red); border-color: var(--accent-red); color: #fff; }
 .review-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.detection-disabled-note {
+  font-size: 11px; color: var(--text-muted); text-align: center;
+  padding: 0 12px 10px; margin-top: -2px;
+}
 
 /* .badge-warning marks a *fabricated* (mock) AI result, so it has to read as a
    warning at a glance — those rows can't be honestly scored. */
@@ -2514,10 +2527,19 @@ onUnmounted(() => {
   .form-row         { grid-template-columns: 1fr; }
   .charts-row       { grid-template-columns: 1fr; }
   .breakdown-status-row { grid-template-columns: 1fr; }
+  .report-filters   { grid-template-columns: 1fr; }
+  .machines-grid    { grid-template-columns: 1fr; }
 
   .admin-topbar     { flex-wrap: wrap; gap: 8px; }
   .topbar-right     { flex-wrap: wrap; }
   .table-wrap       { overflow-x: auto; }
+
+  /* card-header pairs a title with a search/filter/action row via
+     space-between on one line — on mobile the two sides don't fit and
+     collide instead of wrapping (seen worst in Detection Review, whose
+     filters-row sits directly in card-header rather than nested inside
+     topbar-right). Stacking avoids the collision on every tab that uses it. */
+  .card-header      { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
 /* Small mobile: ≤ 480px */
@@ -2526,7 +2548,7 @@ onUnmounted(() => {
   .overview-cards   { grid-template-columns: 1fr 1fr; }
   .ov-count         { font-size: 26px; }
   .controls-grid    { grid-template-columns: 1fr; }
-  .reward-materials { grid-template-columns: 1fr 1fr; }
+  .reward-materials { grid-template-columns: 1fr; }
   .section-card     { padding: 12px; }
   .admin-topbar     { padding: 10px 12px; }
   .tab-content      { padding: 12px; }
