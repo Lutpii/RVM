@@ -55,7 +55,9 @@ class AdminBinCollectionEmailTest extends TestCase
         $this->actingAsAdmin();
         $machine = $this->makeMachine(['name' => 'Lobby Machine', 'plastic_level' => 95]);
 
-        $this->postJson('/api/admin/request-bin-collection')->assertOk();
+        $this->postJson('/api/admin/request-bin-collection')
+            ->assertOk()
+            ->assertJsonPath('affected', 1);
 
         Mail::assertSent(BinCollectionRequested::class, function (BinCollectionRequested $mail) use ($machine) {
             return $mail->hasTo('pbt@example.com')
@@ -63,14 +65,20 @@ class AdminBinCollectionEmailTest extends TestCase
         });
     }
 
-    public function test_does_not_send_email_when_no_bins_are_full(): void
+    public function test_rejects_request_when_no_bins_are_full(): void
     {
         config(['services.pbt.notification_email' => 'pbt@example.com']);
         Mail::fake();
         $this->actingAsAdmin();
         $this->makeMachine(['plastic_level' => 50]);
 
-        $this->postJson('/api/admin/request-bin-collection')->assertOk();
+        $this->postJson('/api/admin/request-bin-collection')
+            ->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'No bins are at or above 90%.',
+                'affected' => 0,
+            ]);
 
         Mail::assertNothingSent();
     }

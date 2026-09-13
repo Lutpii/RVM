@@ -157,10 +157,14 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
+  min-height: 100dvh;
   transition: background 0.3s, color 0.3s;
 }
 
-.app-root { min-height: 100vh; }
+.app-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
 
 .app-content-with-nav { padding-bottom: 76px; }
 @media (min-width: 769px) {

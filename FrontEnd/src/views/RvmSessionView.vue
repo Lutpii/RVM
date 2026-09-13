@@ -73,7 +73,10 @@
         <div v-else-if="rvm.currentStep === 'conveyor'" key="conveyor" class="step-content centered">
           <div class="conveyor-wrap">
             <div class="conveyor-track">
-              <div class="conveyor-item" :style="{ transform: `translateY(-50%) translateX(${conveyorPos}%)` }">
+              <div
+                class="conveyor-item"
+                :style="{ animationDuration: `${CONVEYOR_ANIMATION_MS}ms` }"
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="conveyor-item-icon">
                   <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/>
                   <path d="M3 8.5v7L12 20l9-4.5v-7"/>
@@ -263,7 +266,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
-import api, { setKioskToken } from '@/services/api'
+import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 
@@ -278,11 +281,13 @@ const theme    = inject('theme')
 const toggleTheme = inject('toggleTheme')
 const { locale, t } = useI18n()
 
+const CONVEYOR_DURATION_MS = 2200
+const CONVEYOR_ANIMATION_MS = CONVEYOR_DURATION_MS + 200
+
 const displayPoints  = ref(auth.user?.total_points ?? rvm.session?.current_points ?? 0)
 // Seed start_points for local summary tracking
 rvm.localSummary.start_points = auth.user?.total_points ?? rvm.session?.start_points ?? 0
 const lidOpen        = ref(false)
-const conveyorPos    = ref(0)
 const itemWeight     = ref(0)
 const itemPoints     = ref(0)
 const itemCarbon     = ref(0)
@@ -528,14 +533,8 @@ async function simulateInsert() {
   capturedImageDataUrl.value  = null
   annotatedImageDataUrl.value = null
   rvm.setStep('conveyor')
-  // Animate conveyor
-  conveyorPos.value = 0
-  const interval = setInterval(() => {
-    conveyorPos.value += 2
-    if (conveyorPos.value >= 90) clearInterval(interval)
-  }, 50)
 
-  await delay(2200)
+  await delay(CONVEYOR_DURATION_MS)
 
   // ── CAMERA: only one capture option (real hardware camera), so go straight
   //    into it instead of waiting for the user to pick from a menu of one. ──
@@ -651,7 +650,46 @@ function delay(ms) {
 }
 
 onMounted(() => {
-  if (!rvm.session && !rvm.isGuest) { router.push('/scan'); return }
+  if (isKioskRoute.value && !rvm.session) {
+    rvm.restoreKioskSession(kioskMachineCode.value)
+  }
+
+  if (!rvm.session && !rvm.isGuest) {
+    if (isKioskRoute.value) {
+      router.replace({ name: 'kiosk-qr', params: { machineCode: kioskMachineCode.value } })
+    } else {
+      router.replace('/scan')
+    }
+    return
+  }
+
+  if (isKioskRoute.value) {
+    displayPoints.value = rvm.session?.current_points ?? rvm.session?.start_points ?? 0
+    if (!rvm.localSummary.start_points) {
+      rvm.localSummary.start_points = rvm.session?.start_points ?? displayPoints.value
+    }
+
+    const savedResult = rvm.currentTransaction || rvm.localSummary.transactions.at(-1)
+    if (savedResult) {
+      itemWeight.value   = savedResult.weight_grams ?? savedResult.weight ?? 0
+      itemPoints.value   = savedResult.points_earned ?? 0
+      itemCarbon.value   = savedResult.carbon_saved ?? 0
+      aiDetected.value   = savedResult.ai_detected_type ?? savedResult.ai_detected ?? savedResult.material ?? rvm.selectedMaterial ?? ''
+      aiConfidence.value = savedResult.ai_confidence ?? savedResult.confidence ?? 0
+    }
+  }
+
+  // A refresh stops any in-flight animation/API chain. Resume from the last
+  // safe interactive point instead of leaving the kiosk frozen mid-process.
+  if (isKioskRoute.value && ['lid', 'conveyor', 'camera', 'classify', 'validate_ok', 'weigh'].includes(rvm.currentStep)) {
+    rvm.setStep('insert')
+  }
+
+  if (isKioskRoute.value && rvm.currentStep === 'summary') {
+    router.replace({ name: 'kiosk-summary', params: { machineCode: kioskMachineCode.value } })
+    return
+  }
+
   if (rvm.currentStep === 'bin_check') autoStartFlow()
 })
 </script>
@@ -956,10 +994,18 @@ onMounted(() => {
 .conveyor-item {
   position: absolute;
   top: 50%;
-  left: 0;
-  width: 100%;
-  transition: transform 0.1s linear;
+  left: 12px;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  animation-name: conveyor-item-travel;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
   line-height: 1;
+}
+@keyframes conveyor-item-travel {
+  from { left: 12px; }
+  to { left: calc(100% - 40px); }
 }
 .conveyor-item-icon {
   width: 28px;

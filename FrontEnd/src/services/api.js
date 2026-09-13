@@ -22,13 +22,31 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-let _kioskMode = false
+const KIOSK_TOKEN_STORAGE_KEY = 'rvm_kiosk_token'
+
+function readStoredKioskToken() {
+  if (typeof sessionStorage === 'undefined') return null
+  try {
+    return sessionStorage.getItem(KIOSK_TOKEN_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+const storedKioskToken = readStoredKioskToken()
+let _kioskMode = !!storedKioskToken
+if (storedKioskToken) {
+  api.defaults.headers.common['X-Kiosk-Token'] = storedKioskToken
+}
+
 export function setKioskToken(token) {
   _kioskMode = !!token
   if (token) {
     api.defaults.headers.common['X-Kiosk-Token'] = token
+    try { sessionStorage.setItem(KIOSK_TOKEN_STORAGE_KEY, token) } catch { /* unavailable */ }
   } else {
     delete api.defaults.headers.common['X-Kiosk-Token']
+    try { sessionStorage.removeItem(KIOSK_TOKEN_STORAGE_KEY) } catch { /* unavailable */ }
   }
 }
 

@@ -531,6 +531,14 @@ class AdminController extends Controller
             ->orWhere('paper_level', '>=', 90)
             ->get();
 
+        if ($machines->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No bins are at or above 90%.',
+                'affected' => 0,
+            ], 422);
+        }
+
         $this->log($request->user(), 'request_bin_collection', 'system', 0, "Collection requested for {$machines->count()} machine(s)");
 
         // Best-effort — a flaky mail provider shouldn't block the admin's request

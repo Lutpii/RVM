@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import api from '@/services/api'
+
+const KIOSK_STATE_STORAGE_KEY = 'rvm_kiosk_state'
+
+function readKioskState() {
+  if (typeof sessionStorage === 'undefined') return null
+  try {
+    return JSON.parse(sessionStorage.getItem(KIOSK_STATE_STORAGE_KEY) || 'null')
+  } catch {
+    return null
+  }
+}
 
 export const useRvmStore = defineStore('rvm', () => {
   const session            = ref(null)
@@ -25,6 +36,47 @@ export const useRvmStore = defineStore('rvm', () => {
     'insert', 'conveyor', 'camera', 'classify', 'validate',
     'weigh', 'complete', 'summary'
   ]
+
+  function persistKioskSession() {
+    if (!guestMachineCode.value || !session.value) return
+    try {
+      sessionStorage.setItem(KIOSK_STATE_STORAGE_KEY, JSON.stringify({
+        machineCode: guestMachineCode.value,
+        session: session.value,
+        machine: machine.value,
+        currentStep: currentStep.value,
+        selectedMaterial: selectedMaterial.value,
+        currentTransaction: currentTransaction.value,
+        localSummary: localSummary.value,
+        isGuest: isGuest.value,
+      }))
+    } catch { /* sessionStorage may be unavailable */ }
+  }
+
+  function restoreKioskSession(machineCode) {
+    const saved = readKioskState()
+    if (!saved?.session || saved.machineCode !== machineCode) return false
+
+    session.value            = saved.session
+    machine.value            = saved.machine || saved.session.machine || null
+    currentStep.value        = saved.currentStep || 'bin_check'
+    selectedMaterial.value   = saved.selectedMaterial || null
+    currentTransaction.value = saved.currentTransaction || null
+    localSummary.value       = saved.localSummary || { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
+    isGuest.value            = !!saved.isGuest
+    guestMachineCode.value   = saved.machineCode
+    return true
+  }
+
+  function clearKioskSession() {
+    try { sessionStorage.removeItem(KIOSK_STATE_STORAGE_KEY) } catch { /* unavailable */ }
+  }
+
+  watch(
+    [session, machine, currentStep, selectedMaterial, currentTransaction, localSummary, isGuest, guestMachineCode],
+    () => persistKioskSession(),
+    { deep: true },
+  )
 
   function setStep(step) { currentStep.value = step }
   function setMachine(d) { machine.value = d }
@@ -187,10 +239,13 @@ export const useRvmStore = defineStore('rvm', () => {
     currentTransaction.value = null
     selectedMaterial.value   = null
     lastError.value          = null
-    setStep('bin_check')
+    // The lid is opened once when the session starts. For every following
+    // item, return directly to the insertion step and keep the lid open.
+    setStep('insert')
   }
 
   function resetSession() {
+    clearKioskSession()
     session.value            = null
     machine.value            = null
     currentStep.value        = 'landing'
@@ -207,6 +262,6 @@ export const useRvmStore = defineStore('rvm', () => {
     localSummary, isGuest, guestMachineCode,
     setStep, setMachine, setSession, setSelectedMaterial, recordLocalTransaction,
     startGuestSession, startSession, endSession, getSummary, checkBin, processStep,
-    resetTransaction, resetSession,
+    restoreKioskSession, resetTransaction, resetSession,
   }
 })

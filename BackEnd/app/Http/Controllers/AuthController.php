@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -193,7 +194,34 @@ class AuthController extends Controller
     public function googleRedirect(Request $request): JsonResponse
     {
         $root = $this->resolveBackendRoot($request, $request->query('host'));
-        return response()->json(['success' => true, 'url' => $root . '/auth/google/start']);
+
+        // Carried through to googleStart() as a query param (a fresh top-level
+        // navigation to a different host — nothing here survives except what's
+        // in the URL) so googleCallback() can send the browser back to
+        // whichever device/IP actually started the login, instead of a single
+        // hardcoded FRONTEND_URL that breaks the moment testing moves from
+        // localhost to a phone on the hotspot (or the hotspot's IP changes).
+        $frontend = $this->sanitizeFrontendOrigin($request->query('frontend'));
+        $url = $root . '/auth/google/start' . ($frontend ? '?frontend=' . urlencode($frontend) : '');
+
+        return response()->json(['success' => true, 'url' => $url]);
+    }
+
+    // Only a private-network/localhost origin is ever honored — this value
+    // ends up as an unauthenticated redirect target carrying a live OAuth
+    // exchange code, so accepting an arbitrary caller-supplied origin here
+    // would be an open redirect that hands a real login code to any site an
+    // attacker names. Local dev/LAN testing never needs anything outside
+    // this range; a real public deployment sets FRONTEND_URL and never
+    // reaches this at all (the frontend only sends this param over http/https
+    // to begin with, both covered below).
+    private function sanitizeFrontendOrigin(?string $origin): ?string
+    {
+        if (!$origin) {
+            return null;
+        }
+        $pattern = '#^https?://(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})(:\d{1,5})?$#i';
+        return preg_match($pattern, $origin) ? $origin : null;
     }
 
     // Single source of truth for "what address can the caller use to reach
@@ -244,7 +272,11 @@ class AuthController extends Controller
         // forged from a different browser won't have the matching cookie.
         $state = Str::random(40);
         $nonce = Str::random(40);
-        Cache::put("oauth_state:{$state}", $nonce, now()->addMinutes(10));
+        // frontend already validated in googleRedirect() — re-checked here too
+        // since this URL is otherwise just as guessable as any other GET route.
+        $frontend = $this->sanitizeFrontendOrigin($request->query('frontend'))
+            ?? config('services.frontend_url');
+        Cache::put("oauth_state:{$state}", ['nonce' => $nonce, 'frontend' => $frontend], now()->addMinutes(10));
 
         // Must match what googleCallback() below computes, or the token
         // exchange rejects it as a mismatch. Whatever this resolves to must
@@ -266,20 +298,38 @@ class AuthController extends Controller
     // a shared/bookmarked link) even briefly.
     public function googleCallback(Request $request): RedirectResponse
     {
-        $frontendUrl = rtrim(config('services.frontend_url'), '/');
-
-        $state         = $request->query('state');
-        $expectedNonce = $state ? Cache::pull("oauth_state:{$state}") : null;
+        $state       = $request->query('state');
+        $stored      = $state ? Cache::pull("oauth_state:{$state}") : null;
+        // $stored is null whenever the state already expired/was consumed —
+        // config('services.frontend_url') is the only place left to send the
+        // error redirect in that case, since there's nothing else to read it from.
+        $frontendUrl   = rtrim($stored['frontend'] ?? config('services.frontend_url'), '/');
+        $expectedNonce = $stored['nonce'] ?? null;
         $cookieNonce   = $request->cookie('oauth_nonce');
 
         if (!$state || !$expectedNonce || !$cookieNonce || !hash_equals($expectedNonce, $cookieNonce)) {
+            Log::warning('[GoogleAuth] nonce check failed', [
+                'has_state' => (bool) $state, 'has_expected' => (bool) $expectedNonce,
+                'has_cookie' => (bool) $cookieNonce,
+                'match' => ($expectedNonce && $cookieNonce) ? hash_equals($expectedNonce, $cookieNonce) : null,
+            ]);
             return redirect("{$frontendUrl}/#/login?error=google_auth_failed")->withoutCookie('oauth_nonce');
         }
 
         try {
             // Must match the redirectUrl googleStart() sent to Google exactly.
             $redirectUri = $this->resolveBackendRoot($request) . '/auth/google/callback';
-            $googleUser = Socialite::driver('google')->stateless()->redirectUrl($redirectUri)->user();
+
+            // This machine's HTTP_PROXY/HTTPS_PROXY env vars point at a dead
+            // local proxy (127.0.0.1:9) on at least some local dev setups —
+            // Guzzle honors those by default, which breaks the outbound
+            // token-exchange/userinfo calls below with "Failed to connect to
+            // 127.0.0.1 port 9". This app has no legitimate reason to proxy
+            // its own calls to Google, so disable it here regardless of
+            // whatever the host environment happens to have set.
+            $googleUser = Socialite::driver('google')->stateless()->redirectUrl($redirectUri)
+                ->setHttpClient(new \GuzzleHttp\Client(['proxy' => false]))
+                ->user();
 
             $user = User::updateOrCreate(
                 ['google_id' => $googleUser->getId()],
@@ -299,6 +349,7 @@ class AuthController extends Controller
 
             return redirect("{$frontendUrl}/#/auth/callback?code={$code}")->withoutCookie('oauth_nonce');
         } catch (\Exception $e) {
+            Log::warning('[GoogleAuth] exception: ' . $e->getMessage());
             return redirect("{$frontendUrl}/#/login?error=google_auth_failed")->withoutCookie('oauth_nonce');
         }
     }

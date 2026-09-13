@@ -3,8 +3,6 @@
     <div class="welcome-bg"></div>
 
     <div class="welcome-content">
-      <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
-
       <div class="welcome-icon-float">
         <PhRecycle class="welcome-icon" weight="regular" />
       </div>
@@ -16,6 +14,8 @@
         <div class="progress-fill"></div>
       </div>
     </div>
+
+    <img src="@/assets/logo-umpsa.png" class="brand-logo" alt="UMPSA" />
   </div>
 </template>
 
@@ -53,6 +53,7 @@ onMounted(() => {
 <style scoped>
 .welcome-splash {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-primary);
   display: flex;
   align-items: center;
@@ -64,11 +65,14 @@ onMounted(() => {
 .welcome-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 30%, rgba(78,110,242,0.25) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 30%, rgba(123,97,244,0.25) 0%, transparent 60%);
 }
 
 .welcome-content {
   position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 640px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -83,11 +87,24 @@ onMounted(() => {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.dsme-logo {
-  height: 56px;
+.brand-logo {
+  position: absolute;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 1;
+  height: 96px;
   width: auto;
-  margin-bottom: 8px;
+  max-width: calc(100% - 32px);
+  transform: translateX(-50%);
   opacity: 0.9;
+}
+
+@media (max-width: 480px) {
+  .welcome-content { padding: 20px 24px; }
+  .brand-logo {
+    height: 76px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+  }
 }
 
 .welcome-icon-float {
@@ -99,7 +116,8 @@ onMounted(() => {
 
 .welcome-icon {
   font-size: 72px;
-  filter: drop-shadow(0 0 30px rgba(78,110,242,0.5));
+  color: var(--accent-green);
+  filter: drop-shadow(0 0 30px rgba(123,97,244,0.5));
   animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 

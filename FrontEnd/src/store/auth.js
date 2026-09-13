@@ -91,7 +91,16 @@ export const useAuthStore = defineStore('auth', () => {
     // its own backend target — the backend can't infer a caller-reachable
     // address from that alone (e.g. a phone on the same hotspot), so this
     // browser's own known-good hostname is passed through explicitly.
-    const res = await api.get('/auth/google/redirect', { params: { host: window.location.hostname } })
+    //
+    // `origin` (scheme+host+port) lets the backend send the browser back to
+    // wherever this login actually started — localhost, a LAN IP, a phone on
+    // the hotspot — instead of one hardcoded FRONTEND_URL that only matches
+    // whichever of those was true when .env was last edited. The backend only
+    // honors this for a private-network/localhost origin (see
+    // AuthController::sanitizeFrontendOrigin) — never a public one.
+    const res = await api.get('/auth/google/redirect', {
+      params: { host: window.location.hostname, frontend: window.location.origin },
+    })
     if (res.data.url) {
       window.location.href = res.data.url
     }

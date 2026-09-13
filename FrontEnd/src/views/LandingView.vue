@@ -53,6 +53,11 @@
         </div>
       </div>
     </div>
+
+    <footer class="landing-brand-footer">
+      <img src="@/assets/logo-umpsa.png" class="landing-brand-logo" alt="UMPSA" />
+      <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
+    </footer>
   </div>
 </template>
 
@@ -85,12 +90,17 @@ function goToScan() {
 <style scoped>
 .landing-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
+  overflow: hidden;
 }
 
 .rvm-header {
+  flex-shrink: 0;
   background: var(--grad-header);
   padding: 24px 20px 20px;
   border-radius: 0 0 0 0;
@@ -139,6 +149,7 @@ function goToScan() {
 
 .rvm-body {
   flex: 1;
+  min-height: 0;
   background: var(--bg-secondary);
   display: flex;
   align-items: center;
@@ -240,6 +251,27 @@ function goToScan() {
 .auth-link:hover { text-decoration: underline; }
 .divider { color: var(--text-muted); }
 
+.landing-brand-footer {
+  flex-shrink: 0;
+  padding: 10px 16px max(20px, env(safe-area-inset-bottom));
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.landing-brand-logo {
+  height: 96px;
+  width: auto;
+  max-width: calc(100% - 32px);
+  margin-bottom: -21px;
+  opacity: 0.85;
+}
+
 /* --accent-blue has no light-theme override, so the dark-tuned color above
    also fails once the background flips to white — override again here. */
 [data-theme="light"] .auth-link {
@@ -258,5 +290,32 @@ function goToScan() {
   .rvm-title { flex: 1; min-width: 0; font-size: 21px; line-height: 1.15; }
   .header-controls { gap: 6px; }
   .theme-btn, .lang-btn { min-width: 36px; min-height: 36px; padding: 6px 9px; }
+  .landing-brand-footer {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    gap: 3px;
+    font-size: 11px;
+  }
+  .landing-brand-logo { height: 76px; margin-bottom: -17px; }
+}
+
+@media (max-height: 700px) {
+  .rvm-header { padding: 12px 16px 10px; }
+  .header-top { margin-bottom: 8px; }
+  .rvm-title { font-size: 20px; }
+  .rvm-body { padding: 12px 20px; }
+  .recycle-icon { font-size: 44px; margin-bottom: 8px; }
+  .welcome-title { font-size: 20px; margin-bottom: 6px; }
+  .welcome-sub { margin-bottom: 12px; font-size: 13px; }
+  .features-list { padding: 8px 12px; margin-bottom: 12px; }
+  .feature-item { padding: 4px 0; font-size: 12px; }
+  .feature-icon { font-size: 16px; }
+  .start-btn { padding: 11px 20px; margin-bottom: 10px; font-size: 14px; }
+  .auth-link { font-size: 12px; }
+  .landing-brand-footer {
+    padding: 4px 16px max(10px, env(safe-area-inset-bottom));
+    gap: 3px;
+    font-size: 11px;
+  }
+  .landing-brand-logo { height: 56px; margin-bottom: -12px; }
 }
 </style>

@@ -176,6 +176,16 @@ function computeFromTransactions(txns) {
 }
 
 onMounted(async () => {
+  const isKiosk = route.path.startsWith('/kiosk/')
+  if (isKiosk && !rvm.session) {
+    rvm.restoreKioskSession(route.params.machineCode)
+  }
+
+  if (isKiosk && !rvm.session) {
+    router.replace({ name: 'kiosk-qr', params: { machineCode: route.params.machineCode } })
+    return
+  }
+
   const local = rvm.localSummary
   const computedEnd = local.start_points + local.points_earned
 

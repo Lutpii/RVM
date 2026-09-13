@@ -57,10 +57,6 @@
             <span class="info-label">{{ $t('auth.email') }}</span>
             <span class="info-value">{{ auth.user?.email || '—' }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">{{ $t('auth.phone') }}</span>
-            <span class="info-value">{{ auth.user?.phone || '—' }}</span>
-          </div>
         </div>
 
         <!-- Edit mode -->
@@ -72,10 +68,6 @@
           <div class="form-group">
             <label class="form-label">{{ $t('auth.email') }}</label>
             <input v-model="profileForm.email" type="email" class="form-input" :placeholder="$t('auth.email')" />
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">{{ $t('auth.phone') }}</label>
-            <input v-model="profileForm.phone" type="tel" class="form-input" :placeholder="$t('auth.phone')" />
           </div>
           <div v-if="profileMsg" :class="['msg', profileSuccess ? 'msg-ok' : 'msg-err']" style="margin-top:12px;margin-bottom:0">{{ profileMsg }}</div>
         </div>
@@ -510,8 +502,14 @@ const confirmDelete  = ref(false)
 const deletingAccount = ref(false)
 
 async function handleLogout() {
+  // Captured before logout() clears the auth store — GoodbyeView reads
+  // user.name/theme_preference itself for the kiosk flow, but a regular web
+  // logout has already wiped that by the time it mounts, so both are handed
+  // through as query params instead (mirrors how the kiosk session-end path
+  // already does this for its own guest/no-login case).
+  const name = auth.user?.name
   await auth.logout()
-  router.push('/')
+  router.push({ path: '/thank-you', query: { redirect: '/', name, theme: theme.value } })
 }
 
 async function deleteAccount() {
@@ -671,7 +669,7 @@ onMounted(async () => {
 .full-btn:not(:disabled):hover { opacity: 0.88; }
 .save-btn { background: var(--accent-blue); color: white; }
 .redeem-btn { background: var(--accent-green); color: white; }
-.logout-btn-full { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border); }
+.logout-btn-full { background: none; color: var(--accent-red); border: 1px solid var(--accent-red); }
 .logout-btn-full:hover { background: var(--accent-red) !important; color: white; border-color: var(--accent-red); opacity: 1 !important; }
 .delete-btn { background: rgba(239,68,68,0.1); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
 .delete-btn:hover { background: var(--accent-red) !important; color: white; opacity: 1 !important; }

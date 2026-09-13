@@ -5,7 +5,6 @@
     <!-- Header -->
     <div class="qr-header">
       <button class="back-btn" @click="$router.push(`/kiosk/${machineCode}`)">← {{ $t('kioskQr.back') }}</button>
-      <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
       <span class="machine-label">{{ machineCode }}</span>
     </div>
 
@@ -77,6 +76,11 @@
       <PhHourglass class="expired-icon" weight="regular" />
       <h2 class="qr-title">{{ $t('kioskQr.expired') }}</h2>
       <p class="qr-sub">{{ $t('kioskQr.generatingNew') }}</p>
+    </div>
+
+    <div class="kiosk-footer">
+      <img src="@/assets/logo-umpsa.png" class="brand-logo" alt="UMPSA" />
+      <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
     </div>
   </div>
 </template>
@@ -278,6 +282,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .kiosk-qr {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--bg-primary);
   color: var(--text-primary);
   display: flex;
@@ -295,6 +302,7 @@ onBeforeUnmount(() => {
 
 .qr-header {
   position: relative;
+  z-index: 1;
   width: 100%;
   display: flex;
   align-items: center;
@@ -317,16 +325,9 @@ onBeforeUnmount(() => {
   font-family: monospace;
 }
 
-.dsme-logo {
-  height: 28px;
-  width: auto;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
 .qr-content {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -335,6 +336,30 @@ onBeforeUnmount(() => {
   text-align: center;
   max-width: 520px;
   width: 100%;
+}
+
+.kiosk-footer {
+  position: absolute;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.brand-logo {
+  height: 96px;
+  width: auto;
+  max-width: calc(100vw - 40px);
+  margin-bottom: -21px;
+  opacity: 0.85;
 }
 
 .qr-title {
@@ -520,22 +545,43 @@ onBeforeUnmount(() => {
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
 @media (max-height: 650px) {
   .qr-header { padding: 10px 20px; }
-  .dsme-logo { height: 20px; }
 
-  .qr-content { gap: 10px; padding: 10px 24px 16px; }
+  .qr-content { max-width: 760px; gap: 6px; padding: 4px 24px 10px; }
   .qr-title { font-size: 24px; }
   .qr-sub { font-size: 13px; }
 
-  .qr-box { width: 170px; height: 170px; }
-  .qr-image { width: 140px; height: 140px; }
+  .qr-box { width: 150px; height: 150px; }
+  .qr-image { width: 126px; height: 126px; }
+  .qr-url { display: none; }
 
-  .qr-steps { gap: 6px; }
-  .step { font-size: 12px; }
+  .qr-steps {
+    max-width: 700px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 14px;
+  }
+  .step { flex: 1; justify-content: center; font-size: 11px; }
   .step-num { width: 20px; height: 20px; font-size: 11px; }
 
-  .timer-bar, .guest-divider, .guest-btn { width: 170px; }
-  .guest-btn { padding: 10px 16px; gap: 2px; }
+  .timer-bar, .guest-divider { width: 220px; }
+  .guest-btn {
+    width: auto;
+    min-width: 280px;
+    min-height: 44px;
+    flex-direction: row;
+    justify-content: center;
+    padding: 8px 16px;
+    gap: 8px;
+  }
   .guest-btn-icon { width: 18px; height: 18px; }
+  .guest-btn-note { margin-left: 2px; }
+
+  .kiosk-footer {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    gap: 3px;
+    font-size: 11px;
+  }
+  .kiosk-footer .brand-logo { height: 56px; margin-bottom: -12px; }
 
   .scanned-content { padding-top: 20px; }
   .success-ring { width: 80px; height: 80px; }

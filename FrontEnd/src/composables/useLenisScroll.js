@@ -10,6 +10,9 @@ import { useRoute } from 'vue-router'
 const NO_LENIS_ROUTES = new Set([
   'kiosk-landing', 'kiosk-qr', 'kiosk-session', 'kiosk-summary',
   'welcome', 'thank-you', 'session', 'session-summary',
+  // Landing is a deliberately fixed one-screen view; attaching Lenis here
+  // can preserve a tiny synthetic scroll range on mobile browsers.
+  'landing',
   // 'admin': AdminView.vue is a fixed sidebar/topbar app-shell whose own
   // `.admin-page { overflow: hidden }` means it never uses window/document
   // scroll in the first place (only its internal `.admin-scroll-area` div

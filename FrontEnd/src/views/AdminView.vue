@@ -233,9 +233,20 @@
                 <PhFactory class="ctrl-card-icon ctrl-purple" weight="regular" aria-hidden="true" />
                 <span class="ctrl-card-label">View Machine Report</span>
               </button>
-              <button class="ctrl-card" @click="requestBinCollection">
+              <button
+                class="ctrl-card"
+                :disabled="!collectionCandidates.length || requestingCollection"
+                :title="collectionCandidates.length ? 'Request collection for bins at or above 90%' : 'No bins are at or above 90%'"
+                @click="requestBinCollection"
+              >
                 <PhTrash class="ctrl-card-icon ctrl-gray" weight="regular" aria-hidden="true" />
-                <span class="ctrl-card-label">Request Bin Collection</span>
+                <span class="ctrl-card-label">
+                  {{ requestingCollection
+                    ? 'Sending Request...'
+                    : collectionCandidates.length
+                      ? `Request Bin Collection (${collectionCandidates.length})`
+                      : 'No Bins Need Collection' }}
+                </span>
               </button>
             </div>
           </div>
@@ -670,6 +681,9 @@
     <!-- ── Edit User Modal ── -->
     <div v-if="editingUser" class="modal-overlay" @click.self="editingUser = null">
       <div class="modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="editingUser = null">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <h3>Edit User</h3>
         <div class="form-group">
           <label>Name</label>
@@ -694,7 +708,6 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button class="action-btn" @click="editingUser = null">Cancel</button>
           <button class="action-btn edit-btn" @click="saveUser">Save</button>
         </div>
       </div>
@@ -703,6 +716,9 @@
     <!-- ── Add Machine Modal ── -->
     <div v-if="showAddMachine" class="modal-overlay" @click.self="showAddMachine = false">
       <div class="modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="showAddMachine = false">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <h3>Add New Machine</h3>
         <div class="form-group">
           <label>Machine Code *</label>
@@ -736,7 +752,6 @@
         </div>
         <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
-          <button class="action-btn" @click="showAddMachine = false">Cancel</button>
           <button class="action-btn edit-btn" @click="addMachine" :disabled="savingMachine">
             {{ savingMachine ? 'Adding...' : 'Add Machine' }}
           </button>
@@ -747,6 +762,9 @@
     <!-- ── Add Reward Modal ── -->
     <div v-if="showAddRewardItem" class="modal-overlay" @click.self="showAddRewardItem = false">
       <div class="modal reward-modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="showAddRewardItem = false">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <h3>Add Reward</h3>
         <div class="form-group"><label>Name *</label><input v-model="newRewardItem.name" type="text" /></div>
         <div class="form-group"><label>Description</label><input v-model="newRewardItem.description" type="text" /></div>
@@ -777,7 +795,6 @@
         </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
-          <button class="action-btn" @click="showAddRewardItem = false">Cancel</button>
           <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="addRewardItem">{{ savingRewardItem ? '...' : 'Add' }}</button>
         </div>
       </div>
@@ -786,6 +803,9 @@
     <!-- ── Edit Reward Modal ── -->
     <div v-if="editingRewardItem" class="modal-overlay" @click.self="editingRewardItem = null">
       <div class="modal reward-modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="editingRewardItem = null">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <h3>Edit Reward</h3>
         <div class="form-group"><label>Name *</label><input v-model="editingRewardItem.name" type="text" /></div>
         <div class="form-group"><label>Description</label><input v-model="editingRewardItem.description" type="text" /></div>
@@ -816,7 +836,6 @@
         </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
-          <button class="action-btn" @click="editingRewardItem = null">Cancel</button>
           <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="saveRewardItem">{{ savingRewardItem ? '...' : 'Save' }}</button>
         </div>
       </div>
@@ -825,6 +844,9 @@
     <!-- ── Edit Machine Modal ── -->
     <div v-if="editingMachine" class="modal-overlay" @click.self="editingMachine = null">
       <div class="modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="editingMachine = null">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <h3>Edit Machine</h3>
         <div class="form-group">
           <label>Machine Code</label>
@@ -858,7 +880,6 @@
         </div>
         <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
-          <button class="action-btn" @click="editingMachine = null">Cancel</button>
           <button class="action-btn edit-btn" @click="saveMachine" :disabled="savingMachine">
             {{ savingMachine ? 'Saving...' : 'Save Changes' }}
           </button>
@@ -869,6 +890,9 @@
     <!-- ── Email Report Modal ── -->
     <div v-if="showEmailReportModal" class="modal-overlay" @click.self="showEmailReportModal = false">
       <div class="modal">
+        <button class="modal-close-btn" aria-label="Close modal" :disabled="sendingReportEmail" @click="showEmailReportModal = false">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <h3>Send Report via Email</h3>
         <div class="form-group">
           <label>Recipient Email *</label>
@@ -876,7 +900,6 @@
         </div>
         <p v-if="emailReportError" class="form-error">{{ emailReportError }}</p>
         <div class="modal-actions">
-          <button class="action-btn" :disabled="sendingReportEmail" @click="showEmailReportModal = false">Cancel</button>
           <button class="action-btn edit-btn" :disabled="sendingReportEmail" @click="sendReportEmail">
             {{ sendingReportEmail ? 'Sending...' : 'Send' }}
           </button>
@@ -887,9 +910,11 @@
     <!-- ── Confirm modal (replaces native confirm()) ── -->
     <div v-if="confirmState.show" class="modal-overlay" @click.self="settleConfirm(false)">
       <div class="modal confirm-modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="settleConfirm(false)">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
         <p class="confirm-message">{{ confirmState.message }}</p>
         <div class="modal-actions">
-          <button class="action-btn" @click="settleConfirm(false)">Cancel</button>
           <button
             :class="['action-btn', confirmState.variant === 'danger' ? 'del-btn' : 'edit-btn']"
             @click="settleConfirm(true)"
@@ -1078,6 +1103,8 @@ const transactions = ref([])
 const materialStats = ref([])
 const recentSessions = ref([])
 const fullBins = ref([])
+const collectionCandidates = ref([])
+const requestingCollection = ref(false)
 
 const rewardEditValues = ref({ plastic: 5, aluminum: 8, glass: 5, paper: 3 })
 const savedRewardValues = ref({ plastic: 5, aluminum: 8, glass: 5, paper: 3 })
@@ -1260,7 +1287,11 @@ async function fetchTabData(tab, showSpinner = false) {
       statsData.value      = res.data.stats                   || {}
       materialStats.value  = res.data.stats?.material_stats   || []
       recentSessions.value = res.data.stats?.recent_sessions  || []
-      fullBins.value       = res.data.stats?.full_bins        || []
+      const binsNeedingCollection = res.data.stats?.full_bins || []
+      fullBins.value = binsNeedingCollection
+      // Keep eligibility separate from the dismissible alert list. Dismissing
+      // a warning does not change the physical bin level.
+      collectionCandidates.value = binsNeedingCollection
     } else if (tab === 'transactions') {
       if (showSpinner) loadingTransactions.value = true
       const res = await api.get('/admin/transactions', { params: {
@@ -1620,15 +1651,32 @@ function resetAllAlerts() {
 }
 
 async function requestBinCollection() {
-  if (!(await askConfirm('Send a bin collection request?', 'warning'))) return
+  if (!collectionCandidates.value.length || requestingCollection.value) {
+    showToast('No bins are at or above 90%.', 'error')
+    return
+  }
+
+  const details = collectionCandidates.value.map((machine) => {
+    const bins = ['aluminum', 'plastic', 'glass', 'paper']
+      .filter(type => Number(machine[`${type}_level`]) >= 90)
+      .map(type => `${capitalize(type)} ${machine[`${type}_level`]}%`)
+      .join(', ')
+    return `${machine.name}: ${bins}`
+  }).join('; ')
+
+  if (!(await askConfirm(`Send a collection request for ${collectionCandidates.value.length} machine(s)? ${details}`, 'warning'))) return
+
+  requestingCollection.value = true
   try {
     // Deliberately a separate endpoint from resetAllAlerts() — this only logs
     // the request, it must not zero out bin levels (the bin isn't actually
     // empty yet, someone just needs to go collect it).
-    await api.post('/admin/request-bin-collection')
-    showToast('Bin collection request sent.')
-  } catch {
-    showToast('Failed to send collection request.', 'error')
+    const res = await api.post('/admin/request-bin-collection')
+    showToast(`Bin collection request sent for ${res.data.affected} machine(s).`)
+  } catch (error) {
+    showToast(error.response?.data?.message || 'Failed to send collection request.', 'error')
+  } finally {
+    requestingCollection.value = false
   }
 }
 
@@ -1897,8 +1945,11 @@ async function resetBins(machine) {
 }
 
 async function handleLogout() {
+  // See UserSettingsView.vue's handleLogout() for why these are captured
+  // before logout() clears the auth store.
+  const name = auth.user?.name
   await auth.logout()
-  router.push('/')
+  router.push({ path: '/thank-you', query: { redirect: '/', name, theme: theme.value } })
 }
 
 // ── Lifecycle ──
@@ -1939,6 +1990,8 @@ onUnmounted(() => {
 .admin-page {
   display: flex;
   height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   overflow: hidden; /* the shell itself never scrolls — see .admin-scroll-area */
   background: var(--bg-primary);
 }
@@ -1947,7 +2000,8 @@ onUnmounted(() => {
 .sidebar {
   position: relative;
   width: 220px;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   display: flex;
@@ -2000,7 +2054,17 @@ onUnmounted(() => {
 }
 .collapse-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-.sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; justify-content: flex-start; }
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 8px; border-radius: 8px;
@@ -2017,7 +2081,14 @@ onUnmounted(() => {
    via this overflow:hidden — without it, the text inside would reflow
    (wrap) at the narrower width, changing .sidebar-footer's own height and
    making it visibly shift position (opacity alone doesn't stop that). */
-.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); overflow: hidden; }
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
 .admin-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; min-width: 190px; }
 .admin-avatar {
   width: 32px; height: 32px; border-radius: 50%;
@@ -2046,14 +2117,17 @@ onUnmounted(() => {
 /* App-shell layout: .admin-main itself never scrolls — it just stacks the
    topbar (fixed size) above .admin-scroll-area (the one scrollable region),
    so the sidebar and topbar stay in place while only content moves. */
-.admin-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.admin-scroll-area { flex: 1; overflow-y: auto; }
+.admin-main { flex: 1; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.admin-scroll-area { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 
 .admin-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 24px; background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
@@ -2210,7 +2284,8 @@ onUnmounted(() => {
   cursor: pointer; text-align: left; width: 100%;
   transition: border-color 0.2s, background 0.2s;
 }
-.ctrl-card:hover { background: var(--bg-secondary); border-color: var(--accent-blue); }
+.ctrl-card:not(:disabled):hover { background: var(--bg-secondary); border-color: var(--accent-blue); }
+.ctrl-card:disabled { opacity: 0.55; cursor: not-allowed; }
 .ctrl-card-icon { font-size: 32px; padding: 8px; border-radius: 8px; flex-shrink: 0; }
 .ctrl-blue   { background: rgba(78, 110, 242, 0.15); }
 .ctrl-yellow { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
@@ -2438,18 +2513,57 @@ onUnmounted(() => {
 /* ── Modal ── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 300;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .modal {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 24px; width: 400px;
-  max-width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden;
+  border-radius: 14px; padding: 28px; width: 440px;
+  max-width: 100%;
+  /* Auto margins center short dialogs. When a dialog is taller than the
+     viewport, the vertical auto margins collapse and it starts at the safe
+     top padding instead, leaving the overlay itself free to scroll. */
+  margin: auto;
+  position: relative;
+  overflow: visible;
   box-sizing: border-box;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.28);
 }
-.reward-modal { width: 560px; }
-.modal h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
-.form-group { margin-bottom: 12px; }
-.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.reward-modal { width: 620px; }
+.modal h3 { padding-right: 40px; font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; }
+.modal-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 17px;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.modal-close-btn:not(:disabled):hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(239,68,68,.08);
+}
+.modal-close-btn:disabled { opacity: .5; cursor: not-allowed; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 7px; }
 .label-hint { font-size: 10px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
 .image-dropzone {
   min-height: 104px; padding: 16px; box-sizing: border-box;
@@ -2470,14 +2584,14 @@ onUnmounted(() => {
 }
 .form-group input,
 .form-group select {
-  width: 100%; padding: 9px 12px; box-sizing: border-box;
+  width: 100%; min-height: 44px; padding: 10px 13px; box-sizing: border-box;
   background: var(--bg-hover); border: 1px solid var(--border);
-  border-radius: 6px; color: var(--text-primary); font-size: 14px; outline: none;
+  border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none;
 }
 .input-disabled { opacity: 0.5; cursor: not-allowed; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 .modal-actions .action-btn { min-height: 38px; padding: 8px 16px; margin-right: 0; }
 
 /* ── Detection Review ── */
@@ -2555,7 +2669,7 @@ onUnmounted(() => {
 
 /* ── Confirm modal ── */
 .confirm-modal { width: 340px; }
-.confirm-message { font-size: 14px; color: var(--text-primary); line-height: 1.5; margin: 0; }
+.confirm-message { padding-right: 40px; font-size: 14px; color: var(--text-primary); line-height: 1.5; margin: 0; }
 .confirm-modal .action-btn { padding: 8px 16px; font-size: 13px; }
 .confirm-modal .del-btn  { background: rgba(239,68,68,0.12); }
 .confirm-modal .edit-btn { background: rgba(78,110,242,0.12); }
@@ -2641,7 +2755,10 @@ onUnmounted(() => {
      something confusing. */
   .collapse-btn { display: none; }
   .sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; z-index: 200;
+    position: fixed; left: 0; top: 0; bottom: auto; z-index: 200;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
     transform: translateX(-100%); transition: transform .25s;
     width: 220px !important;
   }
@@ -2685,5 +2802,17 @@ onUnmounted(() => {
   .filter-action { flex: 1; }
   .user-actions     { flex-direction: column; align-items: stretch; gap: 8px; }
   .user-actions .action-btn { min-width: 82px; min-height: 40px; padding: 8px 12px; }
+  .modal-overlay {
+    padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  }
+  .modal { padding: 20px; }
+  .modal h3 { margin-bottom: 18px; }
+}
+
+@media (max-width: 360px) {
+  .modal-overlay {
+    padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+  }
+  .modal { padding: 18px; }
 }
 </style>

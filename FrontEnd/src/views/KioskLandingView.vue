@@ -3,7 +3,9 @@
     <div class="kiosk-bg"></div>
 
     <div class="kiosk-content">
-      <PhRecycle class="rvm-logo" weight="regular" />
+      <div class="rvm-logo-float">
+        <PhRecycle class="rvm-logo" weight="regular" />
+      </div>
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
       <p class="rvm-subtitle">{{ $t('kioskLanding.subtitle') }}</p>
 
@@ -21,7 +23,7 @@
     </div>
 
     <div class="kiosk-footer">
-      <img src="@/assets/dsme-logo.png" class="dsme-logo" alt="DSME Engineering" />
+      <img src="@/assets/logo-umpsa.png" class="brand-logo" alt="UMPSA" />
       <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
     </div>
   </div>
@@ -62,6 +64,7 @@ function goToQr() {
 <style scoped>
 .kiosk-landing {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -89,17 +92,28 @@ function goToQr() {
   text-align: center;
 }
 
+.rvm-logo-float {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  animation: float 4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 .rvm-logo {
   font-size: 96px;
+  color: var(--accent-green);
   filter: drop-shadow(0 0 40px rgba(34,197,94,0.5));
-  /* One-shot entrance instead of a continuous float — this screen can sit
-     idle for a long time between customers, so no animation should run
-     indefinitely on it (spec §6). */
   animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 @keyframes pop {
   from { transform: scale(0.5); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .rvm-title {
@@ -174,19 +188,20 @@ function goToQr() {
 
 .kiosk-footer {
   position: absolute;
-  bottom: 24px;
+  bottom: max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   color: var(--text-muted);
   font-size: 13px;
 }
 
-.dsme-logo {
-  height: 32px;
+.brand-logo {
+  height: 96px;
   width: auto;
-  opacity: 0.75;
+  margin-bottom: -21px;
+  opacity: 0.85;
 }
 
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
@@ -200,7 +215,12 @@ function goToQr() {
   .start-icon { font-size: 18px; }
   .hint-text { font-size: 12px; }
 
-  .kiosk-footer { bottom: 10px; gap: 4px; font-size: 11px; }
-  .kiosk-footer .dsme-logo { height: 20px; }
+  .kiosk-footer { bottom: max(10px, env(safe-area-inset-bottom)); gap: 3px; font-size: 11px; }
+  .kiosk-footer .brand-logo { height: 56px; margin-bottom: -12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rvm-logo-float,
+  .rvm-logo { animation: none; }
 }
 </style>
