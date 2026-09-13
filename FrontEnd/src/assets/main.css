@@ -62,22 +62,25 @@ a { color: var(--accent-blue); }
 .text-red    { color: var(--accent-red); }
 .text-blue   { color: var(--accent-blue); }
 
-/* Page transitions — the power1.out-equivalent curve below is shared with
-   .scroll-reveal so route changes and in-page reveals feel like one system. */
+/* Page transitions — fade only, no vertical offset. A translateY slide used
+   to start the incoming page below its final position, which briefly showed
+   bare background above content that sits right under a gradient header
+   (Dashboard, Settings) — a plain fade has no displacement to cause that. */
 .page-enter-active { animation: page-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 .page-leave-active  { animation: page-out 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-@keyframes page-in  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes page-in  { from { opacity:0; } to { opacity:1; } }
 @keyframes page-out { from { opacity:1; } to { opacity:0; } }
 
-/* Scroll-reveal (v-reveal directive) — design spec §7 "Scroll Reveal —
-   Subtle" preset: 12px translateY, 350ms, ease-out. Managed entirely by
+/* Scroll-reveal (v-reveal directive) — fade only, no translateY. A vertical
+   slide here read as the same "bottom to top" motion as the old page
+   transition (same complaint, same fix) — on cards sitting right under a
+   gradient header (Dashboard's points-hero) it's the more noticeable of the
+   two since it fires on load, not just on route change. Managed entirely by
    FrontEnd/src/directives/scrollReveal.js; nothing else needs to reference
    these classes directly. */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .scroll-reveal.is-visible {
   opacity: 1;
