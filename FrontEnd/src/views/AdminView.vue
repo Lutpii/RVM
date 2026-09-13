@@ -203,19 +203,21 @@
           <!-- Formal Report -->
           <div class="section-card">
             <h3 class="card-title-bar"><span class="title-sq"></span> FORMAL REPORT</h3>
-            <div class="report-filters">
-              <div class="form-group">
-                <label>From</label>
+            <div class="filter-toolbar formal-report-toolbar">
+              <div class="date-range">
+                <label class="date-field picker-field" @click="openDatePicker">
+                  <span>From</span>
                 <input v-model="reportDateFrom" type="date" />
-              </div>
-              <div class="form-group">
-                <label>To</label>
+                </label>
+                <label class="date-field picker-field" @click="openDatePicker">
+                  <span>To</span>
                 <input v-model="reportDateTo" type="date" />
+                </label>
               </div>
-            </div>
-            <div class="report-actions">
-              <button class="action-btn" @click="exportExcel"><PhDownloadSimple weight="regular" aria-hidden="true" /> Download Report</button>
-              <button class="action-btn edit-btn" @click="openEmailReportModal"><PhEnvelopeSimple weight="regular" aria-hidden="true" /> Send via Email</button>
+              <div class="filter-actions formal-report-actions">
+                <button class="action-btn filter-action" @click="exportExcel"><PhDownloadSimple weight="regular" aria-hidden="true" /> Download Report</button>
+                <button class="action-btn edit-btn filter-action" @click="openEmailReportModal"><PhEnvelopeSimple weight="regular" aria-hidden="true" /> Send via Email</button>
+              </div>
             </div>
           </div>
 
@@ -515,16 +517,24 @@
       <!-- ── DETECTION REVIEW ── -->
       <div v-if="activeTab === 'detection'" class="tab-content">
         <div class="section-card">
-          <div class="card-header">
+          <div class="card-header detection-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> DETECTION REVIEW</h3>
-            <div class="filters-row">
-              <label class="filter-label">From
-                <input type="date" v-model="detectionDateFrom" @change="filterDetection" class="filter-select" />
+          </div>
+          <div class="filter-toolbar">
+            <div class="date-range">
+              <label class="date-field picker-field" @click="openDatePicker">
+                <span>From</span>
+                <input type="date" v-model="detectionDateFrom" @change="filterDetection" />
               </label>
-              <label class="filter-label">To
-                <input type="date" v-model="detectionDateTo" @change="filterDetection" class="filter-select" />
+              <label class="date-field picker-field" @click="openDatePicker">
+                <span>To</span>
+                <input type="date" v-model="detectionDateTo" @change="filterDetection" />
               </label>
-              <button class="ctrl-btn" @click="exportDetectionLogsCsv"><PhDownloadSimple weight="regular" aria-hidden="true" /> Export CSV</button>
+            </div>
+            <div class="filter-actions">
+              <button class="action-btn filter-action" @click="exportDetectionLogsCsv">
+                <PhDownloadSimple weight="regular" aria-hidden="true" /> Export CSV
+              </button>
             </div>
           </div>
           <div v-if="loadingDetectionLogs" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -736,19 +746,35 @@
 
     <!-- ── Add Reward Modal ── -->
     <div v-if="showAddRewardItem" class="modal-overlay" @click.self="showAddRewardItem = false">
-      <div class="modal">
+      <div class="modal reward-modal">
         <h3>Add Reward</h3>
         <div class="form-group"><label>Name *</label><input v-model="newRewardItem.name" type="text" /></div>
         <div class="form-group"><label>Description</label><input v-model="newRewardItem.description" type="text" /></div>
         <div class="form-group"><label>Category</label><input v-model="newRewardItem.category" type="text" placeholder="e.g. Food Voucher" /></div>
-        <div class="form-group"><label>Points Cost *</label><input v-model.number="newRewardItem.points_cost" type="number" min="1" /></div>
-        <div class="form-group"><label>Stock (blank = unlimited)</label><input v-model="newRewardItem.stock" type="number" min="0" /></div>
         <div class="form-row">
-          <div class="form-group"><label>Available From</label><input v-model="newRewardItem.valid_from" type="datetime-local" /></div>
-          <div class="form-group"><label>Available Until</label><input v-model="newRewardItem.valid_until" type="datetime-local" /></div>
+          <div class="form-group"><label>Points Cost *</label><input v-model.number="newRewardItem.points_cost" type="number" min="1" /></div>
+          <div class="form-group"><label>Stock <span class="label-hint">Optional</span></label><input v-model="newRewardItem.stock" type="number" min="0" placeholder="Unlimited" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group picker-field" @click="openDatePicker"><label>Available From</label><input v-model="newRewardItem.valid_from" type="datetime-local" /></div>
+          <div class="form-group picker-field" @click="openDatePicker"><label>Available Until</label><input v-model="newRewardItem.valid_until" type="datetime-local" /></div>
         </div>
         <div class="form-group"><label>Active</label><select v-model="newRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
-        <div class="form-group"><label>Image</label><input type="file" accept="image/jpeg,image/png" @change="e => rewardItemImageFile = e.target.files[0] || null" /></div>
+        <div class="form-group">
+          <label>Image</label>
+          <label
+            :class="['image-dropzone', { dragging: rewardImageDragging }]"
+            @dragenter.prevent="rewardImageDragging = true"
+            @dragover.prevent="rewardImageDragging = true"
+            @dragleave.prevent="rewardImageDragging = false"
+            @drop.prevent="handleRewardImageDrop"
+          >
+            <PhUploadSimple class="upload-icon" weight="regular" aria-hidden="true" />
+            <strong>{{ rewardItemImageFile?.name || 'Drop image here or click to browse' }}</strong>
+            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG' }}</span>
+            <input class="file-input-hidden" type="file" accept="image/jpeg,image/png" @change="handleRewardImageChange" />
+          </label>
+        </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
           <button class="action-btn" @click="showAddRewardItem = false">Cancel</button>
@@ -759,19 +785,35 @@
 
     <!-- ── Edit Reward Modal ── -->
     <div v-if="editingRewardItem" class="modal-overlay" @click.self="editingRewardItem = null">
-      <div class="modal">
+      <div class="modal reward-modal">
         <h3>Edit Reward</h3>
         <div class="form-group"><label>Name *</label><input v-model="editingRewardItem.name" type="text" /></div>
         <div class="form-group"><label>Description</label><input v-model="editingRewardItem.description" type="text" /></div>
         <div class="form-group"><label>Category</label><input v-model="editingRewardItem.category" type="text" /></div>
-        <div class="form-group"><label>Points Cost *</label><input v-model.number="editingRewardItem.points_cost" type="number" min="1" /></div>
-        <div class="form-group"><label>Stock (blank = unlimited)</label><input v-model="editingRewardItem.stock" type="number" min="0" /></div>
         <div class="form-row">
-          <div class="form-group"><label>Available From</label><input v-model="editingRewardItem.valid_from" type="datetime-local" /></div>
-          <div class="form-group"><label>Available Until</label><input v-model="editingRewardItem.valid_until" type="datetime-local" /></div>
+          <div class="form-group"><label>Points Cost *</label><input v-model.number="editingRewardItem.points_cost" type="number" min="1" /></div>
+          <div class="form-group"><label>Stock <span class="label-hint">Optional</span></label><input v-model="editingRewardItem.stock" type="number" min="0" placeholder="Unlimited" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group picker-field" @click="openDatePicker"><label>Available From</label><input v-model="editingRewardItem.valid_from" type="datetime-local" /></div>
+          <div class="form-group picker-field" @click="openDatePicker"><label>Available Until</label><input v-model="editingRewardItem.valid_until" type="datetime-local" /></div>
         </div>
         <div class="form-group"><label>Active</label><select v-model="editingRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
-        <div class="form-group"><label>Replace Image</label><input type="file" accept="image/jpeg,image/png" @change="e => rewardItemImageFile = e.target.files[0] || null" /></div>
+        <div class="form-group">
+          <label>Replace Image</label>
+          <label
+            :class="['image-dropzone', { dragging: rewardImageDragging }]"
+            @dragenter.prevent="rewardImageDragging = true"
+            @dragover.prevent="rewardImageDragging = true"
+            @dragleave.prevent="rewardImageDragging = false"
+            @drop.prevent="handleRewardImageDrop"
+          >
+            <PhUploadSimple class="upload-icon" weight="regular" aria-hidden="true" />
+            <strong>{{ rewardItemImageFile?.name || 'Drop replacement image here or click to browse' }}</strong>
+            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG · leave empty to keep current image' }}</span>
+            <input class="file-input-hidden" type="file" accept="image/jpeg,image/png" @change="handleRewardImageChange" />
+          </label>
+        </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
           <button class="action-btn" @click="editingRewardItem = null">Cancel</button>
@@ -880,7 +922,7 @@ import {
   PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhMagnifyingGlass, PhGift,
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
-  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple,
+  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple,
 } from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { paginationLabel } from '@/utils/admin/paginationLabel.js'
@@ -984,6 +1026,7 @@ const showAddRewardItem = ref(false)
 const editingRewardItem = ref(null)
 const newRewardItem = ref({ name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true })
 const rewardItemImageFile = ref(null)
+const rewardImageDragging = ref(false)
 const rewardItemError = ref('')
 const savingRewardItem = ref(false)
 
@@ -1709,6 +1752,41 @@ async function deleteMachine(id) {
   } catch { showToast('Failed to delete machine.', 'error') }
 }
 
+function openDatePicker(event) {
+  const target = event.currentTarget
+  const input = target.matches?.('input') ? target : target.querySelector?.('input')
+  if (!input) return
+  try {
+    if (typeof input.showPicker === 'function') input.showPicker()
+    else input.focus()
+  } catch {
+    input.focus()
+  }
+}
+
+function setRewardImageFile(file) {
+  rewardImageDragging.value = false
+  if (!file) {
+    rewardItemImageFile.value = null
+    return
+  }
+  if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    rewardItemImageFile.value = null
+    rewardItemError.value = 'Please choose a PNG or JPG image.'
+    return
+  }
+  rewardItemImageFile.value = file
+  rewardItemError.value = ''
+}
+
+function handleRewardImageChange(event) {
+  setRewardImageFile(event.target.files?.[0] || null)
+}
+
+function handleRewardImageDrop(event) {
+  setRewardImageFile(event.dataTransfer?.files?.[0] || null)
+}
+
 function openAddRewardItem() {
   newRewardItem.value = { name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true }
   rewardItemImageFile.value = null
@@ -2121,12 +2199,6 @@ onUnmounted(() => {
 .sys-val-yellow { color: #f59e0b; }
 .sys-val-red    { color: #ef4444; }
 
-/* ── Formal Report ── */
-.report-filters {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;
-}
-.report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
 /* ── Admin Controls ── */
 .controls-grid {
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
@@ -2366,16 +2438,36 @@ onUnmounted(() => {
 /* ── Modal ── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  display: flex; align-items: center; justify-content: center; z-index: 100;
+  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px;
 }
 .modal {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 24px; width: 400px; max-width: 95vw;
-  max-height: 90vh; overflow-y: auto;
+  border-radius: 12px; padding: 24px; width: 400px;
+  max-width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden;
+  box-sizing: border-box;
 }
+.reward-modal { width: 560px; }
 .modal h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
 .form-group { margin-bottom: 12px; }
 .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.label-hint { font-size: 10px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+.image-dropzone {
+  min-height: 104px; padding: 16px; box-sizing: border-box;
+  display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  text-align: center; cursor: pointer;
+  background: var(--bg-hover); border: 1.5px dashed var(--border); border-radius: 9px;
+  transition: border-color .2s, background .2s;
+}
+.image-dropzone:hover, .image-dropzone.dragging {
+  border-color: var(--accent-blue); background: rgba(78,110,242,.08);
+}
+.image-dropzone strong { color: var(--text-primary); font-size: 12px; font-weight: 600; word-break: break-word; }
+.image-dropzone span { color: var(--text-muted); font-size: 10px; }
+.upload-icon { width: 24px; height: 24px; color: var(--accent-blue); }
+.file-input-hidden {
+  position: absolute; width: 1px !important; height: 1px; padding: 0 !important;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0 !important;
+}
 .form-group input,
 .form-group select {
   width: 100%; padding: 9px 12px; box-sizing: border-box;
@@ -2385,13 +2477,38 @@ onUnmounted(() => {
 .input-disabled { opacity: 0.5; cursor: not-allowed; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.modal-actions .action-btn { min-height: 38px; padding: 8px 16px; margin-right: 0; }
 
 /* ── Detection Review ── */
-.filters-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.filter-label {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--text-muted);
+.detection-header { margin-bottom: 12px; }
+.filter-toolbar {
+  display: flex; align-items: flex-end; gap: 10px;
+  padding: 12px; margin-bottom: 16px;
+  background: var(--bg-hover); border: 1px solid var(--border); border-radius: 10px;
+}
+.formal-report-toolbar { margin-top: 14px; }
+.date-range {
+  flex: 1; min-width: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+}
+.date-field { display: block; min-width: 0; }
+.date-field span {
+  display: block; margin-bottom: 5px;
+  color: var(--text-muted); font-size: 11px; font-weight: 600;
+}
+.date-field input {
+  width: 100%; min-width: 0; min-height: 38px; box-sizing: border-box;
+  padding: 8px 10px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 7px;
+  color: var(--text-primary); font-size: 12px; outline: none;
+}
+.date-field input:focus { border-color: var(--accent-blue); }
+.picker-field, .picker-field input { cursor: pointer; }
+.filter-actions { display: flex; gap: 8px; }
+.filter-action {
+  min-height: 38px; margin-right: 0; padding: 8px 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
 .detection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .detection-card {
@@ -2541,18 +2658,14 @@ onUnmounted(() => {
   .form-row         { grid-template-columns: 1fr; }
   .charts-row       { grid-template-columns: 1fr; }
   .breakdown-status-row { grid-template-columns: 1fr; }
-  .report-filters   { grid-template-columns: 1fr; }
   .machines-grid    { grid-template-columns: 1fr; }
 
   .admin-topbar     { flex-wrap: wrap; gap: 8px; }
   .topbar-right     { flex-wrap: wrap; }
   .table-wrap       { overflow-x: auto; }
 
-  /* card-header pairs a title with a search/filter/action row via
-     space-between on one line — on mobile the two sides don't fit and
-     collide instead of wrapping (seen worst in Detection Review, whose
-     filters-row sits directly in card-header rather than nested inside
-     topbar-right). Stacking avoids the collision on every tab that uses it. */
+  /* Some tabs pair a title with search/filter controls via space-between.
+     Stack those headers on mobile so both sides keep their full width. */
   .card-header      { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
@@ -2566,6 +2679,10 @@ onUnmounted(() => {
   .section-card     { padding: 12px; }
   .admin-topbar     { padding: 10px 12px; }
   .tab-content      { padding: 12px; }
+  .filter-toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; }
+  .date-range { gap: 8px; }
+  .filter-actions { width: 100%; }
+  .filter-action { flex: 1; }
   .user-actions     { flex-direction: column; align-items: stretch; gap: 8px; }
   .user-actions .action-btn { min-width: 82px; min-height: 40px; padding: 8px 12px; }
 }
