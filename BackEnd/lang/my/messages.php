@@ -28,6 +28,7 @@ return [
     'invalid_request'           => 'Permintaan tidak sah.',
     'oauth_code_expired'        => 'Pautan log masuk ini telah tamat tempoh atau sudah digunakan.',
     'logout_success'            => 'Log keluar berjaya.',
+    'session_expired_idle'      => 'Sesi tamat tempoh kerana tidak aktif.',
 
     // SessionController
     'machine_not_active'       => 'Mesin ini tidak aktif buat masa ini.',

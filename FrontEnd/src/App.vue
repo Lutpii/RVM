@@ -25,6 +25,7 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import AppNav from '@/components/AppNav.vue'
 import { useLenisScroll } from '@/composables/useLenisScroll'
+import { useIdleLogout } from '@/composables/useIdleLogout'
 
 const theme = ref(localStorage.getItem('rvm_theme') || 'dark')
 const auth  = useAuthStore()
@@ -39,6 +40,8 @@ function showToast(message, type = 'success') {
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { toastState.value.show = false }, 3500)
 }
+
+useIdleLogout(showToast)
 
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'

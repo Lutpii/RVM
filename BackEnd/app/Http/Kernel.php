@@ -64,6 +64,7 @@ class Kernel extends HttpKernel
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \App\Http\Middleware\KioskAuthMiddleware::class,          // must be before Authenticate
+        \App\Http\Middleware\EnforceIdleTimeout::class,           // must be before Authenticate (reads last_used_at before Sanctum bumps it)
         \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
         \Illuminate\Routing\Middleware\ThrottleRequests::class,
         \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
@@ -76,6 +77,7 @@ class Kernel extends HttpKernel
         'auth' => \App\Http\Middleware\Authenticate::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'kiosk.auth' => \App\Http\Middleware\KioskAuthMiddleware::class,
+        'idle.timeout' => \App\Http\Middleware\EnforceIdleTimeout::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,

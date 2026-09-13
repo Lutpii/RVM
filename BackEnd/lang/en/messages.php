@@ -28,6 +28,7 @@ return [
     'invalid_request'           => 'Invalid request.',
     'oauth_code_expired'        => 'This sign-in link has expired or was already used.',
     'logout_success'            => 'Logged out successfully.',
+    'session_expired_idle'      => 'Session expired due to inactivity.',
 
     // SessionController
     'machine_not_active'       => 'This machine is not currently active.',
