@@ -130,7 +130,10 @@ class AdminController extends Controller
             : 'id';
         $sortDirection = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
-        $query = User::orderBy($sortColumn, $sortDirection);
+        // The shared guest placeholder account (see User::guest()) isn't a
+        // real person — hide it from user management, same as it's excluded
+        // from anywhere users are browsed/managed individually.
+        $query = User::where('email', '!=', User::GUEST_EMAIL)->orderBy($sortColumn, $sortDirection);
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")

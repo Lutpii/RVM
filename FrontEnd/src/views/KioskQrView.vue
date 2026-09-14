@@ -278,7 +278,16 @@ function clearIntervals() {
 function startAsGuest() {
   clearIntervals()
   clearTimeout(screenTimeout)
-  rvm.startGuestSession(machineCode)
+  const md = machineData ? {
+    id: machineData.id,
+    name: machineData.name,
+    location: '',
+    aluminum_level: machineData.bins?.aluminum ?? 0,
+    plastic_level:  machineData.bins?.plastic  ?? 0,
+    glass_level:    machineData.bins?.glass    ?? 0,
+    paper_level:    machineData.bins?.paper    ?? 0,
+  } : null
+  rvm.startGuestSession(machineCode, md)
   if (rvm.session) rvm.session.user_name = t('kioskQr.guestName')
   // Guests default to light mode.
   setTheme('light')

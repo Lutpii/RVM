@@ -47,6 +47,14 @@ Route::post('/hardware/capture', [TransactionController::class, 'hardwareCapture
 Route::post('/hardware/classify', [TransactionController::class, 'hardwareClassify']);
 Route::post('/hardware/sort', [TransactionController::class, 'hardwareSort']);
 
+// Guest recycling_sessions/transactions rows, tied to the shared
+// App\Models\User::guest() placeholder account so guest activity shows up in
+// the admin dashboard's existing Transaction-based stats/charts alongside
+// real logged-in sessions, without those queries needing to change.
+Route::post('/hardware/session/start', [TransactionController::class, 'guestSessionStart']);
+Route::post('/hardware/session/complete', [TransactionController::class, 'guestSessionComplete']);
+Route::post('/hardware/session/end', [TransactionController::class, 'guestSessionEnd']);
+
 // Protected routes (require auth or valid kiosk token)
 Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(function () {
 

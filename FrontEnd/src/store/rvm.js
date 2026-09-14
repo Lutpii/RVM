@@ -22,6 +22,11 @@ export const useRvmStore = defineStore('rvm', () => {
   const lastError          = ref(null)
   const isGuest            = ref(false)
   const guestMachineCode   = ref(null)
+  // True only once startGuestSession's /hardware/session/start call actually
+  // succeeds - both it and the client-only fallback session_code share the
+  // same 'GUEST-' prefix, so this flag (not the prefix) is what processStep
+  // uses to know whether there's a real backend session to write items to.
+  const guestSessionIsReal = ref(false)
 
   // Local summary tracking — used when no real API session exists
   const localSummary = ref({
@@ -49,6 +54,7 @@ export const useRvmStore = defineStore('rvm', () => {
         currentTransaction: currentTransaction.value,
         localSummary: localSummary.value,
         isGuest: isGuest.value,
+        guestSessionIsReal: guestSessionIsReal.value,
       }))
     } catch { /* sessionStorage may be unavailable */ }
   }
@@ -65,6 +71,7 @@ export const useRvmStore = defineStore('rvm', () => {
     localSummary.value       = saved.localSummary || { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
     isGuest.value            = !!saved.isGuest
     guestMachineCode.value   = saved.machineCode
+    guestSessionIsReal.value = !!saved.guestSessionIsReal
     return true
   }
 
@@ -73,7 +80,7 @@ export const useRvmStore = defineStore('rvm', () => {
   }
 
   watch(
-    [session, machine, currentStep, selectedMaterial, currentTransaction, localSummary, isGuest, guestMachineCode],
+    [session, machine, currentStep, selectedMaterial, currentTransaction, localSummary, isGuest, guestMachineCode, guestSessionIsReal],
     () => persistKioskSession(),
     { deep: true },
   )
@@ -83,9 +90,12 @@ export const useRvmStore = defineStore('rvm', () => {
   function setSession(d) { session.value = d }
   function setSelectedMaterial(m) { selectedMaterial.value = m }
 
-  function startGuestSession(machineCode, machineData = null) {
+  async function startGuestSession(machineCode, machineData = null) {
     isGuest.value          = true
     guestMachineCode.value = machineCode
+    // Placeholder until (if) the real backend session below resolves -
+    // guests still get a working local session immediately even if that
+    // call is slow, fails, or the machine id isn't known yet.
     session.value = {
       session_code:  'GUEST-' + Date.now().toString(36).toUpperCase(),
       status:        'active',
@@ -103,6 +113,22 @@ export const useRvmStore = defineStore('rvm', () => {
     }
     localSummary.value = { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
     setStep('bin_check')
+
+    // Best-effort: swap in a real recycling_sessions row (tied to the shared
+    // guest placeholder account server-side) so this guest's items show up
+    // in the admin dashboard. Requires a real machine id, which a plain
+    // "Continue as Guest" tap on the landing screen (no QR/machine lookup
+    // yet) may not have - the client-generated code above is a fine
+    // fallback either way, it just won't be reflected in admin stats.
+    if (machineData?.id) {
+      try {
+        const res = await api.post('/hardware/session/start', { machine_id: machineData.id })
+        if (res.data.success && session.value) {
+          session.value.session_code = res.data.session_code
+          guestSessionIsReal.value   = true
+        }
+      } catch { /* keep the local-only fallback session_code, guestSessionIsReal stays false */ }
+    }
   }
 
   // Points range must match BackEnd/app/Http/Controllers/TransactionController.php's
@@ -165,6 +191,9 @@ export const useRvmStore = defineStore('rvm', () => {
       sum + (t.is_valid ? (t.points_earned || 0) : -(t.points_deducted || 0)), 0)
 
     if (isGuest.value) {
+      if (guestSessionIsReal.value && session.value?.session_code) {
+        api.post('/hardware/session/end', { session_code: session.value.session_code }).catch(() => {})
+      }
       session.value = {
         ...session.value,
         status:       'completed',
@@ -201,6 +230,22 @@ export const useRvmStore = defineStore('rvm', () => {
         } catch {
           return _guestMockStep(stepName, payload)
         }
+      }
+      // Weigh is where a guest's item actually gets written to the DB (as a
+      // real transactions row under the shared guest placeholder account —
+      // see TransactionController::guestSessionComplete) so it counts in the
+      // admin dashboard. Falls back to a client-only mock if there's no real
+      // backend session (see startGuestSession) or the call fails, same as
+      // before this existed.
+      if (stepName === 'weigh' && guestSessionIsReal.value) {
+        try {
+          const res = await api.post('/hardware/session/complete', {
+            session_code:      session.value.session_code,
+            ai_detected_type:  payload.ai_detected_type || payload.material_selected,
+            image_path:        payload.image_path,
+          })
+          if (res.data.success) return res.data
+        } catch { /* fall through to the local mock below */ }
       }
       // No points/DB record for guests, but the physical servo still sorts
       // the item — fire-and-forget so a slow/offline AI service can't stall
@@ -254,12 +299,13 @@ export const useRvmStore = defineStore('rvm', () => {
     lastError.value          = null
     isGuest.value            = false
     guestMachineCode.value   = null
+    guestSessionIsReal.value = false
     localSummary.value       = { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
   }
 
   return {
     session, machine, currentStep, selectedMaterial, currentTransaction, lastError, steps,
-    localSummary, isGuest, guestMachineCode,
+    localSummary, isGuest, guestMachineCode, guestSessionIsReal,
     setStep, setMachine, setSession, setSelectedMaterial, recordLocalTransaction,
     startGuestSession, startSession, endSession, getSummary, checkBin, processStep,
     restoreKioskSession, resetTransaction, resetSession,

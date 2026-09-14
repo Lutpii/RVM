@@ -450,6 +450,145 @@ class TransactionController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // Step: start a real recycling_sessions row for a "Continue as Guest" kiosk
+    // session, tied to the shared \App\Models\User::guest() placeholder account
+    // instead of a real logged-in user — see that model's docblock for why. This
+    // is what lets guest activity show up in the admin dashboard's stats/charts
+    // (they all query recycling_sessions/transactions), which previously never
+    // saw guests at all since the old guest flow was pure client-side simulation.
+    public function guestSessionStart(Request $request): JsonResponse
+    {
+        $request->validate(['machine_id' => 'required|exists:rvm_machines,id']);
+
+        $guest   = \App\Models\User::guest();
+        $machine = RvmMachine::find($request->machine_id);
+
+        // Unlike a real user, the guest placeholder is shared by every
+        // concurrent guest on the kiosk — "one active session per user" would
+        // incorrectly serialize unrelated guests, so that check (present in
+        // SessionController::start) is deliberately skipped here.
+        $session = RecyclingSession::create([
+            'session_code'  => 'GUEST-' . strtoupper(\Illuminate\Support\Str::random(12)),
+            'user_id'       => $guest->id,
+            'machine_id'    => $machine->id,
+            'status'        => 'active',
+            'start_points'  => $guest->total_points,
+            'end_points'    => $guest->total_points,
+            'points_earned' => 0,
+            'total_items'   => 0,
+            'started_at'    => now(),
+        ]);
+
+        return response()->json(['success' => true, 'session_code' => $session->session_code]);
+    }
+
+    // Step: record one guest item as a real transaction (points computed the
+    // same way a logged-in session's weigh()+complete() would - see those for
+    // the reasoning), then immediately mark it complete. Guests skip the
+    // separate weigh step entirely (no pre-selection UI, no Cache-staged
+    // pending item to confirm), so this does both in one call.
+    public function guestSessionComplete(Request $request, \App\Services\RewardConfigService $rewardConfig): JsonResponse
+    {
+        $request->validate([
+            'session_code'     => 'required|string',
+            'ai_detected_type' => 'required|string',
+            'ai_confidence'    => 'nullable|numeric',
+            'image_path'       => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
+        ]);
+
+        $guest   = \App\Models\User::guest();
+        $session = RecyclingSession::where('session_code', $request->session_code)
+            ->where('user_id', $guest->id)
+            ->where('status', 'active')
+            ->first();
+        if (!$session) {
+            return response()->json(['success' => false, 'message' => __('messages.active_session_not_found')], 404);
+        }
+
+        $material = $request->ai_detected_type;
+        $isValid  = $material !== 'unknown' && $material !== 'reject';
+
+        $weightGrams = match($material) {
+            'aluminum', 'plastic' => rand(9, 49),
+            'glass', 'paper'      => rand(50, 500),
+            default               => 0, // unknown/reject
+        };
+        $pointsEarned = $isValid ? ($rewardConfig->load()[$material] ?? self::calcPoints()) : 0;
+
+        $transaction = Transaction::create([
+            'session_id'        => $session->id,
+            'user_id'           => $guest->id,
+            'machine_id'        => $session->machine_id,
+            'material_selected' => $material,
+            'ai_detected_type'  => $material,
+            'ai_confidence'     => $request->ai_confidence,
+            'is_valid'          => $isValid,
+            'weight_grams'      => $weightGrams,
+            'points_earned'     => $pointsEarned,
+            'points_deducted'   => 0,
+            'image_path'        => $request->image_path,
+        ]);
+
+        if ($isValid) {
+            $machine = $session->machine;
+            $guest->increment('total_points', $pointsEarned);
+            PointsHistory::create([
+                'user_id'        => $guest->id,
+                'transaction_id' => $transaction->id,
+                'session_id'     => $session->id,
+                'points_change'  => $pointsEarned,
+                'balance_after'  => $guest->fresh()->total_points,
+                'type'           => 'earned',
+                'description'    => "Recycled {$weightGrams}g of {$material} (guest)",
+            ]);
+
+            $binField = $material . '_level';
+            $machine->update([$binField => min(100, $machine->$binField + (int) ($weightGrams / 50))]);
+
+            $session->increment('total_items');
+            $session->increment('points_earned', $pointsEarned);
+            $session->update(['end_points' => $guest->fresh()->total_points]);
+        }
+
+        return response()->json([
+            'success'       => true,
+            'points_earned' => $pointsEarned,
+            'weight_grams'  => $weightGrams,
+            'material'      => $material,
+            'carbon_saved'  => \App\Services\CarbonService::forMaterial($material),
+        ]);
+    }
+
+    // Step: close out a guest session's recycling_sessions row (mirrors
+    // SessionController::end, minus updating any real user's total_points -
+    // the guest placeholder's running total was already kept current per-item
+    // in guestSessionComplete above).
+    public function guestSessionEnd(Request $request): JsonResponse
+    {
+        $request->validate(['session_code' => 'required|string']);
+
+        $guest   = \App\Models\User::guest();
+        $session = RecyclingSession::with('transactions')
+            ->where('session_code', $request->session_code)
+            ->where('user_id', $guest->id)
+            ->where('status', 'active')
+            ->first();
+        if (!$session) {
+            return response()->json(['success' => false, 'message' => __('messages.active_session_not_found')], 404);
+        }
+
+        $session->update(['status' => 'completed', 'ended_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'session_code'  => $session->session_code,
+                'points_earned' => $session->points_earned,
+                'total_items'   => $session->total_items,
+            ],
+        ]);
+    }
+
     // Helpers
     private function getActiveSession(Request $request): ?RecyclingSession
     {
