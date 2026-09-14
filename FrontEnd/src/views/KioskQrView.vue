@@ -574,11 +574,11 @@ onBeforeUnmount(() => {
 @media (max-height: 650px) {
   .qr-header { padding: 10px 20px; }
 
-  .qr-content { max-width: 760px; gap: 10px; padding: 6px 24px 12px; }
+  .qr-content { max-width: 760px; gap: 14px; padding: 6px 24px 12px; }
   .qr-title { font-size: 24px; }
   .qr-sub { font-size: 13px; }
 
-  .qr-box { width: 170px; height: 170px; }
+  .qr-box { width: 170px; height: 170px; margin: 4px 0 6px; }
   .qr-image { width: 144px; height: 144px; }
   .qr-url { display: none; }
 
@@ -609,7 +609,7 @@ onBeforeUnmount(() => {
     gap: 3px;
     font-size: 11px;
   }
-  .kiosk-footer .brand-logo { height: 76px; margin-bottom: -17px; }
+  .kiosk-footer .brand-logo { height: 90px; margin-bottom: -20px; }
 
   .scanned-content { padding-top: 20px; }
   .success-ring { width: 80px; height: 80px; }

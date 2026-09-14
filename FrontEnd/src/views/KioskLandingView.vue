@@ -216,7 +216,7 @@ function goToQr() {
   .hint-text { font-size: 12px; }
 
   .kiosk-footer { bottom: max(10px, env(safe-area-inset-bottom)); gap: 3px; font-size: 11px; }
-  .kiosk-footer .brand-logo { height: 76px; margin-bottom: -17px; }
+  .kiosk-footer .brand-logo { height: 90px; margin-bottom: -20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
