@@ -207,7 +207,7 @@ function goToQr() {
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
 @media (max-height: 650px) {
   .kiosk-content { gap: 12px; padding: 20px; }
-  .rvm-logo { font-size: 56px; }
+  .rvm-logo { font-size: 76px; }
   .rvm-title { font-size: 34px; }
   .rvm-subtitle { font-size: 16px; }
   .machine-badge { padding: 6px 16px; font-size: 13px; }
@@ -216,7 +216,7 @@ function goToQr() {
   .hint-text { font-size: 12px; }
 
   .kiosk-footer { bottom: max(10px, env(safe-area-inset-bottom)); gap: 3px; font-size: 11px; }
-  .kiosk-footer .brand-logo { height: 56px; margin-bottom: -12px; }
+  .kiosk-footer .brand-logo { height: 76px; margin-bottom: -17px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

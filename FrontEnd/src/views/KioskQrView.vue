@@ -106,19 +106,24 @@ const qrSvgSrc       = ref('')
 const scanUrl        = ref('')
 const currentToken   = ref('')
 const scannedUser    = ref('')
-const expiresInSec   = ref(300)
+const QR_REFRESH_SECONDS = 60
+const QR_SCREEN_SECONDS  = 120
+
+const expiresInSec   = ref(QR_REFRESH_SECONDS)
 const timerPct       = ref(100)
 
 let pollInterval  = null
 let timerInterval = null
+let screenTimeout = null
 let isActive      = false
+let screenDeadline = 0
 let machineData   = null  // cached from generate response
 
 async function generateQr() {
   loadingQr.value  = true
   qrSvgSrc.value   = ''
   state.value      = 'waiting'
-  expiresInSec.value = 300
+  expiresInSec.value = QR_REFRESH_SECONDS
   timerPct.value   = 100
 
   try {
@@ -149,6 +154,7 @@ function startPoll() {
         scannedUser.value = res.data.user_name || t('kioskQr.defaultUserName')
         state.value = 'scanned'
         clearIntervals()
+        clearTimeout(screenTimeout)
         isActive = false
 
         // Apply the scanned user's theme for the rest of this kiosk session —
@@ -234,16 +240,34 @@ function startPoll() {
 function startTimer() {
   clearInterval(timerInterval)
   timerInterval = setInterval(() => {
+    if (Date.now() >= screenDeadline) {
+      returnToKiosk()
+      return
+    }
+
     expiresInSec.value -= 1
-    timerPct.value = (expiresInSec.value / 300) * 100
+    timerPct.value = (expiresInSec.value / QR_REFRESH_SECONDS) * 100
     if (expiresInSec.value <= 0) handleExpiry()
   }, 1000)
 }
 
 function handleExpiry() {
   clearIntervals()
+
+  if (Date.now() >= screenDeadline) {
+    returnToKiosk()
+    return
+  }
+
   state.value = 'expired'
-  setTimeout(() => generateQr(), 2000)
+  generateQr()
+}
+
+function returnToKiosk() {
+  clearIntervals()
+  clearTimeout(screenTimeout)
+  isActive = false
+  router.replace(`/kiosk/${machineCode}`)
 }
 
 function clearIntervals() {
@@ -253,6 +277,7 @@ function clearIntervals() {
 
 function startAsGuest() {
   clearIntervals()
+  clearTimeout(screenTimeout)
   rvm.startGuestSession(machineCode)
   if (rvm.session) rvm.session.user_name = t('kioskQr.guestName')
   // Guests default to light mode.
@@ -265,6 +290,8 @@ function startAsGuest() {
 
 onMounted(() => {
   isActive = true
+  screenDeadline = Date.now() + (QR_SCREEN_SECONDS * 1000)
+  screenTimeout = setTimeout(returnToKiosk, QR_SCREEN_SECONDS * 1000)
   // Always wait for a real QR scan — a kiosk screen must never silently
   // start a session as whoever happens to be logged into this browser (e.g.
   // a leftover phone session from testing both flows on one machine). The
@@ -276,6 +303,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   isActive = false
   clearIntervals()
+  clearTimeout(screenTimeout)
 })
 </script>
 
@@ -546,12 +574,12 @@ onBeforeUnmount(() => {
 @media (max-height: 650px) {
   .qr-header { padding: 10px 20px; }
 
-  .qr-content { max-width: 760px; gap: 6px; padding: 4px 24px 10px; }
+  .qr-content { max-width: 760px; gap: 10px; padding: 6px 24px 12px; }
   .qr-title { font-size: 24px; }
   .qr-sub { font-size: 13px; }
 
-  .qr-box { width: 150px; height: 150px; }
-  .qr-image { width: 126px; height: 126px; }
+  .qr-box { width: 170px; height: 170px; }
+  .qr-image { width: 144px; height: 144px; }
   .qr-url { display: none; }
 
   .qr-steps {
@@ -581,7 +609,7 @@ onBeforeUnmount(() => {
     gap: 3px;
     font-size: 11px;
   }
-  .kiosk-footer .brand-logo { height: 56px; margin-bottom: -12px; }
+  .kiosk-footer .brand-logo { height: 76px; margin-bottom: -17px; }
 
   .scanned-content { padding-top: 20px; }
   .success-ring { width: 80px; height: 80px; }

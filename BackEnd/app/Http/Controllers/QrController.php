@@ -41,7 +41,9 @@ class QrController extends Controller
             'machine_id' => $machine->id,
             'qr_token'   => $token,
             'status'     => 'pending',
-            'expires_at' => Carbon::now()->addMinutes(5),
+            // The kiosk replaces its QR every 60 seconds. Match the server-side
+            // validity window so a QR removed from the display cannot be scanned.
+            'expires_at' => Carbon::now()->addSeconds(60),
         ]);
 
         // Build scan URL — points to the Vue frontend /scan page
@@ -84,7 +86,7 @@ class QrController extends Controller
         }
 
         // expires_at means two different things depending on status: for a
-        // 'pending' QR it's the 5-minute scan window; for a 'scanned' one it's the
+        // 'pending' QR it's the 60-second scan window; for a 'scanned' one it's the
         // kiosk_token's own TTL (see scan()). Either way, once it's passed the
         // session (and its kiosk_token) is dead.
         if (Carbon::now()->isAfter($qrSession->expires_at) && $qrSession->status !== 'expired') {
