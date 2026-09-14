@@ -327,8 +327,28 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* .qr-header is position:absolute (below) so it doesn't count as a flex
+     child here - this column is really just .qr-content + .kiosk-footer.
+     space-between + a real gap floor: on a short screen the gap shrinks
+     toward that floor instead of the two ever touching/overlapping
+     (confirmed by screenshot at 1280x800 before this existed - logo/text
+     drawn right on top of the guest button); on a taller screen the extra
+     room goes into growing that gap, which is what gives
+     KioskLandingView's absolute-positioned footer its own generous
+     breathing room above it - same visual effect, without needing this
+     view's much taller content to risk the same overlap. */
+  justify-content: space-between;
+  gap: 32px;
   position: relative;
-  overflow: hidden;
+  /* Room for .qr-header, now that it's absolute and no longer a flex
+     sibling reserving its own space. */
+  padding-top: 68px;
+  /* auto, not hidden: on a kiosk touchscreen short/dense enough that the
+     compact media query below still doesn't make everything fit (the QR
+     code itself included), this scrolls instead of silently clipping
+     content off the bottom of the screen with no way to reach it. */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .kiosk-bg {
@@ -338,9 +358,15 @@ onBeforeUnmount(() => {
 }
 
 .qr-header {
-  position: relative;
-  z-index: 1;
-  width: 100%;
+  /* Pinned at the top independent of .kiosk-qr's flex layout below (Back
+     button + machine code should stay put regardless of how much/little
+     room the content+footer split takes up), not a flex child that
+     would otherwise eat into the space-between budget. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -368,7 +394,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 13px;
   padding: 20px 40px 40px;
   text-align: center;
   max-width: 520px;
@@ -376,10 +402,11 @@ onBeforeUnmount(() => {
 }
 
 .kiosk-footer {
-  position: absolute;
-  left: 50%;
-  bottom: max(24px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
+  /* Same size/color/gap as KioskLandingView's footer - position:static
+     (not absolute) is the one deliberate difference, so it's a real flex
+     child of .kiosk-qr (spaced out by justify-content:space-between
+     above) instead of pinned to a fixed bottom offset that this view's
+     taller content can run into. */
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -389,6 +416,7 @@ onBeforeUnmount(() => {
   font-size: 13px;
   text-align: center;
   white-space: nowrap;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
 .brand-logo {
@@ -459,8 +487,14 @@ onBeforeUnmount(() => {
 
 .qr-url {
   font-family: monospace;
-  font-size: 11px;
-  color: rgba(26,32,44,0.3);
+  font-size: 14px;
+  /* var(--text-muted), not a hand-picked low-alpha rgba: this view is
+     pinned to data-theme="light" today, but the low-opacity gray this
+     used to be (~30% black on white) fell well under WCAG AA contrast -
+     genuinely hard to read, not just faint by design. The token is
+     already tuned for real contrast against --bg-primary and stays
+     correct if this view's theme ever changes. */
+  color: var(--text-muted);
   word-break: break-all;
   max-width: 320px;
 }
@@ -471,11 +505,24 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  max-width: 320px;
+  /* Just wide enough that the longest step ("Scan this QR code with your
+     phone") doesn't wrap to 2 lines at 14px - a 260px box (matching
+     .qr-box) forced exactly that. Kept fairly narrow (not much wider than
+     that) rather than very wide, since .step is left-aligned (see its own
+     comment): a too-wide box would visibly shift the 1/2/3 column away
+     from center even though the block itself is centered by this
+     container's parent. */
+  max-width: 300px;
 }
 .step {
   display: flex;
   align-items: center;
+  /* NOT justify-content:center: each step's text is a different length,
+     so centering every row independently put the 1/2/3 badges at 3
+     different x-positions instead of a straight column - the "1-3 tidak
+     sejajar" bug. Left-aligned rows keep the badges lined up; the whole
+     .qr-steps block is still centered as a unit under the QR code via
+     its container's align-items:center + constrained max-width. */
   gap: 12px;
   color: rgba(26,32,44,0.55);
   font-size: 14px;
@@ -538,7 +585,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   width: 260px;
-  margin: 4px 0 0;
+  margin: 0;
 }
 .guest-divider-line {
   flex: 1;
@@ -579,45 +626,57 @@ onBeforeUnmount(() => {
   letter-spacing: 0.02em;
 }
 
-/* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
-@media (max-height: 650px) {
-  .qr-header { padding: 10px 20px; }
+/* Compact layout for real kiosk touchscreens - 900px, not 650px: this
+   view's content (title+subtitle+QR+token+3 steps+timer+guest button+
+   footer) measures ~970px tall at full/base size with a 2-line title
+   (e.g. the Malay translation), so a common 1280x800 10" panel was
+   actually still hitting the "base" styles meant for a full desktop
+   monitor and overflowing by ~170px - confirmed by measuring
+   .kiosk-qr's scrollHeight in a real browser. 900px comfortably covers
+   the resolutions actual kiosk touch panels ship at; only genuine
+   full-height desktop monitors see the spacious base layout now. */
+@media (max-height: 900px) {
+  /* Pulled up (small padding-top/gap, flex-start not the base rule's
+     centering effect from space-between having more headroom to grow
+     into) so the title sits close to the header instead of near mid
+     -screen, and there's a comfortable margin below the shortest tested
+     real kiosk resolution (1024x600) before anything would need to
+     scroll - matches KioskLandingView never needing to scroll either. */
+  .kiosk-qr { padding-top: 40px; gap: 8px; }
+  .qr-header { padding: 6px 16px; }
 
-  .qr-content { max-width: 760px; gap: 14px; padding: 6px 24px 12px; }
-  .qr-title { font-size: 24px; }
-  .qr-sub { font-size: 13px; }
+  .qr-content { max-width: 760px; gap: 8px; padding: 0 24px 0; }
+  .qr-title { font-size: 22px; }
+  .qr-sub { font-size: 12px; }
 
-  .qr-box { width: 170px; height: 170px; margin: 4px 0 6px; }
-  .qr-image { width: 144px; height: 144px; }
-  .qr-url { display: none; }
+  .qr-box { width: 150px; height: 150px; margin: 2px 0; }
+  .qr-image { width: 126px; height: 126px; }
+  .qr-url { font-size: 12px; max-width: 240px; }
 
-  .qr-steps {
-    max-width: 700px;
-    flex-direction: row;
-    justify-content: center;
-    gap: 14px;
-  }
-  .step { flex: 1; justify-content: center; font-size: 11px; }
-  .step-num { width: 20px; height: 20px; font-size: 11px; }
+  /* Kept vertical (this view's base column layout, top-to-bottom 1-2-3).
+     Wide enough (like the base rule above) that the longest step doesn't
+     wrap to 2 lines at this font-size; .step's justify-content:center
+     (base rule, cascades here) keeps each row centered regardless. */
+  .qr-steps { max-width: 300px; gap: 6px; }
+  .step { font-size: 12px; }
+  .step-num { width: 18px; height: 18px; font-size: 10px; }
 
   .timer-bar, .guest-divider { width: 220px; }
+  .timer-text { font-size: 11px; }
   .guest-btn {
     width: auto;
     min-width: 280px;
-    min-height: 44px;
+    min-height: 40px;
     flex-direction: row;
     justify-content: center;
-    padding: 8px 16px;
+    padding: 6px 16px;
     gap: 8px;
   }
-  .guest-btn-icon { width: 18px; height: 18px; }
-  .guest-btn-note { margin-left: 2px; }
+  .guest-btn-icon { width: 16px; height: 16px; margin-bottom: 0; }
+  .guest-btn-note { margin-left: 2px; font-size: 10px; }
 
-  .kiosk-footer {
-    bottom: max(10px, env(safe-area-inset-bottom));
-    gap: 3px;
-    font-size: 11px;
-  }
+  /* Same logo/text size as KioskLandingView's compact footer. */
+  .kiosk-footer { gap: 3px; font-size: 11px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
   .kiosk-footer .brand-logo { height: 90px; margin-bottom: -20px; }
 
   .scanned-content { padding-top: 20px; }
