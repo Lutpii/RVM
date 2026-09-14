@@ -92,8 +92,8 @@
           <div class="txn-info">
             <span class="txn-mat">{{ t.material }}</span>
           </div>
-          <span :class="['txn-pts', t.is_valid ? 'pts-green' : 'pts-red']">
-            {{ t.is_valid ? '+' + t.points_earned : '-' + t.points_deducted }}
+          <span :class="['txn-pts', transactionPointsClass(t)]">
+            {{ transactionPointsLabel(t) }}
           </span>
         </div>
       </div>
@@ -128,6 +128,21 @@ const { t } = useI18n()
 const summary = ref(null)
 const finalPoints = computed(() => summary.value?.end_points ?? 0)
 const earnedPoints = computed(() => summary.value?.points_earned ?? 0)
+
+function isUnknownTransaction(transaction) {
+  return String(transaction?.material || '').trim().toLowerCase() === 'unknown'
+}
+
+function transactionPointsClass(transaction) {
+  return transaction.is_valid || isUnknownTransaction(transaction) ? 'pts-green' : 'pts-red'
+}
+
+function transactionPointsLabel(transaction) {
+  if (isUnknownTransaction(transaction)) return '+0'
+  return transaction.is_valid
+    ? `+${transaction.points_earned ?? 0}`
+    : `-${transaction.points_deducted ?? 0}`
+}
 
 watch(summary, (val) => {
   if (val?.end_points != null) auth.updatePoints(val.end_points)
