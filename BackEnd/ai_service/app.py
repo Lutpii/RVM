@@ -39,10 +39,13 @@ _allowed_origins = [o.strip() for o in os.environ.get(
 CORS(app, origins=_allowed_origins)
 
 _HERE = pathlib.Path(__file__).parent
-# best_exp6.pt is the model actually in use (3 classes: aluminium can, glass
-# bottle, plastic bottle — no paper). It's listed first on purpose so it wins
-# even if an older best.pt happens to also be sitting in the repo root.
+# best_rs.pt is the model actually in use (7 classes: bricks, cans, glass,
+# metal, paper, plastic, wooden). It's listed first on purpose so it wins
+# even if an older best.pt/best_exp6.pt happens to also be sitting around.
 _MODEL_CANDIDATES = [
+    _HERE / 'best_rs.pt',
+    _HERE / 'model' / 'best_rs.pt',
+    _HERE.parent.parent / 'best_rs.pt',
     _HERE.parent.parent / 'best_exp6.pt',
     _HERE / 'model' / 'best_exp6.pt',
     _HERE.parent.parent / 'best.pt',
@@ -71,10 +74,12 @@ else:
 
 
 def normalize_material(raw_name: str) -> str:
-    """Map whatever class name the model was trained with (e.g. 'aluminium can',
-    'plastic bottle') to the fixed slug the rest of the app expects."""
+    """Map whatever class name the model was trained with (best_rs.pt's
+    bricks/cans/glass/metal/paper/plastic/wooden) to the fixed slug the rest
+    of the app expects. cans->aluminum, glass/plastic/paper pass through;
+    metal/wooden/bricks have no physical sorting slot and fall back to reject."""
     name = (raw_name or '').lower()
-    if 'alumin' in name:
+    if 'alumin' in name or 'can' in name:
         return 'aluminum'
     if 'glass' in name:
         return 'glass'
@@ -82,6 +87,8 @@ def normalize_material(raw_name: str) -> str:
         return 'plastic'
     if 'paper' in name:
         return 'paper'
+    if 'metal' in name or 'wood' in name or 'brick' in name:
+        return 'reject'
     return 'unknown'
 
 
@@ -195,14 +202,17 @@ def _drop(pan_pos, tilt_angle, label):
 def drop_front_right(): _drop(POS_RIGHT, ANGLE_FRONT, 'Front Right - Aluminum')
 def drop_front_left():  _drop(POS_LEFT,  ANGLE_FRONT, 'Front Left - Glass')
 def drop_back_left():   _drop(POS_LEFT,  ANGLE_BACK,  'Back Left - Plastic')
-def drop_back_right():  _drop(POS_RIGHT, ANGLE_BACK,  'Back Right - Reject')
+def drop_back_right():  _drop(POS_RIGHT, ANGLE_BACK,  'Back Right - Paper')
 
 
-# Paper has no physical sorting slot on the current hardware — falls back to Reject.
+# All 4 physical slots are now spoken for by the 4 accept categories — reject
+# (metal/wooden/bricks/unknown) has no slot at all, so /sort leaves the servo
+# untouched for any material not in this map instead of defaulting to a drop.
 SORTING_MAP = {
     'aluminum': drop_front_right,
     'glass':    drop_front_left,
     'plastic':  drop_back_left,
+    'paper':    drop_back_right,
 }
 
 
@@ -304,9 +314,13 @@ def sort():
     if servo_busy:
         return jsonify({'success': False, 'error': 'Servo is busy.'}), 409
 
-    func = SORTING_MAP.get(material, drop_back_right)
+    func = SORTING_MAP.get(material)
+    if func is None:
+        # No physical slot for this material (reject/unknown) — leave the servo alone.
+        return jsonify({'success': True, 'sorting': material, 'servo_moved': False})
+
     threading.Thread(target=trigger_servo_thread, args=(func,), daemon=True).start()
-    return jsonify({'success': True, 'sorting': material})
+    return jsonify({'success': True, 'sorting': material, 'servo_moved': True})
 
 
 @app.route('/classify', methods=['POST'])

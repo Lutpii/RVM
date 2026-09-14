@@ -129,8 +129,12 @@ const summary = ref(null)
 const finalPoints = computed(() => summary.value?.end_points ?? 0)
 const earnedPoints = computed(() => summary.value?.points_earned ?? 0)
 
+// Both 'unknown' (AI couldn't recognize anything) and 'reject' (AI recognized
+// the item but it has no accept slot on this machine) are no-fault outcomes:
+// no weight, no points, no deduction — see RvmSessionView's simulateInsert().
 function isUnknownTransaction(transaction) {
-  return String(transaction?.material || '').trim().toLowerCase() === 'unknown'
+  const material = String(transaction?.material || '').trim().toLowerCase()
+  return material === 'unknown' || material === 'reject'
 }
 
 function transactionPointsClass(transaction) {

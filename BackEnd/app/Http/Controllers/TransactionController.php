@@ -174,8 +174,10 @@ class TransactionController extends Controller
             'machine_id'       => $session->machine_id,
         ]);
 
-        // Unknown detections are never valid; otherwise, valid unless it mismatches a pre-selection
-        if ($detected === 'unknown') {
+        // 'unknown' (nothing recognized) and 'reject' (recognized but no accept
+        // slot for this material — see ai_service/app.py's normalize_material)
+        // are never valid; otherwise, valid unless it mismatches a pre-selection.
+        if ($detected === 'unknown' || $detected === 'reject') {
             $isValid = false;
         } else {
             $isValid = $selected === null ? true : ($detected === $selected);
@@ -213,10 +215,10 @@ class TransactionController extends Controller
         // used to derive points (points are now a fixed amount per material, see
         // POINTS_PER_ITEM above).
         $weightGrams = match($material) {
-            'aluminum', 'plastic' => rand(9, 49),
-            'glass', 'paper'      => rand(50, 500),
-            'unknown'             => 0,
-            default               => rand(9, 49),
+            'aluminum', 'plastic'  => rand(9, 49),
+            'glass', 'paper'       => rand(50, 500),
+            'unknown', 'reject'    => 0,
+            default                => rand(9, 49),
         };
         $pointsEarned  = $rewardConfig->load()[$material] ?? self::calcPoints();
 
@@ -427,7 +429,7 @@ class TransactionController extends Controller
 
         return response()->json([
             'success'         => true,
-            'is_valid'        => $detected !== 'unknown',
+            'is_valid'        => $detected !== 'unknown' && $detected !== 'reject',
             'ai_detected'     => $detected,
             'confidence'      => $aiResult['confidence'] ?? 0,
             'all_predictions' => $aiResult['all_predictions'] ?? [],

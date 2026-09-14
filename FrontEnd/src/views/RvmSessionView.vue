@@ -250,6 +250,36 @@
           </div>
         </div>
 
+        <!-- REJECTED step (AI recognized the material, but it's not accepted here) -->
+        <div v-else-if="rvm.currentStep === 'item_rejected'" key="item_rejected" class="step-content centered">
+          <div class="return-anim">
+            <svg class="return-item" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="8" y1="8" x2="16" y2="16"/>
+              <line x1="16" y1="8" x2="8" y2="16"/>
+            </svg>
+            <div class="return-slot"></div>
+          </div>
+          <h2 class="step-status red">{{ $t('session.itemRejected') }}</h2>
+          <div v-if="annotatedImageDataUrl" class="bbox-preview">
+            <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
+          </div>
+          <div class="result-box">
+            <p>{{ $t('session.itemRejectedHint') }}</p>
+            <p>{{ $t('session.pointsEarned') }}: +0</p>
+          </div>
+          <div class="action-buttons">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+            <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              {{ $t('session.retryAnother') }}
+            </button>
+          </div>
+        </div>
+
       </Transition>
     </div>
 
@@ -460,6 +490,7 @@ const currentStepLabel = computed(() => {
     insert: t('session.stepInsert'), conveyor: t('session.stepConveyor'), camera: t('session.stepCamera'),
     classify: t('session.stepClassify'), validate_ok: t('session.stepWeight'),
     weigh: t('session.stepWeight'), complete: t('session.stepComplete'), item_unknown: t('session.stepItemUnknown'),
+    item_rejected: t('session.stepItemRejected'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -571,22 +602,28 @@ async function simulateInsert() {
     rvm.setSelectedMaterial(aiDetected.value)
   }
 
-  if (aiDetected.value === 'unknown') {
-    // Not the AI's fault vs. the user's — no weight, no points, no deduction.
-    // Still has to physically eject the item though, same as test_yolo.py's
-    // reject drop — /hardware/sort is public (works for guest and logged-in
-    // alike) and falls back to the reject slot for any unmapped material.
-    api.post('/hardware/sort', { material: 'reject' }).catch(() => {})
+  if (aiDetected.value === 'unknown' || aiDetected.value === 'reject') {
+    // 'unknown' = the AI couldn't recognize anything (no detection / low
+    // confidence). 'reject' = the AI DID recognize the item, but it's a
+    // material with no accept slot on this machine (metal/wooden/bricks —
+    // see ai_service/app.py's normalize_material). Kept as distinct steps
+    // so the user gets an accurate message instead of always being told
+    // "not recognized" for something the AI actually identified.
+    // Either way: no weight, no points, no deduction, and the item still
+    // has to be physically ejected — /hardware/sort is public (works for
+    // guest and logged-in alike) and no-ops the servo if there's no slot
+    // for this material.
+    api.post('/hardware/sort', { material: aiDetected.value }).catch(() => {})
     itemWeight.value = 0
     itemPoints.value = 0
-    rvm.setStep('item_unknown')
-    rvm.recordLocalTransaction({ material: 'unknown', weight: 0, points: 0, isValid: false, deducted: 0, carbon: 0 })
+    rvm.setStep(aiDetected.value === 'reject' ? 'item_rejected' : 'item_unknown')
+    rvm.recordLocalTransaction({ material: aiDetected.value, weight: 0, points: 0, isValid: false, deducted: 0, carbon: 0 })
     return
   }
 
   // Every other detected material is valid — this flow has no manual
-  // pre-selection step to mismatch against, so "unknown" (handled above)
-  // is the only invalidity condition there is.
+  // pre-selection step to mismatch against, so "unknown"/"reject" (handled
+  // above) are the only invalidity conditions there are.
   rvm.setStep('validate_ok')
   await delay(1950)
   rvm.setStep('weigh')
