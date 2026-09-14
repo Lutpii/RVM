@@ -24,9 +24,9 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1789290453.551978,
-    "seen": 1789365064.7013628,
-    "ast_hash": "b2b6ca4ef31eae8ed930fea8542e0e3a",
+    "mtime": 1789372455.645794,
+    "seen": 1789373011.0200315,
+    "ast_hash": "24329c6fe482b0a479058ba24befb562",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
@@ -174,10 +174,10 @@
     "semantic_hash": "58d329920487a0de100a3f885309d22e"
   },
   "BackEnd/app/Models/DetectionLog.php": {
-    "mtime": 1788955440.9103415,
-    "seen": 1789196533.3199804,
-    "ast_hash": "573cdb6a4162fd6f41e2509f8545738d",
-    "semantic_hash": "573cdb6a4162fd6f41e2509f8545738d"
+    "mtime": 1789368960.303191,
+    "seen": 1789369709.9308386,
+    "ast_hash": "4d750e7ee2943bb30aa5c1c82241ce6b",
+    "semantic_hash": ""
   },
   "BackEnd/app/Models/PointsHistory.php": {
     "mtime": 1788957372.1042025,
@@ -600,10 +600,10 @@
     "semantic_hash": "cc05243d603114257071b1cee3d35258"
   },
   "BackEnd/tests/Feature/AdminDetectionLogsTest.php": {
-    "mtime": 1788955440.9143722,
-    "seen": 1789196533.3199804,
-    "ast_hash": "8323965f3fa3ca2b0e9662ca36ce6cf0",
-    "semantic_hash": "8323965f3fa3ca2b0e9662ca36ce6cf0"
+    "mtime": 1789371723.7288704,
+    "seen": 1789371844.0163338,
+    "ast_hash": "cf677ff9a019de751f2a06fbfc75c354",
+    "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminEmailFormalReportTest.php": {
     "mtime": 1789073077.6970825,
@@ -618,10 +618,10 @@
     "semantic_hash": "444b4b4564b9e3a6481121fc5242fab7"
   },
   "BackEnd/tests/Feature/AdminPaginationTest.php": {
-    "mtime": 1788334562.3102553,
-    "seen": 1789196533.3199804,
-    "ast_hash": "a4fcc80c435f61384e504f9bdadecfed",
-    "semantic_hash": "a4fcc80c435f61384e504f9bdadecfed"
+    "mtime": 1789372456.0463047,
+    "seen": 1789373011.0427604,
+    "ast_hash": "ca0a97c232527928d827d6a7bcf2a555",
+    "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminRedemptionsListTest.php": {
     "mtime": 1789045776.2293267,
@@ -786,9 +786,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1789365993.033954,
-    "seen": 1789366026.0556636,
-    "ast_hash": "81c90a9af2667334451325ffede9e18d",
+    "mtime": 1789372759.3798935,
+    "seen": 1789373011.0512075,
+    "ast_hash": "10557b77f01f1a7187ff9012655f0bd1",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -846,16 +846,16 @@
     "semantic_hash": "976ca4ff7ec97aea394d7925a771abcf"
   },
   "FrontEnd/src/utils/admin/paginationLabel.js": {
-    "mtime": 1788247348.7263403,
-    "seen": 1789196533.3199804,
-    "ast_hash": "cdfac43a7d6c0885c467742eab7fc3d4",
-    "semantic_hash": "cdfac43a7d6c0885c467742eab7fc3d4"
+    "mtime": 1789372514.3885076,
+    "seen": 1789373011.0533178,
+    "ast_hash": "2f24adbcd341bc8a76009e41528f109d",
+    "semantic_hash": ""
   },
   "FrontEnd/src/utils/admin/paginationLabel.test.js": {
-    "mtime": 1788247325.505494,
-    "seen": 1789196533.3199804,
-    "ast_hash": "5828d635d36297484fd33c56b906af9d",
-    "semantic_hash": "5828d635d36297484fd33c56b906af9d"
+    "mtime": 1789372514.8391752,
+    "seen": 1789373011.0533178,
+    "ast_hash": "5a8ae90bd41ed3ac46872dcb422b445f",
+    "semantic_hash": ""
   },
   "FrontEnd/src/utils/admin/rewardConfig.js": {
     "mtime": 1788244184.8067417,
@@ -948,9 +948,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1789290960.7016501,
-    "seen": 1789365064.7252312,
-    "ast_hash": "d1a45c0d811463accbbb34cf861b830a",
+    "mtime": 1789372736.6349673,
+    "seen": 1789373011.0553145,
+    "ast_hash": "83d5988b789b390a8b80d953f866d4c9",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1173,6 +1173,42 @@
     "mtime": 1789288411.544849,
     "seen": 1789365064.7252312,
     "ast_hash": "02c9fc2f564b762e0c159214827267e4",
+    "semantic_hash": ""
+  },
+  "BackEnd/database/migrations/2026_09_14_000001_add_review_details_to_detection_logs_table.php": {
+    "mtime": 1789368959.9093566,
+    "seen": 1789369709.9386148,
+    "ast_hash": "a7d1e1d90710d3dfc88479f3149684c9",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/locales/detectionReviewLocales.test.js": {
+    "mtime": 1789371736.7074523,
+    "seen": 1789371844.023394,
+    "ast_hash": "d1e870f2f12932950fe41eddd7db5d0f",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/detectionDateRange.js": {
+    "mtime": 1789371475.6780355,
+    "seen": 1789371844.0253837,
+    "ast_hash": "94f9ceec3137a08bfa8e42ddd792d4cf",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/detectionDateRange.test.js": {
+    "mtime": 1789371476.1008003,
+    "seen": 1789371844.0253837,
+    "ast_hash": "dc66a5150fb81ab79ee44b32762dbb25",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/components/admin/AdminPagination.vue": {
+    "mtime": 1789372598.4563203,
+    "seen": 1789373011.0485196,
+    "ast_hash": "d66a023987856c8854e976862f73ba32",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/locales/paginationLocales.test.js": {
+    "mtime": 1789372791.9789882,
+    "seen": 1789373011.0512075,
+    "ast_hash": "aade0c4374fa5548460e647de5277b24",
     "semantic_hash": ""
   }
 }

@@ -14,7 +14,7 @@
           :class="['nav-item', { active: activeTab === item.id }]"
           @click="switchTab(item.id)">
           <component :is="item.icon" class="nav-icon" weight="regular" aria-hidden="true" />
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label">{{ item.id === 'detection' ? $t('admin.detectionReview.title') : item.label }}</span>
         </button>
       </nav>
       <div class="sidebar-footer">
@@ -54,7 +54,7 @@
           <button class="mobile-menu-btn" @click="mobileSidebarOpen = !mobileSidebarOpen; sidebarCollapsed = false" aria-label="Toggle sidebar menu">
             <PhList weight="regular" aria-hidden="true" />
           </button>
-          <h2 class="page-title">{{ currentNavItem?.label }}</h2>
+          <h2 class="page-title">{{ currentNavItem?.id === 'detection' ? $t('admin.detectionReview.title') : currentNavItem?.label }}</h2>
         </div>
         <div class="topbar-right">
           <span class="live-dot" v-if="isLive"></span>
@@ -316,21 +316,9 @@
               </tbody>
             </table>
           </div>
-          <div class="pagination-bar">
-            <span class="pagination-label">{{ paginationLabel({ currentPage: txPage, perPage: txPerPage, total: txTotal }) }}</span>
-            <div class="pagination-controls">
-              <select v-model.number="txPerPage" @change="changeTxPerPage" class="filter-select">
-                <option :value="15">15 / page</option>
-                <option :value="25">25 / page</option>
-                <option :value="50">50 / page</option>
-                <option :value="100">100 / page</option>
-                <option :value="200">200 / page</option>
-              </select>
-              <button class="action-btn" :disabled="txPage <= 1" @click="goToTxPage(txPage - 1)">← Prev</button>
-              <span class="pagination-page">Page {{ txPage }} of {{ txLastPage }}</span>
-              <button class="action-btn" :disabled="txPage >= txLastPage" @click="goToTxPage(txPage + 1)">Next →</button>
-            </div>
-          </div>
+          <AdminPagination :current-page="txPage" :last-page="txLastPage"
+            :per-page="txPerPage" :total="txTotal"
+            @change-page="goToTxPage" @change-per-page="changeTxPerPage" />
         </div>
       </div>
 
@@ -392,21 +380,9 @@
               </tbody>
             </table>
           </div>
-          <div class="pagination-bar">
-            <span class="pagination-label">{{ paginationLabel({ currentPage: usersPage, perPage: usersPerPage, total: usersTotal }) }}</span>
-            <div class="pagination-controls">
-              <select v-model.number="usersPerPage" @change="changeUsersPerPage" class="filter-select">
-                <option :value="15">15 / page</option>
-                <option :value="25">25 / page</option>
-                <option :value="50">50 / page</option>
-                <option :value="100">100 / page</option>
-                <option :value="200">200 / page</option>
-              </select>
-              <button class="action-btn" :disabled="usersPage <= 1" @click="goToUsersPage(usersPage - 1)">← Prev</button>
-              <span class="pagination-page">Page {{ usersPage }} of {{ usersLastPage }}</span>
-              <button class="action-btn" :disabled="usersPage >= usersLastPage" @click="goToUsersPage(usersPage + 1)">Next →</button>
-            </div>
-          </div>
+          <AdminPagination :current-page="usersPage" :last-page="usersLastPage"
+            :per-page="usersPerPage" :total="usersTotal"
+            @change-page="goToUsersPage" @change-per-page="changeUsersPerPage" />
         </div>
       </div>
 
@@ -507,21 +483,9 @@
               </tbody>
             </table>
           </div>
-          <div class="pagination-bar">
-            <span class="pagination-label">{{ paginationLabel({ currentPage: sessionsPage, perPage: sessionsPerPage, total: sessionsTotal }) }}</span>
-            <div class="pagination-controls">
-              <select v-model.number="sessionsPerPage" @change="changeSessionsPerPage" class="filter-select">
-                <option :value="15">15 / page</option>
-                <option :value="25">25 / page</option>
-                <option :value="50">50 / page</option>
-                <option :value="100">100 / page</option>
-                <option :value="200">200 / page</option>
-              </select>
-              <button class="action-btn" :disabled="sessionsPage <= 1" @click="goToSessionsPage(sessionsPage - 1)">← Prev</button>
-              <span class="pagination-page">Page {{ sessionsPage }} of {{ sessionsLastPage }}</span>
-              <button class="action-btn" :disabled="sessionsPage >= sessionsLastPage" @click="goToSessionsPage(sessionsPage + 1)">Next →</button>
-            </div>
-          </div>
+          <AdminPagination :current-page="sessionsPage" :last-page="sessionsLastPage"
+            :per-page="sessionsPerPage" :total="sessionsTotal"
+            @change-page="goToSessionsPage" @change-per-page="changeSessionsPerPage" />
         </div>
       </div>
 
@@ -529,66 +493,105 @@
       <div v-if="activeTab === 'detection'" class="tab-content">
         <div class="section-card">
           <div class="card-header detection-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> DETECTION REVIEW</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('admin.detectionReview.title') }}</h3>
           </div>
-          <div class="filter-toolbar">
-            <div class="date-range">
+          <div class="review-view-tabs">
+            <button :class="['review-view-btn', { active: detectionView === 'pending' }]" @click="setDetectionView('pending')">
+              {{ $t('admin.detectionReview.pending') }}
+            </button>
+            <button :class="['review-view-btn', { active: detectionView === 'history' }]" @click="setDetectionView('history')">
+              {{ $t('admin.detectionReview.history') }}
+            </button>
+            <button :class="['review-view-btn', { active: detectionView === 'test' }]" @click="setDetectionView('test')">
+              {{ $t('admin.detectionReview.testData') }}
+            </button>
+          </div>
+          <div v-if="detectionView === 'history'" class="history-filters">
+            <button v-for="status in detectionHistoryFilters" :key="status.value"
+              :class="['history-filter-btn', { active: detectionHistoryStatus === status.value }]"
+              @click="setDetectionHistoryStatus(status.value)">
+              {{ status.label }}
+            </button>
+          </div>
+          <p v-if="detectionView === 'test'" class="test-data-note">
+            {{ $t('admin.detectionReview.testDataInfo') }}
+          </p>
+          <div class="filter-toolbar detection-filter-toolbar">
+            <label class="date-field detection-date-preset">
+              <span>{{ $t('admin.detectionReview.capturedDate') }}</span>
+              <select class="filter-select" :value="activeDetectionDateFilter.preset"
+                @change="setDetectionDatePreset($event.target.value)">
+                <option v-for="preset in detectionDatePresetOptions" :key="preset.value" :value="preset.value">
+                  {{ preset.label }}
+                </option>
+              </select>
+            </label>
+            <div v-if="activeDetectionDateFilter.preset === 'custom'" class="date-range detection-custom-range">
               <label class="date-field picker-field" @click="openDatePicker">
-                <span>From</span>
-                <input type="date" v-model="detectionDateFrom" @change="filterDetection" />
+                <span>{{ $t('admin.detectionReview.from') }}</span>
+                <input type="date" :value="activeDetectionDateFilter.from"
+                  @change="setDetectionCustomDate('from', $event.target.value)" />
               </label>
               <label class="date-field picker-field" @click="openDatePicker">
-                <span>To</span>
-                <input type="date" v-model="detectionDateTo" @change="filterDetection" />
+                <span>{{ $t('admin.detectionReview.to') }}</span>
+                <input type="date" :value="activeDetectionDateFilter.to"
+                  @change="setDetectionCustomDate('to', $event.target.value)" />
               </label>
             </div>
-            <div class="filter-actions">
+            <div v-if="detectionView === 'history'" class="filter-actions">
               <button class="action-btn filter-action" @click="exportDetectionLogsCsv">
-                <PhDownloadSimple weight="regular" aria-hidden="true" /> Export CSV
+                <PhDownloadSimple weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.exportReviewedCsv') }}
               </button>
             </div>
           </div>
           <div v-if="loadingDetectionLogs" class="loading-overlay"><div class="spinner-lg"></div></div>
-          <div v-else-if="!detectionLogs.length" class="empty-cell">No detection logs found</div>
-          <div v-else class="detection-grid">
+          <div v-else-if="!detectionLogs.length" class="empty-cell">
+            {{ detectionView === 'pending'
+              ? $t('admin.detectionReview.noPending')
+              : detectionView === 'history'
+                ? $t('admin.detectionReview.noHistory')
+                : $t('admin.detectionReview.noTestData') }}
+          </div>
+          <TransitionGroup v-else name="detection-card" tag="div" class="detection-grid">
             <div v-for="log in detectionLogs" :key="log.id" class="detection-card">
-              <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" alt="capture" />
+              <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" :alt="$t('admin.detectionReview.captureAlt')" />
               <PhCamera v-else class="detection-thumb placeholder" weight="regular" aria-hidden="true" />
               <div class="detection-meta">
                 <div class="detection-badges">
-                  <span v-if="log.is_mock" class="badge badge-warning">Mock</span>
-                  <span class="badge">{{ log.is_guest ? 'Guest' : 'Login' }}</span>
+                  <span v-if="log.is_mock" class="badge badge-warning">{{ $t('admin.detectionReview.mock') }}</span>
+                  <span class="badge">{{ log.is_guest ? $t('admin.detectionReview.guest') : $t('admin.detectionReview.login') }}</span>
+                  <span v-if="detectionView === 'history'"
+                    :class="['badge', log.ground_truth_correct ? 'badge-reviewed-correct' : 'badge-reviewed-incorrect']">
+                    {{ log.ground_truth_correct ? $t('admin.detectionReview.correct') : $t('admin.detectionReview.incorrect') }}
+                  </span>
                 </div>
                 <p class="detection-result">{{ log.ai_detected_type || 'unknown' }} — {{ Math.round((log.ai_confidence || 0) * 100) }}%</p>
                 <p class="detection-time">{{ formatDate(log.created_at) }}</p>
+                <div v-if="detectionView === 'history'" class="review-history-meta">
+                  <p><span>{{ $t('admin.detectionReview.actualMaterial') }}:</span> {{ materialLabel(log.ground_truth_label) }}</p>
+                  <p><span>{{ $t('admin.detectionReview.reviewedBy') }}:</span> {{ log.reviewer?.name || '—' }}</p>
+                  <p><span>{{ $t('admin.detectionReview.reviewedAt') }}:</span> {{ formatDate(log.reviewed_at) }}</p>
+                </div>
               </div>
-              <div class="detection-actions" :title="reviewDisabledReason(log)">
-                <button :class="['review-btn', { active: log.ground_truth_correct === true }]"
-                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, true)"><PhCheck weight="regular" aria-hidden="true" /> Correct</button>
-                <button :class="['review-btn', 'reject', { active: log.ground_truth_correct === false }]"
-                  :disabled="!isReviewable(log)" @click="markGroundTruth(log, false)"><PhX weight="regular" aria-hidden="true" /> Incorrect</button>
+              <div v-if="detectionView === 'pending'" class="detection-actions">
+                <button class="review-btn" :title="correctDisabledReason(log)"
+                  :disabled="!isReviewable(log) || isUnknownPrediction(log) || savingDetectionId === log.id" @click="markCorrect(log)">
+                  <PhCheck weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.correct') }}
+                </button>
+                <button class="review-btn reject" :title="reviewDisabledReason(log)"
+                  :disabled="!isReviewable(log) || savingDetectionId === log.id" @click="openIncorrectReview(log)">
+                  <PhX weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.incorrect') }}
+                </button>
               </div>
-              <!-- title= tooltips need hover, which touch devices never trigger — without
-                   this, a disabled mock row's buttons look broken on mobile with zero
-                   explanation. -->
-              <p v-if="!isReviewable(log)" class="detection-disabled-note">{{ reviewDisabledReason(log) }}</p>
+              <p v-if="detectionView === 'pending' && !isReviewable(log)" class="detection-disabled-note">{{ reviewDisabledReason(log) }}</p>
+              <p v-else-if="detectionView === 'pending' && isUnknownPrediction(log)" class="detection-disabled-note">
+                {{ $t('admin.detectionReview.unknownMustAssign') }}
+              </p>
             </div>
-          </div>
-          <div class="pagination-bar">
-            <span class="pagination-label">{{ paginationLabel({ currentPage: detectionPage, perPage: detectionPerPage, total: detectionTotal }) }}</span>
-            <div class="pagination-controls">
-              <select v-model.number="detectionPerPage" @change="changeDetectionPerPage" class="filter-select">
-                <option :value="15">15 / page</option>
-                <option :value="25">25 / page</option>
-                <option :value="50">50 / page</option>
-                <option :value="100">100 / page</option>
-                <option :value="200">200 / page</option>
-              </select>
-              <button class="action-btn" :disabled="detectionPage <= 1" @click="goToDetectionPage(detectionPage - 1)">← Prev</button>
-              <span class="pagination-page">Page {{ detectionPage }} of {{ detectionLastPage }}</span>
-              <button class="action-btn" :disabled="detectionPage >= detectionLastPage" @click="goToDetectionPage(detectionPage + 1)">Next →</button>
-            </div>
-          </div>
+          </TransitionGroup>
+          <AdminPagination :current-page="detectionPage" :last-page="detectionLastPage"
+            :per-page="detectionPerPage" :total="detectionTotal"
+            @change-page="goToDetectionPage" @change-per-page="changeDetectionPerPage" />
         </div>
       </div>
 
@@ -624,19 +627,9 @@
               <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
             </div>
           </div>
-          <div class="pagination-bar" v-if="rewardItems.length">
-            <span class="pagination-label">{{ paginationLabel({ currentPage: rewardItemsPage, perPage: rewardItemsPerPage, total: rewardItemsTotal }) }}</span>
-            <div class="pagination-controls">
-              <select v-model.number="rewardItemsPerPage" @change="changeRewardItemsPerPage" class="filter-select">
-                <option :value="15">15 / page</option>
-                <option :value="25">25 / page</option>
-                <option :value="50">50 / page</option>
-              </select>
-              <button class="action-btn" :disabled="rewardItemsPage <= 1" @click="goToRewardItemsPage(rewardItemsPage - 1)">← Prev</button>
-              <span class="pagination-page">Page {{ rewardItemsPage }} of {{ rewardItemsLastPage }}</span>
-              <button class="action-btn" :disabled="rewardItemsPage >= rewardItemsLastPage" @click="goToRewardItemsPage(rewardItemsPage + 1)">Next →</button>
-            </div>
-          </div>
+          <AdminPagination :current-page="rewardItemsPage" :last-page="rewardItemsLastPage"
+            :per-page="rewardItemsPerPage" :total="rewardItemsTotal"
+            @change-page="goToRewardItemsPage" @change-per-page="changeRewardItemsPerPage" />
         </div>
 
         <div class="section-card">
@@ -659,19 +652,9 @@
               </tbody>
             </table>
           </div>
-          <div class="pagination-bar">
-            <span class="pagination-label">{{ paginationLabel({ currentPage: redemptionsPage, perPage: redemptionsPerPage, total: redemptionsTotal }) }}</span>
-            <div class="pagination-controls">
-              <select v-model.number="redemptionsPerPage" @change="changeRedemptionsPerPage" class="filter-select">
-                <option :value="15">15 / page</option>
-                <option :value="25">25 / page</option>
-                <option :value="50">50 / page</option>
-              </select>
-              <button class="action-btn" :disabled="redemptionsPage <= 1" @click="goToRedemptionsPage(redemptionsPage - 1)">← Prev</button>
-              <span class="pagination-page">Page {{ redemptionsPage }} of {{ redemptionsLastPage }}</span>
-              <button class="action-btn" :disabled="redemptionsPage >= redemptionsLastPage" @click="goToRedemptionsPage(redemptionsPage + 1)">Next →</button>
-            </div>
-          </div>
+          <AdminPagination :current-page="redemptionsPage" :last-page="redemptionsLastPage"
+            :per-page="redemptionsPerPage" :total="redemptionsTotal"
+            @change-page="goToRedemptionsPage" @change-per-page="changeRedemptionsPerPage" />
         </div>
       </div>
 
@@ -709,6 +692,44 @@
         </div>
         <div class="modal-actions">
           <button class="action-btn edit-btn" @click="saveUser">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Incorrect Detection Review Modal ── -->
+    <div v-if="reviewingDetection" class="modal-overlay" @click.self="closeIncorrectReview">
+      <div class="modal detection-review-modal">
+        <button class="modal-close-btn" :aria-label="$t('admin.detectionReview.closeModal')"
+          :disabled="savingDetectionReview" @click="closeIncorrectReview">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
+        <h3>{{ $t('admin.detectionReview.incorrectTitle') }}</h3>
+        <div class="review-modal-summary">
+          <img v-if="thumbnails[reviewingDetection.id]" :src="thumbnails[reviewingDetection.id]"
+            class="review-modal-image" :alt="$t('admin.detectionReview.captureAlt')" />
+          <PhCamera v-else class="review-modal-image placeholder" weight="regular" aria-hidden="true" />
+          <div>
+            <span>{{ $t('admin.detectionReview.aiPrediction') }}</span>
+            <strong>{{ reviewingDetection.ai_detected_type || 'unknown' }} — {{ Math.round((reviewingDetection.ai_confidence || 0) * 100) }}%</strong>
+          </div>
+        </div>
+        <p class="actual-material-prompt">{{ $t('admin.detectionReview.selectActual') }}</p>
+        <div class="actual-material-grid">
+          <button v-for="material in detectionMaterials" :key="material.value"
+            :class="['actual-material-btn', { selected: selectedActualMaterial === material.value }]"
+            :disabled="normalizedPrediction(reviewingDetection) === material.value"
+            @click="selectedActualMaterial = material.value">
+            {{ material.label }}
+            <small v-if="normalizedPrediction(reviewingDetection) === material.value">{{ $t('admin.detectionReview.aiPrediction') }}</small>
+          </button>
+        </div>
+        <div class="modal-actions">
+          <button class="action-btn" :disabled="savingDetectionReview" @click="closeIncorrectReview">
+            {{ $t('admin.detectionReview.cancel') }}
+          </button>
+          <button class="action-btn edit-btn" :disabled="!selectedActualMaterial || savingDetectionReview" @click="saveIncorrectReview">
+            {{ savingDetectionReview ? $t('admin.detectionReview.saving') : $t('admin.detectionReview.saveReview') }}
+          </button>
         </div>
       </div>
     </div>
@@ -932,15 +953,27 @@
       </div>
     </Transition>
 
+    <Transition name="toast-fade">
+      <div v-if="detectionUndo.show" class="toast detection-undo" role="status">
+        <PhCheckCircle class="toast-icon" weight="regular" aria-hidden="true" />
+        {{ detectionUndo.message }}
+        <button class="undo-review-btn" :disabled="detectionUndo.loading" @click="undoDetectionReview">
+          {{ detectionUndo.loading ? $t('admin.detectionReview.undoing') : $t('admin.detectionReview.undo') }}
+        </button>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, inject, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import { materialIconSvg } from '@/utils/materialIcons'
+import AdminPagination from '@/components/admin/AdminPagination.vue'
 import {
   PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
   PhCaretLeft, PhCaretRight,
@@ -950,12 +983,12 @@ import {
   PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple,
 } from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
-import { paginationLabel } from '@/utils/admin/paginationLabel.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
 import { validateMachineName } from '@/utils/admin/validateMachine.js'
 import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
 import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
+import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   ArcElement, Tooltip, Legend
@@ -965,6 +998,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 
 const router = useRouter()
 const auth = useAuthStore()
+const { t } = useI18n()
 const theme = inject('theme')
 const toggleTheme = inject('toggleTheme')
 
@@ -1015,19 +1049,19 @@ const txFilter = ref('')
 const sessionsSearch = ref('')
 
 const usersPage = ref(1)
-const usersPerPage = ref(15)
+const usersPerPage = ref(20)
 const usersTotal = ref(0)
 const usersLastPage = ref(1)
 const usersSortColumn = ref('id')
 const usersSortDirection = ref('desc')
 
 const txPage = ref(1)
-const txPerPage = ref(15)
+const txPerPage = ref(20)
 const txTotal = ref(0)
 const txLastPage = ref(1)
 
 const sessionsPage = ref(1)
-const sessionsPerPage = ref(15)
+const sessionsPerPage = ref(20)
 const sessionsTotal = ref(0)
 const sessionsLastPage = ref(1)
 
@@ -1035,16 +1069,54 @@ const loadingDetectionLogs = ref(false)
 const loadingRewardItems = ref(false)
 const detectionLogs      = ref([])
 const detectionPage      = ref(1)
-const detectionPerPage   = ref(15)
+const detectionPerPage   = ref(20)
 const detectionTotal     = ref(0)
 const detectionLastPage  = ref(1)
-const detectionDateFrom  = ref('')
-const detectionDateTo    = ref('')
 const thumbnails         = ref({})
+const detectionView      = ref('pending')
+const detectionHistoryStatus = ref('reviewed')
+const reviewingDetection = ref(null)
+const selectedActualMaterial = ref('')
+const savingDetectionReview = ref(false)
+const savingDetectionId = ref(null)
+const detectionUndo = ref({ show: false, id: null, message: '', loading: false })
+let detectionUndoTimer = null
+
+const recentDetectionRange = detectionDateRange('last_7_days')
+const detectionDateFilters = reactive({
+  pending: { preset: 'all', from: '', to: '' },
+  history: { preset: 'last_7_days', ...recentDetectionRange },
+  test: { preset: 'last_7_days', ...recentDetectionRange },
+})
+const activeDetectionDateFilter = computed(() => detectionDateFilters[detectionView.value])
+const detectionReviewStatus = computed(() => {
+  if (detectionView.value === 'pending') return 'pending'
+  if (detectionView.value === 'test') return 'test'
+  return detectionHistoryStatus.value
+})
+const detectionHistoryFilters = computed(() => [
+  { value: 'reviewed', label: t('admin.detectionReview.all') },
+  { value: 'correct', label: t('admin.detectionReview.correct') },
+  { value: 'incorrect', label: t('admin.detectionReview.incorrect') },
+])
+const detectionDatePresetOptions = computed(() => DETECTION_DATE_PRESETS.map(value => ({
+  value,
+  label: t(`admin.detectionReview.datePresets.${value}`),
+})))
+const detectionMaterials = computed(() => [
+  { value: 'aluminum', label: t('admin.detectionReview.materials.aluminum') },
+  { value: 'plastic',  label: t('admin.detectionReview.materials.plastic') },
+  { value: 'glass',    label: t('admin.detectionReview.materials.glass') },
+  { value: 'paper',    label: t('admin.detectionReview.materials.paper') },
+  { value: 'wood',     label: t('admin.detectionReview.materials.wood') },
+  { value: 'metal',    label: t('admin.detectionReview.materials.metal') },
+  { value: 'brick',    label: t('admin.detectionReview.materials.brick') },
+  { value: 'other',    label: t('admin.detectionReview.materials.other') },
+])
 
 const rewardItems = ref([])
 const rewardItemsPage = ref(1)
-const rewardItemsPerPage = ref(15)
+const rewardItemsPerPage = ref(20)
 const rewardItemsTotal = ref(0)
 const rewardItemsLastPage = ref(1)
 const showAddRewardItem = ref(false)
@@ -1057,7 +1129,7 @@ const savingRewardItem = ref(false)
 
 const adminRedemptions = ref([])
 const redemptionsPage = ref(1)
-const redemptionsPerPage = ref(15)
+const redemptionsPerPage = ref(20)
 const redemptionsTotal = ref(0)
 const redemptionsLastPage = ref(1)
 
@@ -1150,12 +1222,12 @@ let refreshTimer = null
 // ── Config ──
 const navItems = [
   { id: 'dashboard',    icon: PhChartBar,        label: 'Dashboard' },
-  { id: 'transactions', icon: PhReceipt,         label: 'Transactions' },
-  { id: 'users',        icon: PhUsers,           label: 'Users' },
   { id: 'machines',     icon: PhFactory,         label: 'Machines' },
+  { id: 'rewards',      icon: PhGift,            label: 'Rewards' },
+  { id: 'users',        icon: PhUsers,           label: 'Users' },
+  { id: 'transactions', icon: PhReceipt,         label: 'Transactions' },
   { id: 'sessions',     icon: PhClipboardText,   label: 'Sessions' },
   { id: 'detection',    icon: PhMagnifyingGlass, label: 'Detection Review' },
-  { id: 'rewards',      icon: PhGift,            label: 'Rewards' },
 ]
 
 const binTypes = [
@@ -1326,8 +1398,9 @@ async function fetchTabData(tab, showSpinner = false) {
       if (showSpinner) loadingDetectionLogs.value = true
       const res = await api.get('/admin/detection-logs', { params: {
         page: detectionPage.value, per_page: detectionPerPage.value,
-        date_from: detectionDateFrom.value || undefined,
-        date_to: detectionDateTo.value || undefined,
+        date_from: activeDetectionDateFilter.value.from || undefined,
+        date_to: activeDetectionDateFilter.value.to || undefined,
+        review_status: detectionReviewStatus.value,
       } })
       detectionLogs.value     = res.data.detection_logs?.data || []
       detectionTotal.value    = res.data.detection_logs?.total ?? 0
@@ -1385,7 +1458,25 @@ function isReviewable(log) {
 }
 
 function reviewDisabledReason(log) {
-  return isReviewable(log) ? '' : 'Mock result with no real photo — nothing to review'
+  return isReviewable(log) ? '' : t('admin.detectionReview.notReviewable')
+}
+
+function normalizedPrediction(log) {
+  return String(log?.ai_detected_type || '').trim().toLowerCase()
+}
+
+function isUnknownPrediction(log) {
+  return normalizedPrediction(log) === 'unknown' || normalizedPrediction(log) === ''
+}
+
+function correctDisabledReason(log) {
+  if (!isReviewable(log)) return reviewDisabledReason(log)
+  return isUnknownPrediction(log) ? t('admin.detectionReview.unknownMustAssign') : ''
+}
+
+function materialLabel(value) {
+  const match = detectionMaterials.value.find(material => material.value === value)
+  return match?.label || value || '—'
 }
 
 async function loadThumbnail(log) {
@@ -1402,37 +1493,103 @@ async function loadThumbnail(log) {
   }
 }
 
-async function markGroundTruth(log, correct) {
+function showDetectionUndo(id, message) {
+  clearTimeout(detectionUndoTimer)
+  detectionUndo.value = { show: true, id, message, loading: false }
+  detectionUndoTimer = setTimeout(() => {
+    detectionUndo.value.show = false
+  }, 5000)
+}
+
+async function saveDetectionReview(log, payload) {
+  if (savingDetectionId.value !== null) return false
+  savingDetectionId.value = log.id
   try {
-    await api.patch(`/admin/detection-logs/${log.id}`, { ground_truth_correct: correct })
-    log.ground_truth_correct = correct
-    showToast(correct ? 'Marked correct.' : 'Marked incorrect.', 'success')
+    await api.patch(`/admin/detection-logs/${log.id}`, payload)
+    showDetectionUndo(
+      log.id,
+      payload.ground_truth_correct
+        ? t('admin.detectionReview.markedCorrect')
+        : t('admin.detectionReview.markedIncorrect')
+    )
+    tabFetchedAt.detection = 0
+    await fetchTabData('detection', false)
+    return true
   } catch {
-    showToast('Failed to save review.', 'error')
+    showToast(t('admin.detectionReview.saveFailed'), 'error')
+    return false
+  } finally {
+    savingDetectionId.value = null
+  }
+}
+
+async function markCorrect(log) {
+  if (!isReviewable(log) || isUnknownPrediction(log)) return
+  await saveDetectionReview(log, { ground_truth_correct: true })
+}
+
+function openIncorrectReview(log) {
+  if (!isReviewable(log)) return
+  reviewingDetection.value = log
+  selectedActualMaterial.value = ''
+}
+
+function closeIncorrectReview() {
+  if (savingDetectionReview.value) return
+  reviewingDetection.value = null
+  selectedActualMaterial.value = ''
+}
+
+async function saveIncorrectReview() {
+  if (!reviewingDetection.value || !selectedActualMaterial.value || savingDetectionReview.value) return
+  savingDetectionReview.value = true
+  const saved = await saveDetectionReview(reviewingDetection.value, {
+    ground_truth_correct: false,
+    ground_truth_label: selectedActualMaterial.value,
+  })
+  savingDetectionReview.value = false
+  if (saved) closeIncorrectReview()
+}
+
+async function undoDetectionReview() {
+  if (!detectionUndo.value.id || detectionUndo.value.loading) return
+  clearTimeout(detectionUndoTimer)
+  detectionUndo.value.loading = true
+  try {
+    await api.patch(`/admin/detection-logs/${detectionUndo.value.id}`, { undo: true })
+    detectionUndo.value.show = false
+    tabFetchedAt.detection = 0
+    await fetchTabData('detection', false)
+    showToast(t('admin.detectionReview.undoSuccess'))
+  } catch {
+    detectionUndo.value.loading = false
+    showToast(t('admin.detectionReview.undoFailed'), 'error')
   }
 }
 
 async function exportDetectionLogsCsv() {
+  if (detectionView.value !== 'history') return
   try {
-    // Same date window as the list above it — the Export button sits inside the
-    // filter row, so an unfiltered dump would quietly pull in dev/test rows.
+    // Export only the reviewed rows represented by the active History filters.
+    // The backend also enforces reviewed/non-mock data as a second guard.
     const res = await api.get('/admin/detection-logs/export', {
       params: {
-        date_from: detectionDateFrom.value || undefined,
-        date_to: detectionDateTo.value || undefined,
+        date_from: activeDetectionDateFilter.value.from || undefined,
+        date_to: activeDetectionDateFilter.value.to || undefined,
+        review_status: detectionReviewStatus.value,
       },
       responseType: 'blob',
     })
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')
     a.href = url
-    a.download = `detection_logs_${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `detection_reviews_${new Date().toISOString().slice(0, 10)}.csv`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   } catch {
-    showToast('Export failed. Please try again.', 'error')
+    showToast(t('admin.detectionReview.exportFailed'), 'error')
   }
 }
 
@@ -1506,7 +1663,8 @@ function goToUsersPage(page) {
   usersPage.value = page
   fetchTabData('users', true)
 }
-function changeUsersPerPage() {
+function changeUsersPerPage(perPage) {
+  usersPerPage.value = perPage
   usersPage.value = 1
   fetchTabData('users', true)
 }
@@ -1537,7 +1695,8 @@ function goToTxPage(page) {
   txPage.value = page
   fetchTabData('transactions', true)
 }
-function changeTxPerPage() {
+function changeTxPerPage(perPage) {
+  txPerPage.value = perPage
   txPage.value = 1
   fetchTabData('transactions', true)
 }
@@ -1550,7 +1709,8 @@ function goToSessionsPage(page) {
   sessionsPage.value = page
   fetchTabData('sessions', true)
 }
-function changeSessionsPerPage() {
+function changeSessionsPerPage(perPage) {
+  sessionsPerPage.value = perPage
   sessionsPage.value = 1
   fetchTabData('sessions', true)
 }
@@ -1560,7 +1720,8 @@ function goToRewardItemsPage(page) {
   fetchTabData('rewards')
 }
 
-function changeRewardItemsPerPage() {
+function changeRewardItemsPerPage(perPage) {
+  rewardItemsPerPage.value = perPage
   rewardItemsPage.value = 1
   fetchTabData('rewards')
 }
@@ -1570,20 +1731,56 @@ function goToRedemptionsPage(page) {
   fetchTabData('rewards')
 }
 
-function changeRedemptionsPerPage() {
+function changeRedemptionsPerPage(perPage) {
+  redemptionsPerPage.value = perPage
   redemptionsPage.value = 1
   fetchTabData('rewards')
 }
 
-function filterDetection() {
-  detectionPage.value = 1
-  fetchTabData('detection', true)
-}
 function goToDetectionPage(page) {
   detectionPage.value = page
   fetchTabData('detection', true)
 }
-function changeDetectionPerPage() {
+function changeDetectionPerPage(perPage) {
+  detectionPerPage.value = perPage
+  detectionPage.value = 1
+  fetchTabData('detection', true)
+}
+function setDetectionDatePreset(preset) {
+  const filter = activeDetectionDateFilter.value
+  filter.preset = preset
+
+  const range = detectionDateRange(preset)
+  if (!range) return
+
+  filter.from = range.from
+  filter.to = range.to
+  detectionPage.value = 1
+  fetchTabData('detection', true)
+}
+function setDetectionCustomDate(field, value) {
+  const filter = activeDetectionDateFilter.value
+  filter[field] = value
+
+  // Keep the custom range valid without asking the admin to correct the other
+  // field manually after choosing dates in reverse order.
+  if (filter.from && filter.to && filter.from > filter.to) {
+    if (field === 'from') filter.to = filter.from
+    else filter.from = filter.to
+  }
+
+  detectionPage.value = 1
+  fetchTabData('detection', true)
+}
+function setDetectionView(view) {
+  if (detectionView.value === view) return
+  detectionView.value = view
+  detectionPage.value = 1
+  fetchTabData('detection', true)
+}
+function setDetectionHistoryStatus(status) {
+  if (detectionHistoryStatus.value === status) return
+  detectionHistoryStatus.value = status
   detectionPage.value = 1
   fetchTabData('detection', true)
 }
@@ -1679,7 +1876,6 @@ async function requestBinCollection() {
     requestingCollection.value = false
   }
 }
-
 // ── Reward Config ──
 async function updateReward(material) {
   savingReward.value = material
@@ -1981,6 +2177,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
   if (clockTimer) clearInterval(clockTimer)
+  if (detectionUndoTimer) clearTimeout(detectionUndoTimer)
   window.removeEventListener('resize', handleResize)
   releaseThumbnails()
 })
@@ -2199,15 +2396,6 @@ onUnmounted(() => {
   background: rgba(255,255,255,0.07); border: 1px solid var(--border);
   border-radius: 20px; padding: 3px 10px;
 }
-.pagination-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px; margin-top: 14px; padding-top: 14px;
-  border-top: 1px solid var(--border);
-}
-.pagination-label { font-size: 13px; color: #9ca3af; }
-.pagination-controls { display: flex; align-items: center; gap: 8px; }
-.pagination-page { font-size: 13px; color: #9ca3af; white-space: nowrap; }
-
 /* ── Overview ── */
 .dash-clock-row {
   display: flex; justify-content: flex-end;
@@ -2596,6 +2784,30 @@ onUnmounted(() => {
 
 /* ── Detection Review ── */
 .detection-header { margin-bottom: 12px; }
+.review-view-tabs {
+  display: flex; gap: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 10px;
+}
+.review-view-btn, .history-filter-btn {
+  border: 1px solid var(--border); background: var(--bg-hover);
+  color: var(--text-secondary); border-radius: 8px; padding: 8px 16px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.review-view-btn.active {
+  border-color: var(--accent-blue); background: rgba(78,110,242,0.14);
+  color: var(--accent-blue);
+}
+.history-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.history-filter-btn { padding: 6px 12px; font-size: 12px; }
+.history-filter-btn.active {
+  border-color: var(--accent-green); background: rgba(34,197,94,0.12);
+  color: var(--accent-green);
+}
+.test-data-note {
+  margin: 0 0 10px; padding: 10px 12px;
+  border: 1px solid rgba(245,158,11,0.3); border-radius: 8px;
+  background: rgba(245,158,11,0.08); color: var(--text-secondary); font-size: 12px;
+}
 .filter-toolbar {
   display: flex; align-items: flex-end; gap: 10px;
   padding: 12px; margin-bottom: 16px;
@@ -2619,12 +2831,17 @@ onUnmounted(() => {
 }
 .date-field input:focus { border-color: var(--accent-blue); }
 .picker-field, .picker-field input { cursor: pointer; }
+.detection-date-preset { flex: 0 0 190px; }
+.detection-date-preset .filter-select {
+  width: 100%; min-height: 38px; margin: 0;
+}
+.detection-custom-range { flex: 1; }
 .filter-actions { display: flex; gap: 8px; }
 .filter-action {
   min-height: 38px; margin-right: 0; padding: 8px 12px;
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
-.detection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.detection-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .detection-card {
   background: var(--bg-card); border: 1px solid var(--border);
   color: var(--text-primary); border-radius: 10px;
@@ -2636,6 +2853,14 @@ onUnmounted(() => {
 .detection-badges { display: flex; gap: 6px; margin-bottom: 6px; }
 .detection-result { font-size: 13px; font-weight: 600; }
 .detection-time { color: var(--text-muted); font-size: 12px; }
+.review-history-meta {
+  margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border);
+  display: grid; gap: 4px;
+}
+.review-history-meta p { margin: 0; color: var(--text-secondary); font-size: 11px; }
+.review-history-meta span { color: var(--text-muted); }
+.badge-reviewed-correct { background: rgba(34,197,94,0.14); color: var(--accent-green); }
+.badge-reviewed-incorrect { background: rgba(239,68,68,0.14); color: var(--accent-red); }
 .detection-actions { display: flex; gap: 8px; padding: 0 12px 12px; }
 .review-btn {
   flex: 1; padding: 6px 8px; border-radius: 6px;
@@ -2649,6 +2874,42 @@ onUnmounted(() => {
   font-size: 11px; color: var(--text-muted); text-align: center;
   padding: 0 12px 10px; margin-top: -2px;
 }
+.detection-card-move,
+.detection-card-enter-active,
+.detection-card-leave-active { transition: opacity .22s ease, transform .22s ease; }
+.detection-card-enter-from,
+.detection-card-leave-to { opacity: 0; transform: scale(.96); }
+.detection-card-leave-active { position: absolute; }
+
+.detection-review-modal { width: 560px; }
+.review-modal-summary {
+  display: grid; grid-template-columns: 150px 1fr; gap: 16px;
+  align-items: center; padding: 12px; margin-bottom: 18px;
+  background: var(--bg-hover); border: 1px solid var(--border); border-radius: 10px;
+}
+.review-modal-image {
+  width: 150px; height: 110px; object-fit: cover;
+  background: var(--bg-card); border-radius: 8px;
+}
+.review-modal-image.placeholder {
+  display: flex; align-items: center; justify-content: center;
+  padding: 34px; color: var(--text-muted);
+}
+.review-modal-summary span { display: block; color: var(--text-muted); font-size: 12px; margin-bottom: 5px; }
+.review-modal-summary strong { color: var(--text-primary); font-size: 15px; text-transform: capitalize; }
+.actual-material-prompt { color: var(--text-primary); font-size: 13px; font-weight: 600; margin: 0 0 10px; }
+.actual-material-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.actual-material-btn {
+  min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 9px; background: var(--bg-hover);
+  color: var(--text-primary); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.actual-material-btn:hover:not(:disabled) { border-color: var(--accent-blue); }
+.actual-material-btn.selected {
+  border-color: var(--accent-green); background: rgba(34,197,94,0.14); color: var(--accent-green);
+}
+.actual-material-btn:disabled { opacity: .45; cursor: not-allowed; }
+.actual-material-btn small { color: var(--text-muted); font-size: 9px; font-weight: 400; margin-top: 2px; }
 
 /* .badge-warning marks a *fabricated* (mock) AI result, so it has to read as a
    warning at a glance — those rows can't be honestly scored. */
@@ -2687,10 +2948,18 @@ onUnmounted(() => {
 .toast.error { border-left-color: var(--accent-red); }
 .toast-icon { font-size: 14px; flex-shrink: 0; color: var(--accent-green); }
 .toast.error .toast-icon { color: var(--accent-red); }
+.detection-undo { gap: 10px; }
+.undo-review-btn {
+  margin-left: 8px; padding: 4px 9px; border: 1px solid var(--accent-blue);
+  border-radius: 5px; background: transparent; color: var(--accent-blue);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.undo-review-btn:disabled { opacity: .55; cursor: wait; }
 .toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, 8px); }
 @media (prefers-reduced-motion: reduce) {
   .toast-fade-enter-active, .toast-fade-leave-active { transition: none; }
+  .detection-card-move, .detection-card-enter-active, .detection-card-leave-active { transition: none; }
   .sidebar, .sidebar-title, .nav-label, .sidebar-footer { transition: none; }
 }
 
@@ -2798,8 +3067,14 @@ onUnmounted(() => {
   .tab-content      { padding: 12px; }
   .filter-toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; }
   .date-range { gap: 8px; }
+  .detection-filter-toolbar { align-items: stretch; }
+  .detection-date-preset { flex: 1 1 100%; }
   .filter-actions { width: 100%; }
   .filter-action { flex: 1; }
+  .review-view-tabs, .history-filters { width: 100%; }
+  .review-view-btn { flex: 1; }
+  .review-modal-summary { grid-template-columns: 100px 1fr; gap: 12px; }
+  .review-modal-image { width: 100px; height: 86px; }
   .user-actions     { flex-direction: column; align-items: stretch; gap: 8px; }
   .user-actions .action-btn { min-width: 82px; min-height: 40px; padding: 8px 12px; }
   .modal-overlay {

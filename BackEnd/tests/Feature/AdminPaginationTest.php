@@ -75,7 +75,7 @@ class AdminPaginationTest extends TestCase
 
     // ── Users ──────────────────────────────────────────────────────────
 
-    public function test_users_default_per_page_is_15(): void
+    public function test_users_default_per_page_is_20(): void
     {
         $this->actingAsAdmin();
         for ($i = 0; $i < 30; $i++) $this->makeUser();
@@ -83,8 +83,8 @@ class AdminPaginationTest extends TestCase
         $res = $this->getJson('/api/admin/users');
 
         $res->assertOk();
-        $this->assertCount(15, $res->json('users.data'));
-        $this->assertSame(15, $res->json('users.per_page'));
+        $this->assertCount(20, $res->json('users.data'));
+        $this->assertSame(20, $res->json('users.per_page'));
     }
 
     public function test_users_respects_valid_per_page(): void
@@ -106,18 +106,18 @@ class AdminPaginationTest extends TestCase
         $res = $this->getJson('/api/admin/users?per_page=999999');
 
         $res->assertOk();
-        $this->assertSame(15, $res->json('users.per_page'));
+        $this->assertSame(20, $res->json('users.per_page'));
     }
 
-    public function test_users_accepts_15_as_a_valid_per_page(): void
+    public function test_users_accepts_20_as_a_valid_per_page(): void
     {
         $this->actingAsAdmin();
         for ($i = 0; $i < 20; $i++) $this->makeUser();
 
-        $res = $this->getJson('/api/admin/users?per_page=15');
+        $res = $this->getJson('/api/admin/users?per_page=20');
 
         $res->assertOk();
-        $this->assertCount(15, $res->json('users.data'));
+        $this->assertCount(20, $res->json('users.data'));
     }
 
     public function test_users_search_filters_by_name(): void

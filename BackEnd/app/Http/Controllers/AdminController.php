@@ -29,13 +29,16 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AdminController extends Controller
 {
-    private const ALLOWED_PER_PAGE = [15, 25, 50, 100, 200];
+    private const ALLOWED_PER_PAGE = [15, 20, 25, 50, 100, 200];
+    private const DETECTION_REVIEW_LABELS = [
+        'aluminum', 'plastic', 'glass', 'paper', 'wood', 'metal', 'brick', 'other',
+    ];
     private const CACHE_TTL_SECONDS = 15;
 
     private function resolvePerPage(Request $request): int
     {
-        $value = (int) $request->query('per_page', 15);
-        return in_array($value, self::ALLOWED_PER_PAGE, true) ? $value : 15;
+        $value = (int) $request->query('per_page', 20);
+        return in_array($value, self::ALLOWED_PER_PAGE, true) ? $value : 20;
     }
 
     // Dashboard stats
@@ -293,11 +296,11 @@ class AdminController extends Controller
     }
 
     /**
-     * Shared by the list and the CSV export so both honour the same date
-     * window — an export that ignored the filter next to it would quietly mix
-     * dev/test rows into the exhibition accuracy figures.
+     * Shared by the list and CSV export so both honour the same date window and
+     * review queue. An export that ignored the visible filters would quietly
+     * mix pending and reviewed rows in the exhibition accuracy figures.
      */
-    private function filterDetectionLogsByDate(Builder $query, Request $request): Builder
+    private function filterDetectionLogs(Builder $query, Request $request, ?string $statusOverride = null): Builder
     {
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->query('date_from'));
@@ -306,12 +309,101 @@ class AdminController extends Controller
             $query->whereDate('created_at', '<=', $request->query('date_to'));
         }
 
+        $status = $statusOverride ?? $request->query('review_status', 'pending');
+
+        if ($status === 'test') {
+            return $query->where('is_mock', true);
+        }
+
+        // Mock rows are diagnostic data, not camera evidence. Keep them out of
+        // the real review queue, accuracy history, and reviewed CSV exports.
+        $query->where('is_mock', false);
+
+        switch ($status) {
+            case 'reviewed':
+                $query->whereNotNull('ground_truth_correct');
+                break;
+            case 'correct':
+                $query->where('ground_truth_correct', true);
+                break;
+            case 'incorrect':
+                $query->where('ground_truth_correct', false);
+                break;
+            case 'all':
+                break;
+            default:
+                $query->whereNull('ground_truth_correct');
+        }
+
         return $query;
+    }
+
+    /**
+     * Move a reviewed capture between the pending root and its review result
+     * folder. The database path is updated by the caller only after the file
+     * move succeeds, so History never points at the old location.
+     */
+    private function moveDetectionCapture(DetectionLog $log, ?bool $correct): string
+    {
+        $disk = Storage::disk('public');
+        $source = str_replace('\\', '/', trim((string) $log->image_path));
+
+        if ($source === '' || !str_starts_with($source, 'captures/') || !$disk->exists($source)) {
+            throw new \RuntimeException('Detection capture is missing or outside the captures folder.');
+        }
+
+        $directory = match ($correct) {
+            true => 'captures/correct',
+            false => 'captures/incorrect',
+            null => 'captures',
+        };
+        $target = $directory . '/' . basename($source);
+
+        if ($source === $target) {
+            return $source;
+        }
+
+        if ($disk->exists($target)) {
+            $path = pathinfo($target);
+            $extension = isset($path['extension']) ? '.' . $path['extension'] : '';
+            $target = $directory . '/' . $path['filename'] . '-' . $log->id . '-' . now()->format('YmdHisv') . $extension;
+        }
+
+        if (!$disk->move($source, $target)) {
+            throw new \RuntimeException('Detection capture could not be moved.');
+        }
+
+        return $target;
+    }
+
+    /**
+     * Keep the filesystem move and database path in sync. If the database
+     * update fails, make a best-effort move back to the original location.
+     */
+    private function updateDetectionReviewWithCaptureMove(DetectionLog $log, ?bool $correct, array $attributes): void
+    {
+        $disk = Storage::disk('public');
+        $originalPath = $log->image_path;
+        $newPath = $this->moveDetectionCapture($log, $correct);
+
+        try {
+            if (!$log->update(array_merge(['image_path' => $newPath], $attributes))) {
+                throw new \RuntimeException('Detection review could not be saved.');
+            }
+        } catch (\Throwable $exception) {
+            if ($newPath !== $originalPath && $disk->exists($newPath) && !$disk->exists($originalPath)) {
+                $disk->move($newPath, $originalPath);
+            }
+            throw $exception;
+        }
     }
 
     public function detectionLogs(Request $request): JsonResponse
     {
-        $query = $this->filterDetectionLogsByDate(DetectionLog::with(['user', 'machine'])->latest(), $request);
+        $query = $this->filterDetectionLogs(
+            DetectionLog::with(['user', 'machine', 'reviewer'])->latest(),
+            $request
+        );
 
         $logs = $query->paginate($this->resolvePerPage($request));
         return response()->json(['success' => true, 'detection_logs' => $logs]);
@@ -319,23 +411,97 @@ class AdminController extends Controller
 
     public function reviewDetectionLog(Request $request, int $id): JsonResponse
     {
-        $request->validate(['ground_truth_correct' => 'required|boolean']);
-
         $log = DetectionLog::find($id);
         if (!$log) {
             return response()->json(['success' => false, 'message' => 'Detection log not found.'], 404);
+        }
+
+        if ($request->boolean('undo')) {
+            try {
+                $this->updateDetectionReviewWithCaptureMove($log, null, [
+                    'ground_truth_correct' => null,
+                    'ground_truth_label'   => null,
+                    'reviewed_by'          => null,
+                    'reviewed_at'          => null,
+                ]);
+            } catch (\Throwable $exception) {
+                Log::error('Failed to undo detection review capture move.', [
+                    'detection_log_id' => $log->id,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The capture could not be returned to the pending folder.',
+                ], 500);
+            }
+
+            return response()->json(['success' => true, 'detection_log' => $log->fresh('reviewer')]);
+        }
+
+        if ($log->is_mock || !$log->image_path || !Storage::disk('public')->exists($log->image_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A real captured image is required before this detection can be reviewed.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'ground_truth_correct' => ['required', 'boolean'],
+            'ground_truth_label'   => ['nullable', 'string', 'in:' . implode(',', self::DETECTION_REVIEW_LABELS)],
+        ]);
+
+        $correct = (bool) $validated['ground_truth_correct'];
+        $predicted = strtolower(trim((string) $log->ai_detected_type));
+
+        if ($correct) {
+            if ($predicted === '' || $predicted === 'unknown' || !in_array($predicted, self::DETECTION_REVIEW_LABELS, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unknown predictions must be assigned an actual material.',
+                ], 422);
+            }
+            $groundTruthLabel = $predicted;
+        } else {
+            $groundTruthLabel = $validated['ground_truth_label'] ?? null;
+            if (!$groundTruthLabel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Select the actual material for an incorrect prediction.',
+                ], 422);
+            }
+            if ($groundTruthLabel === $predicted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The actual material must differ from the AI prediction.',
+                ], 422);
+            }
         }
 
         // Deliberately no $this->log(...) here, unlike the other mutating admin
         // actions: an exhibition review pass marks hundreds of photos in one
         // sitting, which would bury every other entry in the 50-per-page
         // admin_logs view. reviewed_at on the row is the audit trail instead.
-        $log->update([
-            'ground_truth_correct' => $request->boolean('ground_truth_correct'),
-            'reviewed_at'          => now(),
-        ]);
+        try {
+            $this->updateDetectionReviewWithCaptureMove($log, $correct, [
+                'ground_truth_correct' => $correct,
+                'ground_truth_label'   => $groundTruthLabel,
+                'reviewed_by'          => $request->user()->id,
+                'reviewed_at'          => now(),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Failed to move detection review capture.', [
+                'detection_log_id' => $log->id,
+                'error' => $exception->getMessage(),
+            ]);
 
-        return response()->json(['success' => true, 'detection_log' => $log]);
+            return response()->json([
+                'success' => false,
+                'message' => 'The review could not be saved because the capture could not be moved.',
+            ], 500);
+        }
+
+        return response()->json(['success' => true, 'detection_log' => $log->fresh('reviewer')]);
     }
 
     public function detectionLogImage(int $id)
@@ -360,14 +526,25 @@ class AdminController extends Controller
     // of analysis: one row per detection event, not per completed transaction.
     public function exportDetectionLogs(Request $request)
     {
-        $logs = $this->filterDetectionLogsByDate(DetectionLog::latest(), $request)->get();
+        $requestedStatus = $request->query('review_status', 'reviewed');
+        $exportStatus = in_array($requestedStatus, ['reviewed', 'correct', 'incorrect'], true)
+            ? $requestedStatus
+            : 'reviewed';
+        $logs = $this->filterDetectionLogs(
+            DetectionLog::with('reviewer')->latest(),
+            $request,
+            $exportStatus
+        )->get();
         $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs");
 
-        $filename = 'detection_logs_' . now()->format('Y-m-d') . '.csv';
+        $filename = 'detection_reviews_' . now()->format('Y-m-d') . '.csv';
 
         return response()->streamDownload(function () use ($logs) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock', 'ground_truth_correct', 'created_at']);
+            fputcsv($handle, [
+                'image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock',
+                'ground_truth_correct', 'ground_truth_label', 'reviewed_by', 'reviewed_at', 'created_at',
+            ]);
             foreach ($logs as $log) {
                 fputcsv($handle, [
                     $log->image_path,
@@ -376,6 +553,9 @@ class AdminController extends Controller
                     $log->is_guest ? '1' : '0',
                     $log->is_mock ? '1' : '0',
                     is_null($log->ground_truth_correct) ? '' : ($log->ground_truth_correct ? '1' : '0'),
+                    $log->ground_truth_label,
+                    $log->reviewer?->name,
+                    $log->reviewed_at?->toDateTimeString(),
                     $log->created_at?->toDateTimeString(),
                 ]);
             }

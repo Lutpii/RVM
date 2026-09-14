@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\DetectionLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -78,8 +79,9 @@ class AdminDetectionLogsTest extends TestCase
     public function test_export_respects_the_date_filter(): void
     {
         $this->actingAsAdmin();
-        $this->makeLogDated('2026-09-01 10:00:00', ['image_path' => 'captures/old.jpg']);
-        $this->makeLogDated('2026-09-08 10:00:00', ['image_path' => 'captures/recent.jpg']);
+        $reviewed = ['ground_truth_correct' => true, 'ground_truth_label' => 'plastic', 'reviewed_at' => now()];
+        $this->makeLogDated('2026-09-01 10:00:00', array_merge($reviewed, ['image_path' => 'captures/old.jpg']));
+        $this->makeLogDated('2026-09-08 10:00:00', array_merge($reviewed, ['image_path' => 'captures/recent.jpg']));
 
         $response = $this->get('/api/admin/detection-logs/export?date_from=2026-09-05&date_to=2026-09-09')->assertOk();
 
@@ -116,14 +118,172 @@ class AdminDetectionLogsTest extends TestCase
 
     public function test_admin_can_mark_a_detection_log_correct(): void
     {
-        $this->actingAsAdmin();
+        Storage::fake('public');
+        $admin = $this->actingAsAdmin();
         $log = DetectionLog::create(['image_path' => 'captures/a.jpg', 'ai_detected_type' => 'plastic', 'is_guest' => true]);
+        Storage::disk('public')->put('captures/a.jpg', 'fake-jpeg-bytes');
 
         $response = $this->patchJson("/api/admin/detection-logs/{$log->id}", ['ground_truth_correct' => true])
             ->assertOk();
 
         $response->assertJsonPath('detection_log.ground_truth_correct', true);
-        $this->assertNotNull($log->fresh()->reviewed_at);
+        $reviewed = $log->fresh();
+        $this->assertSame('plastic', $reviewed->ground_truth_label);
+        $this->assertSame($admin->id, $reviewed->reviewed_by);
+        $this->assertNotNull($reviewed->reviewed_at);
+        $this->assertSame('captures/correct/a.jpg', $reviewed->image_path);
+        Storage::disk('public')->assertMissing('captures/a.jpg');
+        Storage::disk('public')->assertExists('captures/correct/a.jpg');
+    }
+
+    public function test_incorrect_review_requires_an_actual_material(): void
+    {
+        Storage::fake('public');
+        $this->actingAsAdmin();
+        $log = DetectionLog::create(['image_path' => 'captures/a.jpg', 'ai_detected_type' => 'plastic']);
+        Storage::disk('public')->put('captures/a.jpg', 'fake-jpeg-bytes');
+
+        $this->patchJson("/api/admin/detection-logs/{$log->id}", [
+            'ground_truth_correct' => false,
+        ])->assertStatus(422);
+
+        $this->patchJson("/api/admin/detection-logs/{$log->id}", [
+            'ground_truth_correct' => false,
+            'ground_truth_label' => 'wood',
+        ])->assertOk()->assertJsonPath('detection_log.ground_truth_label', 'wood');
+
+        $this->assertSame('captures/incorrect/a.jpg', $log->fresh()->image_path);
+        Storage::disk('public')->assertMissing('captures/a.jpg');
+        Storage::disk('public')->assertExists('captures/incorrect/a.jpg');
+    }
+
+    public function test_all_eight_actual_material_labels_are_accepted(): void
+    {
+        Storage::fake('public');
+        $this->actingAsAdmin();
+
+        foreach (['aluminum', 'plastic', 'glass', 'paper', 'wood', 'metal', 'brick', 'other'] as $label) {
+            Storage::disk('public')->put("captures/{$label}.jpg", 'fake-jpeg-bytes');
+            $log = DetectionLog::create([
+                'image_path' => "captures/{$label}.jpg",
+                'ai_detected_type' => 'unknown',
+            ]);
+
+            $this->patchJson("/api/admin/detection-logs/{$log->id}", [
+                'ground_truth_correct' => false,
+                'ground_truth_label' => $label,
+            ])->assertOk()->assertJsonPath('detection_log.ground_truth_label', $label);
+
+            Storage::disk('public')->assertExists("captures/incorrect/{$label}.jpg");
+        }
+    }
+
+    public function test_unknown_prediction_cannot_be_marked_correct(): void
+    {
+        Storage::fake('public');
+        $this->actingAsAdmin();
+        $log = DetectionLog::create(['image_path' => 'captures/a.jpg', 'ai_detected_type' => 'unknown']);
+        Storage::disk('public')->put('captures/a.jpg', 'fake-jpeg-bytes');
+
+        $this->patchJson("/api/admin/detection-logs/{$log->id}", [
+            'ground_truth_correct' => true,
+        ])->assertStatus(422);
+
+        Storage::disk('public')->assertExists('captures/a.jpg');
+    }
+
+    public function test_mock_imageless_or_missing_capture_detection_cannot_be_reviewed(): void
+    {
+        Storage::fake('public');
+        $this->actingAsAdmin();
+        $mock = DetectionLog::create([
+            'image_path' => 'captures/mock.jpg', 'ai_detected_type' => 'plastic', 'is_mock' => true,
+        ]);
+        $imageless = DetectionLog::create(['ai_detected_type' => 'plastic']);
+        $missingCapture = DetectionLog::create([
+            'image_path' => 'captures/missing.jpg', 'ai_detected_type' => 'plastic',
+        ]);
+
+        $this->patchJson("/api/admin/detection-logs/{$mock->id}", [
+            'ground_truth_correct' => true,
+        ])->assertStatus(422);
+        $this->patchJson("/api/admin/detection-logs/{$imageless->id}", [
+            'ground_truth_correct' => true,
+        ])->assertStatus(422);
+        $this->patchJson("/api/admin/detection-logs/{$missingCapture->id}", [
+            'ground_truth_correct' => true,
+        ])->assertStatus(422);
+    }
+
+    public function test_incorrect_actual_material_must_differ_from_prediction(): void
+    {
+        Storage::fake('public');
+        $this->actingAsAdmin();
+        $log = DetectionLog::create(['image_path' => 'captures/a.jpg', 'ai_detected_type' => 'plastic']);
+        Storage::disk('public')->put('captures/a.jpg', 'fake-jpeg-bytes');
+
+        $this->patchJson("/api/admin/detection-logs/{$log->id}", [
+            'ground_truth_correct' => false,
+            'ground_truth_label' => 'plastic',
+        ])->assertStatus(422);
+
+        Storage::disk('public')->assertExists('captures/a.jpg');
+    }
+
+    public function test_detection_log_filters_separate_pending_and_history(): void
+    {
+        $admin = $this->actingAsAdmin();
+        DetectionLog::create(['image_path' => 'captures/pending.jpg', 'ai_detected_type' => 'plastic']);
+        DetectionLog::create([
+            'image_path' => 'captures/correct.jpg', 'ai_detected_type' => 'glass',
+            'ground_truth_correct' => true, 'ground_truth_label' => 'glass',
+            'reviewed_by' => $admin->id, 'reviewed_at' => now(),
+        ]);
+        DetectionLog::create([
+            'image_path' => 'captures/incorrect.jpg', 'ai_detected_type' => 'plastic',
+            'ground_truth_correct' => false, 'ground_truth_label' => 'metal',
+            'reviewed_by' => $admin->id, 'reviewed_at' => now(),
+        ]);
+        DetectionLog::create([
+            'image_path' => null, 'ai_detected_type' => 'plastic', 'is_mock' => true,
+        ]);
+
+        $this->getJson('/api/admin/detection-logs?review_status=pending')
+            ->assertOk()->assertJsonCount(1, 'detection_logs.data');
+        $this->getJson('/api/admin/detection-logs?review_status=reviewed')
+            ->assertOk()->assertJsonCount(2, 'detection_logs.data');
+        $this->getJson('/api/admin/detection-logs?review_status=correct')
+            ->assertOk()->assertJsonCount(1, 'detection_logs.data');
+        $this->getJson('/api/admin/detection-logs?review_status=incorrect')
+            ->assertOk()->assertJsonCount(1, 'detection_logs.data');
+        $this->getJson('/api/admin/detection-logs?review_status=test')
+            ->assertOk()
+            ->assertJsonCount(1, 'detection_logs.data')
+            ->assertJsonPath('detection_logs.data.0.is_mock', true);
+    }
+
+    public function test_admin_can_undo_a_detection_review(): void
+    {
+        Storage::fake('public');
+        $admin = $this->actingAsAdmin();
+        $log = DetectionLog::create([
+            'image_path' => 'captures/correct/a.jpg', 'ai_detected_type' => 'plastic',
+            'ground_truth_correct' => true, 'ground_truth_label' => 'plastic',
+            'reviewed_by' => $admin->id, 'reviewed_at' => now(),
+        ]);
+        Storage::disk('public')->put('captures/correct/a.jpg', 'fake-jpeg-bytes');
+
+        $this->patchJson("/api/admin/detection-logs/{$log->id}", ['undo' => true])
+            ->assertOk();
+
+        $reviewed = $log->fresh();
+        $this->assertNull($reviewed->ground_truth_correct);
+        $this->assertNull($reviewed->ground_truth_label);
+        $this->assertNull($reviewed->reviewed_by);
+        $this->assertNull($reviewed->reviewed_at);
+        $this->assertSame('captures/a.jpg', $reviewed->image_path);
+        Storage::disk('public')->assertMissing('captures/correct/a.jpg');
+        Storage::disk('public')->assertExists('captures/a.jpg');
     }
 
     public function test_reviewing_a_missing_detection_log_returns_404(): void
@@ -167,16 +327,28 @@ class AdminDetectionLogsTest extends TestCase
             'image_path' => 'captures/a.jpg', 'ai_detected_type' => 'plastic',
             'ai_confidence' => 0.8, 'is_guest' => true, 'ground_truth_correct' => true,
         ]);
+        DetectionLog::create([
+            'image_path' => 'captures/pending.jpg', 'ai_detected_type' => 'glass',
+        ]);
+        DetectionLog::create([
+            'ai_detected_type' => 'plastic', 'is_mock' => true, 'ground_truth_correct' => true,
+        ]);
 
-        $response = $this->get('/api/admin/detection-logs/export')->assertOk();
+        // Even a manually supplied test-data status cannot contaminate the
+        // reviewed accuracy export with mock or pending rows.
+        $response = $this->get('/api/admin/detection-logs/export?review_status=test')->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 
         $lines = array_filter(explode("\n", trim($response->streamedContent())));
+        $this->assertCount(2, $lines);
         $header = str_getcsv($lines[0]);
         $row    = str_getcsv($lines[1]);
 
         $this->assertSame(
-            ['image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock', 'ground_truth_correct', 'created_at'],
+            [
+                'image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock',
+                'ground_truth_correct', 'ground_truth_label', 'reviewed_by', 'reviewed_at', 'created_at',
+            ],
             $header
         );
         $this->assertSame('captures/a.jpg', $row[0]);
