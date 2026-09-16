@@ -266,7 +266,11 @@ function goToScan() {
 }
 
 .landing-brand-logo {
-  --brand-logo-height: 96px;
+  /* logo-umpsa-trimmed.png has no built-in padding (unlike the untrimmed
+     source), so this is deliberately much smaller than the old 96px — that
+     value was sized against ~45% dead transparent margin around the mark.
+     54px here reproduces the same actual visual size as before. */
+  --brand-logo-height: 54px;
   max-width: calc(100% - 32px);
 }
 
@@ -293,7 +297,7 @@ function goToScan() {
     gap: 3px;
     font-size: 11px;
   }
-  .landing-brand-logo { --brand-logo-height: 76px; }
+  .landing-brand-logo { --brand-logo-height: 43px; }
 }
 
 @media (max-height: 700px) {
@@ -314,6 +318,6 @@ function goToScan() {
     gap: 3px;
     font-size: 11px;
   }
-  .landing-brand-logo { --brand-logo-height: 56px; }
+  .landing-brand-logo { --brand-logo-height: 32px; }
 }
 </style>

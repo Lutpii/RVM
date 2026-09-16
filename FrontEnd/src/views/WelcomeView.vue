@@ -93,7 +93,11 @@ onMounted(() => {
   left: 50%;
   bottom: max(24px, env(safe-area-inset-bottom));
   z-index: 1;
-  --brand-logo-height: 96px;
+  /* Same trimmed-logo math as LandingView (see its comment), but smaller
+     still — floating alone with no caption text on an otherwise near-empty
+     splash screen, the same 54px used elsewhere reads as much more
+     prominent with nothing around it to size it against. */
+  --brand-logo-height: 40px;
   max-width: calc(100% - 32px);
   transform: translateX(-50%);
 }
@@ -101,7 +105,7 @@ onMounted(() => {
 @media (max-width: 480px) {
   .welcome-content { padding: 20px 24px; }
   .brand-logo {
-    --brand-logo-height: 76px;
+    --brand-logo-height: 32px;
     bottom: max(20px, env(safe-area-inset-bottom));
   }
 }

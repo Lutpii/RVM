@@ -421,7 +421,9 @@ onBeforeUnmount(() => {
 }
 
 .brand-logo {
-  --brand-logo-height: 96px;
+  /* See LandingView.vue's landing-brand-logo comment — trimmed logo, so this
+     is much smaller than the old 96px to keep the same actual visual size. */
+  --brand-logo-height: 54px;
   max-width: calc(100vw - 40px);
 }
 
@@ -673,9 +675,9 @@ onBeforeUnmount(() => {
   .guest-btn-icon { width: 16px; height: 16px; margin-bottom: 0; }
   .guest-btn-note { margin-left: 2px; font-size: 10px; }
 
-  /* Same logo/text size as KioskLandingView's compact footer. */
+  /* Same logo/text size as KioskLandingView's compact footer — logo height
+     deliberately NOT overridden, see that file's comment on the same rule. */
   .kiosk-footer { gap: 3px; font-size: 11px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
-  .kiosk-footer .brand-logo { --brand-logo-height: 90px; }
 
   .scanned-content { padding-top: 20px; }
   .success-ring { width: 80px; height: 80px; }

@@ -199,7 +199,9 @@ function goToQr() {
 }
 
 .brand-logo {
-  --brand-logo-height: 96px;
+  /* See LandingView.vue's landing-brand-logo comment — trimmed logo, so this
+     is much smaller than the old 96px to keep the same actual visual size. */
+  --brand-logo-height: 54px;
 }
 
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
@@ -213,8 +215,11 @@ function goToQr() {
   .start-icon { font-size: 18px; }
   .hint-text { font-size: 12px; }
 
+  /* Logo height deliberately NOT overridden here — this breakpoint always
+     matches the real kiosk's fixed 1024x600 screen (600 < 650), so shrinking
+     it here would mean the physical kiosk never shows the same 54px as
+     everywhere else (LandingView etc.), only ever this smaller one. */
   .kiosk-footer { bottom: max(10px, env(safe-area-inset-bottom)); gap: 3px; font-size: 11px; }
-  .kiosk-footer .brand-logo { --brand-logo-height: 90px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
