@@ -1043,6 +1043,31 @@ const tabError = ref('')   // surfaced error message per tab
 const TAB_STALE_MS = 10000
 const tabFetchedAt = reactive({ dashboard: 0, transactions: 0, users: 0, machines: 0, sessions: 0, detection: 0 })
 
+// Detection Review's Pending/History/Test Data sub-views (plus the History
+// All/Correct/Incorrect filter, date range and page) each return different
+// rows from the same 'detection' tab slot — the single tabFetchedAt.detection
+// timestamp above can't tell those apart, so switching sub-tabs always
+// re-hit the database. This caches each exact filter combination separately
+// so revisiting one within TAB_STALE_MS is instant, same as the main tabs.
+const detectionCache = reactive({})
+function detectionCacheKey() {
+  const f = activeDetectionDateFilter.value
+  return [detectionView.value, detectionHistoryStatus.value, detectionPage.value, detectionPerPage.value, f.from, f.to].join('|')
+}
+function loadDetectionData(showSpinner = true) {
+  const key = detectionCacheKey()
+  const cached = detectionCache[key]
+  if (isFresh(cached?.fetchedAt, Date.now(), TAB_STALE_MS)) {
+    detectionLogs.value     = cached.logs
+    detectionTotal.value    = cached.total
+    detectionLastPage.value = cached.lastPage
+    releaseThumbnails(cached.logs)
+    cached.logs.forEach(loadThumbnail)
+    return
+  }
+  fetchTabData('detection', showSpinner)
+}
+
 const userSearch = ref('')
 const txSearch = ref('')
 const txFilter = ref('')
@@ -1407,6 +1432,10 @@ async function fetchTabData(tab, showSpinner = false) {
       detectionLastPage.value = res.data.detection_logs?.last_page ?? 1
       releaseThumbnails(detectionLogs.value)
       detectionLogs.value.forEach(loadThumbnail)
+      detectionCache[detectionCacheKey()] = {
+        logs: detectionLogs.value, total: detectionTotal.value,
+        lastPage: detectionLastPage.value, fetchedAt: Date.now(),
+      }
     } else if (tab === 'rewards') {
       if (showSpinner) loadingRewardItems.value = true
       const res = await api.get('/admin/reward-items', { params: {
@@ -1513,6 +1542,9 @@ async function saveDetectionReview(log, payload) {
         : t('admin.detectionReview.markedIncorrect')
     )
     tabFetchedAt.detection = 0
+    // A reviewed item moves from Pending into History — every cached
+    // sub-view could now be stale, not just the one currently on screen.
+    for (const key of Object.keys(detectionCache)) delete detectionCache[key]
     await fetchTabData('detection', false)
     return true
   } catch {
@@ -1559,6 +1591,7 @@ async function undoDetectionReview() {
     await api.patch(`/admin/detection-logs/${detectionUndo.value.id}`, { undo: true })
     detectionUndo.value.show = false
     tabFetchedAt.detection = 0
+    for (const key of Object.keys(detectionCache)) delete detectionCache[key]
     await fetchTabData('detection', false)
     showToast(t('admin.detectionReview.undoSuccess'))
   } catch {
@@ -1739,12 +1772,12 @@ function changeRedemptionsPerPage(perPage) {
 
 function goToDetectionPage(page) {
   detectionPage.value = page
-  fetchTabData('detection', true)
+  loadDetectionData(true)
 }
 function changeDetectionPerPage(perPage) {
   detectionPerPage.value = perPage
   detectionPage.value = 1
-  fetchTabData('detection', true)
+  loadDetectionData(true)
 }
 function setDetectionDatePreset(preset) {
   const filter = activeDetectionDateFilter.value
@@ -1756,7 +1789,7 @@ function setDetectionDatePreset(preset) {
   filter.from = range.from
   filter.to = range.to
   detectionPage.value = 1
-  fetchTabData('detection', true)
+  loadDetectionData(true)
 }
 function setDetectionCustomDate(field, value) {
   const filter = activeDetectionDateFilter.value
@@ -1770,19 +1803,19 @@ function setDetectionCustomDate(field, value) {
   }
 
   detectionPage.value = 1
-  fetchTabData('detection', true)
+  loadDetectionData(true)
 }
 function setDetectionView(view) {
   if (detectionView.value === view) return
   detectionView.value = view
   detectionPage.value = 1
-  fetchTabData('detection', true)
+  loadDetectionData(true)
 }
 function setDetectionHistoryStatus(status) {
   if (detectionHistoryStatus.value === status) return
   detectionHistoryStatus.value = status
   detectionPage.value = 1
-  fetchTabData('detection', true)
+  loadDetectionData(true)
 }
 
 // ── Admin Controls ──

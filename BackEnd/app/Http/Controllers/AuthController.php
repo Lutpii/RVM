@@ -283,7 +283,10 @@ class AuthController extends Controller
         // still be pre-registered as an authorized redirect URI in the
         // Google Cloud Console project.
         $redirectUri = $this->resolveBackendRoot($request) . '/auth/google/callback';
-        $url = Socialite::driver('google')->stateless()->with(['state' => $state])->redirectUrl($redirectUri)->redirect()->getTargetUrl();
+        // Without 'prompt' => 'select_account', Google silently reuses whichever
+        // account is already active in the browser instead of asking — fine with
+        // one Google session, confusing/wrong the moment someone has more than one.
+        $url = Socialite::driver('google')->stateless()->with(['state' => $state, 'prompt' => 'select_account'])->redirectUrl($redirectUri)->redirect()->getTargetUrl();
 
         // Secure flag follows the actual request scheme — local dev runs plain
         // HTTP (php artisan serve), where a Secure cookie would silently never
