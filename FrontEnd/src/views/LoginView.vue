@@ -34,7 +34,7 @@
         -->
 
         <!-- Email Login -->
-        <form v-if="loginMethod === 'email'" @submit.prevent="handleEmailLogin" class="auth-form">
+        <form v-if="loginMethod === 'email' && !showOtp" @submit.prevent="handleEmailLogin" class="auth-form">
           <div class="form-group">
             <label>{{ $t('auth.email') }}</label>
             <input v-model="form.email" type="email" :placeholder="$t('auth.email')" autocomplete="username" required />
@@ -56,6 +56,25 @@
             {{ loading ? '...' : $t('auth.loginBtn') }}
           </button>
         </form>
+
+        <!-- Account exists but isn't verified yet — mandatory OTP step,
+             reached from a login attempt instead of straight after register. -->
+        <div v-if="loginMethod === 'email' && showOtp" class="otp-section">
+          <h3 class="otp-heading">{{ $t('auth.verifyWhatsapp') }}</h3>
+          <p class="otp-info">{{ $t('auth.verifyToContinue') }}</p>
+          <div v-if="error" class="error-msg">{{ error }}</div>
+          <div class="form-group">
+            <label>{{ $t('auth.otpLabel') }}</label>
+            <input v-model="otpCode" type="text" maxlength="6" :placeholder="$t('auth.otpPlaceholder')" class="otp-input" />
+          </div>
+          <button class="submit-btn whatsapp-btn" @click="handleVerifyLoginOtp" :disabled="loading">
+            <span v-if="loading" class="spinner"></span>
+            {{ loading ? '...' : $t('auth.verifyOtp') }}
+          </button>
+          <button type="button" class="resend-btn" @click="handleResendLoginOtp" :disabled="loading || resendCooldown > 0">
+            {{ resendCooldown > 0 ? $t('auth.resendOtpIn', { seconds: resendCooldown }) : $t('auth.resendOtp') }}
+          </button>
+        </div>
 
         <!-- WhatsApp OTP Login — temporarily hidden
         <div v-else class="auth-form">
@@ -97,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
@@ -115,6 +134,24 @@ const error = ref('')
 const otpSent = ref(false)
 const showPwd = ref(false)
 
+// Mandatory-OTP step, only reached when login() responds needs_verification —
+// a correct password on an unverified account (see AuthController::login()).
+const showOtp = ref(false)
+const otpCode = ref('')
+const resendCooldown = ref(0)
+let resendTimer = null
+
+const RESEND_COOLDOWN_SECONDS = 30
+
+function startResendCooldown() {
+  clearInterval(resendTimer)
+  resendCooldown.value = RESEND_COOLDOWN_SECONDS
+  resendTimer = setInterval(() => {
+    resendCooldown.value -= 1
+    if (resendCooldown.value <= 0) clearInterval(resendTimer)
+  }, 1000)
+}
+
 async function handleEmailLogin() {
   loading.value = true
   error.value = ''
@@ -122,11 +159,48 @@ async function handleEmailLogin() {
     const res = await auth.login({ email: form.value.email, password: form.value.password })
     if (res.success) {
       router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
+    } else if (res.needs_verification) {
+      showOtp.value = true
+      startResendCooldown()
     } else {
       error.value = res.message || t('auth.loginFailed')
     }
   } catch (e) {
     error.value = e.response?.data?.message || t('auth.loginFailed')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleVerifyLoginOtp() {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await auth.verifyOtp({ email: form.value.email }, otpCode.value)
+    if (res.success) {
+      router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
+    } else {
+      error.value = res.message || t('auth.otpInvalid')
+    }
+  } catch (e) {
+    error.value = e.response?.data?.message || t('auth.otpInvalid')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleResendLoginOtp() {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await auth.sendOtp({ email: form.value.email })
+    if (res.success) {
+      startResendCooldown()
+    } else {
+      error.value = res.message || t('auth.otpResendFailed')
+    }
+  } catch (e) {
+    error.value = e.response?.data?.message || t('auth.otpResendFailed')
   } finally {
     loading.value = false
   }
@@ -144,7 +218,7 @@ async function handleSendOtp() {
   loading.value = true
   error.value = ''
   try {
-    const res = await auth.sendOtp(form.value.phone)
+    const res = await auth.sendOtp({ phone: form.value.phone })
     if (res.success) { otpSent.value = true }
     else { error.value = res.message }
   } catch (e) {
@@ -158,7 +232,7 @@ async function handleVerifyOtp() {
   loading.value = true
   error.value = ''
   try {
-    const res = await auth.verifyOtp(form.value.phone, form.value.otp)
+    const res = await auth.verifyOtp({ phone: form.value.phone }, form.value.otp)
     if (res.success) { router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } }) }
     else { error.value = res.message }
   } catch (e) {
@@ -167,6 +241,8 @@ async function handleVerifyOtp() {
     loading.value = false
   }
 }
+
+onUnmounted(() => clearInterval(resendTimer))
 </script>
 
 <style scoped>
@@ -381,6 +457,9 @@ async function handleVerifyOtp() {
 .whatsapp-btn {
   background: #25D366;
 }
+
+.otp-section { margin-top: 16px; }
+.otp-heading { text-align: center; font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
 
 .otp-info {
   color: var(--accent-green);

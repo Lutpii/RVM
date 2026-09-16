@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OtpMail;
 use App\Models\User;
 use App\Services\FonnteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Laravel\Socialite\Facades\Socialite;
 use Carbon\Carbon;
 
@@ -28,10 +31,17 @@ class AuthController extends Controller
     // Register with email/password
     public function register(Request $request): JsonResponse
     {
+        // 'unique' only fires against an already-*verified* row — a previous
+        // registration that never finished OTP (closed the tab, refresh, etc.)
+        // has no other way back in otherwise: there's nothing to log into yet
+        // (no verified account) and re-submitting the same form would
+        // otherwise be permanently rejected as "already taken". Falling
+        // through instead re-sends a fresh OTP to that same unverified row —
+        // idempotent register, no client-side "resume" state to go stale.
         $validator = Validator::make($request->all(), [
             'name'     => 'required|string|max:100',
-            'email'    => 'required_without:phone|email|unique:users,email',
-            'phone'    => 'required_without:email|string|max:20|unique:users,phone',
+            'email'    => ['required_without:phone', 'email', Rule::unique('users', 'email')->where(fn ($q) => $q->where('is_verified', 1))],
+            'phone'    => ['required_without:email', 'string', 'max:20', Rule::unique('users', 'phone')->where(fn ($q) => $q->where('is_verified', 1))],
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -39,28 +49,51 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $user = User::create([
-            'name'          => $request->name,
-            'email'         => $request->email,
-            'phone'         => $request->phone,
-            'password_hash' => Hash::make($request->password),
-            'is_verified'   => 0,
-            'role'          => 'user',
-            'total_points'  => 0,
-        ]);
+        $existing = $request->email
+            ? User::where('email', $request->email)->first()
+            : User::where('phone', $request->phone)->first();
 
-        // Send OTP if phone provided
-        if ($request->phone) {
-            $this->generateAndSendOtp($user);
+        if ($existing) {
+            // Same cap as the dedicated resend endpoint (sendOtp() below) —
+            // otherwise this path has no rate limit at all and becomes a free
+            // way to spam OTPs at someone else's still-unverified email/phone.
+            $identifier = $request->email ?: $request->phone;
+            $sendKey = 'otp-send:' . $identifier;
+            if (RateLimiter::tooManyAttempts($sendKey, 3)) {
+                $seconds = RateLimiter::availableIn($sendKey);
+                return response()->json(['success' => false, 'message' => __('messages.too_many_otp_requests', ['seconds' => $seconds])], 429);
+            }
+            RateLimiter::hit($sendKey, 600);
+
+            $existing->update([
+                'name'          => $request->name,
+                'password_hash' => Hash::make($request->password),
+            ]);
+            $user = $existing;
+        } else {
+            $user = User::create([
+                'name'          => $request->name,
+                'email'         => $request->email,
+                'phone'         => $request->phone,
+                'password_hash' => Hash::make($request->password),
+                'is_verified'   => 0,
+                'role'          => 'user',
+                'total_points'  => 0,
+            ]);
         }
 
-        $token = $user->createToken('rvm_token')->plainTextToken;
+        // Send OTP — via WhatsApp if a phone was given, otherwise via email (at
+        // least one of the two is always present per the validation above).
+        $this->generateAndSendOtp($user);
 
+        // No token here on purpose — OTP verification is mandatory before an
+        // account is usable at all. verifyOtp() is the only place a fresh
+        // registration gets a session (see also login()'s is_verified gate,
+        // which enforces the same rule for someone re-attempting to log in
+        // before verifying).
         return response()->json([
             'success' => true,
-            'message' => $request->phone ? __('messages.register_success_otp_sent') : __('messages.register_success'),
-            'token'   => $token,
-            'user'    => $this->formatUser($user),
+            'message' => __('messages.register_success_otp_sent'),
         ], 201);
     }
 
@@ -96,6 +129,26 @@ class AuthController extends Controller
         }
 
         RateLimiter::clear($throttleKey);
+
+        // OTP verification is mandatory — a correct password on an unverified
+        // account proves it's really them, but doesn't grant a session. Resend
+        // a fresh OTP (same cap as sendOtp()'s own resend endpoint) so they can
+        // finish verifying right from the login screen instead of getting stuck.
+        if (!$user->is_verified) {
+            $identifier = $user->email ?: $user->phone;
+            $sendKey = 'otp-send:' . $identifier;
+            if (!RateLimiter::tooManyAttempts($sendKey, 3)) {
+                RateLimiter::hit($sendKey, 600);
+                $this->generateAndSendOtp($user);
+            }
+
+            return response()->json([
+                'success'            => false,
+                'needs_verification' => true,
+                'message'            => __('messages.account_not_verified'),
+            ], 403);
+        }
+
         $token = $user->createToken('rvm_token')->plainTextToken;
 
         return response()->json([
@@ -106,28 +159,33 @@ class AuthController extends Controller
         ]);
     }
 
-    // Send OTP via WhatsApp (Fonnte)
+    // Resend OTP — via WhatsApp (Fonnte) if the account has a phone, otherwise
+    // via email. Accepts whichever identifier the account was registered with.
     public function sendOtp(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
+            'phone' => 'required_without:email|string',
+            'email' => 'required_without:phone|email',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        // Cap how often OTPs can be requested for one phone — otherwise anyone can
-        // spam a victim's WhatsApp (cost + annoyance) with unlimited sends.
-        $sendKey = 'otp-send:' . $request->phone;
+        // Cap how often OTPs can be requested for one account — otherwise anyone
+        // can spam a victim's WhatsApp/inbox (cost + annoyance) with unlimited sends.
+        $identifier = $request->phone ?: $request->email;
+        $sendKey = 'otp-send:' . $identifier;
         if (RateLimiter::tooManyAttempts($sendKey, 3)) {
             $seconds = RateLimiter::availableIn($sendKey);
             return response()->json(['success' => false, 'message' => __('messages.too_many_otp_requests', ['seconds' => $seconds])], 429);
         }
 
-        $user = User::where('phone', $request->phone)->first();
+        $user = $request->phone
+            ? User::where('phone', $request->phone)->first()
+            : User::where('email', $request->email)->first();
         if (!$user) {
-            return response()->json(['success' => false, 'message' => __('messages.phone_not_found')], 404);
+            return response()->json(['success' => false, 'message' => __('messages.account_not_found')], 404);
         }
 
         RateLimiter::hit($sendKey, 600);
@@ -136,11 +194,12 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => __('messages.otp_sent')]);
     }
 
-    // Verify OTP
+    // Verify OTP — same dual phone/email identifier as sendOtp() above.
     public function verifyOtp(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
+            'phone' => 'required_without:email|string',
+            'email' => 'required_without:phone|email',
             'otp'   => 'required|string|size:6',
         ]);
 
@@ -148,15 +207,18 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        // Per-phone lockout on the 6-digit code — the 5-minute validity window
+        // Per-account lockout on the 6-digit code — the 5-minute validity window
         // alone is not enough protection against a distributed brute force.
-        $verifyKey = 'otp-verify:' . $request->phone;
+        $identifier = $request->phone ?: $request->email;
+        $verifyKey = 'otp-verify:' . $identifier;
         if (RateLimiter::tooManyAttempts($verifyKey, 5)) {
             $seconds = RateLimiter::availableIn($verifyKey);
             return response()->json(['success' => false, 'message' => __('messages.too_many_otp_attempts', ['seconds' => $seconds])], 429);
         }
 
-        $user = User::where('phone', $request->phone)->first();
+        $user = $request->phone
+            ? User::where('phone', $request->phone)->first()
+            : User::where('email', $request->email)->first();
 
         // hash_equals() for constant-time comparison — otp_code is never null-safe
         // here (cast to string) since hash_equals() rejects a null needle/haystack.
@@ -176,7 +238,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => __('messages.phone_verified'),
+            'message' => __('messages.account_verified'),
             'token'   => $token,
             'user'    => $this->formatUser($user),
         ]);
@@ -406,6 +468,9 @@ class AuthController extends Controller
     }
 
     // Private helpers
+    // WhatsApp (Fonnte) if the account has a phone — that path was already live
+    // and costs nothing extra to keep. Email otherwise, since Resend (already
+    // wired up for admin reports) has a free tier and needs no new service.
     private function generateAndSendOtp(User $user): void
     {
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -414,8 +479,12 @@ class AuthController extends Controller
             'otp_expires_at' => Carbon::now()->addMinutes(5),
         ]);
 
-        $message = "🌱 *RVM - Reverse Vending Machine*\n\nYour verification code is:\n*{$otp}*\n\nValid for 5 minutes. Do not share this code.";
-        $this->fonnte->send($user->phone, $message);
+        if ($user->phone) {
+            $message = "🌱 *RVM - Reverse Vending Machine*\n\nYour verification code is:\n*{$otp}*\n\nValid for 5 minutes. Do not share this code.";
+            $this->fonnte->send($user->phone, $message);
+        } else {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+        }
     }
 
     private function formatUser(User $user): array

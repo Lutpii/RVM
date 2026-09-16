@@ -2,19 +2,13 @@ import { onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import { IDLE_ACTIVITY_STORAGE_KEY, readIdleActivity, clearIdleActivity } from '@/utils/idleActivity'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 // Avoid writing to localStorage on every mousemove — only the elapsed-time
 // resolution actually matters for a 30-minute timeout.
 const ACTIVITY_WRITE_THROTTLE_MS = 5000
-const STORAGE_KEY = 'rvm_last_activity'
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
-
-function readLastActivity() {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  const n = raw ? Number(raw) : NaN
-  return Number.isFinite(n) ? n : null
-}
 
 // Called once per component tree (from App.vue) — arms/disarms itself as the
 // user logs in/out or enters/leaves the kiosk flow, so callers don't need to
@@ -46,7 +40,7 @@ export function useIdleLogout(showToast) {
     expiring = true
     disarm()
     await auth.logout()
-    localStorage.removeItem(STORAGE_KEY)
+    clearIdleActivity()
     showToast?.(t('auth.sessionExpired'), 'error')
     if (route.name !== 'login') {
       router.push({ name: 'login', query: { redirect: route.fullPath } })
@@ -72,7 +66,7 @@ export function useIdleLogout(showToast) {
     const now = Date.now()
     if (now - lastWrite < ACTIVITY_WRITE_THROTTLE_MS) return
     lastWrite = now
-    localStorage.setItem(STORAGE_KEY, String(now))
+    localStorage.setItem(IDLE_ACTIVITY_STORAGE_KEY, String(now))
     scheduleFrom(now)
   }
 
@@ -87,8 +81,8 @@ export function useIdleLogout(showToast) {
   function arm() {
     if (armed) return
     armed = true
-    const last = readLastActivity() ?? Date.now()
-    localStorage.setItem(STORAGE_KEY, String(last))
+    const last = readIdleActivity() ?? Date.now()
+    localStorage.setItem(IDLE_ACTIVITY_STORAGE_KEY, String(last))
     attachListeners()
     scheduleFrom(last)
   }

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api, { registerClearAuth } from '@/services/api'
 import { resolveCachedPoints } from '@/utils/resolveCachedPoints'
+import { resetIdleActivity, clearIdleActivity } from '@/utils/idleActivity'
 
 export const useAuthStore = defineStore('auth', () => {
   const user  = ref(JSON.parse(localStorage.getItem('rvm_user') || 'null'))
@@ -28,6 +29,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('rvm_user', JSON.stringify(userData))
     localStorage.setItem('rvm_token', tokenValue)
     api.defaults.headers.common['Authorization'] = `Bearer ${tokenValue}`
+    // A fresh session is "active right now" regardless of whatever idle-clock
+    // timestamp (or none at all) was left over from before — otherwise a
+    // stale value can make useIdleLogout think 30+ minutes already passed
+    // and force-expire the session the instant it arms.
+    resetIdleActivity()
   }
 
   // Used when entering the kiosk flow (see router/index.js) — a kiosk screen
@@ -68,6 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('rvm_user')
     localStorage.removeItem('rvm_token')
     delete api.defaults.headers.common['Authorization']
+    clearIdleActivity()
   }
 
   async function login(credentials) {
@@ -78,11 +85,12 @@ export const useAuthStore = defineStore('auth', () => {
     return res.data
   }
 
+  // Never calls setAuth() — OTP verification is mandatory before an account
+  // is usable at all (see AuthController::register(), which intentionally
+  // stopped issuing a token here). verifyOtp() below is what actually starts
+  // the session, whether reached from the register or login flow.
   async function register(data) {
     const res = await api.post('/auth/register', data)
-    if (res.data.success) {
-      setAuth(res.data.user, res.data.token)
-    }
     return res.data
   }
 
@@ -106,13 +114,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function sendOtp(phone) {
-    const res = await api.post('/auth/send-otp', { phone })
+  // identifier is { phone } or { email } — whichever the account was
+  // registered/verifying with (backend sends the OTP via WhatsApp for a
+  // phone, email otherwise).
+  async function sendOtp(identifier) {
+    const res = await api.post('/auth/send-otp', identifier)
     return res.data
   }
 
-  async function verifyOtp(phone, otp) {
-    const res = await api.post('/auth/verify-otp', { phone, otp })
+  async function verifyOtp(identifier, otp) {
+    const res = await api.post('/auth/verify-otp', { ...identifier, otp })
     if (res.data.success) {
       setAuth(res.data.user, res.data.token)
     }

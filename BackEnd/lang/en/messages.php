@@ -14,17 +14,18 @@ return [
 
     // AuthController
     'register_success'          => 'Registration successful.',
-    'register_success_otp_sent' => 'Registration successful. OTP sent to WhatsApp.',
+    'register_success_otp_sent' => 'Registration successful. OTP sent for verification.',
     'too_many_login_attempts'   => 'Too many login attempts. Try again in :seconds seconds.',
     'invalid_credentials'       => 'Invalid credentials.',
     'login_success'             => 'Login successful.',
     'too_many_otp_requests'     => 'Too many OTP requests. Try again in :seconds seconds.',
-    'phone_not_found'           => 'Phone number not found.',
-    'otp_sent'                  => 'OTP sent to your WhatsApp.',
+    'account_not_found'         => 'Account not found.',
+    'otp_sent'                  => 'OTP sent for verification.',
     'too_many_otp_attempts'     => 'Too many attempts. Try again in :seconds seconds.',
     'invalid_otp'               => 'Invalid OTP.',
     'otp_expired'                => 'OTP has expired.',
-    'phone_verified'            => 'Phone verified successfully.',
+    'account_verified'          => 'Account verified successfully.',
+    'account_not_verified'      => 'Please verify your account first. We\'ve sent you a new OTP.',
     'invalid_request'           => 'Invalid request.',
     'oauth_code_expired'        => 'This sign-in link has expired or was already used.',
     'logout_success'            => 'Logged out successfully.',
@@ -33,6 +34,7 @@ return [
     // UserController
     'current_password_incorrect' => 'Current password is incorrect.',
     'password_updated'           => 'Password updated successfully.',
+    'account_deleted'            => 'Account deleted successfully.',
 
     // SessionController
     'machine_not_active'       => 'This machine is not currently active.',

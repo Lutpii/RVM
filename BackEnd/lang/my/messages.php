@@ -14,17 +14,18 @@ return [
 
     // AuthController
     'register_success'          => 'Pendaftaran berjaya.',
-    'register_success_otp_sent' => 'Pendaftaran berjaya. OTP telah dihantar ke WhatsApp.',
+    'register_success_otp_sent' => 'Pendaftaran berjaya. OTP telah dihantar untuk pengesahan.',
     'too_many_login_attempts'   => 'Terlalu banyak percubaan log masuk. Cuba lagi dalam :seconds saat.',
     'invalid_credentials'       => 'Kelayakan tidak sah.',
     'login_success'             => 'Log masuk berjaya.',
     'too_many_otp_requests'     => 'Terlalu banyak permintaan OTP. Cuba lagi dalam :seconds saat.',
-    'phone_not_found'           => 'Nombor telefon tidak dijumpai.',
-    'otp_sent'                  => 'OTP telah dihantar ke WhatsApp anda.',
+    'account_not_found'         => 'Akaun tidak dijumpai.',
+    'otp_sent'                  => 'OTP telah dihantar untuk pengesahan.',
     'too_many_otp_attempts'     => 'Terlalu banyak percubaan. Cuba lagi dalam :seconds saat.',
     'invalid_otp'               => 'OTP tidak sah.',
     'otp_expired'                => 'OTP telah tamat tempoh.',
-    'phone_verified'            => 'Nombor telefon berjaya disahkan.',
+    'account_verified'          => 'Akaun berjaya disahkan.',
+    'account_not_verified'      => 'Sila sahkan akaun anda dahulu. OTP baharu telah dihantar.',
     'invalid_request'           => 'Permintaan tidak sah.',
     'oauth_code_expired'        => 'Pautan log masuk ini telah tamat tempoh atau sudah digunakan.',
     'logout_success'            => 'Log keluar berjaya.',
@@ -33,6 +34,7 @@ return [
     // UserController
     'current_password_incorrect' => 'Kata laluan semasa tidak sah.',
     'password_updated'           => 'Kata laluan berjaya dikemas kini.',
+    'account_deleted'            => 'Akaun berjaya dipadam.',
 
     // SessionController
     'machine_not_active'       => 'Mesin ini tidak aktif buat masa ini.',
