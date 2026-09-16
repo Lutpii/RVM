@@ -55,7 +55,7 @@
     </div>
 
     <footer class="landing-brand-footer">
-      <img src="@/assets/logo-umpsa.png" class="landing-brand-logo" alt="UMPSA" />
+      <BrandFooter class="landing-brand-logo" />
       <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
     </footer>
   </div>
@@ -66,6 +66,7 @@ import { inject } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { PhSun, PhMoon, PhRecycle, PhTrophy, PhGlobe } from '@phosphor-icons/vue'
+import BrandFooter from '@/components/BrandFooter.vue'
 
 const router   = useRouter()
 const theme    = inject('theme')
@@ -265,11 +266,8 @@ function goToScan() {
 }
 
 .landing-brand-logo {
-  height: 96px;
-  width: auto;
+  --brand-logo-height: 96px;
   max-width: calc(100% - 32px);
-  margin-bottom: -21px;
-  opacity: 0.85;
 }
 
 /* --accent-blue has no light-theme override, so the dark-tuned color above
@@ -295,7 +293,7 @@ function goToScan() {
     gap: 3px;
     font-size: 11px;
   }
-  .landing-brand-logo { height: 76px; margin-bottom: -17px; }
+  .landing-brand-logo { --brand-logo-height: 76px; }
 }
 
 @media (max-height: 700px) {
@@ -316,6 +314,6 @@ function goToScan() {
     gap: 3px;
     font-size: 11px;
   }
-  .landing-brand-logo { height: 56px; margin-bottom: -12px; }
+  .landing-brand-logo { --brand-logo-height: 56px; }
 }
 </style>

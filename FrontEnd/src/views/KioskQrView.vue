@@ -79,7 +79,7 @@
     </div>
 
     <div class="kiosk-footer">
-      <img src="@/assets/logo-umpsa.png" class="brand-logo" alt="UMPSA" />
+      <BrandFooter class="brand-logo" />
       <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
     </div>
   </div>
@@ -92,6 +92,7 @@ import { useI18n } from 'vue-i18n'
 import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
 import { PhHourglass } from '@phosphor-icons/vue'
+import BrandFooter from '@/components/BrandFooter.vue'
 
 const router      = useRouter()
 const route       = useRoute()
@@ -420,11 +421,8 @@ onBeforeUnmount(() => {
 }
 
 .brand-logo {
-  height: 96px;
-  width: auto;
+  --brand-logo-height: 96px;
   max-width: calc(100vw - 40px);
-  margin-bottom: -21px;
-  opacity: 0.85;
 }
 
 .qr-title {
@@ -677,7 +675,7 @@ onBeforeUnmount(() => {
 
   /* Same logo/text size as KioskLandingView's compact footer. */
   .kiosk-footer { gap: 3px; font-size: 11px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
-  .kiosk-footer .brand-logo { height: 90px; margin-bottom: -20px; }
+  .kiosk-footer .brand-logo { --brand-logo-height: 90px; }
 
   .scanned-content { padding-top: 20px; }
   .success-ring { width: 80px; height: 80px; }

@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <img src="@/assets/logo-umpsa.png" class="brand-logo" alt="UMPSA" />
+    <BrandFooter class="brand-logo" />
   </div>
 </template>
 
@@ -25,6 +25,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { PhRecycle } from '@phosphor-icons/vue'
+import BrandFooter from '@/components/BrandFooter.vue'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -97,17 +98,15 @@ onMounted(() => {
   left: 50%;
   bottom: max(24px, env(safe-area-inset-bottom));
   z-index: 1;
-  height: 96px;
-  width: auto;
+  --brand-logo-height: 96px;
   max-width: calc(100% - 32px);
   transform: translateX(-50%);
-  opacity: 0.9;
 }
 
 @media (max-width: 480px) {
   .welcome-content { padding: 20px 24px; }
   .brand-logo {
-    height: 76px;
+    --brand-logo-height: 76px;
     bottom: max(20px, env(safe-area-inset-bottom));
   }
 }

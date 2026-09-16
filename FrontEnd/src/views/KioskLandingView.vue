@@ -23,7 +23,7 @@
     </div>
 
     <div class="kiosk-footer">
-      <img src="@/assets/logo-umpsa.png" class="brand-logo" alt="UMPSA" />
+      <BrandFooter class="brand-logo" />
       <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
     </div>
   </div>
@@ -34,6 +34,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
 import { PhRecycle, PhPlay } from '@phosphor-icons/vue'
+import BrandFooter from '@/components/BrandFooter.vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -198,10 +199,7 @@ function goToQr() {
 }
 
 .brand-logo {
-  height: 96px;
-  width: auto;
-  margin-bottom: -21px;
-  opacity: 0.85;
+  --brand-logo-height: 96px;
 }
 
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
@@ -216,7 +214,7 @@ function goToQr() {
   .hint-text { font-size: 12px; }
 
   .kiosk-footer { bottom: max(10px, env(safe-area-inset-bottom)); gap: 3px; font-size: 11px; }
-  .kiosk-footer .brand-logo { height: 90px; margin-bottom: -20px; }
+  .kiosk-footer .brand-logo { --brand-logo-height: 90px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
