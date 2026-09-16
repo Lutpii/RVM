@@ -68,6 +68,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
     // User profile
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::put('/user/password', [UserController::class, 'updatePassword']);
     Route::get('/user/points-history', [UserController::class, 'pointsHistory']);
     Route::get('/user/sessions', [UserController::class, 'sessions']);
     Route::get('/user/reward-items', [RewardController::class, 'index']);

@@ -178,7 +178,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.dashboard-page { min-height: 100vh; background: var(--bg-primary); }
+.dashboard-page { background: var(--bg-primary); }
 
 /* Points hero */
 .points-hero {

@@ -1429,7 +1429,7 @@
       "file_type": "code",
       "norm_label": ".describehistoryentry()",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L96"
+      "source_location": "L95"
     },
     {
       "id": "backend_app_http_controllers_usercontroller_usercontroller_pointshistory",
@@ -1441,7 +1441,7 @@
       "file_type": "code",
       "norm_label": ".pointshistory()",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L75"
+      "source_location": "L74"
     },
     {
       "id": "backend_app_http_controllers_usercontroller_usercontroller_profile",
@@ -1465,7 +1465,7 @@
       "file_type": "code",
       "norm_label": ".sessions()",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L116"
+      "source_location": "L115"
     },
     {
       "id": "backend_app_http_controllers_usercontroller_usercontroller_updatepassword",
@@ -1477,7 +1477,7 @@
       "file_type": "code",
       "norm_label": ".updatepassword()",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L57"
+      "source_location": "L56"
     },
     {
       "id": "backend_app_http_controllers_usercontroller_usercontroller_updateprofile",
@@ -1489,7 +1489,7 @@
       "file_type": "code",
       "norm_label": ".updateprofile()",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L33"
+      "source_location": "L32"
     },
     {
       "id": "backend_app_models_pointshistory_pointshistory_transaction",
@@ -2413,7 +2413,7 @@
       "file_type": "code",
       "norm_label": ".totalcarbonsavedfor()",
       "source_file": "BackEnd/app/Http/Controllers/AuthController.php",
-      "source_location": "L439"
+      "source_location": "L435"
     },
     {
       "id": "backend_app_http_controllers_authcontroller_authcontroller_verifyotp",
@@ -6469,7 +6469,7 @@
       "file_type": "code",
       "norm_label": "canceleditpassword()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L398"
+      "source_location": "L397"
     },
     {
       "id": "frontend_src_views_usersettingsview_canceleditprofile",
@@ -6481,7 +6481,7 @@
       "file_type": "code",
       "norm_label": "canceleditprofile()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L358"
+      "source_location": "L357"
     },
     {
       "id": "frontend_src_views_usersettingsview_changepassword",
@@ -6493,7 +6493,7 @@
       "file_type": "code",
       "norm_label": "changepassword()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L406"
+      "source_location": "L405"
     },
     {
       "id": "frontend_src_views_usersettingsview_deleteaccount",
@@ -6505,7 +6505,7 @@
       "file_type": "code",
       "norm_label": "deleteaccount()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L516"
+      "source_location": "L515"
     },
     {
       "id": "frontend_src_views_usersettingsview_formatdate",
@@ -6517,7 +6517,7 @@
       "file_type": "code",
       "norm_label": "formatdate()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L535"
+      "source_location": "L534"
     },
     {
       "id": "frontend_src_views_usersettingsview_formattime",
@@ -6529,7 +6529,7 @@
       "file_type": "code",
       "norm_label": "formattime()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L529"
+      "source_location": "L528"
     },
     {
       "id": "frontend_src_views_usersettingsview_handlelogout",
@@ -6541,7 +6541,7 @@
       "file_type": "code",
       "norm_label": "handlelogout()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L505"
+      "source_location": "L504"
     },
     {
       "id": "frontend_src_views_usersettingsview_loadredemptionhistory",
@@ -6553,7 +6553,7 @@
       "file_type": "code",
       "norm_label": "loadredemptionhistory()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L480"
+      "source_location": "L479"
     },
     {
       "id": "frontend_src_views_usersettingsview_pointstomoney",
@@ -6565,7 +6565,7 @@
       "file_type": "code",
       "norm_label": "pointstomoney()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L451"
+      "source_location": "L450"
     },
     {
       "id": "frontend_src_views_usersettingsview_redeemnow",
@@ -6577,7 +6577,7 @@
       "file_type": "code",
       "norm_label": "redeemnow()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L456"
+      "source_location": "L455"
     },
     {
       "id": "frontend_src_views_usersettingsview_saveprofile",
@@ -6589,7 +6589,7 @@
       "file_type": "code",
       "norm_label": "saveprofile()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L363"
+      "source_location": "L362"
     },
     {
       "id": "frontend_src_views_usersettingsview_setlang",
@@ -6601,7 +6601,7 @@
       "file_type": "code",
       "norm_label": "setlang()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L492"
+      "source_location": "L491"
     },
     {
       "id": "frontend_src_views_usersettingsview_settheme",
@@ -6613,7 +6613,7 @@
       "file_type": "code",
       "norm_label": "settheme()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L497"
+      "source_location": "L496"
     },
     {
       "id": "frontend_src_views_usersettingsview_starteditprofile",
@@ -6625,7 +6625,7 @@
       "file_type": "code",
       "norm_label": "starteditprofile()",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L350"
+      "source_location": "L349"
     },
     {
       "id": "frontend_src_composables_uselenisscroll_start",
@@ -15327,7 +15327,7 @@
       "file_type": "code",
       "norm_label": "activetab",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L334"
+      "source_location": "L333"
     },
     {
       "id": "frontend_src_views_usersettingsview_auth",
@@ -15338,7 +15338,7 @@
       "file_type": "code",
       "norm_label": "auth",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L329"
+      "source_location": "L328"
     },
     {
       "id": "frontend_src_views_usersettingsview_confirmdelete",
@@ -15349,7 +15349,7 @@
       "file_type": "code",
       "norm_label": "confirmdelete",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L502"
+      "source_location": "L501"
     },
     {
       "id": "frontend_src_views_usersettingsview_conversionrate",
@@ -15360,7 +15360,7 @@
       "file_type": "code",
       "norm_label": "conversionrate",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L442"
+      "source_location": "L441"
     },
     {
       "id": "frontend_src_views_usersettingsview_deletingaccount",
@@ -15371,7 +15371,7 @@
       "file_type": "code",
       "norm_label": "deletingaccount",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L503"
+      "source_location": "L502"
     },
     {
       "id": "frontend_src_views_usersettingsview_editingpassword",
@@ -15382,7 +15382,7 @@
       "file_type": "code",
       "norm_label": "editingpassword",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L392"
+      "source_location": "L391"
     },
     {
       "id": "frontend_src_views_usersettingsview_editingprofile",
@@ -15393,7 +15393,7 @@
       "file_type": "code",
       "norm_label": "editingprofile",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L344"
+      "source_location": "L343"
     },
     {
       "id": "frontend_src_views_usersettingsview_loadinghistory",
@@ -15404,7 +15404,7 @@
       "file_type": "code",
       "norm_label": "loadinghistory",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L449"
+      "source_location": "L448"
     },
     {
       "id": "frontend_src_views_usersettingsview_locale_t",
@@ -15415,7 +15415,7 @@
       "file_type": "code",
       "norm_label": "{ locale, t }",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L332"
+      "source_location": "L331"
     },
     {
       "id": "frontend_src_views_usersettingsview_profileform",
@@ -15426,7 +15426,7 @@
       "file_type": "code",
       "norm_label": "profileform",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L345"
+      "source_location": "L344"
     },
     {
       "id": "frontend_src_views_usersettingsview_profilemsg",
@@ -15437,7 +15437,7 @@
       "file_type": "code",
       "norm_label": "profilemsg",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L347"
+      "source_location": "L346"
     },
     {
       "id": "frontend_src_views_usersettingsview_profilesuccess",
@@ -15448,7 +15448,7 @@
       "file_type": "code",
       "norm_label": "profilesuccess",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L348"
+      "source_location": "L347"
     },
     {
       "id": "frontend_src_views_usersettingsview_pwform",
@@ -15459,7 +15459,7 @@
       "file_type": "code",
       "norm_label": "pwform",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L393"
+      "source_location": "L392"
     },
     {
       "id": "frontend_src_views_usersettingsview_pwmsg",
@@ -15470,7 +15470,7 @@
       "file_type": "code",
       "norm_label": "pwmsg",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L395"
+      "source_location": "L394"
     },
     {
       "id": "frontend_src_views_usersettingsview_pwsuccess",
@@ -15481,7 +15481,7 @@
       "file_type": "code",
       "norm_label": "pwsuccess",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L396"
+      "source_location": "L395"
     },
     {
       "id": "frontend_src_views_usersettingsview_redeeming",
@@ -15492,7 +15492,7 @@
       "file_type": "code",
       "norm_label": "redeeming",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L445"
+      "source_location": "L444"
     },
     {
       "id": "frontend_src_views_usersettingsview_redeemmsg",
@@ -15503,7 +15503,7 @@
       "file_type": "code",
       "norm_label": "redeemmsg",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L446"
+      "source_location": "L445"
     },
     {
       "id": "frontend_src_views_usersettingsview_redeempoints",
@@ -15514,7 +15514,7 @@
       "file_type": "code",
       "norm_label": "redeempoints",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L444"
+      "source_location": "L443"
     },
     {
       "id": "frontend_src_views_usersettingsview_redeemsuccess",
@@ -15525,7 +15525,7 @@
       "file_type": "code",
       "norm_label": "redeemsuccess",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L447"
+      "source_location": "L446"
     },
     {
       "id": "frontend_src_views_usersettingsview_redemptionhistory",
@@ -15536,7 +15536,7 @@
       "file_type": "code",
       "norm_label": "redemptionhistory",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L448"
+      "source_location": "L447"
     },
     {
       "id": "frontend_src_views_usersettingsview_router",
@@ -15547,7 +15547,7 @@
       "file_type": "code",
       "norm_label": "router",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L328"
+      "source_location": "L327"
     },
     {
       "id": "frontend_src_views_usersettingsview_savingprofile",
@@ -15558,7 +15558,7 @@
       "file_type": "code",
       "norm_label": "savingprofile",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L346"
+      "source_location": "L345"
     },
     {
       "id": "frontend_src_views_usersettingsview_savingpw",
@@ -15569,7 +15569,7 @@
       "file_type": "code",
       "norm_label": "savingpw",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L394"
+      "source_location": "L393"
     },
     {
       "id": "frontend_src_views_usersettingsview_tabs",
@@ -15580,7 +15580,7 @@
       "file_type": "code",
       "norm_label": "tabs",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L336"
+      "source_location": "L335"
     },
     {
       "id": "frontend_src_views_usersettingsview_theme",
@@ -15591,7 +15591,7 @@
       "file_type": "code",
       "norm_label": "theme",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L330"
+      "source_location": "L329"
     },
     {
       "id": "frontend_src_views_usersettingsview_toggletheme",
@@ -15602,7 +15602,7 @@
       "file_type": "code",
       "norm_label": "toggletheme",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L331"
+      "source_location": "L330"
     },
     {
       "id": "frontend_package_devdependencies",
@@ -18456,7 +18456,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L77",
+      "source_location": "L76",
       "weight": 1.0
     },
     {
@@ -18468,7 +18468,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L89",
+      "source_location": "L88",
       "weight": 1.0
     },
     {
@@ -18480,7 +18480,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L118",
+      "source_location": "L117",
       "weight": 1.0
     },
     {
@@ -23652,7 +23652,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L428",
+      "source_location": "L427",
       "weight": 1.0
     },
     {
@@ -23664,7 +23664,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L464",
+      "source_location": "L463",
       "weight": 1.0
     },
     {
@@ -23676,7 +23676,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L467",
+      "source_location": "L466",
       "weight": 1.0
     },
     {
@@ -23688,7 +23688,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L498",
+      "source_location": "L497",
       "weight": 1.0
     },
     {
@@ -30221,7 +30221,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L320",
+      "source_location": "L319",
       "weight": 1.0
     },
     {
@@ -30233,7 +30233,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L321",
+      "source_location": "L320",
       "weight": 1.0
     },
     {
@@ -32213,7 +32213,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L317",
+      "source_location": "L316",
       "weight": 1.0
     },
     {
@@ -32225,7 +32225,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L318",
+      "source_location": "L317",
       "weight": 1.0
     },
     {
@@ -32237,7 +32237,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L319",
+      "source_location": "L318",
       "weight": 1.0
     },
     {
@@ -32249,7 +32249,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L320",
+      "source_location": "L319",
       "weight": 1.0
     },
     {
@@ -32261,7 +32261,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L321",
+      "source_location": "L320",
       "weight": 1.0
     },
     {
@@ -32273,7 +32273,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L322",
+      "source_location": "L321",
       "weight": 1.0
     },
     {
@@ -32909,7 +32909,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "BackEnd/app/Http/Controllers/AuthController.php",
-      "source_location": "L439",
+      "source_location": "L435",
       "weight": 1.0
     },
     {
@@ -33281,7 +33281,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L96",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -33293,7 +33293,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L75",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -33317,7 +33317,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L116",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -33329,7 +33329,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L57",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -33341,7 +33341,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L33",
+      "source_location": "L32",
       "weight": 1.0
     },
     {
@@ -34433,7 +34433,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L75",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -34457,7 +34457,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L116",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -34469,7 +34469,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L57",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -34481,7 +34481,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L33",
+      "source_location": "L32",
       "weight": 1.0
     },
     {
@@ -42251,7 +42251,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L328",
+      "source_location": "L327",
       "weight": 1.0
     },
     {
@@ -42262,7 +42262,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L329",
+      "source_location": "L328",
       "weight": 1.0
     },
     {
@@ -42273,7 +42273,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L330",
+      "source_location": "L329",
       "weight": 1.0
     },
     {
@@ -42284,7 +42284,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L331",
+      "source_location": "L330",
       "weight": 1.0
     },
     {
@@ -42295,7 +42295,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L332",
+      "source_location": "L331",
       "weight": 1.0
     },
     {
@@ -42306,7 +42306,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L334",
+      "source_location": "L333",
       "weight": 1.0
     },
     {
@@ -42317,7 +42317,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L336",
+      "source_location": "L335",
       "weight": 1.0
     },
     {
@@ -42328,7 +42328,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L344",
+      "source_location": "L343",
       "weight": 1.0
     },
     {
@@ -42339,7 +42339,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L345",
+      "source_location": "L344",
       "weight": 1.0
     },
     {
@@ -42350,7 +42350,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L346",
+      "source_location": "L345",
       "weight": 1.0
     },
     {
@@ -42361,7 +42361,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L347",
+      "source_location": "L346",
       "weight": 1.0
     },
     {
@@ -42372,7 +42372,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L348",
+      "source_location": "L347",
       "weight": 1.0
     },
     {
@@ -42383,7 +42383,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L350",
+      "source_location": "L349",
       "weight": 1.0
     },
     {
@@ -42394,7 +42394,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L358",
+      "source_location": "L357",
       "weight": 1.0
     },
     {
@@ -42405,7 +42405,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L363",
+      "source_location": "L362",
       "weight": 1.0
     },
     {
@@ -42416,7 +42416,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L392",
+      "source_location": "L391",
       "weight": 1.0
     },
     {
@@ -42427,7 +42427,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L393",
+      "source_location": "L392",
       "weight": 1.0
     },
     {
@@ -42438,7 +42438,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L394",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -42449,7 +42449,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L395",
+      "source_location": "L394",
       "weight": 1.0
     },
     {
@@ -42460,7 +42460,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L396",
+      "source_location": "L395",
       "weight": 1.0
     },
     {
@@ -42471,7 +42471,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L398",
+      "source_location": "L397",
       "weight": 1.0
     },
     {
@@ -42482,7 +42482,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L406",
+      "source_location": "L405",
       "weight": 1.0
     },
     {
@@ -42493,7 +42493,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L442",
+      "source_location": "L441",
       "weight": 1.0
     },
     {
@@ -42504,7 +42504,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L444",
+      "source_location": "L443",
       "weight": 1.0
     },
     {
@@ -42515,7 +42515,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L445",
+      "source_location": "L444",
       "weight": 1.0
     },
     {
@@ -42526,7 +42526,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L446",
+      "source_location": "L445",
       "weight": 1.0
     },
     {
@@ -42537,7 +42537,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L447",
+      "source_location": "L446",
       "weight": 1.0
     },
     {
@@ -42548,7 +42548,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L448",
+      "source_location": "L447",
       "weight": 1.0
     },
     {
@@ -42559,7 +42559,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L449",
+      "source_location": "L448",
       "weight": 1.0
     },
     {
@@ -42570,7 +42570,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L451",
+      "source_location": "L450",
       "weight": 1.0
     },
     {
@@ -42581,7 +42581,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L456",
+      "source_location": "L455",
       "weight": 1.0
     },
     {
@@ -42592,7 +42592,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L480",
+      "source_location": "L479",
       "weight": 1.0
     },
     {
@@ -42603,7 +42603,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L492",
+      "source_location": "L491",
       "weight": 1.0
     },
     {
@@ -42614,7 +42614,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L497",
+      "source_location": "L496",
       "weight": 1.0
     },
     {
@@ -42625,7 +42625,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L502",
+      "source_location": "L501",
       "weight": 1.0
     },
     {
@@ -42636,7 +42636,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L503",
+      "source_location": "L502",
       "weight": 1.0
     },
     {
@@ -42647,7 +42647,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L505",
+      "source_location": "L504",
       "weight": 1.0
     },
     {
@@ -42658,7 +42658,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L516",
+      "source_location": "L515",
       "weight": 1.0
     },
     {
@@ -42669,7 +42669,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L529",
+      "source_location": "L528",
       "weight": 1.0
     },
     {
@@ -42680,7 +42680,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/UserSettingsView.vue",
-      "source_location": "L535",
+      "source_location": "L534",
       "weight": 1.0
     },
     {
@@ -44668,7 +44668,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "BackEnd/app/Http/Controllers/AuthController.php",
-      "source_location": "L439",
+      "source_location": "L435",
       "weight": 1.0
     },
     {
@@ -45042,7 +45042,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L116",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -45064,7 +45064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L33",
+      "source_location": "L32",
       "weight": 1.0
     },
     {
@@ -45075,7 +45075,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L57",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -45086,7 +45086,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L75",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -45097,7 +45097,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "BackEnd/app/Http/Controllers/UserController.php",
-      "source_location": "L96",
+      "source_location": "L95",
       "weight": 1.0
     },
     {

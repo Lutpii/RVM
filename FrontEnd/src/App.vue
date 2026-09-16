@@ -166,7 +166,11 @@ body {
   min-height: 100dvh;
 }
 
-.app-content-with-nav { padding-bottom: 76px; }
+/* min-height (not height) so a page with more content than one screen still
+   grows normally — box-sizing:border-box (global, above) keeps the 76px nav
+   clearance inside that 100vh instead of adding on top of it, which used to
+   force a scrollbar even on a page with only a couple of short cards. */
+.app-content-with-nav { padding-bottom: 76px; min-height: 100vh; min-height: 100dvh; }
 @media (min-width: 769px) {
   .app-content-with-nav { padding-bottom: 0; }
 }

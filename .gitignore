@@ -73,3 +73,8 @@ Thumbs.db
 graphify-out/cost.json
 graphify-out/cache/
 /CLAUDE.md
+
+# ========================
+# Local personal notes (this machine only)
+# ========================
+/LOCAL_DEV_RESTART.md

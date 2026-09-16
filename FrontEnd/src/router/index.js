@@ -151,7 +151,7 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || 'RVM'
 
   const authStore = useAuthStore()
@@ -180,7 +180,18 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresAdmin && authStore.user?.role !== 'admin') {
-    return next({ name: 'dashboard' })
+    // The cached rvm_user (and its role) is only ever refreshed on the
+    // Dashboard/Settings pages mounting — a browser that's been sitting
+    // logged in since before an admin promoted this user still has the old
+    // role cached, so a direct /admin visit would wrongly bounce them to
+    // /dashboard. Re-check against the server once before deciding, instead
+    // of trusting a role that may be stale.
+    if (authStore.token) {
+      await authStore.fetchMe()
+    }
+    if (authStore.user?.role !== 'admin') {
+      return next({ name: 'dashboard' })
+    }
   }
 
   next()

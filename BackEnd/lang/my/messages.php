@@ -30,6 +30,10 @@ return [
     'logout_success'            => 'Log keluar berjaya.',
     'session_expired_idle'      => 'Sesi tamat tempoh kerana tidak aktif.',
 
+    // UserController
+    'current_password_incorrect' => 'Kata laluan semasa tidak sah.',
+    'password_updated'           => 'Kata laluan berjaya dikemas kini.',
+
     // SessionController
     'machine_not_active'       => 'Mesin ini tidak aktif buat masa ini.',
     'active_session_exists'    => 'Anda sudah mempunyai sesi yang aktif.',

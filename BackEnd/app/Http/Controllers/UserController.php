@@ -25,6 +25,7 @@ class UserController extends Controller
                 'role'         => $user->role,
                 'is_verified'  => $user->is_verified,
                 'created_at'   => $user->created_at,
+                'has_password' => !empty($user->password_hash),
             ],
         ]);
     }
@@ -46,6 +47,29 @@ class UserController extends Controller
 
         $user->update($data);
         return response()->json(['success' => true, 'user' => $user]);
+    }
+
+    // Separate from updateProfile()'s own password support: this one requires
+    // the current password (updateProfile changes it on trust alone, fine for
+    // "edit my profile" but not what a dedicated "Change Password" form should
+    // do) and matches the field names FrontEnd/src/views/UserSettingsView.vue
+    // already sends (current_password/new_password/new_password_confirmation).
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password'      => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+        // A Google-only account (no password_hash yet) can never satisfy a
+        // "current password" check — Hash::check() against null would throw.
+        if (!$user->password_hash || !Hash::check($request->current_password, $user->password_hash)) {
+            return response()->json(['success' => false, 'message' => __('messages.current_password_incorrect')], 422);
+        }
+
+        $user->update(['password_hash' => Hash::make($request->new_password)]);
+        return response()->json(['success' => true, 'message' => __('messages.password_updated')]);
     }
 
     public function pointsHistory(Request $request): JsonResponse

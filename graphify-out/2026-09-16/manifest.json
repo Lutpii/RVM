@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
-    "mtime": 1789524211.446663,
-    "seen": 1789524307.2508397,
-    "ast_hash": "9aedcb13191e1687cae2745f3c887be2",
+    "mtime": 1789522566.4917614,
+    "seen": 1789522625.4973526,
+    "ast_hash": "b066a9568cbbc172223b02d44ac6e07d",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/Controller.php": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/UserController.php": {
-    "mtime": 1789524218.2875433,
-    "seen": 1789524307.2518384,
-    "ast_hash": "5812af64f850b37865223855a134e2fd",
+    "mtime": 1789523830.5846481,
+    "seen": 1789523957.5205696,
+    "ast_hash": "aac653072deec40df1b4e300e25a1168",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Kernel.php": {
@@ -768,9 +768,9 @@
     "semantic_hash": "762a94d1749c8e97eebf3f94102e8eb2"
   },
   "FrontEnd/src/App.vue": {
-    "mtime": 1789525006.5447018,
-    "seen": 1789525110.76411,
-    "ast_hash": "16317683a895b61a5f7a49cd165ac2e6",
+    "mtime": 1789292287.5390506,
+    "seen": 1789365064.7216513,
+    "ast_hash": "3e63c1f229129945c64a6824db71ce5e",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/AppNav.vue": {
@@ -954,9 +954,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
-    "mtime": 1789525010.9324164,
-    "seen": 1789525110.7748432,
-    "ast_hash": "5b8620060b4edd5d358a41f106070faf",
+    "mtime": 1789231054.4118588,
+    "seen": 1789365064.7252312,
+    "ast_hash": "9deea7dc01c406f2dbe5480f4ea728b6",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/GoodbyeView.vue": {
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/UserSettingsView.vue": {
-    "mtime": 1789525015.3128643,
-    "seen": 1789525110.776843,
-    "ast_hash": "ac2cbe824d1ea5726937730c1da567d5",
+    "mtime": 1789290210.9259386,
+    "seen": 1789365064.7252312,
+    "ast_hash": "ae8b1c68ef8a0befd3426a98cfaef92a",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/WelcomeView.vue": {

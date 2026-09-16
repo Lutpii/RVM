@@ -331,16 +331,24 @@ class AuthController extends Controller
                 ->setHttpClient(new \GuzzleHttp\Client(['proxy' => false]))
                 ->user();
 
-            $user = User::updateOrCreate(
-                ['google_id' => $googleUser->getId()],
-                [
-                    'name'        => $googleUser->getName(),
-                    'email'       => $googleUser->getEmail(),
-                    'avatar_url'  => $googleUser->getAvatar(),
-                    'is_verified' => 1,
-                    'role'        => 'user',
-                ]
-            );
+            // Plain updateOrCreate() would overwrite every listed column on the
+            // existing row on every login — including 'role', wiping out an
+            // admin promotion the moment that user logs in via Google again.
+            // 'role' is set explicitly only for a brand-new row instead: relying
+            // on the users.role column's own DB default ('user') would leave it
+            // unset on this in-memory $user (Eloquent doesn't re-fetch DB-side
+            // defaults after insert — same footgun as User::guest() below).
+            $user = User::firstOrNew(['google_id' => $googleUser->getId()]);
+            if (!$user->exists) {
+                $user->role = 'user';
+            }
+            $user->fill([
+                'name'        => $googleUser->getName(),
+                'email'       => $googleUser->getEmail(),
+                'avatar_url'  => $googleUser->getAvatar(),
+                'is_verified' => 1,
+            ]);
+            $user->save();
 
             $token = $user->createToken('rvm_token')->plainTextToken;
 
@@ -421,6 +429,10 @@ class AuthController extends Controller
             'is_verified'  => $user->is_verified,
             'theme_preference' => $user->theme_preference,
             'created_at'   => $user->created_at,
+            // Google-only accounts never had a password set — the frontend
+            // uses this to hide the "Change Password" form for them instead
+            // of showing a field ("Current Password") they can never fill in.
+            'has_password' => !empty($user->password_hash),
         ];
     }
 

@@ -73,8 +73,9 @@
         </div>
       </div>
 
-      <!-- Password Card -->
-      <div class="form-card">
+      <!-- Password Card: hidden for Google-only accounts (no password_hash) —
+           "Change Password" needs a "Current Password" they never set. -->
+      <div v-if="auth.user?.has_password" class="form-card">
         <div class="card-header">
           <h3 class="form-title">{{ $t('settings.changePassword') }}</h3>
           <button v-if="!editingPassword" class="edit-btn" @click="editingPassword = true">
@@ -550,7 +551,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.settings-page { min-height: 100vh; background: var(--bg-primary); }
+.settings-page { background: var(--bg-primary); }
 
 /* ── Profile hero ── */
 .profile-hero {

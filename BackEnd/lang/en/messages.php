@@ -30,6 +30,10 @@ return [
     'logout_success'            => 'Logged out successfully.',
     'session_expired_idle'      => 'Session expired due to inactivity.',
 
+    // UserController
+    'current_password_incorrect' => 'Current password is incorrect.',
+    'password_updated'           => 'Password updated successfully.',
+
     // SessionController
     'machine_not_active'       => 'This machine is not currently active.',
     'active_session_exists'    => 'You already have an active session.',
