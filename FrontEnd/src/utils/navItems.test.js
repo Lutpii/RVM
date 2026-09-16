@@ -27,7 +27,7 @@ describe('resolveActiveNavKey', () => {
     expect(resolveActiveNavKey('activity')).toBe('activity')
     expect(resolveActiveNavKey('scan')).toBe('scan')
     expect(resolveActiveNavKey('rewards')).toBe('rewards')
-    expect(resolveActiveNavKey('settings')).toBe('account')
+    expect(resolveActiveNavKey('account')).toBe('account')
   })
 
   it('returns null for a route not in the nav', () => {

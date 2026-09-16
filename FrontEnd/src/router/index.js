@@ -126,10 +126,10 @@ const routes = [
     meta: { title: 'Rewards - RVM', requiresAuth: true, showAppNav: true },
   },
   {
-    path: '/settings',
-    name: 'settings',
+    path: '/account',
+    name: 'account',
     component: UserSettingsView,
-    meta: { title: 'Settings - RVM', requiresAuth: true, showAppNav: true },
+    meta: { title: 'Account - RVM', requiresAuth: true, showAppNav: true },
   },
   {
     path: '/admin',
