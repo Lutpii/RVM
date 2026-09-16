@@ -441,6 +441,7 @@
               <div class="machine-actions">
                 <button class="action-btn edit-btn" @click="openEditMachine(machine)">Edit</button>
                 <button class="action-btn" @click="resetBins(machine)">Reset Bins</button>
+                <button class="action-btn maint-btn" @click="openMaintenance(machine)">Maintenance</button>
                 <button class="action-btn del-btn" @click="deleteMachine(machine.id)">Delete</button>
               </div>
             </div>
@@ -908,6 +909,52 @@
       </div>
     </div>
 
+    <!-- ── Kiosk Maintenance Modal ── -->
+    <div v-if="maintainingMachine" class="modal-overlay" @click.self="closeMaintenance">
+      <div class="modal">
+        <button class="modal-close-btn" aria-label="Close modal" @click="closeMaintenance">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
+        <h3>Kiosk Maintenance — {{ maintainingMachine.name }}</h3>
+        <p class="maint-hint">
+          Scan the QR code currently shown on this kiosk's own screen to confirm
+          you're physically at the machine. Its Chromium will close immediately
+          and stay closed until the machine is rebooted or logged in again.
+        </p>
+
+        <div class="qr-frame" :class="{ 'camera-active': maintCameraActive }">
+          <video v-show="maintCameraActive" ref="maintVideoRef" class="camera-feed" autoplay playsinline muted></video>
+          <canvas ref="maintCanvasRef" class="hidden-canvas"></canvas>
+          <div v-if="maintCameraActive" class="scan-line"></div>
+          <div v-if="!maintCameraActive" class="qr-placeholder">
+            <PhCamera weight="regular" aria-hidden="true" />
+          </div>
+        </div>
+
+        <button class="camera-btn" @click="toggleMaintCamera" :disabled="maintLoading">
+          {{ maintCameraActive ? 'Close Camera' : 'Open Camera' }}
+        </button>
+
+        <div class="form-group" style="margin-top: 14px">
+          <label>Or paste the QR token manually</label>
+          <input
+            v-model="maintTokenInput"
+            type="text"
+            placeholder="e.g. AB12CD"
+            @keyup.enter="submitMaintenance"
+          />
+        </div>
+
+        <p v-if="maintError" class="form-error">{{ maintError }}</p>
+
+        <div class="modal-actions">
+          <button class="action-btn del-btn" @click="submitMaintenance" :disabled="maintLoading || !maintTokenInput.trim()">
+            {{ maintLoading ? 'Closing...' : 'Confirm & Close Kiosk' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Email Report Modal ── -->
     <div v-if="showEmailReportModal" class="modal-overlay" @click.self="showEmailReportModal = false">
       <div class="modal">
@@ -972,6 +1019,8 @@ import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import jsQR from 'jsqr'
+import { extractQrToken } from '@/utils/qrToken'
 import { materialIconSvg } from '@/utils/materialIcons'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import {
@@ -2029,6 +2078,105 @@ async function deleteMachine(id) {
   } catch { showToast('Failed to delete machine.', 'error') }
 }
 
+// ── Kiosk maintenance (scan the machine's live QR to prove presence, then
+// tell it to close its own Chromium — see AdminController::maintainMachine) ──
+const maintainingMachine = ref(null)
+const maintTokenInput    = ref('')
+const maintError         = ref('')
+const maintLoading       = ref(false)
+const maintCameraActive  = ref(false)
+const maintVideoRef      = ref(null)
+const maintCanvasRef     = ref(null)
+let maintStream       = null
+let maintScanInterval = null
+
+function openMaintenance(machine) {
+  maintainingMachine.value = machine
+  maintTokenInput.value = ''
+  maintError.value = ''
+}
+
+function closeMaintenance() {
+  stopMaintCamera()
+  maintainingMachine.value = null
+}
+
+async function toggleMaintCamera() {
+  if (maintCameraActive.value) stopMaintCamera()
+  else await startMaintCamera()
+}
+
+async function startMaintCamera() {
+  maintError.value = ''
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    maintError.value = 'Camera access requires HTTPS.'
+    return
+  }
+  try {
+    maintStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 640 } },
+    })
+    maintVideoRef.value.srcObject = maintStream
+    maintCameraActive.value = true
+    maintScanInterval = setInterval(scanMaintFrame, 200)
+  } catch (e) {
+    maintError.value = 'Could not access the camera: ' + e.message
+  }
+}
+
+function stopMaintCamera() {
+  clearInterval(maintScanInterval)
+  maintScanInterval = null
+  if (maintStream) {
+    maintStream.getTracks().forEach(track => track.stop())
+    maintStream = null
+  }
+  if (maintVideoRef.value) maintVideoRef.value.srcObject = null
+  maintCameraActive.value = false
+}
+
+function scanMaintFrame() {
+  const video = maintVideoRef.value
+  const canvas = maintCanvasRef.value
+  if (!video || !canvas || video.readyState < 2) return
+
+  const size = Math.min(video.videoWidth, video.videoHeight)
+  canvas.width  = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const offsetX = (video.videoWidth  - size) / 2
+  const offsetY = (video.videoHeight - size) / 2
+  ctx.drawImage(video, offsetX, offsetY, size, size, 0, 0, size, size)
+
+  const imageData = ctx.getImageData(0, 0, size, size)
+  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
+  if (code?.data) {
+    stopMaintCamera()
+    maintTokenInput.value = extractQrToken(code.data)
+    submitMaintenance()
+  }
+}
+
+async function submitMaintenance() {
+  const token = extractQrToken(maintTokenInput.value)
+  if (!token) return
+  maintLoading.value = true
+  maintError.value = ''
+  try {
+    const res = await api.post(`/admin/machines/${maintainingMachine.value.id}/maintenance`, { qr_token: token })
+    if (res.data.success) {
+      showToast(`Kiosk for "${maintainingMachine.value.name}" closed for maintenance.`)
+      closeMaintenance()
+    } else {
+      maintError.value = res.data.message || 'Failed to trigger maintenance.'
+    }
+  } catch (e) {
+    maintError.value = e.response?.data?.message || 'Failed to trigger maintenance.'
+  } finally {
+    maintLoading.value = false
+  }
+}
+
 function openDatePicker(event) {
   const target = event.currentTarget
   const input = target.matches?.('input') ? target : target.querySelector?.('input')
@@ -2213,6 +2361,7 @@ onUnmounted(() => {
   if (detectionUndoTimer) clearTimeout(detectionUndoTimer)
   window.removeEventListener('resize', handleResize)
   releaseThumbnails()
+  stopMaintCamera()
 })
 </script>
 
@@ -2718,8 +2867,9 @@ onUnmounted(() => {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
 .user-action-icon { width: 14px; height: 14px; flex-shrink: 0; }
-.edit-btn { border-color: var(--accent-blue); color: var(--accent-blue); }
-.del-btn  { border-color: var(--accent-red);  color: var(--accent-red);  }
+.edit-btn  { border-color: var(--accent-blue);   color: var(--accent-blue);   }
+.del-btn   { border-color: var(--accent-red);    color: var(--accent-red);    }
+.maint-btn { border-color: var(--accent-yellow); color: var(--accent-yellow); }
 .add-btn  {
   padding: 8px 16px; background: var(--accent-green); color: white;
   border: none; border-radius: 6px; cursor: pointer;
@@ -2814,6 +2964,29 @@ onUnmounted(() => {
 .form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 .modal-actions .action-btn { min-height: 38px; padding: 8px 16px; margin-right: 0; }
+
+/* ── Kiosk Maintenance modal (QR camera scan) ── */
+.maint-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+.qr-frame {
+  width: 100%; height: 220px; margin: 0 auto 10px;
+  position: relative; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-hover); border-radius: var(--radius); overflow: hidden;
+}
+.qr-frame .camera-feed { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.qr-frame .hidden-canvas { display: none; }
+.qr-frame .qr-placeholder svg { width: 40px; height: 40px; color: var(--accent-blue); }
+.qr-frame .scan-line {
+  position: absolute; left: 12px; right: 12px; height: 2px;
+  background: var(--accent-blue); opacity: 0.8; box-shadow: 0 0 8px var(--accent-blue);
+  animation: maint-scan 2s ease-in-out infinite;
+}
+@keyframes maint-scan { 0%, 100% { top: 16px; } 50% { top: calc(100% - 16px); } }
+.camera-btn {
+  width: 100%; padding: 10px; background: transparent;
+  border: 1.5px solid var(--accent-blue); border-radius: var(--radius);
+  color: var(--accent-blue); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.camera-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Detection Review ── */
 .detection-header { margin-bottom: 12px; }

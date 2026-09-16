@@ -69,6 +69,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::put('/user/password', [UserController::class, 'updatePassword']);
+    Route::delete('/user/account', [UserController::class, 'deleteAccount']);
     Route::get('/user/points-history', [UserController::class, 'pointsHistory']);
     Route::get('/user/sessions', [UserController::class, 'sessions']);
     Route::get('/user/reward-items', [RewardController::class, 'index']);
@@ -107,6 +108,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
         Route::put('/machines/{id}', [AdminController::class, 'updateMachine']);
         Route::delete('/machines/{id}', [AdminController::class, 'deleteMachine']);
         Route::put('/machines/{id}/bin-levels', [AdminController::class, 'updateBinLevels']);
+        Route::post('/machines/{id}/maintenance', [AdminController::class, 'maintainMachine']);
         Route::get('/sessions', [AdminController::class, 'allSessions']);
         Route::get('/transactions', [AdminController::class, 'allTransactions']);
         Route::get('/stats', [AdminController::class, 'stats']);

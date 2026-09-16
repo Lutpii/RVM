@@ -48,4 +48,11 @@ return [
     // Google login from a phone that isn't on localhost. Leave unset to fall
     // back to the previous behavior (localhost / direct LAN IP, no tunnel).
     'public_backend_url' => env('PUBLIC_BACKEND_URL'),
+
+    // Local companion service (deploy/kiosk-control.py) that kills the kiosk's
+    // Chromium on this same physical machine — see AdminController::maintainMachine().
+    // Always loopback: the backend and the kiosk it controls are the same box.
+    'kiosk_control' => [
+        'url' => env('KIOSK_CONTROL_URL', 'http://127.0.0.1:8765/exit'),
+    ],
 ];

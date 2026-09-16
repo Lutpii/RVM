@@ -10,6 +10,7 @@ use App\Models\AdminLog;
 use App\Models\DetectionLog;
 use App\Models\RewardItem;
 use App\Models\RewardRedemption;
+use App\Models\QrSession;
 use App\Mail\BinCollectionRequested;
 use App\Mail\FormalReportGenerated;
 use App\Services\FormalReportService;
@@ -19,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -240,6 +242,50 @@ class AdminController extends Controller
         $this->log($request->user(), 'delete_machine', 'machine', $id, "Deleted machine: {$machine->name}");
         $machine->delete();
         return response()->json(['success' => true, 'message' => 'Machine deleted.']);
+    }
+
+    // Kiosk maintenance shutdown — gated by an admin session (this middleware
+    // group) AND physical presence: the qr_token must be the QR currently
+    // live on that machine's own display (60s window, same rows QrController
+    // generates for the ordinary recycling flow). Never touches that flow's
+    // own /qr/scan — this only checks and consumes the token.
+    public function maintainMachine(Request $request, int $id): JsonResponse
+    {
+        $machine = RvmMachine::find($id);
+        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+
+        $validated = $request->validate(['qr_token' => 'required|string']);
+
+        $qrSession = QrSession::where('qr_token', $validated['qr_token'])
+            ->where('machine_id', $machine->id)
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$qrSession) {
+            return response()->json([
+                'success' => false,
+                'message' => 'QR is invalid, expired, or for a different machine. Scan the code currently shown on the kiosk.',
+            ], 400);
+        }
+
+        // Consume it immediately so it can't be replayed for a second maintenance
+        // trigger (or picked up by the ordinary /qr/scan flow afterward).
+        $qrSession->update(['status' => 'expired']);
+
+        $this->log($request->user(), 'kiosk_maintenance', 'machine', $machine->id, "Triggered kiosk maintenance shutdown for machine: {$machine->name}");
+
+        try {
+            $response = Http::timeout(3)->post(config('services.kiosk_control.url'));
+            if (!$response->successful()) {
+                return response()->json(['success' => false, 'message' => 'Kiosk control service responded with an error.'], 502);
+            }
+        } catch (\Throwable $e) {
+            Log::error('[KioskMaintenance] failed to reach control service: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Could not reach the kiosk control service on this machine.'], 502);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Kiosk closed for maintenance.']);
     }
 
     public function updateBinLevels(Request $request, int $id): JsonResponse

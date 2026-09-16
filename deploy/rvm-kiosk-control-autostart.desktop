@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=RVM Kiosk Control
+Comment=Local-only helper that lets the admin panel close this kiosk's Chromium for maintenance
+Exec=python3 /home/adi/RVM/deploy/kiosk-control.py
+X-GNOME-Autostart-enabled=true
+
+# Install (run as the same desktop user as rvm-kiosk-autostart.desktop, so it
+# can kill that user's own Chromium without sudo):
+#   mkdir -p ~/.config/autostart
+#   cp deploy/rvm-kiosk-control-autostart.desktop ~/.config/autostart/
+#
+# Adjust the path in Exec= if this machine's project isn't at
+# /home/adi/RVM (must match wherever `git clone` put it — see
+# docs/DEPLOY_RASPBERRY_PI.md step 3).
+#
+# Binds to 127.0.0.1:8765 only — never routed through Nginx. The only caller
+# is this same Pi's own Laravel backend (POST /admin/machines/{id}/maintenance),
+# triggered from the admin panel after scanning the kiosk's live QR code.

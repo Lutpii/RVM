@@ -196,6 +196,19 @@ sudo raspi-config
 ```
 Pilih **Display Options** → **Screen Blanking** → **No** → **Finish**.
 
+### Maintenance: keluar dari kiosk lewat Admin Panel
+
+Chromium `--kiosk` sengaja gak punya cara keluar dari layar sentuhnya sendiri. Cara resminya: **admin panel** (dibuka dari HP/laptop admin sendiri, login biasa) → tab **Machines** → tombol **Maintenance** di mesin yang mau dimatikan → scan QR yang lagi tampil di layar kiosk itu (buktinya admin beneran di depan mesinnya) → Chromium langsung tertutup dan **gak akan kebuka lagi sampai reboot atau login ulang**.
+
+Ini butuh 1 autostart entry tambahan — servis kecil lokal yang dipanggil backend buat nutup Chromium (lihat `AdminController::maintainMachine`):
+```bash
+mkdir -p ~/.config/autostart
+cp ~/RVM/deploy/rvm-kiosk-control-autostart.desktop ~/.config/autostart/
+```
+Ganti path di baris `Exec=` file itu kalau project-nya gak ada di `/home/adi/RVM`. Servis ini cuma bind ke `127.0.0.1:8765` (gak pernah lewat Nginx) dan jalan sebagai user yang sama dengan Chromium, jadi bisa `pkill` tanpa sudo — satu-satunya yang manggil dia adalah Laravel backend di Pi yang sama.
+
+Setelah maintenance selesai, tinggal `sudo reboot` atau relaunch manual: `chromium --kiosk --window-size=1024,600 --window-position=0,0 --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble https://localhost/#/kiosk/RVM-001 &`
+
 ---
 
 ## 9. Reboot & verifikasi end-to-end

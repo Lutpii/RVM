@@ -137,6 +137,7 @@ import { useRvmStore }  from '@/store/rvm'
 import { PhArrowLeft, PhCamera, PhLink, PhWarning, PhX } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import jsQR from 'jsqr'
+import { extractQrToken } from '@/utils/qrToken'
 
 const router = useRouter()
 const route  = useRoute()
@@ -244,33 +245,14 @@ function onQrDetected(data) {
   qrDetected.value = true
   setTimeout(() => { qrDetected.value = false }, 1000)
 
-  // If the QR contains a full URL with ?token= param, extract just the token
-  try {
-    const url = new URL(data)
-    const t = url.searchParams.get('token')
-    if (t) { token.value = t; handleScan(); return }
-  } catch { /* not a URL */ }
-
-  token.value = data
+  token.value = extractQrToken(data)
   handleScan()
-}
-
-function extractToken(raw) {
-  const s = raw.trim()
-  try {
-    const t = new URL(s).searchParams.get('token')
-    if (t) return t
-  } catch { /* not a URL */ }
-  // Handle hash-URL pasted without protocol: e.g. "10.x.x.x:5173/#/scan?token=ABC"
-  const m = s.match(/[?&]token=([^&]+)/)
-  if (m) return decodeURIComponent(m[1])
-  return s
 }
 
 async function handleScan() {
   const raw = token.value.trim()
   if (!raw) return
-  token.value = extractToken(raw)
+  token.value = extractQrToken(raw)
   if (!token.value) return
   loading.value = true
   error.value   = ''
