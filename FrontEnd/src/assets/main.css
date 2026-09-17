@@ -35,6 +35,14 @@ input, select, textarea {
   color: var(--text-primary);
 }
 
+/* Every password field in this app already has its own show/hide toggle
+   button — without this, Edge/IE draw their own native reveal-password eye
+   on top of it, so two eye icons overlap in the same input. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 a { color: var(--accent-blue); }
 
 /* Scrollbar */

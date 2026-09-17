@@ -19,12 +19,12 @@
         {{ $t('dashboard.startRecycling') }}
       </button>
 
-      <p class="hint-text">{{ $t('kioskLanding.hint') }}</p>
+      <!-- <p class="hint-text">{{ $t('kioskLanding.hint') }}</p> -->
     </div>
 
     <div class="kiosk-footer">
       <BrandFooter class="brand-logo" />
-      <span>UMPSA &nbsp;·&nbsp; Eco Smart Campus</span>
+      <span>UMPSA &nbsp;·&nbsp; DSME Engineering</span>
     </div>
   </div>
 </template>

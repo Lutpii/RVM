@@ -72,6 +72,18 @@ class UserController extends Controller
         return response()->json(['success' => true, 'message' => __('messages.password_updated')]);
     }
 
+    // The frontend's "Danger Zone" delete-account confirmation already calls
+    // this with no body (just the bearer token) — no extra password re-entry
+    // step exists in that UI, so none is required here either. recycling_
+    // sessions/transactions/points_history/reward_redemptions/admin_logs all
+    // cascade-delete with the user (see their migrations); detection_logs
+    // nulls its user_id instead so the exhibition/analytics data survives.
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $request->user()->delete();
+        return response()->json(['success' => true, 'message' => __('messages.account_deleted')]);
+    }
+
     public function pointsHistory(Request $request): JsonResponse
     {
         $history = PointsHistory::with('transaction')

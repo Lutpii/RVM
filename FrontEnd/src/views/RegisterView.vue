@@ -8,15 +8,19 @@
       </div>
 
       <div class="auth-body">
-        <!-- Google -->
-        <button class="google-btn" @click="handleGoogle" :disabled="loading">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-          {{ $t('auth.googleBtn') }}
-        </button>
+        <!-- Google + OR: only a "how do you want to sign up" choice — once
+             showOtp is true the account already exists and this step is just
+             confirming the code just sent, so neither belongs on screen anymore. -->
+        <template v-if="!showOtp">
+          <button class="google-btn" @click="handleGoogle" :disabled="loading">
+            <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+            {{ $t('auth.googleBtn') }}
+          </button>
 
-        <div class="separator"><span>{{ $t('auth.orSeparator') }}</span></div>
+          <div class="separator"><span>{{ $t('auth.orSeparator') }}</span></div>
+        </template>
 
-        <form @submit.prevent="handleRegister" class="auth-form">
+        <form v-if="!showOtp" @submit.prevent="handleRegister" class="auth-form">
           <div class="form-group">
             <label>{{ $t('auth.name') }}</label>
             <input v-model="form.name" type="text" :placeholder="$t('auth.name')" autocomplete="name" required />
@@ -70,21 +74,23 @@
 
         <!-- OTP verification step -->
         <div v-if="showOtp" class="otp-section">
-          <div class="separator"><span>{{ $t('auth.verifyWhatsapp') }}</span></div>
-          <p class="otp-info">{{ $t('auth.otpSent') }}</p>
+          <h3 class="otp-heading">{{ $t('auth.verifyWhatsapp') }}</h3>
+          <div v-if="error" class="error-msg">{{ error }}</div>
+          <div v-if="success" class="success-msg">{{ success }}</div>
           <div class="form-group">
             <label>{{ $t('auth.otpLabel') }}</label>
             <input v-model="otpCode" type="text" maxlength="6" :placeholder="$t('auth.otpPlaceholder')" class="otp-input" />
           </div>
           <button class="submit-btn whatsapp-btn" @click="handleVerifyOtp" :disabled="loading">
-            {{ $t('auth.verifyOtp') }}
+            <span v-if="loading" class="spinner"></span>
+            {{ loading ? '...' : $t('auth.verifyOtp') }}
           </button>
-          <button type="button" class="resend-btn" @click="handleResendOtp" :disabled="loading">
-            {{ $t('auth.resendOtp') }}
+          <button type="button" class="resend-btn" @click="handleResendOtp" :disabled="loading || resendCooldown > 0">
+            {{ resendCooldown > 0 ? $t('auth.resendOtpIn', { seconds: resendCooldown }) : $t('auth.resendOtp') }}
           </button>
         </div>
 
-        <p class="switch-link">
+        <p v-if="!showOtp" class="switch-link">
           {{ $t('auth.hasAccount') }}
           <RouterLink to="/login">{{ $t('auth.loginBtn') }}</RouterLink>
         </p>
@@ -94,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
@@ -112,6 +118,23 @@ const success = ref('')
 const showPwd = ref(false)
 const showOtp = ref(false)
 const otpCode = ref('')
+const resendCooldown = ref(0)
+let resendTimer = null
+
+// Matches the backend's own resend rate limit window (RateLimiter::hit($sendKey,
+// 600) in AuthController::sendOtp) — 10 minutes would be a long, unexplained
+// wait to show, so this is just enough to stop accidental double-taps rather
+// than mirror the server's actual cap.
+const RESEND_COOLDOWN_SECONDS = 30
+
+function startResendCooldown() {
+  clearInterval(resendTimer)
+  resendCooldown.value = RESEND_COOLDOWN_SECONDS
+  resendTimer = setInterval(() => {
+    resendCooldown.value -= 1
+    if (resendCooldown.value <= 0) clearInterval(resendTimer)
+  }, 1000)
+}
 
 // Draft persistence so an accidental refresh doesn't lose what the user typed.
 // Password is intentionally excluded — never park plaintext passwords in browser storage.
@@ -178,16 +201,11 @@ async function handleRegister() {
     })
 
     if (res.success) {
-      if (form.value.phone) {
-        showOtp.value  = true
-        success.value  = t('auth.accountCreatedVerify')
-      } else {
-        clearDraft()
-        success.value = t('auth.accountCreatedRedirect')
-        setTimeout(() => {
-          router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
-        }, 1200)
-      }
+      // At least one of phone/email is always present (checked above) — OTP is
+      // always sent by the backend now, via WhatsApp for a phone or email otherwise.
+      showOtp.value  = true
+      success.value  = t('auth.accountCreatedVerify')
+      startResendCooldown()
     } else {
       error.value = res.message || t('auth.registrationFailed')
     }
@@ -203,6 +221,12 @@ async function handleRegister() {
   }
 }
 
+// Matches the backend's own priority in generateAndSendOtp(): phone (WhatsApp)
+// if given, email otherwise.
+function otpIdentifier() {
+  return form.value.phone ? { phone: form.value.phone } : { email: form.value.email }
+}
+
 async function handleGoogle() {
   try { await auth.loginWithGoogle() } catch {}
 }
@@ -211,7 +235,7 @@ async function handleVerifyOtp() {
   loading.value = true
   error.value   = ''
   try {
-    const res = await auth.verifyOtp(form.value.phone, otpCode.value)
+    const res = await auth.verifyOtp(otpIdentifier(), otpCode.value)
     if (res.success) {
       clearDraft()
       router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
@@ -230,9 +254,10 @@ async function handleResendOtp() {
   error.value   = ''
   success.value = ''
   try {
-    const res = await auth.sendOtp(form.value.phone)
+    const res = await auth.sendOtp(otpIdentifier())
     if (res.success) {
       success.value = t('auth.otpResent')
+      startResendCooldown()
     } else {
       error.value = res.message || t('auth.otpResendFailed')
     }
@@ -245,6 +270,10 @@ async function handleResendOtp() {
 
 onMounted(() => {
   // Restore whatever was typed before an accidental refresh (name/email/phone only).
+  // Nothing here re-shows the OTP step on its own — register() on the backend
+  // is idempotent for an unverified email/phone (re-sends a fresh OTP instead
+  // of rejecting it), so simply re-submitting the form after a refresh already
+  // recovers the flow without needing any client-side "resume" state to track.
   const draftRaw = sessionStorage.getItem(DRAFT_KEY)
   if (draftRaw) {
     try {
@@ -254,17 +283,9 @@ onMounted(() => {
       form.value.phone = draft.phone || form.value.phone
     } catch { /* ignore corrupt draft */ }
   }
-
-  // Resume the "waiting for OTP" state after an accidental refresh — the account
-  // (and auth token) already exists at this point, only phone verification is pending.
-  if (auth.isLoggedIn && auth.user?.phone && !auth.user?.is_verified) {
-    form.value.name  = auth.user.name  || form.value.name
-    form.value.email = auth.user.email || form.value.email
-    form.value.phone = auth.user.phone
-    showOtp.value = true
-    success.value = t('auth.accountCreatedVerify')
-  }
 })
+
+onUnmounted(() => clearInterval(resendTimer))
 </script>
 
 <style scoped>
@@ -359,6 +380,7 @@ onMounted(() => {
 }
 .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .otp-section { margin-top: 16px; }
+.otp-heading { text-align: center; font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
 .otp-info { color: var(--accent-green); font-size: 13px; margin-bottom: 12px; text-align: center; }
 .otp-input { text-align: center !important; font-size: 24px !important; letter-spacing: 8px; font-weight: 700; }
 .switch-link { text-align: center; margin-top: 16px; font-size: 14px; color: var(--text-secondary); }

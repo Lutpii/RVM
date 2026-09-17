@@ -284,32 +284,57 @@
         <h3 class="form-title danger-title">{{ $t('settings.dangerZone') }}</h3>
         <p class="form-hint">{{ $t('settings.deleteHint') }}</p>
 
-        <div v-if="!confirmDelete">
-          <button class="full-btn delete-btn" @click="confirmDelete = true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            {{ $t('settings.deleteAccount') }}
-          </button>
-        </div>
-
-        <div v-else class="confirm-delete-box">
-          <p class="confirm-msg">{{ $t('settings.deleteConfirm') }}</p>
-          <div class="confirm-btns">
-            <button class="cancel-btn-lg" @click="confirmDelete = false">{{ $t('settings.cancel') }}</button>
-            <button class="delete-btn-confirm" @click="deleteAccount" :disabled="deletingAccount">
-              {{ deletingAccount ? $t('settings.deleting') : $t('settings.confirmYes') }}
-            </button>
-          </div>
-        </div>
+        <button class="full-btn delete-btn" @click="confirmDelete = true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          {{ $t('settings.deleteAccount') }}
+        </button>
       </div>
 
     </div>
 
     <div style="height: 40px"></div>
+
+    <!-- Delete account confirmation — the delete button stays disabled until
+         the user types their own email exactly, same "type the exact resource
+         name" pattern GitHub uses for deleting a repository. A plain
+         "Are you sure?" is too easy to click through by reflex for something
+         this irreversible (full cascade delete of sessions/transactions/points). -->
+    <div v-if="confirmDelete" class="modal-overlay" @click.self="closeDeleteModal">
+      <div class="modal delete-modal">
+        <button class="modal-close-btn" @click="closeDeleteModal" :disabled="deletingAccount" :aria-label="$t('settings.cancel')">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
+        <h3>{{ $t('settings.deleteAccount') }}</h3>
+        <p class="delete-warning">{{ $t('settings.deleteConfirm') }}</p>
+        <p class="delete-instruction">
+          {{ $t('settings.deleteTypeToConfirm') }} <strong>{{ auth.user?.email }}</strong>
+        </p>
+        <input
+          v-model="deleteConfirmText"
+          type="text"
+          class="delete-confirm-input"
+          :placeholder="auth.user?.email"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <div class="confirm-btns">
+          <button class="cancel-btn-lg" @click="closeDeleteModal" :disabled="deletingAccount">{{ $t('settings.cancel') }}</button>
+          <button
+            class="delete-btn-confirm"
+            @click="deleteAccount"
+            :disabled="deletingAccount || deleteConfirmText !== auth.user?.email"
+          >
+            {{ deletingAccount ? $t('settings.deleting') : $t('settings.confirmYes') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -322,13 +347,14 @@ import api from '@/services/api'
 import {
   PhUser, PhGift, PhPalette, PhLock,
   PhGear, PhRecycle, PhArrowsLeftRight, PhCoins,
-  PhSun, PhMoon, PhCheckCircle,
+  PhSun, PhMoon, PhCheckCircle, PhX,
 } from '@phosphor-icons/vue'
 
 const router      = useRouter()
 const auth        = useAuthStore()
 const theme       = inject('theme')
 const toggleTheme = inject('toggleTheme')
+const showToast   = inject('showToast')
 const { locale, t } = useI18n()
 
 const activeTab = ref('profile')
@@ -499,8 +525,15 @@ function setTheme(t) {
 }
 
 // ── Account ───────────────────────────────────────────────────────────────────
-const confirmDelete  = ref(false)
-const deletingAccount = ref(false)
+const confirmDelete    = ref(false)
+const deletingAccount  = ref(false)
+const deleteConfirmText = ref('')
+
+function closeDeleteModal() {
+  if (deletingAccount.value) return
+  confirmDelete.value = false
+  deleteConfirmText.value = ''
+}
 
 async function handleLogout() {
   // Captured before logout() clears the auth store — GoodbyeView reads
@@ -517,11 +550,14 @@ async function deleteAccount() {
   deletingAccount.value = true
   try {
     await api.delete('/user/account')
-    await auth.logout()
+    auth.clearAuth()
     router.push('/')
-  } catch {
-    confirmDelete.value   = false
-    deletingAccount.value = false
+  } catch (e) {
+    showToast(e.response?.data?.message || t('settings.deleteAccountFailed'), 'error')
+  } finally {
+    confirmDelete.value    = false
+    deletingAccount.value  = false
+    deleteConfirmText.value = ''
   }
 }
 
@@ -731,9 +767,38 @@ onMounted(async () => {
 /* ── Danger zone ── */
 .danger-card { border-color: rgba(239,68,68,0.3); }
 .danger-title { color: var(--accent-red); }
-.confirm-delete-box { background: rgba(239,68,68,0.08); border-radius: 10px; padding: 14px; }
-.confirm-msg { font-size: 13px; color: var(--text-primary); margin-bottom: 14px; font-weight: 500; }
-.confirm-btns { display: flex; gap: 10px; }
+.confirm-btns { display: flex; gap: 10px; margin-top: 18px; }
+
+/* ── Delete account modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  width: 100%; height: 100vh; height: 100dvh;
+  display: flex; align-items: flex-start; justify-content: center;
+  z-index: 300;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px; width: 420px; max-width: 100%;
+  margin: auto; position: relative; box-sizing: border-box;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+}
+.modal h3 { font-size: 17px; font-weight: 700; color: var(--text-primary); padding-right: 32px; margin-bottom: 14px; }
+.modal-close-btn {
+  position: absolute; top: 20px; right: 20px;
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 4px; font-size: 18px; line-height: 0;
+}
+.modal-close-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.delete-warning { font-size: 13px; color: var(--text-primary); margin-bottom: 10px; }
+.delete-instruction { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; word-break: break-all; }
+.delete-confirm-input {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  background: var(--bg-primary); border: 1px solid var(--border);
+  color: var(--text-primary); font-size: 14px; box-sizing: border-box;
+}
+.delete-confirm-input:focus { outline: none; border-color: var(--accent-red); }
 .cancel-btn-lg {
   flex: 1; padding: 10px; border-radius: 8px;
   background: var(--bg-hover); border: 1px solid var(--border);
