@@ -198,7 +198,18 @@ class _UsbCameraWrapper:
         self._ensure_open()
         ok, frame = self._cap.read()
         if not ok:
-            raise RuntimeError('Failed to read a frame from the USB webcam.')
+            # Some cheap UVC webcams fail their internal stream renegotiation
+            # ("Failed to set UVC commit control") after being released and
+            # reopened many times in a row (exactly what happens across
+            # repeated scans, since /capture releases the device after every
+            # single shot - see its route). A fresh close+reopen re-runs that
+            # negotiation from scratch and recovers most of the time; only
+            # raise if it fails twice in a row.
+            self.release()
+            self._ensure_open()
+            ok, frame = self._cap.read()
+            if not ok:
+                raise RuntimeError('Failed to read a frame from the USB webcam.')
         return frame[:, :, ::-1]  # OpenCV gives BGR -> flip to RGB
 
     def release(self):
