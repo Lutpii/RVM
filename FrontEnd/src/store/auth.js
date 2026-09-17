@@ -85,12 +85,18 @@ export const useAuthStore = defineStore('auth', () => {
     return res.data
   }
 
-  // Never calls setAuth() — OTP verification is mandatory before an account
-  // is usable at all (see AuthController::register(), which intentionally
-  // stopped issuing a token here). verifyOtp() below is what actually starts
-  // the session, whether reached from the register or login flow.
+  // Normally never calls setAuth() — OTP verification is mandatory before an
+  // account is usable at all (see AuthController::register(), which
+  // intentionally stopped issuing a token here). verifyOtp() below is what
+  // actually starts the session, whether reached from the register or login
+  // flow. EXCEPT: the backend includes a token when its OTP-send failed and
+  // it skipped verification instead (see AuthController::register()) — log
+  // straight in when that happens.
   async function register(data) {
     const res = await api.post('/auth/register', data)
+    if (res.data.token) {
+      setAuth(res.data.user, res.data.token)
+    }
     return res.data
   }
 

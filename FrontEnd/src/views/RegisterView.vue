@@ -200,7 +200,12 @@ async function handleRegister() {
       password_confirmation: form.value.password_confirmation,
     })
 
-    if (res.success) {
+    if (res.success && res.token) {
+      // Backend's OTP send failed and skipped verification — already logged
+      // in, so go straight in instead of showing the OTP step.
+      clearDraft()
+      router.push({ path: '/welcome', query: { redirect: route.query.redirect || '/dashboard' } })
+    } else if (res.success) {
       // At least one of phone/email is always present (checked above) — OTP is
       // always sent by the backend now, via WhatsApp for a phone or email otherwise.
       showOtp.value  = true

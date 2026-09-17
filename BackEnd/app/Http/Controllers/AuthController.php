@@ -84,7 +84,26 @@ class AuthController extends Controller
 
         // Send OTP — via WhatsApp if a phone was given, otherwise via email (at
         // least one of the two is always present per the validation above).
-        $this->generateAndSendOtp($user);
+        $otpSent = $this->generateAndSendOtp($user);
+
+        // Our Resend account is sandbox-only (can't deliver to anyone but its
+        // own owner) and Fonnte isn't configured at all, so a real OTP send
+        // fails for almost every registration. Rather than dead-ending the
+        // flow, treat a failed send as "skip verification" — auto-verify and
+        // log the user straight in. If the send DOES succeed (e.g. Resend
+        // gets a verified domain later), the normal OTP-required flow below
+        // still applies.
+        if (!$otpSent) {
+            $user->update(['is_verified' => 1, 'otp_code' => null, 'otp_expires_at' => null]);
+            $token = $user->createToken('rvm_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.register_success_otp_sent'),
+                'token'   => $token,
+                'user'    => $this->formatUser($user),
+            ], 201);
+        }
 
         // No token here on purpose — OTP verification is mandatory before an
         // account is usable at all. verifyOtp() is the only place a fresh
@@ -471,7 +490,10 @@ class AuthController extends Controller
     // WhatsApp (Fonnte) if the account has a phone — that path was already live
     // and costs nothing extra to keep. Email otherwise, since Resend (already
     // wired up for admin reports) has a free tier and needs no new service.
-    private function generateAndSendOtp(User $user): void
+    // Returns whether the OTP actually went out, so register() can fall back
+    // to auto-verifying when the send fails (see the sandbox/unconfigured
+    // note at that call site).
+    private function generateAndSendOtp(User $user): bool
     {
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $user->update([
@@ -479,11 +501,17 @@ class AuthController extends Controller
             'otp_expires_at' => Carbon::now()->addMinutes(5),
         ]);
 
-        if ($user->phone) {
-            $message = "🌱 *RVM - Reverse Vending Machine*\n\nYour verification code is:\n*{$otp}*\n\nValid for 5 minutes. Do not share this code.";
-            $this->fonnte->send($user->phone, $message);
-        } else {
-            Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+        try {
+            if ($user->phone) {
+                $message = "🌱 *RVM - Reverse Vending Machine*\n\nYour verification code is:\n*{$otp}*\n\nValid for 5 minutes. Do not share this code.";
+                $this->fonnte->send($user->phone, $message);
+            } else {
+                Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+            }
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('OTP send failed, registration will skip verification', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return false;
         }
     }
 
