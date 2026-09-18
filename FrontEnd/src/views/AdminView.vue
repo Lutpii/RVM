@@ -599,6 +599,16 @@
       <!-- ── REWARDS ── -->
       <div v-if="activeTab === 'rewards'" class="tab-content">
         <div class="section-card">
+          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> CASH REDEEM SETTINGS</h3>
+          <div class="form-group"><label>Points per Unit</label><input v-model.number="cashRedeemSettings.points_per_unit" type="number" min="1" /></div>
+          <div class="form-group"><label>RM per Unit</label><input v-model.number="cashRedeemSettings.rm_per_unit" type="number" min="0.01" step="0.01" /></div>
+          <div class="form-group"><label>Minimum Points</label><input v-model.number="cashRedeemSettings.min_points" type="number" min="1" /></div>
+          <button class="add-btn" :disabled="savingCashRedeemSettings" @click="saveCashRedeemSettings">
+            {{ savingCashRedeemSettings ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+
+        <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> REWARD CATALOG</h3>
             <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
@@ -638,17 +648,18 @@
           <div class="table-wrap">
             <table class="data-table">
               <thead>
-                <tr><th>User</th><th>Reward</th><th>Points Spent</th><th>Date</th></tr>
+                <tr><th>User</th><th>Reward</th><th>Points Spent</th><th>E-Wallet</th><th>Date</th></tr>
               </thead>
               <tbody>
                 <tr v-for="r in adminRedemptions" :key="r.id">
                   <td>{{ r.user?.name || '—' }}</td>
                   <td>{{ r.reward_name }}</td>
                   <td class="pts-red">-{{ r.points_spent }}</td>
+                  <td class="muted small">{{ r.ewallet_provider ? `${r.ewallet_provider} · ${r.ewallet_account}` : '—' }}</td>
                   <td class="muted small">{{ formatDate(r.created_at) }}</td>
                 </tr>
                 <tr v-if="!adminRedemptions.length">
-                  <td colspan="4" class="empty-cell">No redemptions yet</td>
+                  <td colspan="5" class="empty-cell">No redemptions yet</td>
                 </tr>
               </tbody>
             </table>
@@ -1188,6 +1199,8 @@ const detectionMaterials = computed(() => [
   { value: 'other',    label: t('admin.detectionReview.materials.other') },
 ])
 
+const cashRedeemSettings = ref({ points_per_unit: 100, rm_per_unit: 0.10, min_points: 500 })
+const savingCashRedeemSettings = ref(false)
 const rewardItems = ref([])
 const rewardItemsPage = ref(1)
 const rewardItemsPerPage = ref(20)
@@ -1672,6 +1685,26 @@ async function exportDetectionLogsCsv() {
     URL.revokeObjectURL(url)
   } catch {
     showToast(t('admin.detectionReview.exportFailed'), 'error')
+  }
+}
+
+async function fetchCashRedeemSettings() {
+  try {
+    const res = await api.get('/admin/cash-redeem-settings')
+    cashRedeemSettings.value = { ...cashRedeemSettings.value, ...res.data.settings }
+  } catch {}
+}
+
+async function saveCashRedeemSettings() {
+  savingCashRedeemSettings.value = true
+  try {
+    const res = await api.put('/admin/cash-redeem-settings', cashRedeemSettings.value)
+    cashRedeemSettings.value = res.data.settings
+    showToast('Cash redeem settings updated.')
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Failed to update cash redeem settings.', 'error')
+  } finally {
+    savingCashRedeemSettings.value = false
   }
 }
 
@@ -2347,6 +2380,7 @@ onMounted(async () => {
     fetchTabData('users', true),
     fetchTabData('sessions', true),
     fetchRewardConfig(),
+    fetchCashRedeemSettings(),
     fetchChartData(),
   ])
   refreshTimer = setInterval(() => {
