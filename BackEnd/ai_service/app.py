@@ -188,6 +188,7 @@ class _UsbCameraWrapper:
         # included) supports natively.
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        cap.set(cv2.CAP_PROP_FPS, 15)
         # Throwaway reads so AWB/AE settle - only paid once, the first time
         # the device is actually opened, not on every subsequent frame.
         for _ in range(5):
@@ -274,7 +275,7 @@ except Exception as e:
         # CAP_DSHOW is faster and more reliable to open on Windows; on
         # Linux/the Pi, passing it is a no-op since OpenCV there ignores an
         # unsupported backend flag and falls back to V4L2 automatically.
-        _cv2_backend = cv2.CAP_DSHOW if os.name == 'nt' else 0
+        _cv2_backend = cv2.CAP_DSHOW if os.name == 'nt' else cv2.CAP_V4L2
         print(f"Probing USB webcam at index {_usb_index}...")
         # Only probe here that the device actually opens, then release it
         # immediately - _UsbCameraWrapper opens the real handle lazily on
@@ -436,6 +437,7 @@ def _generate_mjpeg():
     _stream_generation += 1
     my_generation = _stream_generation
     while _stream_generation == my_generation:
+        frame_start = time.monotonic()
         with camera_lock:
             if not CAMERA_AVAILABLE:
                 break
@@ -448,7 +450,13 @@ def _generate_mjpeg():
         # light on limited hardware. A dev-laptop USB webcam has CPU to
         # spare, so give it a snappier ~15-20 fps instead of feeling
         # laggy compared to the Pi Cam.
-        time.sleep(0.05 if isinstance(camera, _UsbCameraWrapper) else 0.15)
+        target_interval = 1.0 / 15.0 if isinstance(camera, _UsbCameraWrapper) else 0.15
+
+        elapsed = time.monotonic() - frame_start
+        remaining = target_interval - elapsed
+
+        if remaining > 0:
+            time.sleep(remaining)
 
 
 @app.route('/stream')
