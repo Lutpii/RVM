@@ -14,6 +14,7 @@ use App\Models\QrSession;
 use App\Mail\BinCollectionRequested;
 use App\Mail\FormalReportGenerated;
 use App\Services\FormalReportService;
+use App\Services\CashRedeemSettingsService;
 use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -643,6 +644,25 @@ class AdminController extends Controller
         $this->log($request->user(), 'update_reward_config', 'system', 0, 'Updated reward points configuration');
 
         return response()->json(['success' => true, 'config' => $config]);
+    }
+
+    public function getCashRedeemSettings(CashRedeemSettingsService $settings): JsonResponse
+    {
+        return response()->json(['success' => true, 'settings' => $settings->load()]);
+    }
+
+    public function updateCashRedeemSettings(Request $request, CashRedeemSettingsService $settings): JsonResponse
+    {
+        $validated = $request->validate([
+            'points_per_unit' => 'required|integer|min:1|max:100000',
+            'rm_per_unit'     => 'required|numeric|min:0.01|max:100000',
+            'min_points'      => 'required|integer|min:1|max:1000000',
+        ]);
+
+        $settings->save($validated);
+        $this->log($request->user(), 'update_cash_redeem_settings', 'system', 0, 'Updated cash redeem settings');
+
+        return response()->json(['success' => true, 'settings' => $validated]);
     }
 
     public function rewardItems(Request $request): JsonResponse

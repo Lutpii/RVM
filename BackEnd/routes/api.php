@@ -115,6 +115,8 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
         Route::get('/logs', [AdminController::class, 'logs']);
         Route::get('/reward-config', [AdminController::class, 'getRewardConfig']);
         Route::put('/reward-config', [AdminController::class, 'updateRewardConfig']);
+        Route::get('/cash-redeem-settings', [AdminController::class, 'getCashRedeemSettings']);
+        Route::put('/cash-redeem-settings', [AdminController::class, 'updateCashRedeemSettings']);
         Route::get('/reward-items', [AdminController::class, 'rewardItems']);
         Route::post('/reward-items', [AdminController::class, 'createRewardItem']);
         Route::put('/reward-items/{id}', [AdminController::class, 'updateRewardItem']);
