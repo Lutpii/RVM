@@ -78,6 +78,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
     // used by UserSettingsView.vue's unrelated (currently dead) points→cash
     // redemption feature, which expects a plain array response.
     Route::get('/user/reward-redemptions', [RewardController::class, 'history']);
+    Route::get('/user/reward-rate', [RewardController::class, 'rate']);
 
     // Recycling Sessions
     Route::post('/sessions/start', [SessionController::class, 'start']);

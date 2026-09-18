@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PointsHistory;
 use App\Models\RewardItem;
 use App\Models\RewardRedemption;
+use App\Services\CashRedeemSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,16 @@ class RewardController extends Controller
             'valid_until'  => $item->valid_until,
             'is_available' => $item->isAvailable(),
         ])]);
+    }
+
+    public function rate(CashRedeemSettingsService $settings): JsonResponse
+    {
+        $s = $settings->load();
+        return response()->json([
+            'success'    => true,
+            'rate'       => ['points' => $s['points_per_unit'], 'rm' => $s['rm_per_unit']],
+            'min_points' => $s['min_points'],
+        ]);
     }
 
     public function redeem(Request $request, int $id): JsonResponse
