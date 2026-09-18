@@ -107,6 +107,23 @@ class RewardController extends Controller
         });
     }
 
+    public function cashHistory(Request $request): JsonResponse
+    {
+        $redemptions = RewardRedemption::where('user_id', $request->user()->id)
+            ->whereNull('reward_item_id')
+            ->whereNotNull('ewallet_provider')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json(['success' => true, 'redemptions' => $redemptions->map(fn (RewardRedemption $r) => [
+            'id'          => $r->id,
+            'points_used' => $r->points_spent,
+            'amount'      => $r->cash_amount_rm,
+            'status'      => 'completed',
+            'created_at'  => $r->created_at,
+        ])]);
+    }
+
     public function redeem(Request $request, int $id): JsonResponse
     {
         // A kiosk_token proves "this device is near a scanned session," not "this is

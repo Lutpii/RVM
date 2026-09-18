@@ -80,6 +80,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
     Route::get('/user/reward-redemptions', [RewardController::class, 'history']);
     Route::get('/user/reward-rate', [RewardController::class, 'rate']);
     Route::post('/user/redeem', [RewardController::class, 'redeemCash']);
+    Route::get('/user/redemptions', [RewardController::class, 'cashHistory']);
 
     // Recycling Sessions
     Route::post('/sessions/start', [SessionController::class, 'start']);

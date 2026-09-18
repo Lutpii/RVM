@@ -142,4 +142,29 @@ class CashRedeemTest extends TestCase
         $this->assertEquals(1000, $user->fresh()->total_points);
         $this->assertEquals(0, \App\Models\RewardRedemption::count());
     }
+
+    public function test_cash_redemption_history_returns_only_the_authenticated_users_cash_redemptions(): void
+    {
+        $user = $this->makeUser(['total_points' => 1000]);
+        $otherUser = $this->makeUser(['total_points' => 1000]);
+        Sanctum::actingAs($user, ['*']);
+
+        $this->postJson('/api/user/redeem', [
+            'points' => 500, 'ewallet_provider' => 'Boost', 'ewallet_account' => '0123456789',
+        ])->assertOk();
+
+        Sanctum::actingAs($otherUser, ['*']);
+        $this->postJson('/api/user/redeem', [
+            'points' => 500, 'ewallet_provider' => 'Boost', 'ewallet_account' => '0198765432',
+        ])->assertOk();
+
+        Sanctum::actingAs($user, ['*']);
+        $res = $this->getJson('/api/user/redemptions')->assertOk();
+        $redemptions = $res->json('redemptions');
+
+        $this->assertCount(1, $redemptions);
+        $this->assertEquals(500, $redemptions[0]['points_used']);
+        $this->assertEquals(0.5, $redemptions[0]['amount']);
+        $this->assertEquals('completed', $redemptions[0]['status']);
+    }
 }
