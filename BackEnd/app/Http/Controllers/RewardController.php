@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class RewardController extends Controller
 {
+    private const EWALLET_PROVIDERS = ["Touch 'n Go eWallet", 'GrabPay', 'Boost', 'ShopeePay'];
+
     public function index(): JsonResponse
     {
         $items = RewardItem::where('is_active', true)
@@ -43,6 +45,66 @@ class RewardController extends Controller
             'rate'       => ['points' => $s['points_per_unit'], 'rm' => $s['rm_per_unit']],
             'min_points' => $s['min_points'],
         ]);
+    }
+
+    public function redeemCash(Request $request, CashRedeemSettingsService $settings): JsonResponse
+    {
+        // Same reasoning as redeem() above: a kiosk_token proves device proximity,
+        // not the account holder's own intent to spend their points.
+        if ($request->attributes->get('via_kiosk_token')) {
+            return response()->json(['success' => false, 'message' => 'Redemption is only available from your own account, not a shared kiosk.'], 403);
+        }
+
+        $validated = $request->validate([
+            'points'           => 'required|integer|min:1',
+            'ewallet_provider' => 'required|string|in:' . implode(',', self::EWALLET_PROVIDERS),
+            'ewallet_account'  => 'required|string|max:50',
+        ]);
+
+        $s = $settings->load();
+        if ($validated['points'] < $s['min_points']) {
+            return response()->json(['success' => false, 'message' => "Minimum redeem is {$s['min_points']} points."], 422);
+        }
+        if ($validated['points'] % $s['points_per_unit'] !== 0) {
+            return response()->json(['success' => false, 'message' => "Points must be a multiple of {$s['points_per_unit']}."], 422);
+        }
+
+        return DB::transaction(function () use ($request, $validated, $s) {
+            $user = \App\Models\User::where('id', $request->user()->id)->lockForUpdate()->first();
+            if ($user->total_points < $validated['points']) {
+                return response()->json(['success' => false, 'message' => 'Insufficient points.'], 422);
+            }
+
+            $rm = round(($validated['points'] / $s['points_per_unit']) * $s['rm_per_unit'], 2);
+
+            $user->decrement('total_points', $validated['points']);
+
+            RewardRedemption::create([
+                'user_id'          => $user->id,
+                'reward_item_id'   => null,
+                'reward_name'      => 'Cash Redemption',
+                'points_spent'     => $validated['points'],
+                'cash_amount_rm'   => $rm,
+                'ewallet_provider' => $validated['ewallet_provider'],
+                'ewallet_account'  => $validated['ewallet_account'],
+            ]);
+
+            PointsHistory::create([
+                'user_id'       => $user->id,
+                'points_change' => -$validated['points'],
+                'balance_after' => $user->total_points,
+                'type'          => 'redeemed',
+                'description'   => "Redeemed: RM {$rm} to {$validated['ewallet_provider']}",
+            ]);
+
+            return response()->json([
+                'success'          => true,
+                'total_points'     => $user->total_points,
+                'cash_amount_rm'   => $rm,
+                'ewallet_provider' => $validated['ewallet_provider'],
+                'message'          => "Sent to your {$validated['ewallet_provider']} account.",
+            ]);
+        });
     }
 
     public function redeem(Request $request, int $id): JsonResponse
