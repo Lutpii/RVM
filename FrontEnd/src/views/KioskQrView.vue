@@ -683,4 +683,56 @@ onBeforeUnmount(() => {
   .success-ring { width: 80px; height: 80px; }
   .success-icon { width: 36px; height: 36px; }
 }
+
+/* Portrait kiosk panel (confirmed on the physical kiosk: 1080x1920, a
+   9:16 monitor rotated at the display-server level - see
+   KioskLandingView.vue's matching comment for why `orientation: portrait`
+   safely means this panel here, not a phone). The base rule's
+   justify-content:space-between (comment above explains why it exists)
+   pushes .qr-content toward the top with a growing gap before the
+   footer - on a 1920px-tall screen that reads as "content stuck near
+   the header", not centered. Overridden here to justify-content:center
+   with the footer pulled out of flow (position:absolute, matching
+   KioskLandingView's own footer), so .qr-content sits truly centered
+   for the same "content di tengah, jelas kebaca" reason the min-width
+   guard matches KioskLandingView's. Sizes below are scaled up from the
+   base rule (not the compact one) to fill the extra width instead of
+   leaving large empty margins beside a QR code sized for a desktop
+   monitor. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .kiosk-qr { justify-content: center; gap: 48px; }
+  .kiosk-footer {
+    position: absolute;
+    bottom: max(32px, env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+  }
+
+  .qr-content { max-width: 640px; gap: 24px; padding: 20px 40px; }
+  .qr-title { font-size: 44px; }
+  .qr-sub { font-size: 20px; }
+
+  .qr-box { width: 420px; height: 420px; }
+  .qr-image { width: 370px; height: 370px; }
+  .qr-url { font-size: 16px; max-width: 400px; }
+
+  .qr-steps { max-width: 420px; gap: 14px; }
+  .step { font-size: 18px; gap: 14px; }
+  .step-num { width: 30px; height: 30px; font-size: 15px; }
+
+  .timer-bar { width: 340px; height: 5px; }
+  .timer-text { font-size: 14px; }
+
+  .guest-divider { width: 340px; }
+  .guest-btn { width: 340px; padding: 18px 24px; font-size: 17px; }
+  .guest-btn-icon { width: 26px; height: 26px; }
+  .guest-btn-note { font-size: 12px; }
+
+  .scanned-content { padding-top: 0; }
+  .success-ring { width: 160px; height: 160px; }
+  .success-icon { width: 70px; height: 70px; }
+  .expired-icon { font-size: 84px; }
+
+  .brand-logo { --brand-logo-height: 64px; }
+}
 </style>

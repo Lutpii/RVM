@@ -222,6 +222,27 @@ function goToQr() {
   .kiosk-footer { bottom: max(10px, env(safe-area-inset-bottom)); gap: 3px; font-size: 11px; }
 }
 
+/* Portrait kiosk panel (confirmed on the physical kiosk: 1080x1920, a
+   9:16 monitor rotated at the display-server level, not something this
+   CSS needs to rotate itself) - height-based `max-height` above never
+   fires here (1920 is tall, not short), so without this the "base" rule
+   set above would apply, leaving ~280px of unused margin on each side
+   of a 96px logo/52px title sized for a landscape desktop monitor. This
+   view is kiosk-only (never opened on a phone - see router.js), so
+   `orientation: portrait` unambiguously means this panel, not a phone
+   in portrait. .kiosk-content stays centered via .kiosk-landing's own
+   align-items/justify-content:center (unchanged) - only sizes grow here. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .kiosk-content { gap: 32px; padding: 60px; }
+  .rvm-logo { font-size: 140px; }
+  .rvm-title { font-size: 72px; }
+  .rvm-subtitle { font-size: 30px; }
+  .machine-badge { padding: 12px 28px; font-size: 20px; }
+  .start-btn { margin-top: 28px; padding: 30px 80px; font-size: 34px; gap: 18px; }
+  .start-icon { font-size: 30px; }
+  .brand-logo { --brand-logo-height: 64px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rvm-logo-float,
   .rvm-logo { animation: none; }
