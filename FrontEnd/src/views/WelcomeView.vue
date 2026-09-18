@@ -110,6 +110,22 @@ onMounted(() => {
   }
 }
 
+/* Portrait kiosk panel (1080x1920, rotated at the display-server level —
+   see KioskLandingView.vue's matching comment for why `orientation:
+   portrait` + this min-width guard safely means the kiosk panel here,
+   not a phone: this view is ALSO reached from a real phone login, unlike
+   the kiosk-exclusive views, so the guard matters more here). Content is
+   already centered via .welcome-splash's align-items/justify-content —
+   only sizes grow. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .welcome-content { max-width: 780px; gap: 24px; padding: 20px 60px; }
+  .welcome-icon { font-size: 110px; }
+  .welcome-title { font-size: 48px; }
+  .welcome-sub { font-size: 20px; }
+  .progress-bar { width: 320px; height: 5px; margin-top: 16px; }
+  .brand-logo { --brand-logo-height: 56px; }
+}
+
 .welcome-icon-float {
   /* Bounded, not infinite — this screen auto-redirects after 3s (see
      onMounted below), so 2 cycles (8s) is a safety ceiling in case that

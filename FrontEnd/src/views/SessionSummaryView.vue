@@ -617,4 +617,49 @@ onMounted(async () => {
 
   .rvm-footer { padding: 8px 16px; font-size: 12px; }
 }
+
+/* Portrait kiosk panel — see RvmSessionView.vue's matching comment (this
+   view shares the same phone+kiosk split, guard, and "center vertically
+   too" fix). .summary-body already centers horizontally
+   (align-items:center) but not vertically — justify-content:center added
+   here so the whole summary block sits mid-screen instead of pinned to
+   the top with empty space below on a 1920px-tall panel. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .summary-header { padding: 32px 32px 24px; }
+  .summary-header h1 { font-size: 28px; }
+  .summary-header p { font-size: 17px; margin-bottom: 18px; }
+  .badge { padding: 14px 20px; }
+  .badge-label { font-size: 14px; }
+  .badge-value { font-size: 24px; }
+
+  .summary-body {
+    justify-content: center;
+    padding: 32px 40px;
+  }
+
+  .trophy-wrap { width: 140px; height: 140px; margin-bottom: 24px; }
+  .trophy { font-size: 90px; }
+  .summary-title { font-size: 32px; margin-bottom: 28px; }
+
+  .donation-banner, .summary-card, .transactions-wrap, .end-btn { max-width: 560px; }
+  .donation-banner { padding: 20px 26px; gap: 18px; }
+  .donation-icon { width: 44px; height: 44px; }
+  .donation-text strong { font-size: 20px; }
+  .donation-text span { font-size: 16px; }
+
+  .summary-row { padding: 16px 24px; }
+  .row-label { font-size: 17px; }
+  .row-value { font-size: 17px; }
+  .row-value.earned { font-size: 26px; }
+
+  .breakdown-title { font-size: 17px; }
+  .txn-row { padding: 14px 18px; }
+  .txn-icon { width: 26px; height: 26px; }
+  .txn-mat { font-size: 16px; }
+  .txn-pts { font-size: 17px; }
+
+  .end-btn { padding: 20px; font-size: 20px; }
+
+  .rvm-footer { padding: 18px 32px; font-size: 16px; }
+}
 </style>

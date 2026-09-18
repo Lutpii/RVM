@@ -1286,4 +1286,63 @@ onMounted(() => {
 
   .rvm-footer { padding: 8px 16px; font-size: 12px; }
 }
+
+/* Portrait kiosk panel (1080x1920, rotated at the display-server level —
+   see KioskLandingView.vue's matching comment). Guarded to min-width:
+   700px because this view is ALSO reached from a real phone (the
+   /sessions/:sessionCode route, not just /kiosk/:machineCode/session) —
+   unlike the kiosk-exclusive views, this one must not change on a phone.
+   .rvm-body gets its own centering here (base rule has none — content
+   just sits at the top of the flex:1 body with a big empty gap below on
+   a screen this tall) so each step is centered top-to-bottom, not only
+   left-to-right, matching the same "content di tengah" fix already
+   applied to KioskQrView. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .rvm-header { padding: 32px 32px 24px; }
+  .rvm-title { font-size: 30px; margin-bottom: 8px; }
+  .welcome-text { font-size: 17px; margin-bottom: 18px; }
+  .badge { padding: 14px 20px; }
+  .badge-label { font-size: 14px; }
+  .badge-value { font-size: 26px; }
+
+  .rvm-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 32px 40px;
+  }
+  .step-content { min-height: 0; }
+
+  .step-status { font-size: 28px; }
+  .step-sub { font-size: 18px; }
+
+  .camera-container { max-width: 560px; }
+  .camera-countdown { font-size: 76px; }
+  .conveyor-wrap { max-width: 480px; }
+  .conveyor-track { height: 96px; }
+  .conveyor-item, .conveyor-item-icon { width: 38px; height: 38px; }
+  .lid-box { width: 140px; height: 140px; }
+  .box-3d { width: 88px; height: 88px; }
+  .spinner-lg { width: 84px; height: 84px; }
+  .ai-ring { width: 96px; height: 96px; }
+  .result-icon { width: 110px; height: 110px; }
+  .result-icon svg { width: 50px; height: 50px; }
+  .points-icon { width: 84px; height: 84px; }
+  .points-value { font-size: 56px; }
+  .points-preview { font-size: 20px; }
+  .return-anim { width: 140px; height: 126px; }
+  .return-item { width: 56px; height: 56px; }
+  .return-slot { width: 98px; height: 11px; }
+
+  .result-box { padding: 22px 32px; min-width: 340px; }
+  .result-box p { font-size: 18px; }
+  .earned-text { font-size: 20px !important; }
+  .carbon-text { font-size: 18px !important; }
+  .bbox-preview { max-width: 480px; }
+
+  .simulate-btn, .end-btn, .recycle-btn { padding: 18px 36px; font-size: 18px; }
+  .action-buttons { gap: 18px; margin-top: 24px; }
+
+  .rvm-footer { padding: 18px 32px; font-size: 16px; }
+}
 </style>
