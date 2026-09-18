@@ -110,22 +110,6 @@ onMounted(() => {
   }
 }
 
-/* Portrait kiosk panel (1080x1920, rotated at the display-server level —
-   see KioskLandingView.vue's matching comment for why `orientation:
-   portrait` + this min-width guard safely means the kiosk panel here,
-   not a phone: this view is ALSO reached from a real phone login, unlike
-   the kiosk-exclusive views, so the guard matters more here). Content is
-   already centered via .welcome-splash's align-items/justify-content —
-   only sizes grow. */
-@media (orientation: portrait) and (min-width: 700px) {
-  .welcome-content { max-width: 780px; gap: 24px; padding: 20px 60px; }
-  .welcome-icon { font-size: 110px; }
-  .welcome-title { font-size: 48px; }
-  .welcome-sub { font-size: 20px; }
-  .progress-bar { width: 320px; height: 5px; margin-top: 16px; }
-  .brand-logo { --brand-logo-height: 56px; }
-}
-
 .welcome-icon-float {
   /* Bounded, not infinite — this screen auto-redirects after 3s (see
      onMounted below), so 2 cycles (8s) is a safety ceiling in case that
@@ -186,5 +170,27 @@ onMounted(() => {
 
 @keyframes fillProgress {
   to { transform: scaleX(1); }
+}
+
+/* Portrait kiosk panel (1080x1920, rotated at the display-server level —
+   see KioskLandingView.vue's matching comment for why `orientation:
+   portrait` + this min-width guard safely means the kiosk panel here,
+   not a phone: this view is ALSO reached from a real phone login, unlike
+   the kiosk-exclusive views, so the guard matters more here). Content is
+   already centered via .welcome-splash's align-items/justify-content —
+   only sizes grow. Sizes matched 1:1 to KioskLandingView.vue's own
+   portrait rule (icon/title/subtitle/brand-logo) so the splash screens
+   either side of it don't read as a different, smaller-text kiosk.
+   Placed at the END of this style block (not right after the max-width
+   breakpoint above) - it must come after the base .welcome-icon/
+   .welcome-title/.welcome-sub/.progress-bar rules below to actually win
+   the cascade; same specificity, so source order decides. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .welcome-content { max-width: 900px; gap: 24px; padding: 20px 60px; }
+  .welcome-icon { font-size: 140px; }
+  .welcome-title { font-size: 72px; }
+  .welcome-sub { font-size: 30px; }
+  .progress-bar { width: 320px; height: 5px; margin-top: 16px; }
+  .brand-logo { --brand-logo-height: 64px; }
 }
 </style>

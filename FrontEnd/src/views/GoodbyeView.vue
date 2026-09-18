@@ -115,19 +115,6 @@ onMounted(() => {
   }
 }
 
-/* Portrait kiosk panel — see WelcomeView.vue's matching comment (this view
-   is its mirror image, reached both from the kiosk and from a real phone
-   logout). Content is already centered via .welcome-splash's own
-   align-items/justify-content — only sizes grow. */
-@media (orientation: portrait) and (min-width: 700px) {
-  .welcome-content { max-width: 780px; gap: 24px; padding: 20px 60px; }
-  .welcome-icon { font-size: 110px; }
-  .welcome-title { font-size: 48px; }
-  .welcome-sub { font-size: 20px; }
-  .progress-bar { width: 320px; height: 5px; margin-top: 16px; }
-  .brand-logo { --brand-logo-height: 56px; }
-}
-
 .welcome-icon-float {
   /* Bounded, not infinite — see WelcomeView.vue for the same reasoning. */
   animation: float 4s cubic-bezier(0.45, 0, 0.55, 1) 2;
@@ -186,5 +173,22 @@ onMounted(() => {
 
 @keyframes fillProgress {
   to { transform: scaleX(1); }
+}
+
+/* Portrait kiosk panel — see WelcomeView.vue's matching comment (this view
+   is its mirror image, reached both from the kiosk and from a real phone
+   logout). Content is already centered via .welcome-splash's own
+   align-items/justify-content — only sizes grow. Sizes matched 1:1 to
+   KioskLandingView.vue's portrait rule, same reasoning as WelcomeView.
+   Placed at the END of this style block, same cascade-ordering reason
+   documented in WelcomeView.vue - it must come after the base rules
+   below to actually win. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .welcome-content { max-width: 900px; gap: 24px; padding: 20px 60px; }
+  .welcome-icon { font-size: 140px; }
+  .welcome-title { font-size: 72px; }
+  .welcome-sub { font-size: 30px; }
+  .progress-bar { width: 320px; height: 5px; margin-top: 16px; }
+  .brand-logo { --brand-logo-height: 64px; }
 }
 </style>

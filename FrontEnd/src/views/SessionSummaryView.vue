@@ -81,20 +81,22 @@
       <!-- Transactions breakdown -->
       <div v-if="summary?.transactions?.length" class="transactions-wrap">
         <h3 class="breakdown-title">{{ $t('summary.itemsRecycled') }}</h3>
-        <div v-for="(t, i) in summary.transactions" :key="i" class="txn-row">
-          <svg v-if="materialIconSvg(t.material)" class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(t.material)"></svg>
-          <svg v-else class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
-            <path d="M3 21v-5h5"/>
-          </svg>
-          <div class="txn-info">
-            <span class="txn-mat">{{ t.material }}</span>
+        <div class="txn-list">
+          <div v-for="(t, i) in summary.transactions" :key="i" class="txn-row">
+            <svg v-if="materialIconSvg(t.material)" class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(t.material)"></svg>
+            <svg v-else class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+              <path d="M3 21v-5h5"/>
+            </svg>
+            <div class="txn-info">
+              <span class="txn-mat">{{ t.material }}</span>
+            </div>
+            <span :class="['txn-pts', transactionPointsClass(t)]">
+              {{ transactionPointsLabel(t) }}
+            </span>
           </div>
-          <span :class="['txn-pts', transactionPointsClass(t)]">
-            {{ transactionPointsLabel(t) }}
-          </span>
         </div>
       </div>
 
@@ -504,6 +506,17 @@ onMounted(async () => {
   margin-bottom: 10px;
 }
 
+/* Caps the list instead of letting it push .end-btn further down the page
+   with every extra item - scrolls internally past ~4 rows so the rest of
+   the summary (and the button) stays put regardless of how many items
+   were recycled this session. */
+.txn-list {
+  max-height: 216px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
 .txn-row {
   display: flex;
   align-items: center;
@@ -653,6 +666,7 @@ onMounted(async () => {
   .row-value.earned { font-size: 26px; }
 
   .breakdown-title { font-size: 17px; }
+  .txn-list { max-height: 340px; }
   .txn-row { padding: 14px 18px; }
   .txn-icon { width: 26px; height: 26px; }
   .txn-mat { font-size: 16px; }
