@@ -193,15 +193,38 @@
             <span class="preview-lbl">{{ $t('settings.cash') }}</span>
           </div>
         </div>
-        <div v-if="redeemMsg" :class="['msg', redeemSuccess ? 'msg-ok' : 'msg-err']">
-          <PhCheckCircle v-if="redeemSuccess" class="msg-icon" weight="regular" aria-hidden="true" />
-          {{ redeemMsg }}
-        </div>
         <button class="save-btn full-btn redeem-btn"
-          @click="redeemNow"
+          @click="openEwalletModal"
           :disabled="redeemPoints < minRedeem || redeeming || redeemPoints > (auth.user?.total_points || 0)">
-          {{ redeeming ? $t('settings.processing') : $t('settings.redeemBtn') }}
+          {{ $t('settings.redeemBtn') }}
         </button>
+      </div>
+
+      <div v-if="showEwalletModal" class="modal-overlay" @click.self="closeEwalletModal">
+        <div class="modal">
+          <button class="modal-close-btn" @click="closeEwalletModal" :disabled="redeeming" :aria-label="$t('settings.cancel')">
+            <PhX weight="bold" aria-hidden="true" />
+          </button>
+          <h3>{{ $t('settings.ewalletModalTitle') }}</h3>
+          <div class="form-group">
+            <label class="form-label">{{ $t('settings.ewalletProviderLabel') }}</label>
+            <select v-model="ewalletProvider" class="form-input">
+              <option value="" disabled>{{ $t('settings.ewalletProviderPlaceholder') }}</option>
+              <option v-for="p in ewalletProviders" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ $t('settings.ewalletAccountLabel') }}</label>
+            <input v-model="ewalletAccount" type="text" class="form-input" :placeholder="$t('settings.ewalletAccountPlaceholder')" />
+          </div>
+          <div v-if="redeemMsg" class="msg msg-err">{{ redeemMsg }}</div>
+          <div class="confirm-btns">
+            <button class="cancel-btn-lg" @click="closeEwalletModal" :disabled="redeeming">{{ $t('settings.cancel') }}</button>
+            <button class="ewallet-confirm-btn" @click="redeemNow" :disabled="redeeming || !ewalletProvider || !ewalletAccount">
+              {{ redeeming ? $t('settings.processing') : $t('settings.redeemBtn') }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="section-pad">
@@ -347,7 +370,7 @@ import api from '@/services/api'
 import {
   PhUser, PhGift, PhPalette, PhLock,
   PhGear, PhRecycle, PhArrowsLeftRight, PhCoins,
-  PhSun, PhMoon, PhCheckCircle, PhX,
+  PhSun, PhMoon, PhX,
 } from '@phosphor-icons/vue'
 
 const router      = useRouter()
@@ -466,37 +489,55 @@ async function changePassword() {
 
 // ── Rewards ───────────────────────────────────────────────────────────────────
 const conversionRate    = ref({ points: 100, rm: 0.10 })
-const minRedeem         = 500
+const minRedeem         = ref(500)
 const redeemPoints      = ref(500)
 const redeeming         = ref(false)
 const redeemMsg         = ref('')
-const redeemSuccess     = ref(false)
 const redemptionHistory = ref([])
 const loadingHistory    = ref(true)
+const showEwalletModal  = ref(false)
+const ewalletProvider   = ref('')
+const ewalletAccount    = ref('')
+const ewalletProviders  = ["Touch 'n Go eWallet", 'GrabPay', 'Boost', 'ShopeePay']
 
 function pointsToMoney(pts) {
   const rate = conversionRate.value
   return ((pts / rate.points) * rate.rm).toFixed(2)
 }
 
+function openEwalletModal() {
+  ewalletProvider.value = ''
+  ewalletAccount.value = ''
+  redeemMsg.value = ''
+  showEwalletModal.value = true
+}
+
+function closeEwalletModal() {
+  if (redeeming.value) return
+  showEwalletModal.value = false
+}
+
 async function redeemNow() {
   redeemMsg.value = ''
-  if (redeemPoints.value < minRedeem || redeemPoints.value > (auth.user?.total_points || 0)) return
+  if (!ewalletProvider.value || !ewalletAccount.value) return
+  if (redeemPoints.value < minRedeem.value || redeemPoints.value > (auth.user?.total_points || 0)) return
   redeeming.value = true
   try {
-    const res = await api.post('/user/redeem', { points: redeemPoints.value })
+    const res = await api.post('/user/redeem', {
+      points: redeemPoints.value,
+      ewallet_provider: ewalletProvider.value,
+      ewallet_account: ewalletAccount.value,
+    })
     if (res.data.success) {
-      redeemSuccess.value = true
-      redeemMsg.value = `RM ${pointsToMoney(redeemPoints.value)} ${t('settings.redeemOk')}`
       auth.updatePoints((auth.user?.total_points || 0) - redeemPoints.value)
-      redeemPoints.value = minRedeem
+      showToast?.(res.data.message || t('settings.redeemOk'))
+      showEwalletModal.value = false
+      redeemPoints.value = minRedeem.value
       await loadRedemptionHistory()
     } else {
-      redeemSuccess.value = false
       redeemMsg.value = res.data.message || t('settings.redeemFail')
     }
   } catch (e) {
-    redeemSuccess.value = false
     redeemMsg.value = e.response?.data?.message || t('settings.redeemFail')
   } finally {
     redeeming.value = false
@@ -580,7 +621,8 @@ onMounted(async () => {
   try {
     const res = await api.get('/user/reward-rate')
     if (res.data?.rate) conversionRate.value = res.data.rate
-  } catch { /* use default */ }
+    if (res.data?.min_points) minRedeem.value = res.data.min_points
+  } catch { /* use defaults */ }
 
   await loadRedemptionHistory()
 })
@@ -810,6 +852,13 @@ onMounted(async () => {
   color: white; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .delete-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ewallet-confirm-btn {
+  flex: 1; padding: 10px; border-radius: 8px;
+  background: var(--accent-green); border: none;
+  color: white; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.ewallet-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Activity ── */
 .section-pad { padding: 4px 0; }
