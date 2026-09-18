@@ -529,7 +529,7 @@ async function redeemNow() {
       ewallet_account: ewalletAccount.value,
     })
     if (res.data.success) {
-      auth.updatePoints((auth.user?.total_points || 0) - redeemPoints.value)
+      auth.updatePoints(res.data.total_points)
       showToast?.(res.data.message || t('settings.redeemOk'))
       showEwalletModal.value = false
       redeemPoints.value = minRedeem.value
@@ -622,6 +622,7 @@ onMounted(async () => {
     const res = await api.get('/user/reward-rate')
     if (res.data?.rate) conversionRate.value = res.data.rate
     if (res.data?.min_points) minRedeem.value = res.data.min_points
+    if (redeemPoints.value < minRedeem.value) redeemPoints.value = minRedeem.value
   } catch { /* use defaults */ }
 
   await loadRedemptionHistory()

@@ -167,4 +167,26 @@ class CashRedeemTest extends TestCase
         $this->assertEquals(0.5, $redemptions[0]['amount']);
         $this->assertEquals('completed', $redemptions[0]['status']);
     }
+
+    public function test_admin_configured_settings_are_reflected_in_rate_and_redeem(): void
+    {
+        app(CashRedeemSettingsService::class)->save([
+            'points_per_unit' => 200, 'rm_per_unit' => 0.25, 'min_points' => 1000,
+        ]);
+
+        $user = $this->makeUser(['total_points' => 5000]);
+        Sanctum::actingAs($user, ['*']);
+
+        $this->getJson('/api/user/reward-rate')
+            ->assertOk()
+            ->assertJson(['success' => true, 'rate' => ['points' => 200, 'rm' => 0.25], 'min_points' => 1000]);
+
+        $this->postJson('/api/user/redeem', [
+            'points' => 1000, 'ewallet_provider' => 'GrabPay', 'ewallet_account' => '0123456789',
+        ])->assertOk()->assertJsonPath('cash_amount_rm', 1.25);
+
+        $this->postJson('/api/user/redeem', [
+            'points' => 500, 'ewallet_provider' => 'GrabPay', 'ewallet_account' => '0123456789',
+        ])->assertStatus(422);
+    }
 }

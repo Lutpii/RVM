@@ -94,7 +94,7 @@ class RewardController extends Controller
                 'points_change' => -$validated['points'],
                 'balance_after' => $user->total_points,
                 'type'          => 'redeemed',
-                'description'   => "Redeemed: RM {$rm} to {$validated['ewallet_provider']}",
+                'description'   => 'Redeemed: RM ' . number_format($rm, 2) . " to {$validated['ewallet_provider']}",
             ]);
 
             return response()->json([
@@ -102,7 +102,7 @@ class RewardController extends Controller
                 'total_points'     => $user->total_points,
                 'cash_amount_rm'   => $rm,
                 'ewallet_provider' => $validated['ewallet_provider'],
-                'message'          => "Sent to your {$validated['ewallet_provider']} account.",
+                'message'          => 'RM ' . number_format($rm, 2) . " sent to your {$validated['ewallet_provider']} account.",
             ]);
         });
     }
