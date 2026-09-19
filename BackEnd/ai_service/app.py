@@ -173,6 +173,10 @@ class _UsbCameraWrapper:
         self._index = index
         self._backend = backend
         self._cap = None
+        # USB_CAMERA_ROTATE=180 in .env for a webcam mounted upside-down;
+        # applied here so the preview stream and the frame YOLO classifies
+        # are always the same orientation.
+        self._rotate_180 = os.environ.get('USB_CAMERA_ROTATE', '0').strip() == '180'
 
     def _ensure_open(self):
         if self._cap is not None:
@@ -211,6 +215,8 @@ class _UsbCameraWrapper:
             ok, frame = self._cap.read()
             if not ok:
                 raise RuntimeError('Failed to read a frame from the USB webcam.')
+        if self._rotate_180:
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
         return frame[:, :, ::-1]  # OpenCV gives BGR -> flip to RGB
 
     def release(self):
