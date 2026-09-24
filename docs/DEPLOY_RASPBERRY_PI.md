@@ -161,15 +161,72 @@ Hasil build ada di `FrontEnd/dist/` — tidak perlu ubah apa pun di kode-nya, `a
 
 ## 7. Nginx + HTTPS
 
-Generate sertifikat self-signed (untuk kiosk LAN internal — lihat catatan upgrade ke cert asli di langkah 10):
+Untuk jaringan lokal tanpa internet, pakai **CA lokal sendiri** (bukan sertifikat self-signed polos). Sertifikat self-signed polos tanpa SAN ditolak browser modern dan memunculkan "Advanced → Proceed" di kiosk maupun HP. Dengan CA lokal, cukup pasang `ca.crt` sekali di tiap perangkat dan peringatannya hilang tanpa mematikan validasi TLS. (Kalau nanti butuh akses dari luar jaringan, lihat langkah 10.)
+
+Buat CA dan sertifikat server **di laptop** (bukan di Pi), supaya `ca.key` tidak ikut tersimpan di kiosk. Ganti `192.168.137.100` dengan IP statis Pi:
 ```bash
-sudo mkdir -p /etc/ssl/rvm
-sudo openssl req -x509 -nodes -days 3650 \
-  -newkey rsa:2048 \
-  -keyout /etc/ssl/rvm/rvm-selfsigned.key \
-  -out /etc/ssl/rvm/rvm-selfsigned.crt \
-  -subj "/CN=rvm-kiosk"
+mkdir rvm-local-ca && cd rvm-local-ca
+
+cat > ca.cnf <<'EOF'
+[req]
+distinguished_name = dn
+x509_extensions = v3_ca
+prompt = no
+[dn]
+CN = RVM Local CA
+O = RVM
+[v3_ca]
+basicConstraints = critical,CA:true,pathlen:0
+keyUsage = critical,keyCertSign,cRLSign
+subjectKeyIdentifier = hash
+EOF
+
+cat > server.cnf <<'EOF'
+[req]
+distinguished_name = dn
+prompt = no
+[dn]
+CN = rvm-kiosk
+O = RVM
+[v3_server]
+basicConstraints = critical,CA:false
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt
+authorityKeyIdentifier = keyid
+[alt]
+IP.1 = 192.168.137.100
+IP.2 = 127.0.0.1
+DNS.1 = localhost
+EOF
+
+openssl req -x509 -newkey rsa:3072 -nodes -keyout ca.key -out ca.crt -days 3650 -config ca.cnf
+openssl req -newkey rsa:2048 -nodes -keyout server.key -out server.csr -config server.cnf
+# 800 hari: batas iOS untuk sertifikat dari CA yang dipasang manual adalah 825 hari
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out server.crt -days 800 -sha256 -extfile server.cnf -extensions v3_server
 ```
+Simpan `ca.key` di laptop dan jangan di-commit ke git. Alamat yang dipakai untuk membuka RVM harus salah satu SAN di atas (`https://192.168.137.100`), kalau tidak peringatan muncul lagi. Sertifikat server berlaku 800 hari, buat ulang sebelum kedaluwarsa.
+
+Kirim ke Pi dan pasang di nginx (nama file dipertahankan supaya `nginx-rvm.conf` tidak perlu diubah):
+```bash
+scp ca.crt server.crt server.key adi@<ip-pi>:~/
+# lalu di Pi:
+sudo mkdir -p /etc/ssl/rvm
+sudo cp ~/server.crt /etc/ssl/rvm/rvm-selfsigned.crt
+sudo cp ~/server.key /etc/ssl/rvm/rvm-selfsigned.key
+sudo chmod 644 /etc/ssl/rvm/rvm-selfsigned.crt && sudo chmod 600 /etc/ssl/rvm/rvm-selfsigned.key
+shred -u ~/server.key
+```
+
+Percayai CA itu di Chromium kiosk Pi (Chromium memakai database NSS milik user, bukan trust store sistem):
+```bash
+sudo apt install -y libnss3-tools
+mkdir -p ~/.pki/nssdb
+[ -f ~/.pki/nssdb/cert9.db ] || certutil -d sql:$HOME/.pki/nssdb -N --empty-password
+certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "RVM Local CA" -i ~/ca.crt
+```
+Kalau tidak ada internet saat langkah ini, `libnss3-tools` harus sudah terpasang sebelumnya.
 
 Pasang site config:
 ```bash
@@ -186,9 +243,12 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ```bash
 mkdir -p ~/.config/autostart
+chmod +x ~/RVM/deploy/rvm-kiosk-launch.sh
 cp ~/RVM/deploy/rvm-kiosk-autostart.desktop ~/.config/autostart/
 ```
-Ganti `RVM-001` di file itu dengan `machine_code` mesin fisik ini kalau berbeda. Kalau di Step 1 ternyata binary-nya `chromium` bukan `chromium-browser`, edit juga baris `Exec=` di file itu.
+Entry autostart hanya memanggil `deploy/rvm-kiosk-launch.sh`; flag Chromium-nya ada di skrip itu. Skrip menunggu web lokal menjawab, lalu menjalankan Chromium `--kiosk` dengan `--password-store=basic`. Flag itu wajib: tanpanya gnome-keyring memunculkan dialog "Choose password for new keyring" saat boot pertama dan layar kiosk jadi blank. Log peluncuran ada di `~/kiosk-boot.log` — baca file itu kalau kiosk blank setelah reboot.
+
+Ganti `RVM-001` di `deploy/rvm-kiosk-launch.sh` dengan `machine_code` mesin fisik ini kalau berbeda. Kalau di Step 1 ternyata binary-nya `chromium` bukan `chromium-browser`, edit juga baris `exec chromium` di skrip itu. Ganti path di baris `Exec=` file `.desktop` kalau project-nya tidak ada di `/home/adi/RVM`.
 
 Matikan screen blanking supaya layar kiosk tidak tidur. Raspberry Pi OS sejak Bookworm/trixie pakai **Wayland** (bukan X11/LXDE lagi), jadi `xset` tidak berlaku — pakai `raspi-config`:
 ```bash
@@ -207,7 +267,7 @@ cp ~/RVM/deploy/rvm-kiosk-control-autostart.desktop ~/.config/autostart/
 ```
 Ganti path di baris `Exec=` file itu kalau project-nya gak ada di `/home/adi/RVM`. Servis ini cuma bind ke `127.0.0.1:8765` (gak pernah lewat Nginx) dan jalan sebagai user yang sama dengan Chromium, jadi bisa `pkill` tanpa sudo — satu-satunya yang manggil dia adalah Laravel backend di Pi yang sama.
 
-Setelah maintenance selesai, tinggal `sudo reboot` atau relaunch manual: `chromium --kiosk --window-size=1024,600 --window-position=0,0 --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble https://localhost/#/kiosk/RVM-001 &`
+Setelah maintenance selesai, tinggal `sudo reboot` atau relaunch manual: `~/RVM/deploy/rvm-kiosk-launch.sh &`
 
 ---
 
@@ -223,7 +283,7 @@ systemctl status nginx mariadb php8.4-fpm pigpiod rvm-ai
 ```
 Semua harus `active (running)`.
 
-Dari HP di jaringan yang sama, buka `https://<ip-pi>` (klik "Advanced → Proceed" untuk sertifikat self-signed), lalu jalankan alur penuh: scan QR di layar kiosk → login → mulai sesi → capture → classify → complete — dan pastikan **servo benar-benar bergerak** menyortir item ke bin yang sesuai.
+Kiosk harus langsung menampilkan halaman RVM tanpa "Advanced → Proceed" dan tanpa dialog keyring (beri waktu sekitar satu menit setelah boot). Dari HP di jaringan yang sama, pasang `ca.crt` (Android: Settings → Security → Install a certificate → CA certificate; iPhone: buka file, pasang profil, lalu aktifkan di Settings → General → About → Certificate Trust Settings), buka `https://<ip-pi>`, lalu jalankan alur penuh: scan QR di layar kiosk → login → mulai sesi → capture → classify → complete — dan pastikan **servo benar-benar bergerak** menyortir item ke bin yang sesuai.
 
 ---
 

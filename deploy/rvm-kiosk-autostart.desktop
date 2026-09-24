@@ -2,22 +2,23 @@
 Type=Application
 Name=RVM Kiosk
 Comment=Auto-launch the RVM kiosk display in fullscreen Chromium on boot
-Exec=chromium --kiosk --window-size=1024,600 --window-position=0,0 --noerrdialogs --disable-infobars --incognito --disable-session-crashed-bubble --check-for-update-interval=31536000 https://localhost/#/kiosk/RVM-001
+Exec=/home/adi/RVM/deploy/rvm-kiosk-launch.sh
 X-GNOME-Autostart-enabled=true
 
 # Install (run as the desktop user that auto-logs-in on boot):
 #   mkdir -p ~/.config/autostart
 #   cp deploy/rvm-kiosk-autostart.desktop ~/.config/autostart/
+#   chmod +x deploy/rvm-kiosk-launch.sh
 #
-# --window-size=1024,600 matches a common small kiosk touchscreen — if your
-# display's native resolution is already exactly that, --kiosk alone would
-# fill it anyway; the explicit size mainly matters if the reported/virtual
-# resolution differs, or when testing on a bigger monitor. Adjust the numbers
-# to your actual screen, or drop both --window-* flags to just fill whatever
-# the display reports natively.
+# The Chromium flags live in deploy/rvm-kiosk-launch.sh, not here: the launcher
+# waits for the local web app, then starts Chromium with --kiosk and
+# --password-store=basic (without it gnome-keyring pops up "Choose password for
+# new keyring" on first boot and blanks the kiosk). It logs to ~/kiosk-boot.log.
+# Change the path above if the project is not in /home/adi/RVM.
+#
+# Replace RVM-001 in deploy/rvm-kiosk-launch.sh with the actual machine_code for
+# this physical unit.
 #
 # Screen blanking is disabled separately via `sudo raspi-config` -> Display
 # Options -> Screen Blanking (Raspberry Pi OS Bookworm+ uses Wayland, so the
 # old xset/lxsession approach no longer applies).
-#
-# Replace RVM-001 with the actual machine_code for this physical unit.
