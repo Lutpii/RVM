@@ -1026,7 +1026,7 @@
 
 <script setup>
 import { ref, reactive, computed, inject, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
@@ -1049,6 +1049,7 @@ import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
 import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
+import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   ArcElement, Tooltip, Legend
@@ -1056,6 +1057,7 @@ import {
 import { Bar, Doughnut } from 'vue-chartjs'
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend)
 
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const { t } = useI18n()
@@ -1316,6 +1318,14 @@ const navItems = [
   { id: 'sessions',     icon: PhClipboardText,   label: 'Sessions' },
   { id: 'detection',    icon: PhMagnifyingGlass, label: 'Detection Review' },
 ]
+
+// Reopen the menu (and Detection Review sub-view) named in the URL, so a
+// refresh stays where the admin was; see the watch that writes it back below.
+{
+  const saved = parseAdminQuery(route.query, navItems.map(item => item.id))
+  activeTab.value = saved.tab
+  detectionView.value = saved.detectionView
+}
 
 const binTypes = [
   { id: 'aluminum', label: 'Aluminum' },
@@ -1761,6 +1771,15 @@ watch(activeTab, async (tab) => {
   await nextTick()
   window.dispatchEvent(new Event('resize'))
 })
+
+// Mirror the open menu into the URL (replace, not push: Back still leaves the
+// admin panel instead of stepping through every menu visited). Immediate, so
+// an invalid ?tab= from an old link is cleaned up on load too.
+watch([activeTab, detectionView], ([tab, view]) => {
+  const query = buildAdminQuery({ tab, detectionView: view })
+  if (query.tab === route.query.tab && query.view === route.query.view) return
+  router.replace({ query })
+}, { immediate: true })
 
 function switchTab(tab) {
   activeTab.value = tab
@@ -2374,11 +2393,11 @@ onMounted(async () => {
   clockTimer = setInterval(updateClock, 1000)
   window.addEventListener('resize', handleResize)
   // Load all tabs in parallel so switching is instant and machines are available immediately
+  const preloadTabs = ['dashboard', 'machines', 'users', 'sessions']
   await Promise.allSettled([
-    fetchTabData('dashboard', true),
-    fetchTabData('machines', true),
-    fetchTabData('users', true),
-    fetchTabData('sessions', true),
+    ...preloadTabs.map(tab => fetchTabData(tab, true)),
+    // A refresh can land on a tab outside that set (restored from the URL).
+    ...(preloadTabs.includes(activeTab.value) ? [] : [fetchTabData(activeTab.value, true)]),
     fetchRewardConfig(),
     fetchCashRedeemSettings(),
     fetchChartData(),
