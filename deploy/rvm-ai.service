@@ -28,7 +28,12 @@ WantedBy=multi-user.target
 # Install:
 #   sudo cp deploy/rvm-ai.service /etc/systemd/system/rvm-ai.service
 #   sudo systemctl daemon-reload
-#   sudo systemctl enable --now rvm-ai
+#   sudo systemctl start rvm-ai
+#
+# Don't `enable` it on a kiosk Pi: the kiosk launcher starts it once the page
+# is up (see deploy/rvm-kiosk-launch.sh, deploy/sudoers-rvm-kiosk), with
+# deploy/rvm-ai.timer as the fallback. Enabling it makes the torch import run
+# during boot again, alongside Chromium.
 #
 # Logs:
 #   journalctl -u rvm-ai -f

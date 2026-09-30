@@ -1,0 +1,7 @@
+# Lets the kiosk desktop user start the AI service once the kiosk page is up
+# (see deploy/rvm-kiosk-launch.sh). Only this exact command, nothing else.
+#
+# Install (replace "adi" if the kiosk runs as another user):
+#   sudo install -m 0440 deploy/sudoers-rvm-kiosk /etc/sudoers.d/rvm-kiosk
+#   sudo visudo -cf /etc/sudoers.d/rvm-kiosk
+adi ALL=(root) NOPASSWD: /usr/bin/systemctl start --no-block rvm-ai.service

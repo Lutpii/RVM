@@ -1,0 +1,21 @@
+[Unit]
+Description=Fallback start for rvm-ai if the kiosk launcher never starts it
+
+# Normally rvm-kiosk-launch.sh starts rvm-ai.service as soon as the kiosk page
+# has loaded (so the torch/YOLO import doesn't compete with Chromium at boot).
+# This timer only matters when that never happens (no screen attached, no
+# desktop login, Chromium failing every attempt); if rvm-ai is already running
+# it does nothing.
+
+[Timer]
+OnBootSec=3min
+Unit=rvm-ai.service
+
+[Install]
+WantedBy=timers.target
+
+# Install (together with deploy/sudoers-rvm-kiosk):
+#   sudo cp deploy/rvm-ai.timer /etc/systemd/system/rvm-ai.timer
+#   sudo systemctl daemon-reload
+#   sudo systemctl disable rvm-ai.service    # no longer started directly at boot
+#   sudo systemctl enable rvm-ai.timer

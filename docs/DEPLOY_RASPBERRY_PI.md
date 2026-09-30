@@ -132,9 +132,15 @@ Taruh file model di `~/RVM/BackEnd/ai_service/model/best_exp6.pt` (model yang be
 
 ```bash
 sudo cp ~/RVM/deploy/rvm-ai.service /etc/systemd/system/rvm-ai.service
+sudo cp ~/RVM/deploy/rvm-ai.timer /etc/systemd/system/rvm-ai.timer
+sudo install -m 0440 ~/RVM/deploy/sudoers-rvm-kiosk /etc/sudoers.d/rvm-kiosk
+sudo visudo -cf /etc/sudoers.d/rvm-kiosk
 sudo systemctl daemon-reload
-sudo systemctl enable --now rvm-ai
+sudo systemctl enable rvm-ai.timer
+sudo systemctl start rvm-ai
 ```
+
+> **Jangan `enable` `rvm-ai.service`.** Di Pi kiosk, rvm-ai baru dinyalakan oleh `rvm-kiosk-launch.sh` setelah halaman kiosk tampil. Kalau import torch/YOLO berjalan bersamaan dengan Chromium, Pi 1 GB kehabisan RAM saat boot dan halaman bisa blank. `rvm-ai.timer` adalah cadangan: ia menyalakan rvm-ai 3 menit setelah boot kalau launcher tidak pernah sampai ke tahap itu (misalnya layar tidak terpasang).
 
 **Verifikasi wajib sebelum lanjut:**
 ```bash
