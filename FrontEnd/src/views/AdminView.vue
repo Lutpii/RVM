@@ -585,11 +585,11 @@
               </div>
               <div v-if="detectionView === 'pending'" class="detection-actions">
                 <button class="review-btn" :title="correctDisabledReason(log)"
-                  :disabled="!isReviewable(log) || isUnknownPrediction(log) || savingDetectionId === log.id" @click="markCorrect(log)">
+                  :disabled="!isReviewable(log) || isUnknownPrediction(log)" @click="markCorrect(log)">
                   <PhCheck weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.correct') }}
                 </button>
                 <button class="review-btn reject" :title="reviewDisabledReason(log)"
-                  :disabled="!isReviewable(log) || savingDetectionId === log.id" @click="openIncorrectReview(log)">
+                  :disabled="!isReviewable(log)" @click="openIncorrectReview(log)">
                   <PhX weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.incorrect') }}
                 </button>
               </div>
@@ -721,7 +721,7 @@
     <div v-if="reviewingDetection" class="modal-overlay" @click.self="closeIncorrectReview">
       <div class="modal detection-review-modal">
         <button class="modal-close-btn" :aria-label="$t('admin.detectionReview.closeModal')"
-          :disabled="savingDetectionReview" @click="closeIncorrectReview">
+          @click="closeIncorrectReview">
           <PhX weight="bold" aria-hidden="true" />
         </button>
         <h3>{{ $t('admin.detectionReview.incorrectTitle') }}</h3>
@@ -735,21 +735,14 @@
           </div>
         </div>
         <p class="actual-material-prompt">{{ $t('admin.detectionReview.selectActual') }}</p>
+        <!-- One tap saves (and closes the modal); a mistake is undone from the Undo toast. -->
         <div class="actual-material-grid">
           <button v-for="material in detectionMaterials" :key="material.value"
-            :class="['actual-material-btn', { selected: selectedActualMaterial === material.value }]"
+            class="actual-material-btn"
             :disabled="normalizedPrediction(reviewingDetection) === material.value"
-            @click="selectedActualMaterial = material.value">
+            @click="saveIncorrectReview(material.value)">
             {{ material.label }}
             <small v-if="normalizedPrediction(reviewingDetection) === material.value">{{ $t('admin.detectionReview.aiPrediction') }}</small>
-          </button>
-        </div>
-        <div class="modal-actions">
-          <button class="action-btn" :disabled="savingDetectionReview" @click="closeIncorrectReview">
-            {{ $t('admin.detectionReview.cancel') }}
-          </button>
-          <button class="action-btn edit-btn" :disabled="!selectedActualMaterial || savingDetectionReview" @click="saveIncorrectReview">
-            {{ savingDetectionReview ? $t('admin.detectionReview.saving') : $t('admin.detectionReview.saveReview') }}
           </button>
         </div>
       </div>
@@ -1020,8 +1013,10 @@
       </div>
     </Transition>
 
-    <Transition name="toast-fade">
-      <div v-if="detectionUndo.show" class="toast detection-undo" role="status">
+    <!-- Keyed per review: a new review while this is up makes the old toast
+         slide down and out before the new one slides up (out-in). -->
+    <Transition name="undo-swap" mode="out-in">
+      <div v-if="detectionUndo.show" :key="detectionUndo.key" class="toast detection-undo" role="status">
         <PhCheckCircle class="toast-icon" weight="regular" aria-hidden="true" />
         {{ detectionUndo.message }}
         <button class="undo-review-btn" :disabled="detectionUndo.loading" @click="undoDetectionReview">
@@ -1059,6 +1054,7 @@ import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
+import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   ArcElement, Tooltip, Legend
@@ -1172,11 +1168,15 @@ const thumbnails         = ref({})
 const detectionView      = ref('pending')
 const detectionHistoryStatus = ref('reviewed')
 const reviewingDetection = ref(null)
-const selectedActualMaterial = ref('')
-const savingDetectionReview = ref(false)
-const savingDetectionId = ref(null)
-const detectionUndo = ref({ show: false, id: null, message: '', loading: false })
+// Reviewed cards taken out of the list before the server confirmed the save
+// (id -> savedAt, null while in flight). See utils/admin/detectionOptimistic.js.
+let hiddenDetectionIds = new Map()
+let detectionRequestSeq = 0 // latest Detection list request; older answers are dropped
+const detectionUndo = ref({ show: false, id: null, message: '', loading: false, key: 0 })
 let detectionUndoTimer = null
+// In-flight review saves (id -> Promise<boolean>), so Undo pressed before the
+// server confirmed can wait for the save instead of racing it.
+const detectionSaves = new Map()
 
 const recentDetectionRange = detectionDateRange('last_7_days')
 const detectionDateFilters = reactive({
@@ -1502,14 +1502,24 @@ async function fetchTabData(tab, showSpinner = false) {
       sessionsLastPage.value = res.data.sessions?.last_page ?? 1
     } else if (tab === 'detection') {
       if (showSpinner) loadingDetectionLogs.value = true
+      const requestStartedAt = performance.now()
+      const seq = ++detectionRequestSeq
       const res = await api.get('/admin/detection-logs', { params: {
         page: detectionPage.value, per_page: detectionPerPage.value,
         date_from: activeDetectionDateFilter.value.from || undefined,
         date_to: activeDetectionDateFilter.value.to || undefined,
         review_status: detectionReviewStatus.value,
       } })
-      detectionLogs.value     = res.data.detection_logs?.data || []
-      detectionTotal.value    = res.data.detection_logs?.total ?? 0
+      // Saves, refills and Undo can overlap: a list request answered after a
+      // newer one was sent is stale, so it must not overwrite that one.
+      if (seq !== detectionRequestSeq) return
+      // Keep cards reviewed optimistically out of Pending until a response
+      // that is guaranteed to reflect their save (see saveDetectionReview).
+      hiddenDetectionIds = pruneSettled(hiddenDetectionIds, requestStartedAt)
+      const serverLogs = res.data.detection_logs?.data || []
+      const shownLogs = detectionView.value === 'pending' ? filterHidden(serverLogs, hiddenDetectionIds) : serverLogs
+      detectionLogs.value     = shownLogs
+      detectionTotal.value    = Math.max(0, (res.data.detection_logs?.total ?? 0) - (serverLogs.length - shownLogs.length))
       detectionLastPage.value = res.data.detection_logs?.last_page ?? 1
       releaseThumbnails(detectionLogs.value)
       detectionLogs.value.forEach(loadThumbnail)
@@ -1605,35 +1615,67 @@ async function loadThumbnail(log) {
 
 function showDetectionUndo(id, message) {
   clearTimeout(detectionUndoTimer)
-  detectionUndo.value = { show: true, id, message, loading: false }
+  detectionUndo.value = { show: true, id, message, loading: false, key: detectionUndo.value.key + 1 }
   detectionUndoTimer = setTimeout(() => {
     detectionUndo.value.show = false
   }, 5000)
 }
 
+function hideDetectionUndo(id) {
+  if (detectionUndo.value.id !== id) return // a newer review's toast is up
+  clearTimeout(detectionUndoTimer)
+  detectionUndo.value.show = false
+}
+
+// A reviewed item moves from Pending into History — every cached sub-view
+// could now be stale, not just the one currently on screen.
+function invalidateDetectionCache() {
+  tabFetchedAt.detection = 0
+  for (const key of Object.keys(detectionCache)) delete detectionCache[key]
+}
+
+// Optimistic: the card leaves the list and the Undo toast shows immediately
+// (the cards below slide up with the list's move transition); the PATCH runs
+// in the background. On failure the card goes back where it was and the Undo
+// toast gives way to an error toast. Several saves may run at once; the list
+// is refilled from the server once the last one settles.
 async function saveDetectionReview(log, payload) {
-  if (savingDetectionId.value !== null) return false
-  savingDetectionId.value = log.id
-  try {
-    await api.patch(`/admin/detection-logs/${log.id}`, payload)
-    showDetectionUndo(
-      log.id,
-      payload.ground_truth_correct
-        ? t('admin.detectionReview.markedCorrect')
-        : t('admin.detectionReview.markedIncorrect')
-    )
-    tabFetchedAt.detection = 0
-    // A reviewed item moves from Pending into History — every cached
-    // sub-view could now be stale, not just the one currently on screen.
-    for (const key of Object.keys(detectionCache)) delete detectionCache[key]
-    await fetchTabData('detection', false)
-    return true
-  } catch {
+  if (hiddenDetectionIds.has(log.id)) return false // already being saved
+  const listKey = detectionCacheKey()
+  hiddenDetectionIds.set(log.id, null)
+  const removed = removeLog(detectionLogs.value, log.id)
+  detectionLogs.value = removed.logs
+  if (removed.log) detectionTotal.value = Math.max(0, detectionTotal.value - 1)
+  invalidateDetectionCache()
+  showDetectionUndo(
+    log.id,
+    payload.ground_truth_correct
+      ? t('admin.detectionReview.markedCorrect')
+      : t('admin.detectionReview.markedIncorrect')
+  )
+
+  const request = api.patch(`/admin/detection-logs/${log.id}`, payload).then(() => true, () => false)
+  detectionSaves.set(log.id, request)
+  const saved = await request
+  detectionSaves.delete(log.id)
+
+  if (saved) {
+    hiddenDetectionIds.set(log.id, performance.now())
+  } else {
+    hiddenDetectionIds.delete(log.id)
+    // Only if the admin is still looking at the same page/filters.
+    if (removed.log && detectionCacheKey() === listKey) {
+      detectionLogs.value = restoreLog(detectionLogs.value, removed.log, removed.index)
+      detectionTotal.value += 1
+    }
+    hideDetectionUndo(log.id)
     showToast(t('admin.detectionReview.saveFailed'), 'error')
-    return false
-  } finally {
-    savingDetectionId.value = null
   }
+
+  invalidateDetectionCache()
+  // Not awaited: the card is already gone, this only pulls in the next items.
+  if (![...hiddenDetectionIds.values()].includes(null)) fetchTabData('detection', false)
+  return saved
 }
 
 async function markCorrect(log) {
@@ -1664,39 +1706,43 @@ function swipeIncorrect(log) {
 function openIncorrectReview(log) {
   if (!isReviewable(log)) return
   reviewingDetection.value = log
-  selectedActualMaterial.value = ''
 }
 
 function closeIncorrectReview() {
-  if (savingDetectionReview.value) return
   reviewingDetection.value = null
-  selectedActualMaterial.value = ''
 }
 
-async function saveIncorrectReview() {
-  if (!reviewingDetection.value || !selectedActualMaterial.value || savingDetectionReview.value) return
-  savingDetectionReview.value = true
-  const saved = await saveDetectionReview(reviewingDetection.value, {
-    ground_truth_correct: false,
-    ground_truth_label: selectedActualMaterial.value,
-  })
-  savingDetectionReview.value = false
-  if (saved) closeIncorrectReview()
+// Tapping a material in the modal saves it right away. The modal closes at
+// once (so a second tap can't hit another material) and the card leaves the
+// list; it comes back with an error toast if the save fails (see
+// saveDetectionReview), and the Undo toast covers a mis-tap.
+function saveIncorrectReview(material) {
+  const log = reviewingDetection.value
+  if (!log) return
+  closeIncorrectReview()
+  saveDetectionReview(log, { ground_truth_correct: false, ground_truth_label: material })
 }
 
 async function undoDetectionReview() {
-  if (!detectionUndo.value.id || detectionUndo.value.loading) return
+  // The toast can be replaced by a newer review while we await below, so work
+  // with this review's id throughout rather than re-reading detectionUndo.
+  const id = detectionUndo.value.id
+  if (!id || detectionUndo.value.loading) return
   clearTimeout(detectionUndoTimer)
   detectionUndo.value.loading = true
+  // Pressed before the server confirmed the save: wait for it first. If the
+  // save failed, its handler already put the card back and showed the error.
+  const pendingSave = detectionSaves.get(id)
+  if (pendingSave && !(await pendingSave)) return
   try {
-    await api.patch(`/admin/detection-logs/${detectionUndo.value.id}`, { undo: true })
-    detectionUndo.value.show = false
-    tabFetchedAt.detection = 0
-    for (const key of Object.keys(detectionCache)) delete detectionCache[key]
+    await api.patch(`/admin/detection-logs/${id}`, { undo: true })
+    hideDetectionUndo(id)
+    hiddenDetectionIds.delete(id) // back in Pending: show it again
+    invalidateDetectionCache()
     await fetchTabData('detection', false)
     showToast(t('admin.detectionReview.undoSuccess'))
   } catch {
-    detectionUndo.value.loading = false
+    if (detectionUndo.value.id === id) detectionUndo.value.loading = false
     showToast(t('admin.detectionReview.undoFailed'), 'error')
   }
 }
@@ -3207,9 +3253,6 @@ onUnmounted(() => {
   color: var(--text-primary); font-size: 13px; font-weight: 600; cursor: pointer;
 }
 .actual-material-btn:hover:not(:disabled) { border-color: var(--accent-blue); }
-.actual-material-btn.selected {
-  border-color: var(--accent-green); background: rgba(34,197,94,0.14); color: var(--accent-green);
-}
 .actual-material-btn:disabled { opacity: .45; cursor: not-allowed; }
 .actual-material-btn small { color: var(--text-muted); font-size: 9px; font-weight: 400; margin-top: 2px; }
 
@@ -3259,8 +3302,12 @@ onUnmounted(() => {
 .undo-review-btn:disabled { opacity: .55; cursor: wait; }
 .toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translate(-50%, 8px); }
+/* Undo toast: slides down/out, then the next review's slides up/in (out-in). */
+.undo-swap-enter-active, .undo-swap-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.undo-swap-enter-from, .undo-swap-leave-to { opacity: 0; transform: translate(-50%, 16px); }
 @media (prefers-reduced-motion: reduce) {
   .toast-fade-enter-active, .toast-fade-leave-active { transition: none; }
+  .undo-swap-enter-active, .undo-swap-leave-active { transition: none; }
   .detection-card-move, .detection-card-enter-active, .detection-card-leave-active { transition: none; }
   .sidebar, .sidebar-title, .nav-label, .sidebar-footer { transition: none; }
 }
