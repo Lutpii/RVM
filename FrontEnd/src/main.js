@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import { messages } from './locales'
 import scrollReveal from './directives/scrollReveal'
+import swipe from './directives/swipe'
 import './assets/main.css'
 
 const pinia = createPinia()
@@ -21,4 +22,5 @@ app.use(pinia)
 app.use(router)
 app.use(i18n)
 app.directive('reveal', scrollReveal)
+app.directive('swipe', swipe)
 app.mount('#app')

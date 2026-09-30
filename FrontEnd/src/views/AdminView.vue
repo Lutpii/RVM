@@ -554,7 +554,16 @@
                 : $t('admin.detectionReview.noTestData') }}
           </div>
           <TransitionGroup v-else name="detection-card" tag="div" class="detection-grid">
-            <div v-for="log in detectionLogs" :key="log.id" class="detection-card">
+            <div v-for="log in detectionLogs" :key="log.id" class="detection-card"
+              v-swipe="{ enabled: detectionView === 'pending', onRight: () => swipeCorrect(log), onLeft: () => swipeIncorrect(log) }">
+              <template v-if="detectionView === 'pending'">
+                <div class="swipe-hint swipe-hint-correct" aria-hidden="true">
+                  <PhCheck weight="bold" /> {{ $t('admin.detectionReview.correct') }}
+                </div>
+                <div class="swipe-hint swipe-hint-incorrect" aria-hidden="true">
+                  <PhX weight="bold" /> {{ $t('admin.detectionReview.incorrect') }}
+                </div>
+              </template>
               <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" :alt="$t('admin.detectionReview.captureAlt')" />
               <PhCamera v-else class="detection-thumb placeholder" weight="regular" aria-hidden="true" />
               <div class="detection-meta">
@@ -1630,6 +1639,26 @@ async function saveDetectionReview(log, payload) {
 async function markCorrect(log) {
   if (!isReviewable(log) || isUnknownPrediction(log)) return
   await saveDetectionReview(log, { ground_truth_correct: true })
+}
+
+// Touch swipe on a pending card (directives/swipe.js): right = Correct,
+// left = Incorrect. Returning false snaps the card back into the list.
+async function swipeCorrect(log) {
+  const reason = correctDisabledReason(log)
+  if (reason) {
+    showToast(reason, 'error')
+    return false
+  }
+  return saveDetectionReview(log, { ground_truth_correct: true })
+}
+
+function swipeIncorrect(log) {
+  if (!isReviewable(log)) {
+    showToast(reviewDisabledReason(log), 'error')
+    return false
+  }
+  openIncorrectReview(log)
+  return false
 }
 
 function openIncorrectReview(log) {
@@ -3100,12 +3129,26 @@ onUnmounted(() => {
   min-height: 38px; margin-right: 0; padding: 8px 12px;
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
-.detection-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+/* overflow-x: clip keeps a swiped-out card from adding a horizontal scrollbar. */
+.detection-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; overflow-x: clip; }
 .detection-card {
+  position: relative;
   background: var(--bg-card); border: 1px solid var(--border);
   color: var(--text-primary); border-radius: 10px;
   overflow: hidden; display: flex; flex-direction: column;
 }
+/* Swipe feedback (directives/swipe.js sets data-swipe-dir + --swipe-progress). */
+.swipe-hint {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: #fff; font-size: 18px; font-weight: 700;
+  opacity: 0; pointer-events: none;
+}
+.swipe-hint svg { width: 28px; height: 28px; }
+.swipe-hint-correct { background: rgba(34,197,94,0.85); }
+.swipe-hint-incorrect { background: rgba(239,68,68,0.85); }
+.detection-card[data-swipe-dir="right"] .swipe-hint-correct,
+.detection-card[data-swipe-dir="left"] .swipe-hint-incorrect { opacity: var(--swipe-progress, 0); }
 .detection-thumb { width: 100%; height: 160px; object-fit: cover; background: var(--bg-hover); }
 .detection-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--text-muted); }
 .detection-meta { padding: 10px 12px; }
