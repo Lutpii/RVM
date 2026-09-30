@@ -1259,6 +1259,21 @@ onMounted(() => {
   display: block;
 }
 
+/* Kiosk-sized screens in either orientation (the 1080x1920 portrait panel
+   or a landscape 1920x1080 one): center each step top-to-bottom, not only
+   left-to-right. Without this, content sits at the top of the flex:1 body
+   with a big empty gap below. `safe` falls back to top alignment when a
+   step (e.g. camera) is taller than the body, so its top is never clipped
+   out of the scroll area. Phones (<700px wide) keep the top-aligned layout. */
+@media (min-width: 700px) {
+  .rvm-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+  }
+  .step-content { min-height: 0; flex-shrink: 0; }
+}
+
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
 @media (max-height: 650px) {
   .rvm-header { padding: 12px 16px 10px; }
@@ -1292,11 +1307,8 @@ onMounted(() => {
    700px because this view is ALSO reached from a real phone (the
    /sessions/:sessionCode route, not just /kiosk/:machineCode/session) —
    unlike the kiosk-exclusive views, this one must not change on a phone.
-   .rvm-body gets its own centering here (base rule has none — content
-   just sits at the top of the flex:1 body with a big empty gap below on
-   a screen this tall) so each step is centered top-to-bottom, not only
-   left-to-right, matching the same "content di tengah" fix already
-   applied to KioskQrView. */
+   Vertical centering is in the min-width:700px block above, shared with
+   landscape kiosk screens. */
 @media (orientation: portrait) and (min-width: 700px) {
   .rvm-header { padding: 32px 32px 24px; }
   .rvm-title { font-size: 30px; margin-bottom: 8px; }
@@ -1305,13 +1317,7 @@ onMounted(() => {
   .badge-label { font-size: 14px; }
   .badge-value { font-size: 26px; }
 
-  .rvm-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 32px 40px;
-  }
-  .step-content { min-height: 0; }
+  .rvm-body { padding: 32px 40px; }
 
   .step-status { font-size: 28px; }
   .step-sub { font-size: 18px; }

@@ -609,6 +609,15 @@ onMounted(async () => {
   }
 }
 
+/* Kiosk-sized screens in either orientation — see RvmSessionView.vue's
+   matching block. .summary-body already centers horizontally
+   (align-items:center); this centers it top-to-bottom too, falling back to
+   top alignment (`safe`) when a long summary is taller than the body.
+   Phones (<700px wide) keep the top-aligned layout. */
+@media (min-width: 700px) {
+  .summary-body { justify-content: safe center; }
+}
+
 /* Compact layout for small kiosk touchscreens (e.g. 1024x600) */
 @media (max-height: 650px) {
   .summary-header { padding: 12px 16px 10px; }
@@ -632,11 +641,8 @@ onMounted(async () => {
 }
 
 /* Portrait kiosk panel — see RvmSessionView.vue's matching comment (this
-   view shares the same phone+kiosk split, guard, and "center vertically
-   too" fix). .summary-body already centers horizontally
-   (align-items:center) but not vertically — justify-content:center added
-   here so the whole summary block sits mid-screen instead of pinned to
-   the top with empty space below on a 1920px-tall panel. */
+   view shares the same phone+kiosk split and guard). Vertical centering is
+   in the min-width:700px block above, shared with landscape screens. */
 @media (orientation: portrait) and (min-width: 700px) {
   .summary-header { padding: 32px 32px 24px; }
   .summary-header h1 { font-size: 28px; }
@@ -645,10 +651,7 @@ onMounted(async () => {
   .badge-label { font-size: 14px; }
   .badge-value { font-size: 24px; }
 
-  .summary-body {
-    justify-content: center;
-    padding: 32px 40px;
-  }
+  .summary-body { padding: 32px 40px; }
 
   .trophy-wrap { width: 140px; height: 140px; margin-bottom: 24px; }
   .trophy { font-size: 90px; }
