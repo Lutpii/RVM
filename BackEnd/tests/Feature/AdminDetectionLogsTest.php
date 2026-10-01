@@ -131,9 +131,10 @@ class AdminDetectionLogsTest extends TestCase
         $this->assertSame('plastic', $reviewed->ground_truth_label);
         $this->assertSame($admin->id, $reviewed->reviewed_by);
         $this->assertNotNull($reviewed->reviewed_at);
-        $this->assertSame('captures/correct/a.jpg', $reviewed->image_path);
+        // Correct captures are filed under the predicted (= actual) class.
+        $this->assertSame('captures/correct/plastic/a.jpg', $reviewed->image_path);
         Storage::disk('public')->assertMissing('captures/a.jpg');
-        Storage::disk('public')->assertExists('captures/correct/a.jpg');
+        Storage::disk('public')->assertExists('captures/correct/plastic/a.jpg');
     }
 
     public function test_incorrect_review_requires_an_actual_material(): void
@@ -152,9 +153,10 @@ class AdminDetectionLogsTest extends TestCase
             'ground_truth_label' => 'wood',
         ])->assertOk()->assertJsonPath('detection_log.ground_truth_label', 'wood');
 
-        $this->assertSame('captures/incorrect/a.jpg', $log->fresh()->image_path);
+        // Incorrect captures are filed under the actual material, not the AI's guess.
+        $this->assertSame('captures/incorrect/wood/a.jpg', $log->fresh()->image_path);
         Storage::disk('public')->assertMissing('captures/a.jpg');
-        Storage::disk('public')->assertExists('captures/incorrect/a.jpg');
+        Storage::disk('public')->assertExists('captures/incorrect/wood/a.jpg');
     }
 
     public function test_all_eight_actual_material_labels_are_accepted(): void
@@ -174,7 +176,7 @@ class AdminDetectionLogsTest extends TestCase
                 'ground_truth_label' => $label,
             ])->assertOk()->assertJsonPath('detection_log.ground_truth_label', $label);
 
-            Storage::disk('public')->assertExists("captures/incorrect/{$label}.jpg");
+            Storage::disk('public')->assertExists("captures/incorrect/{$label}/{$label}.jpg");
         }
     }
 
@@ -267,11 +269,11 @@ class AdminDetectionLogsTest extends TestCase
         Storage::fake('public');
         $admin = $this->actingAsAdmin();
         $log = DetectionLog::create([
-            'image_path' => 'captures/correct/a.jpg', 'ai_detected_type' => 'plastic',
+            'image_path' => 'captures/correct/plastic/a.jpg', 'ai_detected_type' => 'plastic',
             'ground_truth_correct' => true, 'ground_truth_label' => 'plastic',
             'reviewed_by' => $admin->id, 'reviewed_at' => now(),
         ]);
-        Storage::disk('public')->put('captures/correct/a.jpg', 'fake-jpeg-bytes');
+        Storage::disk('public')->put('captures/correct/plastic/a.jpg', 'fake-jpeg-bytes');
 
         $this->patchJson("/api/admin/detection-logs/{$log->id}", ['undo' => true])
             ->assertOk();
@@ -282,7 +284,7 @@ class AdminDetectionLogsTest extends TestCase
         $this->assertNull($reviewed->reviewed_by);
         $this->assertNull($reviewed->reviewed_at);
         $this->assertSame('captures/a.jpg', $reviewed->image_path);
-        Storage::disk('public')->assertMissing('captures/correct/a.jpg');
+        Storage::disk('public')->assertMissing('captures/correct/plastic/a.jpg');
         Storage::disk('public')->assertExists('captures/a.jpg');
     }
 

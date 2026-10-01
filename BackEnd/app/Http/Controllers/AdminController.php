@@ -15,6 +15,7 @@ use App\Mail\BinCollectionRequested;
 use App\Mail\FormalReportGenerated;
 use App\Services\FormalReportService;
 use App\Services\CashRedeemSettingsService;
+use App\Services\DetectionCaptureStorage;
 use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -390,40 +391,23 @@ class AdminController extends Controller
 
     /**
      * Move a reviewed capture between the pending root and its review result
-     * folder. The database path is updated by the caller only after the file
-     * move succeeds, so History never points at the old location.
+     * class folder (layout in DetectionCaptureStorage). The database path is
+     * updated by the caller only after the file move succeeds, so History
+     * never points at the old location.
      */
-    private function moveDetectionCapture(DetectionLog $log, ?bool $correct): string
+    private function moveDetectionCapture(DetectionLog $log, ?bool $correct, ?string $label): string
     {
-        $disk = Storage::disk('public');
         $source = str_replace('\\', '/', trim((string) $log->image_path));
 
-        if ($source === '' || !str_starts_with($source, 'captures/') || !$disk->exists($source)) {
+        if ($source === '' || !str_starts_with($source, 'captures/') || !Storage::disk('public')->exists($source)) {
             throw new \RuntimeException('Detection capture is missing or outside the captures folder.');
         }
 
-        $directory = match ($correct) {
-            true => 'captures/correct',
-            false => 'captures/incorrect',
-            null => 'captures',
-        };
-        $target = $directory . '/' . basename($source);
-
-        if ($source === $target) {
-            return $source;
-        }
-
-        if ($disk->exists($target)) {
-            $path = pathinfo($target);
-            $extension = isset($path['extension']) ? '.' . $path['extension'] : '';
-            $target = $directory . '/' . $path['filename'] . '-' . $log->id . '-' . now()->format('YmdHisv') . $extension;
-        }
-
-        if (!$disk->move($source, $target)) {
-            throw new \RuntimeException('Detection capture could not be moved.');
-        }
-
-        return $target;
+        return DetectionCaptureStorage::moveInto(
+            $source,
+            DetectionCaptureStorage::directoryFor($correct, $label),
+            $log->id
+        );
     }
 
     /**
@@ -434,7 +418,7 @@ class AdminController extends Controller
     {
         $disk = Storage::disk('public');
         $originalPath = $log->image_path;
-        $newPath = $this->moveDetectionCapture($log, $correct);
+        $newPath = $this->moveDetectionCapture($log, $correct, $attributes['ground_truth_label'] ?? null);
 
         try {
             if (!$log->update(array_merge(['image_path' => $newPath], $attributes))) {
