@@ -345,7 +345,9 @@ English (default) and Bahasa Indonesia — toggle with the `EN / ID` button on a
 
 ## 🔌 Hardware Integration
 
-`BackEnd/ai_service/app.py` can drive real hardware on a Raspberry Pi — a Picamera2 camera (`POST /capture`) and two sorting servos (`POST /sort`), ported from the standalone test rig in `BackEnd/ai_service/test_yolo.py`. It falls back to software-only mode automatically when those libraries aren't available (e.g. on a dev laptop), so the rest of the app is unaffected either way.
+`BackEnd/ai_service/app.py` can drive real hardware on a Raspberry Pi — a Picamera2 camera (`POST /capture`, with a USB webcam fallback) and the compactor of the 2-bin DSME machine. It falls back to software-only mode automatically when the camera libraries aren't available (e.g. on a dev laptop), so the rest of the app is unaffected either way.
+
+**Two hardware variants.** `BackEnd/ai_service` drives the 2-bin DSME compactor machine (flap → compactor → tilt into a tin or plastic bin; one material per batch; `POST /deposit`, `POST /flush`, `GET /state`). Its hardware is a placeholder for now: `HW_DRIVER=placeholder` sleeps for the real durations without touching GPIO, and `HW_TIME_SCALE=0.1` speeds that up for local testing. The original 4-bin pan/tilt sorter (`POST /sort`) lives in `BackEnd/ai_service_4bin` — see its README for how to swap the two folders. The kiosk picks its flow automatically from `/api/hardware/state`.
 
 For a full production deployment to a Raspberry Pi 4 (Nginx, MariaDB, systemd services, kiosk-mode Chromium), see **[docs/DEPLOY_RASPBERRY_PI.md](docs/DEPLOY_RASPBERRY_PI.md)**.
 

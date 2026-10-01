@@ -128,6 +128,12 @@ pip install gpiozero
 deactivate
 ```
 
+> **Catatan 2-bin vs 4-bin:** `BackEnd/ai_service` sekarang adalah service
+> mesin compactor DSME (2 bin, hardware masih placeholder). Servo 4-bin yang
+> lama ada di `BackEnd/ai_service_4bin`. Untuk memakai yang 4-bin, tukar nama
+> kedua folder (lihat `BackEnd/ai_service_4bin/README.md`), pindahkan juga
+> `.env` dan `model/`, lalu `sudo systemctl restart rvm-ai`.
+
 Taruh file model di `~/RVM/BackEnd/ai_service/model/best_exp6.pt` (model yang benar-benar dipakai, 3 kelas) — `app.py` mencari `best_exp6.pt` lebih dulu daripada `best.pt`, baik di root project maupun di `BackEnd/ai_service/model/`. Lihat urutan lengkapnya di `app.py` (`_MODEL_CANDIDATES`) atau README bagian [AI Service](../README.md#-ai-service--yolov8-model).
 
 ```bash
