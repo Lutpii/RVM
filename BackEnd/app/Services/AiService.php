@@ -116,6 +116,45 @@ class AiService
     }
 
     /**
+     * 2-bin compactor endpoints (ai_service/machine_api.py). Each returns
+     * ['status' => int, 'body' => array], or null if the service can't be
+     * reached — never throws, same posture as sort().
+     */
+    public function state(?string $jobId = null): ?array
+    {
+        return $this->machineCall('get', '/state', $jobId !== null ? ['job' => $jobId] : []);
+    }
+
+    public function deposit(string $material, bool $allowFlush): ?array
+    {
+        return $this->machineCall('post', '/deposit', ['material' => $material, 'allow_flush' => $allowFlush]);
+    }
+
+    public function flush(): ?array
+    {
+        return $this->machineCall('post', '/flush');
+    }
+
+    public function flapCheck(): ?array
+    {
+        return $this->machineCall('get', '/flap-check');
+    }
+
+    private function machineCall(string $method, string $path, array $payload = []): ?array
+    {
+        try {
+            $response = Http::withHeaders(['X-API-Key' => $this->apiKey])
+                ->timeout(5)
+                ->{$method}($this->baseUrl . $path, $payload);
+
+            return ['status' => $response->status(), 'body' => $response->json() ?? []];
+        } catch (\Exception $e) {
+            Log::error("AI Service {$path} exception: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Mock classification for prototype/testing
      */
     private function mockClassify(): array

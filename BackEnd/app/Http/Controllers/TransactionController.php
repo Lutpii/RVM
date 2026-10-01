@@ -450,6 +450,54 @@ class TransactionController extends Controller
         return response()->json(['success' => true]);
     }
 
+    // 2-bin compactor (DSME machine) — thin proxies to ai_service/machine_api.py.
+    // Public like hardwareSort, since the kiosk's guest flow needs them too.
+    public function hardwareState(Request $request): JsonResponse
+    {
+        $request->validate(['job' => 'nullable|string|max:64']);
+        $result = $this->ai->state($request->query('job'));
+
+        // ai_service_4bin has no /state (404) and an offline service gives
+        // null: either way the kiosk falls back to the old /hardware/sort flow.
+        if ($result === null || $result['status'] !== 200) {
+            return response()->json(['profile' => 'legacy']);
+        }
+
+        return response()->json($result['body']);
+    }
+
+    public function hardwareDeposit(Request $request): JsonResponse
+    {
+        $request->validate([
+            'material'    => 'required|string|max:32',
+            'allow_flush' => 'required|boolean',
+        ]);
+
+        return $this->machineResponse($this->ai->deposit($request->material, $request->boolean('allow_flush')));
+    }
+
+    public function hardwareFlush(): JsonResponse
+    {
+        return $this->machineResponse($this->ai->flush());
+    }
+
+    public function hardwareFlapCheck(): JsonResponse
+    {
+        return $this->machineResponse($this->ai->flapCheck());
+    }
+
+    // Only 200/400 are real answers from the machine. Anything else (401 key
+    // mismatch, 404, 500) becomes 503: a 401 must never reach the browser,
+    // where services/api.js treats it as "logged out".
+    private function machineResponse(?array $result): JsonResponse
+    {
+        if ($result === null || !in_array($result['status'], [200, 400], true)) {
+            return response()->json(['success' => false, 'error' => 'machine_unavailable'], 503);
+        }
+
+        return response()->json($result['body'], $result['status']);
+    }
+
     // Step: start a real recycling_sessions row for a "Continue as Guest" kiosk
     // session, tied to the shared \App\Models\User::guest() placeholder account
     // instead of a real logged-in user — see that model's docblock for why. This

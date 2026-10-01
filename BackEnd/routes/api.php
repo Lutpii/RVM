@@ -47,6 +47,14 @@ Route::post('/hardware/capture', [TransactionController::class, 'hardwareCapture
 Route::post('/hardware/classify', [TransactionController::class, 'hardwareClassify']);
 Route::post('/hardware/sort', [TransactionController::class, 'hardwareSort']);
 
+// 2-bin compactor (DSME machine). /hardware/state reports profile "legacy"
+// when the 4-bin service (or no service) is running, so the kiosk knows
+// which flow to use.
+Route::get('/hardware/state', [TransactionController::class, 'hardwareState']);
+Route::post('/hardware/deposit', [TransactionController::class, 'hardwareDeposit']);
+Route::post('/hardware/flush', [TransactionController::class, 'hardwareFlush']);
+Route::get('/hardware/flap-check', [TransactionController::class, 'hardwareFlapCheck']);
+
 // Guest recycling_sessions/transactions rows, tied to the shared
 // App\Models\User::guest() placeholder account so guest activity shows up in
 // the admin dashboard's existing Transaction-based stats/charts alongside
