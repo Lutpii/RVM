@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import api from '@/services/api'
+import { getHardwareState } from '@/services/compactor'
 
 const KIOSK_STATE_STORAGE_KEY = 'rvm_kiosk_state'
 
@@ -27,6 +28,17 @@ export const useRvmStore = defineStore('rvm', () => {
   // same 'GUEST-' prefix, so this flag (not the prefix) is what processStep
   // uses to know whether there's a real backend session to write items to.
   const guestSessionIsReal = ref(false)
+
+  // 'legacy' = 4-bin sorter (or no AI service): items are sorted via
+  // /hardware/sort. '2bin' = DSME compactor: items go through
+  // /hardware/deposit and the view runs the compactor flow instead.
+  const hardwareProfile = ref('legacy')
+
+  async function detectHardwareProfile() {
+    const state = await getHardwareState()
+    hardwareProfile.value = state?.profile === '2bin' ? '2bin' : 'legacy'
+    return hardwareProfile.value
+  }
 
   // Local summary tracking — used when no real API session exists
   const localSummary = ref({
@@ -250,7 +262,7 @@ export const useRvmStore = defineStore('rvm', () => {
       // No points/DB record for guests, but the physical servo still sorts
       // the item — fire-and-forget so a slow/offline AI service can't stall
       // the on-screen flow.
-      if (stepName === 'complete') {
+      if (stepName === 'complete' && hardwareProfile.value !== '2bin') {
         const material = payload.ai_detected_type || payload.material_selected || 'reject'
         api.post('/hardware/sort', { material }).catch(() => {})
       }
@@ -300,14 +312,15 @@ export const useRvmStore = defineStore('rvm', () => {
     isGuest.value            = false
     guestMachineCode.value   = null
     guestSessionIsReal.value = false
+    hardwareProfile.value    = 'legacy'
     localSummary.value       = { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
   }
 
   return {
     session, machine, currentStep, selectedMaterial, currentTransaction, lastError, steps,
-    localSummary, isGuest, guestMachineCode, guestSessionIsReal,
+    localSummary, isGuest, guestMachineCode, guestSessionIsReal, hardwareProfile,
     setStep, setMachine, setSession, setSelectedMaterial, recordLocalTransaction,
     startGuestSession, startSession, endSession, getSummary, checkBin, processStep,
-    restoreKioskSession, resetTransaction, resetSession,
+    restoreKioskSession, resetTransaction, resetSession, detectHardwareProfile,
   }
 })
