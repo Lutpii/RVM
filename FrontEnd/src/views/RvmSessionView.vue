@@ -64,6 +64,11 @@
           </div>
           <h2 class="step-status">{{ $t('session.readyAccept') }}</h2>
           <p class="step-sub">{{ $t('session.insertItem') }}</p>
+          <p v-if="is2Bin" class="chamber-badge">
+            {{ chamber.material
+              ? $t('session.compactorContains', { material: materialLabel(chamber.material), count: chamber.count })
+              : $t('session.compactorEmpty') }}
+          </p>
           <button class="simulate-btn min-h-kiosk-touch" @click="simulateInsert">
             {{ $t('session.simulateBtn') }}
           </button>
@@ -214,7 +219,7 @@
               <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
               {{ $t('session.endSession') }}
             </button>
-            <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">
+            <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
               {{ $t('session.recycleAnother') }}
             </button>
@@ -236,6 +241,7 @@
             <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
           </div>
           <div class="result-box">
+            <p v-if="is2Bin">{{ $t('session.takeItemBack') }}</p>
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
@@ -243,7 +249,7 @@
               <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
               {{ $t('session.endSession') }}
             </button>
-            <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">
+            <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
               {{ $t('session.retryAnother') }}
             </button>
@@ -265,7 +271,7 @@
             <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
           </div>
           <div class="result-box">
-            <p>{{ $t('session.itemRejectedHint') }}</p>
+            <p>{{ is2Bin ? $t('session.takeItemBack') : $t('session.itemRejectedHint') }}</p>
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
@@ -273,7 +279,69 @@
               <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
               {{ $t('session.endSession') }}
             </button>
-            <button class="recycle-btn min-h-kiosk-touch" @click="rvm.resetTransaction()">
+            <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              {{ $t('session.retryAnother') }}
+            </button>
+          </div>
+        </div>
+
+
+        <!-- FLAP OCCUPIED (2-bin): something was left on the flap -->
+        <div v-else-if="rvm.currentStep === 'flap_occupied'" key="flap_occupied" class="step-content centered">
+          <div class="return-anim">
+            <svg class="return-item" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>
+            <div class="return-slot"></div>
+          </div>
+          <h2 class="step-status red">{{ $t('session.flapOccupied') }}</h2>
+          <p class="step-sub">{{ $t('session.flapOccupiedHint') }}</p>
+        </div>
+
+        <!-- DROPPING (2-bin): flap opening, item going into the compactor -->
+        <div v-else-if="rvm.currentStep === 'dropping'" key="dropping" class="step-content centered">
+          <div class="spinner-lg"></div>
+          <h2 class="step-status">{{ machineQueued ? $t('session.machineFinishing') : $t('session.droppingItem') }}</h2>
+        </div>
+
+        <!-- MATERIAL SWITCH (2-bin): chamber holds another material -->
+        <div v-else-if="rvm.currentStep === 'material_switch'" key="material_switch" class="step-content centered">
+          <h2 class="step-status">{{ $t('session.switchTitle', { material: materialLabel(switchInfo?.current), count: switchInfo?.count }) }}</h2>
+          <div v-if="annotatedImageDataUrl || capturedImageDataUrl" class="bbox-preview">
+            <img :src="annotatedImageDataUrl || capturedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
+          </div>
+          <p class="step-sub">{{ $t('session.switchBody', { next: materialLabel(switchInfo?.next), current: materialLabel(switchInfo?.current) }) }}</p>
+          <p class="step-sub">{{ $t('session.switchAutoIn', { seconds: switchCountdown }) }}</p>
+          <div class="action-buttons">
+            <button class="end-btn min-h-kiosk-touch" @click="takeBackSwitch">
+              {{ $t('session.switchTakeBack', { material: materialLabel(switchInfo?.next) }) }}
+            </button>
+            <button class="recycle-btn min-h-kiosk-touch" @click="continueSwitch">
+              {{ $t('session.switchContinue', { material: materialLabel(switchInfo?.next) }) }}
+            </button>
+          </div>
+        </div>
+
+        <!-- COMPACTING (2-bin): old batch compacted + tilted, then the new item drops -->
+        <div v-else-if="rvm.currentStep === 'compacting'" key="compacting" class="step-content centered">
+          <div class="spinner-lg"></div>
+          <h2 class="step-status">{{ machineQueued ? $t('session.machineFinishing') : $t('session.stepCompacting') }}</h2>
+          <ol class="switch-stages">
+            <li v-for="(label, i) in switchStageLabels" :key="i"
+                :class="{ active: switchStageIdx === i, done: switchStageIdx > i }">{{ label }}</li>
+          </ol>
+        </div>
+
+        <!-- MACHINE ERROR (2-bin): deposit failed or timed out, no points -->
+        <div v-else-if="rvm.currentStep === 'machine_error'" key="machine_error" class="step-content centered">
+          <h2 class="step-status red">{{ $t('session.machineError') }}</h2>
+          <p class="step-sub">{{ $t('session.machineErrorHint') }}</p>
+          <div class="result-box"><p>{{ $t('session.pointsEarned') }}: +0</p></div>
+          <div class="action-buttons">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+            <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
               {{ $t('session.retryAnother') }}
             </button>
@@ -299,6 +367,8 @@ import { useRvmStore } from '@/store/rvm'
 import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
+import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
+import { stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight } from '@/utils/compactorFlow'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -323,6 +393,111 @@ const itemPoints     = ref(0)
 const itemCarbon     = ref(0)
 const aiDetected     = ref('')
 const aiConfidence   = ref(0)
+
+// ── 2-bin compactor (DSME machine) ──────────────────────────────────────────
+const SWITCH_AUTO_CONTINUE_S = 20
+const profileReady    = rvm.detectHardwareProfile()
+const is2Bin          = computed(() => rvm.hardwareProfile === '2bin')
+const chamber         = ref({ material: null, count: 0 })
+const machineQueued   = ref(false) // our deposit is waiting behind earlier jobs
+const switchInfo      = ref(null)  // { current, count, next } on the material_switch screen
+const switchCountdown = ref(0)
+const switchStageIdx  = ref(-1)
+let   switchTimer     = null
+let   unmounted       = false
+
+function materialLabel(m) {
+  if (!m) return ''
+  return m === 'aluminum' ? t('session.materialTin') : t(`session.${m}`)
+}
+
+const switchStageLabels = computed(() => [
+  t('session.stageCompacting', { material: materialLabel(switchInfo.value?.current) }),
+  t('session.stageTilting', { material: materialLabel(switchInfo.value?.current) }),
+  t('session.stageDropping', { material: materialLabel(switchInfo.value?.next) }),
+])
+
+async function refreshChamber() {
+  const state = await getHardwareState()
+  if (state?.profile === '2bin') chamber.value = { material: state.chamber_material, count: state.chamber_count }
+}
+
+// Never let the user insert while something sits on the flap: their item
+// would land on it and both would drop into the compactor.
+async function ensureFlapEmpty() {
+  if (!is2Bin.value || (await isFlapEmpty())) return
+  rvm.setStep('flap_occupied')
+  while (!unmounted && !(await isFlapEmpty())) await delay(2000)
+}
+
+function recordInvalidItem() {
+  itemWeight.value = 0
+  itemPoints.value = 0
+  rvm.recordLocalTransaction({ material: aiDetected.value, weight: 0, points: 0, isValid: false, deducted: 0, carbon: 0 })
+}
+
+// Resolves true once the item has physically dropped into the compactor.
+// Points are only awarded after that.
+async function depositAndWait(material, allowFlush) {
+  const result = readDepositResult(await depositItem(material, allowFlush))
+  if (result.kind === 'mismatch') {
+    openMaterialSwitch(result.chamberMaterial, result.chamberCount, material)
+    return false
+  }
+  if (result.kind === 'rejected') { recordInvalidItem(); rvm.setStep('item_rejected'); return false }
+  if (result.kind === 'error') { rvm.setStep('machine_error'); return false }
+
+  switchStageIdx.value = -1
+  machineQueued.value = false
+  rvm.setStep(result.willFlush ? 'compacting' : 'dropping')
+  const outcome = await waitForJob(result.jobId, {
+    getState: getHardwareState,
+    onState: (state) => {
+      machineQueued.value = state.job?.status === 'queued'
+      switchStageIdx.value = switchStage(state)
+    },
+  })
+  machineQueued.value = false
+  if (outcome !== 'done') { rvm.setStep('machine_error'); return false }
+  await refreshChamber()
+  return true
+}
+
+function stopSwitchTimer() {
+  clearInterval(switchTimer)
+  switchTimer = null
+}
+
+function openMaterialSwitch(current, count, next) {
+  switchInfo.value = { current, count, next }
+  switchCountdown.value = SWITCH_AUTO_CONTINUE_S
+  rvm.setStep('material_switch')
+  stopSwitchTimer()
+  switchTimer = setInterval(() => {
+    switchCountdown.value -= 1
+    if (switchCountdown.value <= 0) continueSwitch()
+  }, 1000)
+}
+
+// singleFlight: a double tap, or a tap racing the auto-continue, must send one deposit.
+const continueSwitch = singleFlight(async () => {
+  stopSwitchTimer()
+  if (rvm.currentStep !== 'material_switch') return
+  if (await depositAndWait(switchInfo.value.next, true)) await awardPoints()
+})
+
+async function takeBackSwitch() {
+  stopSwitchTimer()
+  await recycleAgain()
+}
+
+async function recycleAgain() {
+  if (is2Bin.value) {
+    await ensureFlapEmpty()
+    await refreshChamber()
+  }
+  rvm.resetTransaction()
+}
 
 // Range must match BackEnd/app/Http/Controllers/TransactionController.php's
 // POINTS_MIN/POINTS_MAX — only used if the /transactions/weigh call fails.
@@ -467,7 +642,11 @@ async function handleFileUpload(event) {
   if (cameraResolve) { cameraResolve(path); cameraResolve = null }
 }
 
-onBeforeUnmount(() => stopCamera())
+onBeforeUnmount(() => {
+  stopCamera()
+  stopSwitchTimer()
+  unmounted = true
+})
 
 const statusText = computed(() => {
   if (['insert'].includes(rvm.currentStep)) return t('session.ready')
@@ -479,7 +658,7 @@ const statusClass = computed(() => {
 })
 
 const progressWidth = computed(() => {
-  const stepOrder = ['bin_check','lid','insert','conveyor','camera','classify','validate_ok','weigh','complete']
+  const stepOrder = ['bin_check','lid','insert','conveyor','camera','classify','material_switch','compacting','dropping','validate_ok','weigh','complete']
   const idx = stepOrder.indexOf(rvm.currentStep)
   return Math.max(5, idx < 0 ? 100 : ((idx + 1) / stepOrder.length) * 100)
 })
@@ -491,6 +670,9 @@ const currentStepLabel = computed(() => {
     classify: t('session.stepClassify'), validate_ok: t('session.stepWeight'),
     weigh: t('session.stepWeight'), complete: t('session.stepComplete'), item_unknown: t('session.stepItemUnknown'),
     item_rejected: t('session.stepItemRejected'),
+    material_switch: t('session.stepMaterialSwitch'), compacting: t('session.stepCompacting'),
+    dropping: t('session.stepDropping'), flap_occupied: t('session.stepFlapCheck'),
+    machine_error: t('session.stepMachineError'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -513,6 +695,9 @@ async function autoStartFlow() {
   await delay(650)
   lidOpen.value = true
   await delay(2600)
+  await profileReady
+  await ensureFlapEmpty()
+  await refreshChamber()
   rvm.setStep('insert')
 
   isAutoFlowRunning.value = false
@@ -561,6 +746,7 @@ function drawBoundingBoxes(imageDataUrl, predictions) {
 }
 
 async function simulateInsert() {
+  await profileReady
   capturedImageDataUrl.value  = null
   annotatedImageDataUrl.value = null
   rvm.setStep('conveyor')
@@ -602,6 +788,19 @@ async function simulateInsert() {
     rvm.setSelectedMaterial(aiDetected.value)
   }
 
+  if (is2Bin.value) {
+    const next = stepAfterClassify(aiDetected.value)
+    if (next !== 'deposit') {
+      // The 2-bin machine has no reject slot: the flap stays closed and the
+      // user takes the item back, so nothing is sent to the hardware.
+      recordInvalidItem()
+      rvm.setStep(next)
+      return
+    }
+    if (await depositAndWait(aiDetected.value, false)) await awardPoints()
+    return
+  }
+
   if (aiDetected.value === 'unknown' || aiDetected.value === 'reject') {
     // 'unknown' = the AI couldn't recognize anything (no detection / low
     // confidence). 'reject' = the AI DID recognize the item, but it's a
@@ -624,6 +823,12 @@ async function simulateInsert() {
   // Every other detected material is valid — this flow has no manual
   // pre-selection step to mismatch against, so "unknown"/"reject" (handled
   // above) are the only invalidity conditions there are.
+  await awardPoints()
+}
+
+// validate -> weigh -> complete: credits the item's points. On the 2-bin
+// machine this only runs after the deposit job reports 'dropped'.
+async function awardPoints() {
   rvm.setStep('validate_ok')
   await delay(1950)
   rvm.setStep('weigh')
@@ -663,6 +868,9 @@ async function simulateInsert() {
 }
 
 async function confirmEndSession() {
+  // Fire-and-forget: the machine compacts and tilts the last batch on its
+  // own while the user is already looking at the summary.
+  if (is2Bin.value) flushChamber()
   if (rvm.isGuest) {
     await rvm.endSession()
     router.push(`/kiosk/${rvm.guestMachineCode}/summary`)
@@ -718,9 +926,13 @@ onMounted(() => {
 
   // A refresh stops any in-flight animation/API chain. Resume from the last
   // safe interactive point instead of leaving the kiosk frozen mid-process.
-  if (isKioskRoute.value && ['lid', 'conveyor', 'camera', 'classify', 'validate_ok', 'weigh'].includes(rvm.currentStep)) {
+  if (isKioskRoute.value && ['lid', 'conveyor', 'camera', 'classify', 'validate_ok', 'weigh',
+      'dropping', 'compacting', 'material_switch'].includes(rvm.currentStep)) {
     rvm.setStep('insert')
   }
+  // A refresh while waiting for the flap to clear must check it again.
+  if (rvm.currentStep === 'flap_occupied') rvm.setStep('bin_check')
+  profileReady.then(refreshChamber)
 
   if (isKioskRoute.value && rvm.currentStep === 'summary') {
     router.replace({ name: 'kiosk-summary', params: { machineCode: kioskMachineCode.value } })
@@ -1197,6 +1409,25 @@ onMounted(() => {
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
 .action-buttons { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+.chamber-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.switch-stages { list-style: none; padding: 0; margin: 16px 0 0; text-align: left; }
+.switch-stages li { padding: 6px 0 6px 26px; position: relative; color: var(--text-secondary); }
+.switch-stages li::before {
+  content: ''; position: absolute; left: 4px; top: 50%; width: 12px; height: 12px;
+  margin-top: -6px; border-radius: 50%; border: 2px solid currentColor;
+}
+.switch-stages li.active { color: var(--text-primary); font-weight: 600; }
+.switch-stages li.done { color: #22c55e; }
+.switch-stages li.done::before { background: currentColor; }
 
 .end-btn {
   padding: 13px 24px;
