@@ -18,6 +18,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+BackEnd/ai_service*/chamber_state.json
 *.egg-info/
 .venv/
 venv/

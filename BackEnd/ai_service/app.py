@@ -9,6 +9,10 @@ from flask_cors import CORS
 from ultralytics import YOLO
 from PIL import Image
 
+from materials import normalize_material
+from hardware import Machine, PlaceholderDriver
+from machine_api import PROFILE, create_machine_blueprint
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -73,25 +77,6 @@ else:
     print(f"WARNING: Model not found at {MODEL_PATH}. Running in mock mode.")
 
 
-def normalize_material(raw_name: str) -> str:
-    """Map whatever class name the model was trained with (best_rs.pt's
-    bricks/cans/glass/metal/paper/plastic/wooden) to the fixed slug the rest
-    of the app expects. cans->aluminum, glass/plastic/paper pass through;
-    metal/wooden/bricks have no physical sorting slot and fall back to reject."""
-    name = (raw_name or '').lower()
-    if 'alumin' in name or 'can' in name:
-        return 'aluminum'
-    if 'glass' in name:
-        return 'glass'
-    if 'plastic' in name:
-        return 'plastic'
-    if 'paper' in name:
-        return 'paper'
-    if 'metal' in name or 'wood' in name or 'brick' in name:
-        return 'reject'
-    return 'unknown'
-
-
 def require_api_key(f):
     from functools import wraps
     @wraps(f)
@@ -104,28 +89,18 @@ def require_api_key(f):
 
 
 # ============================================================
-# HARDWARE (camera + sorting servos) — Raspberry Pi only.
-# On any other machine (e.g. a dev laptop) these imports fail,
-# CAMERA_AVAILABLE/SERVOS_AVAILABLE stay False, and /capture +
-# /sort degrade to a clean "unavailable" response instead of
-# crashing the whole service — the rest of the API keeps working
-# as before.
-# Logic ported from test_yolo.py (camera+YOLO+servo test rig).
-#
-# Camera and servos are initialized independently: a Pi with a
-# working USB webcam but a disconnected/broken CSI ribbon (or a
-# board with no camera driver at all) should still be able to
-# capture/classify, and a machine with a camera but no GPIO/servo
-# wiring should still be able to preview + classify without the
-# sorting step. HARDWARE_AVAILABLE (both true) is kept only for
-# /health's summary field.
+# CAMERA — Raspberry Pi CSI camera, with a USB webcam fallback.
+# On a machine with neither (e.g. a dev laptop without a webcam)
+# CAMERA_AVAILABLE stays False and /capture + /stream degrade to a
+# clean "unavailable" response instead of crashing the whole
+# service — the rest of the API keeps working as before.
+# Logic ported from test_yolo.py (camera+YOLO test rig).
+# The compactor (flap, compactor, tilt) is set up further down;
+# see hardware.py and machine_api.py.
 # ============================================================
 
 CAMERA_AVAILABLE = False
-SERVOS_AVAILABLE = False
 camera = None
-pan_servo = None
-tilt_servo = None
 
 
 class _PiCameraWrapper:
@@ -226,30 +201,6 @@ class _UsbCameraWrapper:
 
 
 try:
-    from gpiozero import AngularServo
-    from gpiozero.pins.pigpio import PiGPIOFactory
-
-    if os.system("pgrep pigpiod > /dev/null 2>&1") != 0:
-        os.system("sudo pigpiod")
-        time.sleep(2)
-
-    _pin_factory = PiGPIOFactory()
-
-    pan_servo = AngularServo(
-        17, initial_angle=None, min_angle=0, max_angle=180,
-        min_pulse_width=0.0005, max_pulse_width=0.0025, pin_factory=_pin_factory,
-    )
-    tilt_servo = AngularServo(
-        27, initial_angle=None, min_angle=0, max_angle=180,
-        min_pulse_width=0.0005, max_pulse_width=0.0025, pin_factory=_pin_factory,
-    )
-
-    SERVOS_AVAILABLE = True
-    print("Sorting servos initialized.")
-except Exception as e:
-    print(f"Servos not available, /sort will report unavailable: {e}")
-
-try:
     from picamera2 import Picamera2
 
     _picam = Picamera2()
@@ -300,98 +251,38 @@ except Exception as e:
     except Exception as e2:
         print(f"USB webcam also not available, /capture and /stream will report unavailable: {e2}")
 
-HARDWARE_AVAILABLE = CAMERA_AVAILABLE and SERVOS_AVAILABLE
-print(f"Hardware status: camera={CAMERA_AVAILABLE}, servos={SERVOS_AVAILABLE}")
+HARDWARE_AVAILABLE = CAMERA_AVAILABLE
+print(f"Hardware status: camera={CAMERA_AVAILABLE}")
 
 
-POS_CENTER, POS_RIGHT, POS_LEFT = 90, 50, 130
-ANGLE_CLOSED, ANGLE_FRONT, ANGLE_BACK = 87, 117, 57
+# ============================================================
+# COMPACTOR (2-bin DSME machine) — see hardware.py / machine_api.py.
+# HW_DRIVER=placeholder (the only option for now) sleeps for the real
+# durations instead of touching GPIO; HW_TIME_SCALE=0.1 speeds it up for
+# local dev. Chamber contents survive a restart via chamber_state.json.
+# ============================================================
+HW_DRIVER = os.environ.get('HW_DRIVER', 'placeholder').strip().lower()
+if HW_DRIVER != 'placeholder':
+    raise RuntimeError(f"HW_DRIVER={HW_DRIVER!r} is not supported yet; use 'placeholder'.")
+HW_TIME_SCALE = float(os.environ.get('HW_TIME_SCALE', '1.0'))
 
-servo_lock = threading.Lock()
-servo_busy = False
-
-
-def move_slowly(servo, target_angle, default_angle, delay_time=0.010):
-    current_angle = servo.angle
-    if current_angle is None:
-        current_angle = default_angle
-        servo.angle = current_angle
-        time.sleep(0.1)
-
-    current_angle = float(current_angle)
-    target_angle = float(target_angle)
-    if current_angle == target_angle:
-        return
-
-    step = 0.6 if current_angle < target_angle else -0.6
-    rest_time = delay_time / 2.0
-    current = current_angle
-    while (step > 0 and current < target_angle) or (step < 0 and current > target_angle):
-        servo.angle = current
-        time.sleep(rest_time)
-        current += step
-    servo.angle = target_angle
-
-
-def reset_servo_initial():
-    move_slowly(tilt_servo, ANGLE_CLOSED, ANGLE_CLOSED)
-    time.sleep(0.2)
-    move_slowly(pan_servo, POS_CENTER, POS_CENTER)
-    time.sleep(0.2)
-
-
-def _drop(pan_pos, tilt_angle, label):
-    print(f"[SERVO] {label}")
-    move_slowly(pan_servo, pan_pos, POS_CENTER)
-    time.sleep(0.2)
-    move_slowly(tilt_servo, tilt_angle, ANGLE_CLOSED)
-    time.sleep(0.8)
-    move_slowly(tilt_servo, ANGLE_CLOSED, ANGLE_CLOSED)
-    time.sleep(0.2)
-    move_slowly(pan_servo, POS_CENTER, POS_CENTER)
-    time.sleep(0.2)
-
-
-def drop_front_right(): _drop(POS_RIGHT, ANGLE_FRONT, 'Front Right - Aluminum')
-def drop_front_left():  _drop(POS_LEFT,  ANGLE_FRONT, 'Front Left - Glass')
-def drop_back_left():   _drop(POS_LEFT,  ANGLE_BACK,  'Back Left - Plastic')
-def drop_back_right():  _drop(POS_RIGHT, ANGLE_BACK,  'Back Right - Paper')
-
-
-# All 4 physical slots are now spoken for by the 4 accept categories — reject
-# (metal/wooden/bricks/unknown) has no slot at all, so /sort leaves the servo
-# untouched for any material not in this map instead of defaulting to a drop.
-SORTING_MAP = {
-    'aluminum': drop_front_right,
-    'glass':    drop_front_left,
-    'plastic':  drop_back_left,
-    'paper':    drop_back_right,
-}
-
-
-def trigger_servo_thread(func):
-    global servo_busy
-    with servo_lock:
-        if servo_busy:
-            return
-        servo_busy = True
-    try:
-        func()
-        reset_servo_initial()
-    finally:
-        with servo_lock:
-            servo_busy = False
+machine = Machine(PlaceholderDriver(time_scale=HW_TIME_SCALE),
+                  state_path=str(_HERE / 'chamber_state.json'))
+machine.start()
+app.register_blueprint(create_machine_blueprint(machine, require_api_key))
+print(f"Compactor ready: driver={HW_DRIVER}, time_scale={HW_TIME_SCALE}")
 
 
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
         'status': 'ok',
+        'profile': PROFILE,
         'model_loaded': model is not None,
         'model_path': MODEL_PATH,
         'hardware_available': HARDWARE_AVAILABLE,
         'camera_available': CAMERA_AVAILABLE,
-        'servos_available': SERVOS_AVAILABLE,
+        'hardware_driver': HW_DRIVER,
     })
 
 
@@ -493,27 +384,6 @@ def release_camera():
     return jsonify({'success': True})
 
 
-@app.route('/sort', methods=['POST'])
-@require_api_key
-def sort():
-    if not SERVOS_AVAILABLE:
-        return jsonify({'success': False, 'error': 'Servos not available on this device.'}), 503
-
-    data = request.get_json(silent=True) or {}
-    material = data.get('material', 'reject')
-
-    if servo_busy:
-        return jsonify({'success': False, 'error': 'Servo is busy.'}), 409
-
-    func = SORTING_MAP.get(material)
-    if func is None:
-        # No physical slot for this material (reject/unknown) — leave the servo alone.
-        return jsonify({'success': True, 'sorting': material, 'servo_moved': False})
-
-    threading.Thread(target=trigger_servo_thread, args=(func,), daemon=True).start()
-    return jsonify({'success': True, 'sorting': material, 'servo_moved': True})
-
-
 @app.route('/classify', methods=['POST'])
 @require_api_key
 def classify():
@@ -574,7 +444,7 @@ def classify():
 if __name__ == '__main__':
     # threaded=True is required — the MJPEG /stream endpoint holds a connection
     # open continuously, and Flask's dev server only handles one request at a
-    # time by default, which would otherwise stall /capture, /classify, /sort
+    # time by default, which would otherwise stall /capture, /classify, /deposit
     # for as long as a stream is active. camera_lock still serializes actual
     # hardware access, so this is safe.
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
