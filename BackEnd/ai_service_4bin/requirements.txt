@@ -1,0 +1,6 @@
+flask
+flask-cors
+ultralytics
+Pillow
+python-dotenv
+opencv-python-headless
