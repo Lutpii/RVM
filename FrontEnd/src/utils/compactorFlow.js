@@ -96,3 +96,12 @@ export function oneDecision() {
     reset() { made = false },
   }
 }
+
+// The compactor holds 3 items, so one session may deposit at most 3 of each
+// material (rejected items don't count).
+export const SESSION_LIMIT_PER_MATERIAL = 3
+
+export function sessionLimitReached(transactions, material) {
+  const used = (transactions || []).filter((t) => t.is_valid && t.material === material).length
+  return used >= SESSION_LIMIT_PER_MATERIAL
+}

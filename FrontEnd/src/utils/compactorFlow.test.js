@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision } from './compactorFlow.js'
+import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
 
 describe('stepAfterClassify', () => {
   it('deposits tin and plastic', () => {
@@ -108,5 +108,23 @@ describe('oneDecision', () => {
     expect(decision.decided()).toBe(true)
     decision.reset()                      // next material-switch screen
     expect(decision.claim()).toBe(true)
+  })
+})
+
+describe('sessionLimitReached', () => {
+  const txn = (material, is_valid = true) => ({ material, is_valid })
+  it('allows up to 3 valid items of each material per session', () => {
+    expect(SESSION_LIMIT_PER_MATERIAL).toBe(3)
+    const two = [txn('aluminum'), txn('aluminum'), txn('plastic')]
+    expect(sessionLimitReached(two, 'aluminum')).toBe(false)
+    const three = [...two, txn('aluminum')]
+    expect(sessionLimitReached(three, 'aluminum')).toBe(true)
+    expect(sessionLimitReached(three, 'plastic')).toBe(false)
+  })
+  it('does not count rejected items', () => {
+    const list = [txn('plastic'), txn('plastic'), txn('plastic', false), txn('unknown', false)]
+    expect(sessionLimitReached(list, 'plastic')).toBe(false)
+    expect(sessionLimitReached([], 'plastic')).toBe(false)
+    expect(sessionLimitReached(undefined, 'plastic')).toBe(false)
   })
 })

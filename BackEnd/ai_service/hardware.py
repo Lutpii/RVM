@@ -34,6 +34,10 @@ FLUSH_SECONDS = COMPACT_IN + COMPACT_OUT + TILT_MOVE + TILT_HOLD + TILT_MOVE
 
 MAX_JOBS_KEPT = 50
 
+# The compactor chamber holds at most this many items; a further item of the
+# same material empties the chamber first (compact + tilt) before it drops.
+CHAMBER_CAPACITY = 3
+
 
 class PlaceholderDriver:
     """Stands in for the real GPIO driver: same timing, no hardware."""
@@ -88,8 +92,10 @@ class Machine:
             return {'accepted': False, 'reason': 'not_accepted'}
         with self._cv:
             chamber, count, pending = self._projection()
-            will_flush = chamber is not None and chamber != material
-            if will_flush and not allow_flush:
+            mismatch = chamber is not None and chamber != material
+            full = chamber == material and count >= CHAMBER_CAPACITY
+            will_flush = mismatch or full
+            if mismatch and not allow_flush:
                 return {'accepted': False, 'reason': 'mismatch',
                         'chamber_material': chamber, 'chamber_count': count}
             eta = pending + (FLUSH_SECONDS if will_flush else 0) + DEPOSIT_SECONDS
@@ -145,7 +151,7 @@ class Machine:
                     seconds += FLUSH_SECONDS
                 material, count = None, 0
             else:
-                if material is not None and material != job['material']:
+                if material is not None and (material != job['material'] or count >= CHAMBER_CAPACITY):
                     seconds += FLUSH_SECONDS
                     material, count = None, 0
                 seconds += DEPOSIT_SECONDS
@@ -240,8 +246,8 @@ class Machine:
     def _do_deposit(self, job):
         material = job['material']
         with self._cv:
-            current = self._chamber_material
-        if current is not None and current != material:
+            current, count = self._chamber_material, self._chamber_count
+        if current is not None and (current != material or count >= CHAMBER_CAPACITY):
             self._do_flush()
         self._set_phase('gate')
         self._driver.gate_open()

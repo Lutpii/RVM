@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from hardware import DEPOSIT_SECONDS, FLUSH_SECONDS, Machine, PlaceholderDriver
+from hardware import CHAMBER_CAPACITY, DEPOSIT_SECONDS, FLUSH_SECONDS, Machine, PlaceholderDriver
 
 
 class RecordingDriver:
@@ -179,6 +179,24 @@ class MachineTest(unittest.TestCase):
         self.assertEqual(m.state(good['job_id'])['job']['status'], 'dropped')
         s = m.state()
         self.assertEqual((s['phase'], s['busy'], s['chamber_count']), ('idle', False, 1))
+
+    def test_full_chamber_is_emptied_before_the_next_item(self):
+        # The compactor holds at most CHAMBER_CAPACITY items: a 4th item of the
+        # same material flushes the chamber first, without asking the user.
+        m = self.make()
+        for _ in range(CHAMBER_CAPACITY):
+            m.deposit('aluminum', False)
+        r = m.deposit('aluminum', False)
+        self.assertTrue(r['accepted'])
+        self.assertTrue(r['will_flush'])
+        self.run_all(m)
+        self.assertEqual(self.driver.calls,
+                         GATE * CHAMBER_CAPACITY + ['compact', 'tilt:aluminum'] + GATE)
+        s = m.state()
+        self.assertEqual((s['chamber_material'], s['chamber_count']), ('aluminum', 1))
+
+    def test_capacity_is_three(self):
+        self.assertEqual(CHAMBER_CAPACITY, 3)
 
     def test_unknown_job_id(self):
         self.assertEqual(self.make().state('nope')['job'], {'id': 'nope', 'status': 'unknown'})

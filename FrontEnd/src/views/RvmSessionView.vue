@@ -53,6 +53,7 @@
           </div>
           <h2 class="step-status">{{ $t('session.readyAccept') }}</h2>
           <p class="step-sub">{{ $t('session.insertItem') }}</p>
+          <p class="cap-notice" role="note">⚠ {{ $t('session.capNotice') }}</p>
           <p v-if="is2Bin" class="chamber-badge">
             {{ chamber.emptying
               ? $t('session.compactorEmptying')
@@ -301,6 +302,33 @@
           </ol>
         </div>
 
+        <!-- SESSION LIMIT (2-bin): 3 items of this material already deposited this session -->
+        <div v-else-if="rvm.currentStep === 'session_limit'" key="session_limit" class="step-content centered">
+          <div class="return-anim">
+            <svg class="return-item" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="8" y1="8" x2="16" y2="16"/>
+              <line x1="16" y1="8" x2="8" y2="16"/>
+            </svg>
+            <div class="return-slot"></div>
+          </div>
+          <h2 class="step-status red">{{ $t('session.sessionLimitTitle', { material: materialLabel(aiDetected) }) }}</h2>
+          <div class="result-box">
+            <p>{{ $t('session.sessionLimitBody', { max: SESSION_LIMIT_PER_MATERIAL, material: materialLabel(aiDetected) }) }}</p>
+            <p>{{ $t('session.pointsEarned') }}: +0</p>
+          </div>
+          <div class="action-buttons">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+            <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              {{ $t('session.retryAnother') }}
+            </button>
+          </div>
+        </div>
+
         <!-- MACHINE ERROR (2-bin): deposit failed or timed out, no points -->
         <div v-else-if="rvm.currentStep === 'machine_error'" key="machine_error" class="step-content centered">
           <h2 class="step-status red">{{ $t('session.machineError') }}</h2>
@@ -338,7 +366,7 @@ import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
-import { stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision } from '@/utils/compactorFlow'
+import { stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from '@/utils/compactorFlow'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -424,7 +452,11 @@ async function depositAndWait(material, allowFlush) {
 
   switchStageIdx.value = -1
   machineQueued.value = false
-  if (result.willFlush) rvm.setStep('compacting')
+  if (result.willFlush) {
+    // Not from the switch screen = the chamber is full of this same material.
+    if (!allowFlush) switchInfo.value = { current: material, count: chamber.value.count, next: material }
+    rvm.setStep('compacting')
+  }
   const outcome = await waitForJob(result.jobId, {
     getState: getHardwareState,
     onState: (state) => {
@@ -497,8 +529,8 @@ function randomPointsFallback() {
 // real work (capture, classify, weigh) is awaited separately, so keep them short.
 const COUNTDOWN_LEAD_MS  = 500   // live preview shows before "3"
 const COUNTDOWN_TICK_MS  = 1000  // each 3-2-1 step
-const VALID_SCREEN_MS    = 800   // "Item Valid!"
-const POINTS_SCREEN_MS   = 800   // "Calculating Points..."
+const VALID_SCREEN_MS    = 1500  // "Item Valid!"
+const POINTS_SCREEN_MS   = 1500  // "Calculating Points..."
 
 // Camera
 const videoRef              = ref(null)
@@ -664,7 +696,7 @@ const currentStepLabel = computed(() => {
     item_rejected: t('session.stepItemRejected'),
     material_switch: t('session.stepMaterialSwitch'), compacting: t('session.stepCompacting'),
     dropping: t('session.stepDropping'), flap_occupied: t('session.stepFlapCheck'),
-    machine_error: t('session.stepMachineError'),
+    machine_error: t('session.stepMachineError'), session_limit: t('session.stepSessionLimit'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -788,6 +820,13 @@ async function simulateInsert() {
       // user takes the item back, so nothing is sent to the hardware.
       recordInvalidItem()
       rvm.setStep(next)
+      return
+    }
+    // The compactor holds 3 items: a 4th of the same material this session
+    // stays on the closed flap and the user takes it back (no points).
+    if (sessionLimitReached(rvm.localSummary.transactions, aiDetected.value)) {
+      itemPoints.value = 0
+      rvm.setStep('session_limit')
       return
     }
     if (await depositAndWait(aiDetected.value, false)) await awardPoints()
@@ -1402,6 +1441,17 @@ onMounted(() => {
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
 .action-buttons { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+.cap-notice {
+  margin: 10px auto 0;
+  max-width: 460px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  font-size: 15px;
+  font-weight: 600;
+}
 .chamber-badge {
   display: inline-block;
   margin-top: 8px;

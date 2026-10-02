@@ -12,6 +12,7 @@ const COMPACTOR_KEYS = [
   'stageCompacting', 'stageTilting', 'stageDropping', 'takeItemBack',
   'flapOccupied', 'flapOccupiedHint', 'machineError', 'machineErrorHint',
   'stepMaterialSwitch', 'stepCompacting', 'stepDropping', 'stepFlapCheck', 'stepMachineError',
+  'capNotice', 'sessionLimitTitle', 'sessionLimitBody', 'stepSessionLimit',
 ]
 
 describe('session.* translation keys', () => {
