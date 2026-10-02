@@ -7,7 +7,7 @@ import { messages } from './index.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const COMPACTOR_KEYS = [
-  'materialTin', 'compactorEmpty', 'compactorContains', 'droppingItem', 'machineFinishing',
+  'compactorEmpty', 'compactorEmptying', 'compactorContains', 'droppingItem', 'machineFinishing',
   'switchTitle', 'switchBody', 'switchContinue', 'switchTakeBack', 'switchAutoIn',
   'stageCompacting', 'stageTilting', 'stageDropping', 'takeItemBack',
   'flapOccupied', 'flapOccupiedHint', 'machineError', 'machineErrorHint',

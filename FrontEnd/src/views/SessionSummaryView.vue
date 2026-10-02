@@ -9,8 +9,8 @@
           <span class="badge-value">{{ finalPoints }}</span>
         </div>
         <div class="badge">
-          <span class="badge-label">{{ $t('session.status') }}</span>
-          <span class="badge-value">{{ $t('session.processing') }}</span>
+          <span class="badge-label">{{ $t('session.carbonSavedLabel') }}</span>
+          <span class="badge-value">{{ (summary?.carbon_saved || 0).toFixed(3) }} kg CO2</span>
         </div>
       </div>
     </div>
@@ -358,6 +358,7 @@ onMounted(async () => {
 
 .trophy {
   font-size: 64px;
+  color: var(--accent-green);
   line-height: 1;
   animation: trophy-bounce 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }

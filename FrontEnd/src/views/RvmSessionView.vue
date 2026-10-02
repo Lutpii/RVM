@@ -19,8 +19,8 @@
           <span class="badge-value points-animate">{{ displayPoints }}</span>
         </div>
         <div class="badge status-badge">
-          <span class="badge-label">{{ $t('session.status') }}</span>
-          <span :class="['badge-value', 'status-' + statusClass]">{{ statusText }}</span>
+          <span class="badge-label">{{ $t('session.carbonSavedLabel') }}</span>
+          <span class="badge-value">{{ sessionCarbon.toFixed(3) }} kg CO2</span>
         </div>
       </div>
     </div>
@@ -40,17 +40,6 @@
           <h2 class="step-status">{{ $t('session.checkingBin') }}</h2>
         </div>
 
-        <!-- LID OPENING step -->
-        <div v-else-if="rvm.currentStep === 'lid'" key="lid" class="step-content centered">
-          <div class="lid-animation">
-            <div class="lid-box">
-              <div :class="['lid-door', { open: lidOpen }]"></div>
-            </div>
-          </div>
-          <h2 class="step-status">{{ $t('session.lidOpening') }}</h2>
-          <p class="step-sub">{{ $t('session.pleaseWait') }}</p>
-        </div>
-
         <!-- INSERT step -->
         <div v-else-if="rvm.currentStep === 'insert'" key="insert" class="step-content centered">
           <div class="insert-icon">
@@ -65,34 +54,15 @@
           <h2 class="step-status">{{ $t('session.readyAccept') }}</h2>
           <p class="step-sub">{{ $t('session.insertItem') }}</p>
           <p v-if="is2Bin" class="chamber-badge">
-            {{ chamber.material
-              ? $t('session.compactorContains', { material: materialLabel(chamber.material), count: chamber.count })
-              : $t('session.compactorEmpty') }}
+            {{ chamber.emptying
+              ? $t('session.compactorEmptying')
+              : chamber.material
+                ? $t('session.compactorContains', { material: materialLabel(chamber.material), count: chamber.count })
+                : $t('session.compactorEmpty') }}
           </p>
           <button class="simulate-btn min-h-kiosk-touch" @click="simulateInsert">
             {{ $t('session.simulateBtn') }}
           </button>
-        </div>
-
-        <!-- CONVEYOR step -->
-        <div v-else-if="rvm.currentStep === 'conveyor'" key="conveyor" class="step-content centered">
-          <div class="conveyor-wrap">
-            <div class="conveyor-track">
-              <div
-                class="conveyor-item"
-                :style="{ animationDuration: `${CONVEYOR_ANIMATION_MS}ms` }"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="conveyor-item-icon">
-                  <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/>
-                  <path d="M3 8.5v7L12 20l9-4.5v-7"/>
-                  <path d="M12 13v7"/>
-                </svg>
-              </div>
-              <div class="conveyor-belt"></div>
-            </div>
-          </div>
-          <h2 class="step-status">{{ $t('session.conveyorRunning') }}</h2>
-          <p class="step-sub">{{ $t('session.movingItem') }}</p>
         </div>
 
         <!-- CAMERA step -->
@@ -231,12 +201,12 @@
           <div class="return-anim">
             <svg class="return-item" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
-              <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4"/>
-              <line x1="12" y1="17" x2="12" y2="17.01"/>
+              <line x1="8" y1="8" x2="16" y2="16"/>
+              <line x1="16" y1="8" x2="8" y2="16"/>
             </svg>
             <div class="return-slot"></div>
           </div>
-          <h2 class="step-status red">{{ $t('session.itemNotRecognized') }}</h2>
+          <h2 class="step-status red">{{ $t('session.itemRejected') }}</h2>
           <div v-if="annotatedImageDataUrl" class="bbox-preview">
             <img :src="annotatedImageDataUrl" class="bbox-img" :alt="$t('session.aiDetectionAlt')" />
           </div>
@@ -297,10 +267,10 @@
           <p class="step-sub">{{ $t('session.flapOccupiedHint') }}</p>
         </div>
 
-        <!-- DROPPING (2-bin): flap opening, item going into the compactor -->
+        <!-- DROPPING (2-bin): deposit queued behind earlier jobs (e.g. the previous user's flush) -->
         <div v-else-if="rvm.currentStep === 'dropping'" key="dropping" class="step-content centered">
           <div class="spinner-lg"></div>
-          <h2 class="step-status">{{ machineQueued ? $t('session.machineFinishing') : $t('session.droppingItem') }}</h2>
+          <h2 class="step-status">{{ $t('session.machineFinishing') }}</h2>
         </div>
 
         <!-- MATERIAL SWITCH (2-bin): chamber holds another material -->
@@ -381,13 +351,10 @@ const theme    = inject('theme')
 const toggleTheme = inject('toggleTheme')
 const { locale, t } = useI18n()
 
-const CONVEYOR_DURATION_MS = 2200
-const CONVEYOR_ANIMATION_MS = CONVEYOR_DURATION_MS + 200
 
 const displayPoints  = ref(auth.user?.total_points ?? rvm.session?.current_points ?? 0)
 // Seed start_points for local summary tracking
 rvm.localSummary.start_points = auth.user?.total_points ?? rvm.session?.start_points ?? 0
-const lidOpen        = ref(false)
 const itemWeight     = ref(0)
 const itemPoints     = ref(0)
 const itemCarbon     = ref(0)
@@ -398,7 +365,7 @@ const aiConfidence   = ref(0)
 const SWITCH_AUTO_CONTINUE_S = 20
 const profileReady    = rvm.detectHardwareProfile()
 const is2Bin          = computed(() => rvm.hardwareProfile === '2bin')
-const chamber         = ref({ material: null, count: 0 })
+const chamber         = ref({ material: null, count: 0, emptying: false })
 const machineQueued   = ref(false) // our deposit is waiting behind earlier jobs
 const switchInfo      = ref(null)  // { current, count, next } on the material_switch screen
 const switchCountdown = ref(0)
@@ -407,10 +374,11 @@ let   switchTimer     = null
 const switchDecision  = oneDecision()
 const switchDecided   = ref(false) // mirrors switchDecision for the buttons' disabled state
 let   unmounted       = false
+let   chamberTimer    = null
 
 function materialLabel(m) {
   if (!m) return ''
-  return m === 'aluminum' ? t('session.materialTin') : t(`session.${m}`)
+  return t(`session.${m}`)
 }
 
 const switchStageLabels = computed(() => [
@@ -420,8 +388,13 @@ const switchStageLabels = computed(() => [
 ])
 
 async function refreshChamber() {
+  clearTimeout(chamberTimer)
   const state = await getHardwareState()
-  if (state?.profile === '2bin') chamber.value = { material: state.chamber_material, count: state.chamber_count }
+  if (state?.profile !== '2bin') return
+  const emptying = state.busy && ['compacting', 'tilting'].includes(state.phase)
+  chamber.value = { material: state.chamber_material, count: state.chamber_count, emptying }
+  // Keep the badge honest while a flush runs (e.g. the previous user's).
+  if (emptying && !unmounted) chamberTimer = setTimeout(refreshChamber, 2000)
 }
 
 // Never let the user insert while something sits on the flap: their item
@@ -451,12 +424,16 @@ async function depositAndWait(material, allowFlush) {
 
   switchStageIdx.value = -1
   machineQueued.value = false
-  rvm.setStep(result.willFlush ? 'compacting' : 'dropping')
+  if (result.willFlush) rvm.setStep('compacting')
   const outcome = await waitForJob(result.jobId, {
     getState: getHardwareState,
     onState: (state) => {
       machineQueued.value = state.job?.status === 'queued'
       switchStageIdx.value = switchStage(state)
+      // Only a deposit stuck behind earlier jobs (e.g. the previous user's
+      // flush) gets a wait screen; a normal drop takes a few seconds and
+      // stays on the classify screen.
+      if (!result.willFlush && machineQueued.value) rvm.setStep('dropping')
     },
   })
   machineQueued.value = false
@@ -656,20 +633,17 @@ async function handleFileUpload(event) {
 onBeforeUnmount(() => {
   stopCamera()
   stopSwitchTimer()
+  clearTimeout(chamberTimer)
   unmounted = true
 })
 
-const statusText = computed(() => {
-  if (['insert'].includes(rvm.currentStep)) return t('session.ready')
-  return t('session.processing')
-})
-
-const statusClass = computed(() => {
-  return ['complete', 'validate_ok'].includes(rvm.currentStep) ? 'green' : 'blue'
-})
+// Carbon saved by the valid items of this session (header badge).
+const sessionCarbon = computed(() => rvm.localSummary.transactions
+  .filter((txn) => txn.is_valid)
+  .reduce((sum, txn) => sum + (txn.carbon_saved || 0), 0))
 
 const progressWidth = computed(() => {
-  const stepOrder = ['bin_check','lid','insert','conveyor','camera','classify','material_switch','compacting','dropping','validate_ok','weigh','complete']
+  const stepOrder = ['bin_check','insert','camera','classify','material_switch','compacting','dropping','validate_ok','weigh','complete']
   const idx = stepOrder.indexOf(rvm.currentStep)
   return Math.max(5, idx < 0 ? 100 : ((idx + 1) / stepOrder.length) * 100)
 })
@@ -679,7 +653,7 @@ const currentStepLabel = computed(() => {
     selection: t('session.stepSelection'), bin_check: t('session.stepBinCheck'), lid: t('session.stepLid'),
     insert: t('session.stepInsert'), conveyor: t('session.stepConveyor'), camera: t('session.stepCamera'),
     classify: t('session.stepClassify'), validate_ok: t('session.stepWeight'),
-    weigh: t('session.stepWeight'), complete: t('session.stepComplete'), item_unknown: t('session.stepItemUnknown'),
+    weigh: t('session.stepWeight'), complete: t('session.stepComplete'), item_unknown: t('session.stepItemRejected'),
     item_rejected: t('session.stepItemRejected'),
     material_switch: t('session.stepMaterialSwitch'), compacting: t('session.stepCompacting'),
     dropping: t('session.stepDropping'), flap_occupied: t('session.stepFlapCheck'),
@@ -701,11 +675,6 @@ async function autoStartFlow() {
 
   await delay(1950)
 
-  rvm.setStep('lid')
-  lidOpen.value = false
-  await delay(650)
-  lidOpen.value = true
-  await delay(2600)
   await profileReady
   await ensureFlapEmpty()
   await refreshChamber()
@@ -762,10 +731,6 @@ async function simulateInsert() {
   await rvm.detectHardwareProfile()
   capturedImageDataUrl.value  = null
   annotatedImageDataUrl.value = null
-  rvm.setStep('conveyor')
-
-  await delay(CONVEYOR_DURATION_MS)
-
   // ── CAMERA: only one capture option (real hardware camera), so go straight
   //    into it instead of waiting for the user to pick from a menu of one. ──
   rvm.setStep('camera')
@@ -1465,7 +1430,7 @@ onMounted(() => {
 }
 .recycle-btn {
   padding: 13px 24px;
-  background: var(--accent-blue);
+  background: var(--accent-green);
   color: white;
   border: none;
   border-radius: var(--radius);
