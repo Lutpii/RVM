@@ -83,6 +83,36 @@ class DetectionLogTest extends TestCase
         ]);
     }
 
+    // The 2-bin kiosk must not open the flap for a made-up material, so both
+    // classify responses say when AiService fell back to mockClassify().
+    public function test_classify_responses_report_mock_results(): void
+    {
+        $user = $this->makeUser();
+        $machine = RvmMachine::create([
+            'machine_code' => 'RVM-TEST-' . uniqid(), 'name' => 'Test Machine',
+            'location_name' => 'Test Lobby', 'status' => 'active',
+        ]);
+        $session = RecyclingSession::create([
+            'session_code' => 'SESS-' . uniqid(), 'user_id' => $user->id,
+            'machine_id' => $machine->id, 'status' => 'active', 'start_points' => 0,
+        ]);
+        \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
+
+        $this->mock(AiService::class, function ($mock) {
+            $mock->shouldReceive('classify')->andReturn(
+                ['material' => 'plastic', 'confidence' => 0.8, 'mock' => true],
+                ['material' => 'plastic', 'confidence' => 0.8, 'all_predictions' => []],
+                ['material' => 'aluminum', 'confidence' => 0.8, 'mock' => true],
+            );
+        });
+
+        $this->postJson('/api/transactions/classify', ['session_code' => $session->session_code])
+            ->assertOk()->assertJson(['mock' => true]);
+        $this->postJson('/api/transactions/classify', ['session_code' => $session->session_code])
+            ->assertOk()->assertJson(['mock' => false]);
+        $this->postJson('/api/hardware/classify', [])->assertOk()->assertJson(['mock' => true]);
+    }
+
     public function test_guest_hardware_classify_writes_one_detection_log(): void
     {
         $this->mock(AiService::class, function ($mock) {

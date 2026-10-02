@@ -70,3 +70,29 @@ export function singleFlight(fn) {
     return inFlight
   }
 }
+
+// On the 2-bin machine an unverified classification must never open the
+// flap: Laravel's mockClassify() (no image, AI error) and the client-side
+// fallbacks pick a material at random, which could drop glass into the
+// compactor and award points for it.
+export function verifiedMaterial(material, { imagePath, mock = false, failed = false }) {
+  if (failed || mock || !imagePath) return 'unknown'
+  return material
+}
+
+// The material-switch screen has three ways out (Continue, Take back, the
+// auto-continue timer). Only the first may act: a Take back followed by a
+// Continue would otherwise open the flap after the user was told to take
+// the item back.
+export function oneDecision() {
+  let made = false
+  return {
+    claim() {
+      if (made) return false
+      made = true
+      return true
+    },
+    decided: () => made,
+    reset() { made = false },
+  }
+}

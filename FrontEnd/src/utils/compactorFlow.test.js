@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight } from './compactorFlow.js'
+import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision } from './compactorFlow.js'
 
 describe('stepAfterClassify', () => {
   it('deposits tin and plastic', () => {
@@ -84,5 +84,29 @@ describe('singleFlight', () => {
     expect(await b).toBe('ok')
     once()
     expect(fn).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('verifiedMaterial', () => {
+  it('passes a real classification through', () => {
+    expect(verifiedMaterial('plastic', { imagePath: 'captures/a.jpg', mock: false, failed: false })).toBe('plastic')
+  })
+  it('treats a failed, mocked or image-less classification as unknown', () => {
+    expect(verifiedMaterial('plastic', { imagePath: 'captures/a.jpg', failed: true })).toBe('unknown')
+    expect(verifiedMaterial('aluminum', { imagePath: 'captures/a.jpg', mock: true })).toBe('unknown')
+    expect(verifiedMaterial('aluminum', { imagePath: null })).toBe('unknown')
+  })
+})
+
+describe('oneDecision', () => {
+  it('lets only the first of continue / take back / auto-continue through', () => {
+    const decision = oneDecision()
+    expect(decision.decided()).toBe(false)
+    expect(decision.claim()).toBe(true)   // e.g. Take back
+    expect(decision.claim()).toBe(false)  // Continue tapped right after
+    expect(decision.claim()).toBe(false)  // timer reaching 0
+    expect(decision.decided()).toBe(true)
+    decision.reset()                      // next material-switch screen
+    expect(decision.claim()).toBe(true)
   })
 })

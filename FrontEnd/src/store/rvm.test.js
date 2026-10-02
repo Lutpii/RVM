@@ -12,8 +12,42 @@ import { useRvmStore } from './rvm.js'
 
 describe('rvm store hardware profile', () => {
   beforeEach(() => {
+    const mem = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+      setItem: (k, v) => mem.set(k, String(v)),
+      removeItem: (k) => mem.delete(k),
+    })
     setActivePinia(createPinia())
     vi.clearAllMocks()
+  })
+
+  it('keeps the last known profile while the service is unavailable', async () => {
+    const rvm = useRvmStore()
+    getHardwareState.mockResolvedValue({ profile: '2bin' })
+    await rvm.detectHardwareProfile()
+    for (const answer of [{ profile: 'unavailable' }, null]) {
+      getHardwareState.mockResolvedValue(answer)
+      expect(await rvm.detectHardwareProfile()).toBe('2bin')
+    }
+  })
+
+  it('remembers the profile across page loads', async () => {
+    getHardwareState.mockResolvedValue({ profile: '2bin' })
+    await useRvmStore().detectHardwareProfile()
+    setActivePinia(createPinia())
+    getHardwareState.mockResolvedValue(null)
+    const fresh = useRvmStore()
+    expect(fresh.hardwareProfile).toBe('2bin')
+    expect(await fresh.detectHardwareProfile()).toBe('2bin')
+  })
+
+  it('stays 2bin after a session reset', async () => {
+    getHardwareState.mockResolvedValue({ profile: '2bin' })
+    const rvm = useRvmStore()
+    await rvm.detectHardwareProfile()
+    rvm.resetSession()
+    expect(rvm.hardwareProfile).toBe('2bin')
   })
 
   it('detects the 2-bin compactor', async () => {
@@ -39,6 +73,14 @@ describe('rvm store hardware profile', () => {
     await rvm.detectHardwareProfile()
     await rvm.processStep('complete', { ai_detected_type: 'plastic' })
     expect(api.post).not.toHaveBeenCalledWith('/hardware/sort', expect.anything())
+  })
+
+  it('marks the client-side fallback classification as a mock', async () => {
+    api.post.mockRejectedValueOnce(new Error('network down'))
+    const rvm = useRvmStore()
+    rvm.isGuest = true
+    const res = await rvm.processStep('classify', { image_path: 'captures/a.jpg' })
+    expect(res.mock).toBe(true)
   })
 
   it('still sorts for guests on the 4-bin machine', async () => {

@@ -190,6 +190,9 @@ class TransactionController extends Controller
             'ai_detected'       => $detected,
             'confidence'        => $confidence,
             'all_predictions'   => $aiResult['all_predictions'] ?? [],
+            // true when AiService fell back to mockClassify(): the 2-bin
+            // kiosk then treats the item as unknown instead of dropping it.
+            'mock'              => (bool) ($aiResult['mock'] ?? false),
             'message'           => __('messages.item_classified'),
             'step'              => 'validated',
         ]);
@@ -433,6 +436,7 @@ class TransactionController extends Controller
             'ai_detected'     => $detected,
             'confidence'      => $aiResult['confidence'] ?? 0,
             'all_predictions' => $aiResult['all_predictions'] ?? [],
+            'mock'            => (bool) ($aiResult['mock'] ?? false),
             // Guests never hit complete() (no DB record — see
             // RvmStore.processStep's isGuest branch), which is where a
             // logged-in session's carbon_saved comes from. This is the one
@@ -457,10 +461,15 @@ class TransactionController extends Controller
         $request->validate(['job' => 'nullable|string|max:64']);
         $result = $this->ai->state($request->query('job'));
 
-        // ai_service_4bin has no /state (404) and an offline service gives
-        // null: either way the kiosk falls back to the old /hardware/sort flow.
-        if ($result === null || $result['status'] !== 200) {
+        // Only ai_service_4bin answers 404 here (it has no /state route), so
+        // only that means "use the old /hardware/sort flow". Anything else —
+        // unreachable, restarting, 401/500 — is "unavailable": falling back to
+        // legacy there would award points without the flap ever opening.
+        if ($result !== null && $result['status'] === 404) {
             return response()->json(['profile' => 'legacy']);
+        }
+        if ($result === null || $result['status'] !== 200) {
+            return response()->json(['profile' => 'unavailable']);
         }
 
         return response()->json($result['body']);

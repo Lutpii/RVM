@@ -5,6 +5,17 @@ import { getHardwareState } from '@/services/compactor'
 
 const KIOSK_STATE_STORAGE_KEY = 'rvm_kiosk_state'
 
+const HARDWARE_PROFILE_STORAGE_KEY = 'rvm_hardware_profile'
+
+function readStoredProfile() {
+  try {
+    const profile = localStorage.getItem(HARDWARE_PROFILE_STORAGE_KEY)
+    return profile === '2bin' || profile === 'legacy' ? profile : null
+  } catch {
+    return null
+  }
+}
+
 function readKioskState() {
   if (typeof sessionStorage === 'undefined') return null
   try {
@@ -29,14 +40,19 @@ export const useRvmStore = defineStore('rvm', () => {
   // uses to know whether there's a real backend session to write items to.
   const guestSessionIsReal = ref(false)
 
-  // 'legacy' = 4-bin sorter (or no AI service): items are sorted via
-  // /hardware/sort. '2bin' = DSME compactor: items go through
-  // /hardware/deposit and the view runs the compactor flow instead.
-  const hardwareProfile = ref('legacy')
+  // 'legacy' = 4-bin sorter: items are sorted via /hardware/sort.
+  // '2bin' = DSME compactor: items go through /hardware/deposit and the view
+  // runs the compactor flow instead. The last answer is remembered, so a
+  // compactor whose service is briefly restarting ('unavailable') never
+  // falls back to legacy, which would award points without the flap opening.
+  const hardwareProfile = ref(readStoredProfile() || 'legacy')
 
   async function detectHardwareProfile() {
-    const state = await getHardwareState()
-    hardwareProfile.value = state?.profile === '2bin' ? '2bin' : 'legacy'
+    const profile = (await getHardwareState())?.profile
+    if (profile === '2bin' || profile === 'legacy') {
+      hardwareProfile.value = profile
+      try { localStorage.setItem(HARDWARE_PROFILE_STORAGE_KEY, profile) } catch { /* storage may be unavailable */ }
+    }
     return hardwareProfile.value
   }
 
@@ -152,7 +168,7 @@ export const useRvmStore = defineStore('rvm', () => {
   function _guestMockStep(stepName, payload) {
     if (stepName === 'classify') {
       const selected = payload.material_selected || selectedMaterial.value
-      return { success: true, is_valid: true, ai_detected: selected, confidence: 0.95, all_predictions: [], step: 'validated' }
+      return { success: true, is_valid: true, ai_detected: selected, confidence: 0.95, all_predictions: [], step: 'validated', mock: true }
     }
     if (stepName === 'weigh') {
       const material = payload.material_selected || selectedMaterial.value
@@ -312,7 +328,6 @@ export const useRvmStore = defineStore('rvm', () => {
     isGuest.value            = false
     guestMachineCode.value   = null
     guestSessionIsReal.value = false
-    hardwareProfile.value    = 'legacy'
     localSummary.value       = { total_items: 0, points_earned: 0, start_points: 0, transactions: [] }
   }
 

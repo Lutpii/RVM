@@ -11,6 +11,7 @@ GPIO). The real driver will be ported from DSME's rvm.py later.
 """
 import json
 import logging
+import os
 import threading
 import time
 import uuid
@@ -185,12 +186,19 @@ class Machine:
             self._chamber_material, self._chamber_count = material, count
 
     def _save(self):
+        # Write a temp file and swap it in, so a power cut mid-write leaves
+        # the previous state instead of a torn file that loads as "empty"
+        # (which would let the next different material skip the flush).
         if not self._state_path:
             return
+        tmp = self._state_path + '.tmp'
         try:
-            with open(self._state_path, 'w', encoding='utf-8') as fh:
+            with open(tmp, 'w', encoding='utf-8') as fh:
                 json.dump({'chamber_material': self._chamber_material,
                            'chamber_count': self._chamber_count}, fh)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, self._state_path)
         except OSError as e:
             log.error('Could not save chamber state: %s', e)
 

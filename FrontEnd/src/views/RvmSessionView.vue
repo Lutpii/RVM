@@ -312,10 +312,10 @@
           <p class="step-sub">{{ $t('session.switchBody', { next: materialLabel(switchInfo?.next), current: materialLabel(switchInfo?.current) }) }}</p>
           <p class="step-sub">{{ $t('session.switchAutoIn', { seconds: switchCountdown }) }}</p>
           <div class="action-buttons">
-            <button class="end-btn min-h-kiosk-touch" @click="takeBackSwitch">
+            <button class="end-btn min-h-kiosk-touch" :disabled="switchDecided" @click="takeBackSwitch">
               {{ $t('session.switchTakeBack', { material: materialLabel(switchInfo?.next) }) }}
             </button>
-            <button class="recycle-btn min-h-kiosk-touch" @click="continueSwitch">
+            <button class="recycle-btn min-h-kiosk-touch" :disabled="switchDecided" @click="continueSwitch">
               {{ $t('session.switchContinue', { material: materialLabel(switchInfo?.next) }) }}
             </button>
           </div>
@@ -368,7 +368,7 @@ import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
-import { stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight } from '@/utils/compactorFlow'
+import { stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision } from '@/utils/compactorFlow'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -404,6 +404,8 @@ const switchInfo      = ref(null)  // { current, count, next } on the material_s
 const switchCountdown = ref(0)
 const switchStageIdx  = ref(-1)
 let   switchTimer     = null
+const switchDecision  = oneDecision()
+const switchDecided   = ref(false) // mirrors switchDecision for the buttons' disabled state
 let   unmounted       = false
 
 function materialLabel(m) {
@@ -468,7 +470,17 @@ function stopSwitchTimer() {
   switchTimer = null
 }
 
+// First of Continue / Take back / auto-continue wins; the others bail out.
+function claimSwitchDecision() {
+  const won = switchDecision.claim()
+  switchDecided.value = true
+  if (won) stopSwitchTimer()
+  return won
+}
+
 function openMaterialSwitch(current, count, next) {
+  switchDecision.reset()
+  switchDecided.value = false
   switchInfo.value = { current, count, next }
   switchCountdown.value = SWITCH_AUTO_CONTINUE_S
   rvm.setStep('material_switch')
@@ -481,13 +493,12 @@ function openMaterialSwitch(current, count, next) {
 
 // singleFlight: a double tap, or a tap racing the auto-continue, must send one deposit.
 const continueSwitch = singleFlight(async () => {
-  stopSwitchTimer()
-  if (rvm.currentStep !== 'material_switch') return
+  if (rvm.currentStep !== 'material_switch' || !claimSwitchDecision()) return
   if (await depositAndWait(switchInfo.value.next, true)) await awardPoints()
 })
 
 async function takeBackSwitch() {
-  stopSwitchTimer()
+  if (!claimSwitchDecision()) return
   await recycleAgain()
 }
 
@@ -747,6 +758,8 @@ function drawBoundingBoxes(imageDataUrl, predictions) {
 
 async function simulateInsert() {
   await profileReady
+  // Re-check per item: the operator may have swapped the 2-bin/4-bin service.
+  await rvm.detectHardwareProfile()
   capturedImageDataUrl.value  = null
   annotatedImageDataUrl.value = null
   rvm.setStep('conveyor')
@@ -767,12 +780,16 @@ async function simulateInsert() {
   await delay(1950)
 
   // Step 1: Classify — AI detects the material type (no pre-selection)
+  let classifyMock = false
+  let classifyFailed = false
   try {
     const res = await rvm.processStep('classify', {
       material_selected: rvm.selectedMaterial,
       image_path: capturedImagePath,
     })
     aiDetected.value   = res.ai_detected || rvm.selectedMaterial || 'plastic'
+    classifyMock       = !!res.mock
+    classifyFailed     = !res.ai_detected
     aiConfidence.value = res.confidence || 0
     // Guests never call complete() (see processStep's isGuest branch, which
     // mocks it locally with no carbon_saved) — classify() is the one real,
@@ -784,11 +801,15 @@ async function simulateInsert() {
       annotatedImageDataUrl.value = await drawBoundingBoxes(capturedImageDataUrl.value, res.all_predictions)
     }
   } catch {
+    classifyFailed = true
     aiDetected.value = rvm.selectedMaterial || 'plastic'
     rvm.setSelectedMaterial(aiDetected.value)
   }
 
   if (is2Bin.value) {
+    aiDetected.value = verifiedMaterial(aiDetected.value, {
+      imagePath: capturedImagePath, mock: classifyMock, failed: classifyFailed,
+    })
     const next = stepAfterClassify(aiDetected.value)
     if (next !== 'deposit') {
       // The 2-bin machine has no reject slot: the flap stays closed and the
@@ -1428,6 +1449,7 @@ onMounted(() => {
 .switch-stages li.active { color: var(--text-primary); font-weight: 600; }
 .switch-stages li.done { color: #22c55e; }
 .switch-stages li.done::before { background: currentColor; }
+.action-buttons button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .end-btn {
   padding: 13px 24px;

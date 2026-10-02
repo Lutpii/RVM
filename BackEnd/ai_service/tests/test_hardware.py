@@ -144,6 +144,31 @@ class MachineTest(unittest.TestCase):
                 s = Machine(RecordingDriver(), state_path=path).state()
                 self.assertEqual((s['chamber_material'], s['chamber_count']), (None, 0), content)
 
+    def test_interrupted_save_keeps_the_previous_state(self):
+        # Simulates power loss mid-write: the old file must stay readable.
+        import hardware
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'chamber_state.json')
+            m = self.make(state_path=path)
+            m.deposit('aluminum', False)
+            self.run_all(m)
+
+            real_dump = hardware.json.dump
+
+            def torn_dump(obj, fh, *a, **kw):
+                fh.write('{"chamber_mat')
+                raise OSError('power lost')
+
+            hardware.json.dump = torn_dump
+            try:
+                with self.assertLogs('hardware', level='ERROR'):
+                    m.deposit('aluminum', False)
+                    self.assertTrue(m.wait_idle(5))
+            finally:
+                hardware.json.dump = real_dump
+            s = Machine(RecordingDriver(), state_path=path).state()
+            self.assertEqual((s['chamber_material'], s['chamber_count']), ('aluminum', 1))
+
     def test_failed_job_is_reported_and_next_job_still_runs(self):
         m = self.make(driver=RecordingDriver(fail_on='gate_open'))
         bad = m.deposit('plastic', False)

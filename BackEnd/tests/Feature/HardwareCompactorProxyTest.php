@@ -22,14 +22,31 @@ class HardwareCompactorProxyTest extends TestCase
         ]);
     }
 
-    public function test_state_is_legacy_when_the_service_is_down_or_4bin(): void
+    public function test_state_is_legacy_only_for_the_4bin_service(): void
     {
+        // ai_service_4bin has no /state route, so Flask answers 404.
         $this->mock(AiService::class, function ($mock) {
-            $mock->shouldReceive('state')->twice()->andReturn(null, ['status' => 404, 'body' => []]);
+            $mock->shouldReceive('state')->once()->andReturn(['status' => 404, 'body' => []]);
         });
 
         $this->getJson('/api/hardware/state')->assertOk()->assertExactJson(['profile' => 'legacy']);
-        $this->getJson('/api/hardware/state')->assertOk()->assertExactJson(['profile' => 'legacy']);
+    }
+
+    public function test_state_is_unavailable_when_the_service_is_down_or_broken(): void
+    {
+        // A 2-bin service that is restarting must not look like a 4-bin one:
+        // the legacy flow awards points without the flap ever opening.
+        $this->mock(AiService::class, function ($mock) {
+            $mock->shouldReceive('state')->times(3)->andReturn(
+                null,
+                ['status' => 500, 'body' => []],
+                ['status' => 401, 'body' => ['error' => 'Unauthorized']],
+            );
+        });
+
+        foreach ([1, 2, 3] as $_) {
+            $this->getJson('/api/hardware/state')->assertOk()->assertExactJson(['profile' => 'unavailable']);
+        }
     }
 
     public function test_deposit_passes_accepted_and_rejected_results_through(): void
