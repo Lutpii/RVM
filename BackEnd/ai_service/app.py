@@ -152,6 +152,10 @@ class _UsbCameraWrapper:
         # applied here so the preview stream and the frame YOLO classifies
         # are always the same orientation.
         self._rotate_180 = os.environ.get('USB_CAMERA_ROTATE', '0').strip() == '180'
+        # USB_CAMERA_KEEP_OPEN=1 on a kiosk (nothing else needs the webcam):
+        # skip the per-capture release, so each scan doesn't pay ~1 s to
+        # reopen the device and throw away its warm-up frames.
+        self.keep_open = os.environ.get('USB_CAMERA_KEEP_OPEN', '0').strip() == '1'
 
     def _ensure_open(self):
         if self._cap is not None:
@@ -319,7 +323,7 @@ def capture():
         # off behavior and frees the device (and its "in use" light) for
         # the next QR scan without waiting for this whole process to
         # restart or a separate /release-camera call.
-        if isinstance(camera, _UsbCameraWrapper):
+        if isinstance(camera, _UsbCameraWrapper) and not camera.keep_open:
             camera.release()
     img = Image.fromarray(frame)
     buf = io.BytesIO()

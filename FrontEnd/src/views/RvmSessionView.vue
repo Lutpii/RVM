@@ -493,6 +493,13 @@ function randomPointsFallback() {
   return Math.floor(Math.random() * (20 - 15 + 1)) + 15
 }
 
+// Screen timings (ms). These are only for the user to read each screen; the
+// real work (capture, classify, weigh) is awaited separately, so keep them short.
+const COUNTDOWN_LEAD_MS  = 500   // live preview shows before "3"
+const COUNTDOWN_TICK_MS  = 1000  // each 3-2-1 step
+const VALID_SCREEN_MS    = 800   // "Item Valid!"
+const POINTS_SCREEN_MS   = 800   // "Calculating Points..."
+
 // Camera
 const videoRef              = ref(null)
 const canvasRef             = ref(null)
@@ -534,10 +541,10 @@ async function startCameraMode() {
   // entirely and let the backend grab the real hardware frame.
   if (isKioskRoute.value) {
     cameraStreamUrl.value = '/ai-stream?t=' + Date.now()
-    await delay(1040)
+    await delay(COUNTDOWN_LEAD_MS)
     for (let i = 3; i >= 1; i--) {
       cameraCountdown.value = i
-      await delay(1300)
+      await delay(COUNTDOWN_TICK_MS)
     }
     // Unmount the <img> (v-if goes false) so the browser drops the MJPEG
     // connection. That alone isn't guaranteed to happen instantly, so
@@ -552,10 +559,10 @@ async function startCameraMode() {
   }
 
   await openCamera()
-  await delay(1040)
+  await delay(COUNTDOWN_LEAD_MS)
   for (let i = 3; i >= 1; i--) {
     cameraCountdown.value = i
-    await delay(1300)
+    await delay(COUNTDOWN_TICK_MS)
   }
   cameraCountdown.value = 0
   const path = await captureFromCamera()
@@ -741,8 +748,8 @@ async function simulateInsert() {
   })
   // ─────────────────────────────────────────────────────────────────────────
 
+  // The classify screen stays up for as long as the real request takes.
   rvm.setStep('classify')
-  await delay(1950)
 
   // Step 1: Classify — AI detects the material type (no pre-selection)
   let classifyMock = false
@@ -816,7 +823,7 @@ async function simulateInsert() {
 // machine this only runs after the deposit job reports 'dropped'.
 async function awardPoints() {
   rvm.setStep('validate_ok')
-  await delay(1950)
+  await delay(VALID_SCREEN_MS)
   rvm.setStep('weigh')
 
   // Step 2: Weigh — fallback to random weight if API fails
@@ -831,7 +838,7 @@ async function awardPoints() {
     itemWeight.value = Math.floor(Math.random() * 400) + 50
     itemPoints.value = randomPointsFallback()
   }
-  await delay(2600)
+  await delay(POINTS_SCREEN_MS)
 
   // Step 3: Complete — always call API to save to DB
   try {
