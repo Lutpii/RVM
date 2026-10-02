@@ -144,7 +144,10 @@ class Machine:
         plus the seconds those jobs still need. A running job is counted in
         full: its chamber update only lands when it finishes."""
         material, count, seconds = self._chamber_material, self._chamber_count, 0.0
-        pending = ([self._running] if self._running else []) + list(self._queue)
+        # A deposit that already dropped has updated the chamber; only its
+        # flap is still closing, so it no longer changes the projection.
+        running = [self._running] if self._running and self._running['status'] != 'dropped' else []
+        pending = running + list(self._queue)
         for job in pending:
             if job['type'] == 'flush':
                 if material is not None:
@@ -226,7 +229,9 @@ class Machine:
             except Exception:
                 log.exception('Hardware job %s (%s) failed', job['id'], job['type'])
                 with self._cv:
-                    self._finish(job, 'failed')
+                    # A failure after the drop (flap not closing) keeps the drop:
+                    # the item is in the chamber and its points were awarded.
+                    self._finish(job, 'dropped' if job['status'] == 'dropped' else 'failed')
 
     def _do_flush(self, finish_job=None):
         with self._cv:
@@ -250,12 +255,17 @@ class Machine:
         if current is not None and (current != material or count >= CHAMBER_CAPACITY):
             self._do_flush()
         self._set_phase('gate')
-        self._driver.gate_open()
-        self._driver.gate_close()
+        self._driver.gate_open()                       # includes the hold: the item is now in the chamber
         with self._cv:
             if self._chamber_material == material:
                 self._chamber_count += 1
             else:
                 self._chamber_material, self._chamber_count = material, 1
             self._save()
+            # Report the drop now so points are awarded while the flap closes;
+            # the job still holds the machine until the flap is shut.
+            job['status'] = 'dropped'
+            self._cv.notify_all()
+        self._driver.gate_close()
+        with self._cv:
             self._finish(job, 'dropped')

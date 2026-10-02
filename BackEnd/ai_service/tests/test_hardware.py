@@ -198,6 +198,34 @@ class MachineTest(unittest.TestCase):
     def test_capacity_is_three(self):
         self.assertEqual(CHAMBER_CAPACITY, 3)
 
+    def test_item_counts_as_dropped_before_the_flap_closes(self):
+        # Points may be awarded as soon as the item is in the chamber; the
+        # flap closing afterwards must not delay that.
+        m = self.make()
+        seen = {}
+
+        def on_close():
+            seen['job'] = m.state(job_id)['job']['status']
+            seen['chamber'] = m.state()['chamber_count']
+            # a plastic deposit now sees exactly 1 aluminum in the chamber
+            seen['next'] = m.deposit('plastic', False)
+        self.driver.gate_close = lambda: (on_close(), self.driver.calls.append('gate_close'))
+        job_id = m.deposit('aluminum', False)['job_id']
+        self.run_all(m)
+        self.assertEqual(seen['job'], 'dropped')
+        self.assertEqual(seen['chamber'], 1)
+        self.assertEqual(seen['next'], {'accepted': False, 'reason': 'mismatch',
+                                        'chamber_material': 'aluminum', 'chamber_count': 1})
+        self.assertEqual(m.state()['phase'], 'idle')
+
+    def test_flap_failing_to_close_keeps_the_drop(self):
+        m = self.make(driver=RecordingDriver(fail_on='gate_close'))
+        r = m.deposit('plastic', False)
+        with self.assertLogs('hardware', level='ERROR'):
+            self.run_all(m)
+        self.assertEqual(m.state(r['job_id'])['job']['status'], 'dropped')
+        self.assertEqual((m.state()['busy'], m.state()['chamber_count']), (False, 1))
+
     def test_unknown_job_id(self):
         self.assertEqual(self.make().state('nope')['job'], {'id': 'nope', 'status': 'unknown'})
 

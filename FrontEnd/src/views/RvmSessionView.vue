@@ -268,10 +268,10 @@
           <p class="step-sub">{{ $t('session.flapOccupiedHint') }}</p>
         </div>
 
-        <!-- DROPPING (2-bin): deposit queued behind earlier jobs (e.g. the previous user's flush) -->
+        <!-- DROPPING (2-bin): flap opening; or waiting behind earlier jobs (e.g. the previous user's flush) -->
         <div v-else-if="rvm.currentStep === 'dropping'" key="dropping" class="step-content centered">
           <div class="spinner-lg"></div>
-          <h2 class="step-status">{{ $t('session.machineFinishing') }}</h2>
+          <h2 class="step-status">{{ machineQueued ? $t('session.machineFinishing') : $t('session.droppingItem') }}</h2>
         </div>
 
         <!-- MATERIAL SWITCH (2-bin): chamber holds another material -->
@@ -456,16 +456,17 @@ async function depositAndWait(material, allowFlush) {
     // Not from the switch screen = the chamber is full of this same material.
     if (!allowFlush) switchInfo.value = { current: material, count: chamber.value.count, next: material }
     rvm.setStep('compacting')
+  } else {
+    // "Item accepted, moving it into the compactor" while the flap opens, so
+    // the flap time doesn't look like slow AI. Points follow as soon as the
+    // item has dropped (the flap closes in the background).
+    rvm.setStep('dropping')
   }
   const outcome = await waitForJob(result.jobId, {
     getState: getHardwareState,
     onState: (state) => {
       machineQueued.value = state.job?.status === 'queued'
       switchStageIdx.value = switchStage(state)
-      // Only a deposit stuck behind earlier jobs (e.g. the previous user's
-      // flush) gets a wait screen; a normal drop takes a few seconds and
-      // stays on the classify screen.
-      if (!result.willFlush && machineQueued.value) rvm.setStep('dropping')
     },
   })
   machineQueued.value = false
