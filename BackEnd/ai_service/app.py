@@ -1,5 +1,6 @@
 import os
 import io
+import logging
 import time
 import threading
 import pathlib
@@ -14,6 +15,12 @@ from hardware import Machine, PlaceholderDriver
 from machine_api import PROFILE, create_machine_blueprint
 
 load_dotenv()
+
+# Every flap / compactor / tilt move and any hardware fault goes to the
+# service log (journalctl -u rvm-ai), so a machine problem can be traced.
+logging.basicConfig(format='%(levelname)s %(name)s: %(message)s')
+for _name in ('hardware', 'gpio_driver'):
+    logging.getLogger(_name).setLevel(logging.INFO)
 
 app = Flask(__name__)
 # Reject oversized uploads at the WSGI layer before they ever reach PIL/YOLO —
