@@ -8,6 +8,7 @@ use App\Models\RvmMachine;
 use App\Models\PointsHistory;
 use App\Models\DetectionLog;
 use App\Services\AiService;
+use App\Services\CompactorSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -456,7 +457,7 @@ class TransactionController extends Controller
 
     // 2-bin compactor (DSME machine) — thin proxies to ai_service/machine_api.py.
     // Public like hardwareSort, since the kiosk's guest flow needs them too.
-    public function hardwareState(Request $request): JsonResponse
+    public function hardwareState(Request $request, CompactorSettingsService $compactor): JsonResponse
     {
         $request->validate(['job' => 'nullable|string|max:64']);
         $result = $this->ai->state($request->query('job'));
@@ -472,17 +473,25 @@ class TransactionController extends Controller
             return response()->json(['profile' => 'unavailable']);
         }
 
-        return response()->json($result['body']);
+        $body = $result['body'];
+        // The kiosk's per-session maximum per material (admin setting).
+        if (($body['profile'] ?? null) === '2bin') {
+            $body['limits'] = $compactor->load();
+        }
+        return response()->json($body);
     }
 
-    public function hardwareDeposit(Request $request): JsonResponse
+    public function hardwareDeposit(Request $request, CompactorSettingsService $compactor): JsonResponse
     {
         $request->validate([
             'material'    => 'required|string|max:32',
             'allow_flush' => 'required|boolean',
         ]);
 
-        return $this->machineResponse($this->ai->deposit($request->material, $request->boolean('allow_flush')));
+        // The machine empties the chamber before an item past the admin's maximum.
+        return $this->machineResponse($this->ai->deposit(
+            $request->material, $request->boolean('allow_flush'), $compactor->capacityFor($request->material)
+        ));
     }
 
     public function hardwareFlush(): JsonResponse

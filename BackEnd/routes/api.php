@@ -128,6 +128,8 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
         Route::put('/reward-config', [AdminController::class, 'updateRewardConfig']);
         Route::get('/cash-redeem-settings', [AdminController::class, 'getCashRedeemSettings']);
         Route::put('/cash-redeem-settings', [AdminController::class, 'updateCashRedeemSettings']);
+        Route::get('/compactor-settings', [AdminController::class, 'getCompactorSettings']);
+        Route::put('/compactor-settings', [AdminController::class, 'updateCompactorSettings']);
         Route::get('/reward-items', [AdminController::class, 'rewardItems']);
         Route::post('/reward-items', [AdminController::class, 'createRewardItem']);
         Route::put('/reward-items/{id}', [AdminController::class, 'updateRewardItem']);

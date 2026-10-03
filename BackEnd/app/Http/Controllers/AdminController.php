@@ -15,6 +15,7 @@ use App\Mail\BinCollectionRequested;
 use App\Mail\FormalReportGenerated;
 use App\Services\FormalReportService;
 use App\Services\CashRedeemSettingsService;
+use App\Services\CompactorSettingsService;
 use App\Services\DetectionCaptureStorage;
 use App\Services\RewardConfigService;
 use Illuminate\Database\Eloquent\Builder;
@@ -647,6 +648,23 @@ class AdminController extends Controller
         $this->log($request->user(), 'update_cash_redeem_settings', 'system', 0, 'Updated cash redeem settings');
 
         return response()->json(['success' => true, 'settings' => $validated]);
+    }
+
+    public function getCompactorSettings(CompactorSettingsService $settings): JsonResponse
+    {
+        return response()->json(['success' => true, 'settings' => $settings->load()]);
+    }
+
+    public function updateCompactorSettings(Request $request, CompactorSettingsService $settings): JsonResponse
+    {
+        $rule = 'required|integer|min:' . CompactorSettingsService::MIN . '|max:' . CompactorSettingsService::MAX;
+        $validated = $request->validate(['plastic' => $rule, 'aluminum' => $rule]);
+
+        $settings->save($validated);
+        $this->log($request->user(), 'update_compactor_settings', 'system', 0,
+            "Updated compactor settings: max {$validated['plastic']} plastic, {$validated['aluminum']} aluminum per session");
+
+        return response()->json(['success' => true, 'settings' => $settings->load()]);
     }
 
     public function rewardItems(Request $request): JsonResponse

@@ -8,4 +8,8 @@ return [
 
     // Same isolation reasoning, for CashRedeemSettingsService.
     'cash_redeem_settings_filename' => env('CASH_REDEEM_SETTINGS_FILENAME', 'cash_redeem_settings.json'),
+
+    // Same isolation reasoning, for CompactorSettingsService (2-bin machine:
+    // max items per material per session / per compactor batch).
+    'compactor_settings_filename' => env('COMPACTOR_SETTINGS_FILENAME', 'compactor_settings.json'),
 ];

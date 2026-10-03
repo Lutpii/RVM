@@ -3,10 +3,21 @@
 namespace Tests\Feature;
 
 use App\Services\AiService;
+use App\Services\CompactorSettingsService;
 use Tests\TestCase;
 
 class HardwareCompactorProxyTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Deposits carry the admin's Compactor Settings: start from the defaults (3 each).
+        $path = app(CompactorSettingsService::class)->path();
+        if (file_exists($path)) {
+            unlink($path);
+        }
+    }
+
     public function test_state_passes_the_compactor_state_through(): void
     {
         $this->mock(AiService::class, function ($mock) {
@@ -52,10 +63,10 @@ class HardwareCompactorProxyTest extends TestCase
     public function test_deposit_passes_accepted_and_rejected_results_through(): void
     {
         $this->mock(AiService::class, function ($mock) {
-            $mock->shouldReceive('deposit')->once()->with('aluminum', false)->andReturn([
+            $mock->shouldReceive('deposit')->once()->with('aluminum', false, 3)->andReturn([
                 'status' => 200, 'body' => ['accepted' => true, 'job_id' => 'j1', 'will_flush' => false, 'eta_seconds' => 6],
             ]);
-            $mock->shouldReceive('deposit')->once()->with('paper', true)->andReturn([
+            $mock->shouldReceive('deposit')->once()->with('paper', true, null)->andReturn([
                 'status' => 400, 'body' => ['accepted' => false, 'reason' => 'not_accepted'],
             ]);
         });

@@ -48,7 +48,17 @@ MAX_JOBS_KEPT = 50
 
 # The compactor chamber holds at most this many items; a further item of the
 # same material empties the chamber first (compact + tilt) before it drops.
+# The admin can change it per material on the website (Compactor Settings);
+# Laravel then sends it with every deposit. This is the default.
 CHAMBER_CAPACITY = 3
+MAX_CHAMBER_CAPACITY = 20
+
+
+def chamber_capacity(value):
+    """A deposit's capacity: a whole number 1..MAX_CHAMBER_CAPACITY, else the default."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return CHAMBER_CAPACITY
+    return min(value, MAX_CHAMBER_CAPACITY)
 
 
 class PlaceholderDriver:
@@ -107,21 +117,22 @@ class Machine:
             self._thread = threading.Thread(target=self._worker, daemon=True)
             self._thread.start()
 
-    def deposit(self, material, allow_flush):
+    def deposit(self, material, allow_flush, capacity=None):
         if material not in ACCEPTED_MATERIALS:
             return {'accepted': False, 'reason': 'not_accepted'}
+        capacity = chamber_capacity(capacity)
         with self._cv:
             if self._fault:
                 return self._refused()
             chamber, count, pending = self._projection()
             mismatch = chamber is not None and chamber != material
-            full = chamber == material and count >= CHAMBER_CAPACITY
+            full = chamber == material and count >= capacity
             will_flush = mismatch or full
             if mismatch and not allow_flush:
                 return {'accepted': False, 'reason': 'mismatch',
                         'chamber_material': chamber, 'chamber_count': count}
             eta = pending + (FLUSH_SECONDS if will_flush else 0) + DEPOSIT_SECONDS
-            job_id = self._enqueue({'type': 'deposit', 'material': material})
+            job_id = self._enqueue({'type': 'deposit', 'material': material, 'capacity': capacity})
             return {'accepted': True, 'job_id': job_id, 'will_flush': will_flush,
                     'eta_seconds': round(eta)}
 
@@ -212,7 +223,7 @@ class Machine:
                     seconds += FLUSH_SECONDS
                 material, count = None, 0
             else:
-                if material is not None and (material != job['material'] or count >= CHAMBER_CAPACITY):
+                if material is not None and (material != job['material'] or count >= job['capacity']):
                     seconds += FLUSH_SECONDS
                     material, count = None, 0
                 seconds += DEPOSIT_SECONDS
@@ -312,7 +323,7 @@ class Machine:
         material = job['material']
         with self._cv:
             current, count = self._chamber_material, self._chamber_count
-        if current is not None and (current != material or count >= CHAMBER_CAPACITY):
+        if current is not None and (current != material or count >= job['capacity']):
             self._do_flush()
         self._set_phase('gate')
         self._driver.gate_open()                       # includes the hold: the item is now in the chamber

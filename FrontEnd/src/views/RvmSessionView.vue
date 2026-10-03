@@ -187,7 +187,7 @@
           </div>
           <!-- 3rd item of a material: the session ends by itself (see startLimitEnd) -->
           <p v-if="limitEnd" class="limit-end-note">
-            {{ $t('session.limitEnding', { max: SESSION_LIMIT_PER_MATERIAL, material: materialLabel(limitEnd.material), seconds: Math.max(limitEnd.seconds, 0) }) }}
+            {{ $t('session.limitEnding', { max: materialLimit(limitEnd.material), material: materialLabel(limitEnd.material), seconds: Math.max(limitEnd.seconds, 0) }) }}
           </p>
           <div v-else class="action-buttons">
             <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
@@ -318,7 +318,7 @@
           </div>
           <h2 class="step-status red">{{ $t('session.sessionLimitTitle', { material: materialLabel(aiDetected) }) }}</h2>
           <div class="result-box">
-            <p>{{ $t('session.sessionLimitBody', { max: SESSION_LIMIT_PER_MATERIAL, material: materialLabel(aiDetected) }) }}</p>
+            <p>{{ $t('session.sessionLimitBody', { max: materialLimit(aiDetected), material: materialLabel(aiDetected) }) }}</p>
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
@@ -383,7 +383,7 @@ import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
-import { stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, AUTO_END_SECONDS, SESSION_LIMIT_PER_MATERIAL } from '@/utils/compactorFlow'
+import { stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, limitFor, AUTO_END_SECONDS } from '@/utils/compactorFlow'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -411,6 +411,8 @@ const SWITCH_AUTO_CONTINUE_S = 20
 const profileReady    = rvm.detectHardwareProfile()
 const is2Bin          = computed(() => rvm.hardwareProfile === '2bin')
 const chamber         = ref({ material: null, count: 0, emptying: false })
+const limits          = ref(null) // admin's max per material per session, from /hardware/state
+const materialLimit   = (material) => limitFor(limits.value, material)
 const machineQueued   = ref(false) // our deposit is waiting behind earlier jobs
 const switchInfo      = ref(null)  // { current, count, next } on the material_switch screen
 const switchCountdown = ref(0)
@@ -440,6 +442,7 @@ async function refreshChamber() {
   if (state?.profile !== '2bin') return
   const emptying = state.busy && ['compacting', 'tilting'].includes(state.phase)
   chamber.value = { material: state.chamber_material, count: state.chamber_count, emptying }
+  if (state.limits) limits.value = state.limits
   // Keep the badge honest while a flush runs (e.g. the previous user's).
   if (emptying && !unmounted) chamberTimer = setTimeout(refreshChamber, 2000)
 }
@@ -856,7 +859,7 @@ async function simulateInsert() {
     }
     // The compactor holds 3 items: a 4th of the same material this session
     // stays on the closed flap and the user takes it back (no points).
-    if (sessionLimitReached(rvm.localSummary.transactions, aiDetected.value)) {
+    if (sessionLimitReached(rvm.localSummary.transactions, aiDetected.value, materialLimit(aiDetected.value))) {
       itemPoints.value = 0
       rvm.setStep('session_limit')
       return
@@ -936,7 +939,7 @@ async function awardPoints() {
 // ends by itself after a short look at the result; End Session compacts it.
 function startLimitEnd() {
   const material = rvm.selectedMaterial
-  if (!is2Bin.value || limitEnd.value || !limitEndsSession(rvm.localSummary.transactions, material)) return
+  if (!is2Bin.value || limitEnd.value || !limitEndsSession(rvm.localSummary.transactions, material, materialLimit(material))) return
   limitEnd.value = { material, seconds: AUTO_END_SECONDS }
   limitEndTimer = setInterval(() => {
     limitEnd.value.seconds -= 1
@@ -1020,7 +1023,8 @@ onMounted(() => {
   }
 
   if (rvm.currentStep === 'bin_check') autoStartFlow()
-  if (rvm.currentStep === 'complete') profileReady.then(startLimitEnd)
+  // (limits first: the admin maximum decides whether this item ended the session)
+  if (rvm.currentStep === 'complete') profileReady.then(refreshChamber).then(startLimitEnd)
 })
 </script>
 

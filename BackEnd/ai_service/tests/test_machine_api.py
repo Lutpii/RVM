@@ -73,6 +73,13 @@ class MachineApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)  # a real answer, so Laravel passes it through
         self.assertEqual(r.get_json()['reason'], 'fault')
 
+    def test_deposit_passes_the_capacity_on(self):
+        for _ in range(4):
+            r = self.client.post('/deposit', json={'material': 'plastic', 'allow_flush': False, 'capacity': 4}, headers=H)
+            self.assertFalse(r.get_json()['will_flush'])
+        r = self.client.post('/deposit', json={'material': 'plastic', 'allow_flush': False, 'capacity': 4}, headers=H)
+        self.assertTrue(r.get_json()['will_flush'])
+
     def test_flush_and_flap_check(self):
         self.assertIn('job_id', self.client.post('/flush', headers=H).get_json())
         self.assertEqual(self.client.get('/flap-check', headers=H).get_json(), {'empty': True})

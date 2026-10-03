@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, AUTO_END_SECONDS, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
+import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, limitFor, AUTO_END_SECONDS, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
 
 describe('stepAfterClassify', () => {
   it('deposits tin and plastic', () => {
@@ -158,5 +158,24 @@ describe('limitEndsSession', () => {
   })
   it('shows the result a few seconds before ending', () => {
     expect(AUTO_END_SECONDS).toBe(3)
+  })
+  it('follows the maximum the admin set for that material', () => {
+    const plastic3 = [txn('plastic'), txn('plastic'), txn('plastic')]
+    expect(limitEndsSession(plastic3, 'plastic', 5)).toBe(false)
+    expect(limitEndsSession([...plastic3, txn('plastic'), txn('plastic')], 'plastic', 5)).toBe(true)
+    expect(limitEndsSession([txn('aluminum')], 'aluminum', 1)).toBe(true)
+    expect(sessionLimitReached(plastic3, 'plastic', 4)).toBe(false)
+  })
+})
+
+describe('limitFor', () => {
+  it('reads the admin maximum from /hardware/state limits', () => {
+    expect(limitFor({ plastic: 4, aluminum: 6 }, 'plastic')).toBe(4)
+    expect(limitFor({ plastic: 4, aluminum: 6 }, 'aluminum')).toBe(6)
+  })
+  it('falls back to the default when the limit is missing or not a sane number', () => {
+    for (const limits of [null, undefined, {}, { plastic: 0 }, { plastic: '5' }, { plastic: 2.5 }, { plastic: -1 }]) {
+      expect(limitFor(limits, 'plastic')).toBe(SESSION_LIMIT_PER_MATERIAL)
+    }
   })
 })

@@ -24,7 +24,9 @@ def create_machine_blueprint(machine, require_api_key):
         # Only a real JSON true may trigger a ~40 s compact: a string "false"
         # is truthy in Python and must not slip through.
         allow_flush = data.get('allow_flush') is True
-        result = machine.deposit(str(data.get('material') or ''), allow_flush)
+        # Max items of this material per batch, from the admin's Compactor
+        # Settings; anything that isn't a sane whole number means the default.
+        result = machine.deposit(str(data.get('material') or ''), allow_flush, data.get('capacity'))
         return jsonify(result), (400 if result.get('reason') == 'not_accepted' else 200)
 
     @bp.route('/flush', methods=['POST'])

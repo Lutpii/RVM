@@ -251,6 +251,37 @@ class MachineTest(unittest.TestCase):
     def test_capacity_is_three(self):
         self.assertEqual(CHAMBER_CAPACITY, 3)
 
+    def test_capacity_comes_with_each_deposit(self):
+        # The admin sets the maximum per material on the website; Laravel sends
+        # it with every deposit. 5 aluminum fit, the 6th empties the chamber first.
+        m = self.make()
+        for _ in range(5):
+            self.assertFalse(m.deposit('aluminum', False, capacity=5)['will_flush'])
+        self.assertTrue(m.deposit('aluminum', False, capacity=5)['will_flush'])
+        self.run_all(m)
+        self.assertEqual(self.driver.calls, GATE * 5 + ['compact', 'tilt:aluminum'] + GATE)
+        self.assertEqual(m.state()['chamber_count'], 1)
+
+    def test_capacity_of_one_compacts_before_every_next_item(self):
+        m = self.make()
+        m.deposit('plastic', False, capacity=1)
+        r = m.deposit('plastic', False, capacity=1)
+        self.assertTrue(r['will_flush'])
+        self.run_all(m)
+        self.assertEqual(self.driver.calls, GATE + ['compact', 'tilt:plastic'] + GATE)
+
+    def test_bad_capacity_falls_back_to_the_default(self):
+        m = self.make()  # worker not started: only the projection is checked
+        for bad in (None, 0, -2, 'x', True, 2.5):
+            m2 = self.make()
+            for _ in range(CHAMBER_CAPACITY):
+                self.assertFalse(m2.deposit('plastic', False, capacity=bad)['will_flush'], repr(bad))
+            self.assertTrue(m2.deposit('plastic', False, capacity=bad)['will_flush'], repr(bad))
+        # and a huge value is capped
+        for _ in range(20):
+            m.deposit('plastic', False, capacity=999)
+        self.assertTrue(m.deposit('plastic', False, capacity=999)['will_flush'])
+
     def test_item_counts_as_dropped_before_the_flap_closes(self):
         # Points may be awarded as soon as the item is in the chamber; the
         # flap closing afterwards must not delay that.

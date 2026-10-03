@@ -105,13 +105,20 @@ export function oneDecision() {
   }
 }
 
-// The compactor holds 3 items, so one session may deposit at most 3 of each
-// material (rejected items don't count).
+// One session may deposit at most this many of each material (rejected items
+// don't count): what the compactor takes in one batch. The admin can change it
+// per material (Machines > Compactor Settings); this is the default.
 export const SESSION_LIMIT_PER_MATERIAL = 3
 
-export function sessionLimitReached(transactions, material) {
+// The maximum for `material` from /hardware/state `limits`, else the default.
+export function limitFor(limits, material) {
+  const value = limits?.[material]
+  return Number.isInteger(value) && value >= 1 ? value : SESSION_LIMIT_PER_MATERIAL
+}
+
+export function sessionLimitReached(transactions, material, limit = SESSION_LIMIT_PER_MATERIAL) {
   const used = (transactions || []).filter((t) => t.is_valid && t.material === material).length
-  return used >= SESSION_LIMIT_PER_MATERIAL
+  return used >= limit
 }
 
 // Seconds the "Success" screen stays up before a limit ends the session.
@@ -120,6 +127,6 @@ export const AUTO_END_SECONDS = 3
 // True when the item just accepted (of `material`) is the last one allowed:
 // the chamber then holds a full batch, so the session ends on its own and
 // End Session compacts it.
-export function limitEndsSession(transactions, material) {
-  return sessionLimitReached(transactions, material)
+export function limitEndsSession(transactions, material, limit = SESSION_LIMIT_PER_MATERIAL) {
+  return sessionLimitReached(transactions, material, limit)
 }

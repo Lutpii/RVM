@@ -407,6 +407,28 @@
           </div>
         </div>
 
+        <!-- 2-bin compactor: max items per material per session (= one compactor batch) -->
+        <div class="section-card">
+          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> COMPACTOR SETTINGS</h3>
+          <p class="compactor-hint">
+            How many items of each material one session may put in. The compactor presses a batch
+            at this number, and the kiosk ends the session by itself once a material reaches it.
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Max plastic per session <span class="label-hint">1–10</span></label>
+              <input v-model.number="compactorSettings.plastic" type="number" min="1" max="10" step="1" />
+            </div>
+            <div class="form-group">
+              <label>Max aluminum per session <span class="label-hint">1–10</span></label>
+              <input v-model.number="compactorSettings.aluminum" type="number" min="1" max="10" step="1" />
+            </div>
+          </div>
+          <button class="add-btn" :disabled="savingCompactorSettings" @click="saveCompactorSettings">
+            {{ savingCompactorSettings ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+
         <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> RVM MACHINES</h3>
@@ -1280,6 +1302,8 @@ const detectionMaterials = computed(() => [
 
 const cashRedeemSettings = ref({ points_per_unit: 100, rm_per_unit: 0.10, min_points: 500 })
 const savingCashRedeemSettings = ref(false)
+const compactorSettings = ref({ plastic: 3, aluminum: 3 })
+const savingCompactorSettings = ref(false)
 const rewardItems = ref([])
 const rewardItemsPage = ref(1)
 const rewardItemsPerPage = ref(20)
@@ -1888,6 +1912,31 @@ async function saveCashRedeemSettings() {
     showToast(e.response?.data?.message || 'Failed to update cash redeem settings.', 'error')
   } finally {
     savingCashRedeemSettings.value = false
+  }
+}
+
+async function fetchCompactorSettings() {
+  try {
+    const res = await api.get('/admin/compactor-settings')
+    compactorSettings.value = { ...compactorSettings.value, ...res.data.settings }
+  } catch {}
+}
+
+async function saveCompactorSettings() {
+  const { plastic, aluminum } = compactorSettings.value
+  if (![plastic, aluminum].every((v) => Number.isInteger(v) && v >= 1 && v <= 10)) {
+    showToast('Max per session must be a whole number from 1 to 10.', 'error')
+    return
+  }
+  savingCompactorSettings.value = true
+  try {
+    const res = await api.put('/admin/compactor-settings', { plastic, aluminum })
+    compactorSettings.value = res.data.settings
+    showToast('Compactor settings updated.')
+  } catch (e) {
+    showToast(e.response?.data?.message || 'Failed to update compactor settings.', 'error')
+  } finally {
+    savingCompactorSettings.value = false
   }
 }
 
@@ -2615,6 +2664,7 @@ onMounted(async () => {
     ...(preloadTabs.includes(activeTab.value) ? [] : [fetchTabData(activeTab.value, true)]),
     fetchRewardConfig(),
     fetchCashRedeemSettings(),
+    fetchCompactorSettings(),
     fetchChartData(),
   ])
   refreshTimer = setInterval(() => {
@@ -3241,6 +3291,7 @@ onUnmounted(() => {
 }
 .input-disabled { opacity: 0.5; cursor: not-allowed; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.compactor-hint { font-size: 12px; color: var(--text-muted); margin: -6px 0 14px; max-width: 640px; }
 .form-error { font-size: 12px; color: var(--accent-red); margin: 6px 0 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 .modal-actions .action-btn { min-height: 38px; padding: 8px 16px; margin-right: 0; }

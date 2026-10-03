@@ -125,9 +125,15 @@ class AiService
         return $this->machineCall('get', '/state', $jobId !== null ? ['job' => $jobId] : []);
     }
 
-    public function deposit(string $material, bool $allowFlush): ?array
+    // $capacity: max items of this material per compactor batch (admin's
+    // Compactor Settings); null lets the machine use its own default.
+    public function deposit(string $material, bool $allowFlush, ?int $capacity = null): ?array
     {
-        return $this->machineCall('post', '/deposit', ['material' => $material, 'allow_flush' => $allowFlush]);
+        $payload = ['material' => $material, 'allow_flush' => $allowFlush];
+        if ($capacity !== null) {
+            $payload['capacity'] = $capacity;
+        }
+        return $this->machineCall('post', '/deposit', $payload);
     }
 
     public function flush(): ?array
