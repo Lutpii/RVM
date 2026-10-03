@@ -62,6 +62,17 @@ class MachineApiTest(unittest.TestCase):
         r = self.client.post('/deposit', json={'material': 'plastic', 'allow_flush': True}, headers=H)
         self.assertTrue(r.get_json()['will_flush'])
 
+    def test_state_and_deposit_report_a_fault(self):
+        locked = Machine(RecordingDriver(startup_result='Tilt is not at the centre'))
+        locked.start()
+        app = Flask(__name__)
+        app.register_blueprint(create_machine_blueprint(locked, fake_require_api_key))
+        client = app.test_client()
+        self.assertEqual(client.get('/state', headers=H).get_json()['fault']['reason'], 'Tilt is not at the centre')
+        r = client.post('/deposit', json={'material': 'plastic', 'allow_flush': False}, headers=H)
+        self.assertEqual(r.status_code, 200)  # a real answer, so Laravel passes it through
+        self.assertEqual(r.get_json()['reason'], 'fault')
+
     def test_flush_and_flap_check(self):
         self.assertIn('job_id', self.client.post('/flush', headers=H).get_json())
         self.assertEqual(self.client.get('/flap-check', headers=H).get_json(), {'empty': True})

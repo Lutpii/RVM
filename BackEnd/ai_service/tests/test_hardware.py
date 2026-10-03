@@ -7,9 +7,11 @@ from hardware import CHAMBER_CAPACITY, DEPOSIT_SECONDS, FLUSH_SECONDS, Machine, 
 
 
 class RecordingDriver:
-    def __init__(self, fail_on=None):
+    def __init__(self, fail_on=None, startup_result=None):
         self.calls = []
         self.fail_on = fail_on
+        self.startup_result = startup_result  # None = ready, a string = why it is not, an exception = raised
+        self.stops = 0
 
     def _do(self, name):
         if name == self.fail_on:
@@ -22,6 +24,13 @@ class RecordingDriver:
     def compact(self): self._do('compact')
     def tilt(self, material): self._do(f'tilt:{material}')
     def flap_is_empty(self): return True
+
+    def startup(self):
+        if isinstance(self.startup_result, Exception):
+            raise self.startup_result
+        return self.startup_result
+
+    def emergency_stop(self): self.stops += 1
 
 
 GATE = ['gate_open', 'gate_close']
@@ -169,16 +178,60 @@ class MachineTest(unittest.TestCase):
             s = Machine(RecordingDriver(), state_path=path).state()
             self.assertEqual((s['chamber_material'], s['chamber_count']), ('aluminum', 1))
 
-    def test_failed_job_is_reported_and_next_job_still_runs(self):
+    def test_no_fault_normally(self):
+        m = self.make()
+        m.deposit('plastic', False)
+        self.run_all(m)
+        self.assertIsNone(m.state()['fault'])
+
+    def test_failed_job_locks_the_machine(self):
+        # A hardware failure (e.g. tilt not back at the limit switch) must not
+        # be driven into again: stop everything, cancel the queue, refuse work.
         m = self.make(driver=RecordingDriver(fail_on='gate_open'))
         bad = m.deposit('plastic', False)
-        good = m.deposit('plastic', False)
+        queued = m.deposit('plastic', False)
         with self.assertLogs('hardware', level='ERROR'):
             self.run_all(m)
         self.assertEqual(m.state(bad['job_id'])['job']['status'], 'failed')
-        self.assertEqual(m.state(good['job_id'])['job']['status'], 'dropped')
+        self.assertEqual(m.state(queued['job_id'])['job']['status'], 'failed')
+        self.assertEqual(self.driver.calls, [])  # the queued job never moved anything
+        self.assertEqual(self.driver.stops, 1)
         s = m.state()
-        self.assertEqual((s['phase'], s['busy'], s['chamber_count']), ('idle', False, 1))
+        self.assertEqual((s['phase'], s['busy'], s['queue_length']), ('idle', False, 0))
+        self.assertIn('gate_open jammed', s['fault']['reason'])
+        self.assertEqual(s['fault']['job'], 'deposit')
+
+        refused = m.deposit('plastic', False)
+        self.assertEqual((refused['accepted'], refused['reason']), (False, 'fault'))
+        self.assertEqual(refused['fault'], s['fault'])
+        self.assertEqual(m.flush()['reason'], 'fault')
+        self.assertTrue(m.wait_idle(1))
+        self.assertEqual(self.driver.calls, [])
+
+    def test_failed_flush_locks_the_machine_and_keeps_the_chamber(self):
+        m = self.make(driver=RecordingDriver(fail_on='tilt:aluminum'))
+        m.deposit('aluminum', False)
+        m.flush()
+        with self.assertLogs('hardware', level='ERROR'):
+            self.run_all(m)
+        s = m.state()
+        self.assertIsNotNone(s['fault'])
+        # unknown where the batch ended up: keep it counted, never assume empty
+        self.assertEqual((s['chamber_material'], s['chamber_count']), ('aluminum', 1))
+
+    def test_startup_problem_locks_the_machine(self):
+        m = self.make(driver=RecordingDriver(startup_result='Tilt is not at the centre'))
+        m.start()
+        self.assertEqual(m.state()['fault']['reason'], 'Tilt is not at the centre')
+        self.assertEqual(m.state()['fault']['job'], 'startup')
+        self.assertEqual(m.deposit('plastic', False)['reason'], 'fault')
+
+    def test_startup_exception_locks_the_machine(self):
+        m = self.make(driver=RecordingDriver(startup_result=OSError('GPIO busy')))
+        with self.assertLogs('hardware', level='ERROR'):
+            m.start()
+        self.assertIn('GPIO busy', m.state()['fault']['reason'])
+        self.assertEqual(self.driver.stops, 1)
 
     def test_full_chamber_is_emptied_before_the_next_item(self):
         # The compactor holds at most CHAMBER_CAPACITY items: a 4th item of the
@@ -225,6 +278,7 @@ class MachineTest(unittest.TestCase):
             self.run_all(m)
         self.assertEqual(m.state(r['job_id'])['job']['status'], 'dropped')
         self.assertEqual((m.state()['busy'], m.state()['chamber_count']), (False, 1))
+        self.assertIsNotNone(m.state()['fault'])  # an open flap still needs a technician
 
     def test_unknown_job_id(self):
         self.assertEqual(self.make().state('nope')['job'], {'id': 'nope', 'status': 'unknown'})
@@ -235,8 +289,10 @@ class PlaceholderDriverTest(unittest.TestCase):
         slept = []
         d = PlaceholderDriver(time_scale=0.5, sleep=slept.append)
         d.gate_open(); d.gate_close(); d.compact(); d.tilt('plastic')
-        self.assertEqual(slept, [1.95, 0.95, 16.0, 4.0])
+        self.assertEqual(slept, [2.95, 1.95, 8.0, 4.0])
         self.assertTrue(d.flap_is_empty())
+        self.assertIsNone(d.startup())
+        d.emergency_stop()
 
     def test_zero_scale_never_sleeps(self):
         slept = []

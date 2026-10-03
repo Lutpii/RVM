@@ -261,20 +261,25 @@ print(f"Hardware status: camera={CAMERA_AVAILABLE}")
 
 # ============================================================
 # COMPACTOR (2-bin DSME machine) — see hardware.py / machine_api.py.
-# HW_DRIVER=placeholder (the only option for now) sleeps for the real
-# durations instead of touching GPIO; HW_TIME_SCALE=0.1 speeds it up for
-# local dev. Chamber contents survive a restart via chamber_state.json.
+# HW_DRIVER=gpio drives the real flap servos, compactor and tilt on the Pi
+# (gpio_driver.py). HW_DRIVER=placeholder (default, e.g. a laptop) sleeps for
+# the real durations instead of touching GPIO; HW_TIME_SCALE=0.1 speeds it
+# up for local dev. Chamber contents survive a restart via chamber_state.json.
 # ============================================================
 HW_DRIVER = os.environ.get('HW_DRIVER', 'placeholder').strip().lower()
-if HW_DRIVER != 'placeholder':
-    raise RuntimeError(f"HW_DRIVER={HW_DRIVER!r} is not supported yet; use 'placeholder'.")
 HW_TIME_SCALE = float(os.environ.get('HW_TIME_SCALE', '1.0'))
+if HW_DRIVER == 'gpio':
+    from gpio_driver import GpioDriver
+    hw_driver = GpioDriver(time_scale=HW_TIME_SCALE)
+elif HW_DRIVER == 'placeholder':
+    hw_driver = PlaceholderDriver(time_scale=HW_TIME_SCALE)
+else:
+    raise RuntimeError(f"HW_DRIVER={HW_DRIVER!r} is not supported; use 'gpio' or 'placeholder'.")
 
-machine = Machine(PlaceholderDriver(time_scale=HW_TIME_SCALE),
-                  state_path=str(_HERE / 'chamber_state.json'))
-machine.start()
+machine = Machine(hw_driver, state_path=str(_HERE / 'chamber_state.json'))
+machine.start()  # runs the driver's startup check: flap closed, tilt at its centre
 app.register_blueprint(create_machine_blueprint(machine, require_api_key))
-print(f"Compactor ready: driver={HW_DRIVER}, time_scale={HW_TIME_SCALE}")
+print(f"Compactor ready: driver={HW_DRIVER}, time_scale={HW_TIME_SCALE}, fault={machine.state()['fault']}")
 
 
 @app.route('/health', methods=['GET'])

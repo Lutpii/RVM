@@ -329,6 +329,19 @@
           </div>
         </div>
 
+        <!-- MACHINE FAULT (2-bin): a hardware move failed and the machine is
+             locked until a technician checks it; nothing more can be deposited -->
+        <div v-else-if="rvm.currentStep === 'machine_fault'" key="machine_fault" class="step-content centered">
+          <h2 class="step-status red">{{ $t('session.machineFault') }}</h2>
+          <p class="step-sub">{{ $t('session.machineFaultHint') }}</p>
+          <div class="action-buttons">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+          </div>
+        </div>
+
         <!-- MACHINE ERROR (2-bin): deposit failed or timed out, no points -->
         <div v-else-if="rvm.currentStep === 'machine_error'" key="machine_error" class="step-content centered">
           <h2 class="step-status red">{{ $t('session.machineError') }}</h2>
@@ -366,7 +379,7 @@ import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
-import { stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from '@/utils/compactorFlow'
+import { stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from '@/utils/compactorFlow'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -448,6 +461,7 @@ async function depositAndWait(material, allowFlush) {
     return false
   }
   if (result.kind === 'rejected') { recordInvalidItem(); rvm.setStep('item_rejected'); return false }
+  if (result.kind === 'fault') { rvm.setStep('machine_fault'); return false }
   if (result.kind === 'error') { rvm.setStep('machine_error'); return false }
 
   switchStageIdx.value = -1
@@ -470,7 +484,8 @@ async function depositAndWait(material, allowFlush) {
     },
   })
   machineQueued.value = false
-  if (outcome !== 'done') { rvm.setStep('machine_error'); return false }
+  // A failed move locks the machine: say so instead of "try again".
+  if (outcome !== 'done') { rvm.setStep((await machineLocked()) ? 'machine_fault' : 'machine_error'); return false }
   await refreshChamber()
   return true
 }
@@ -697,7 +712,7 @@ const currentStepLabel = computed(() => {
     item_rejected: t('session.stepItemRejected'),
     material_switch: t('session.stepMaterialSwitch'), compacting: t('session.stepCompacting'),
     dropping: t('session.stepDropping'), flap_occupied: t('session.stepFlapCheck'),
-    machine_error: t('session.stepMachineError'), session_limit: t('session.stepSessionLimit'),
+    machine_error: t('session.stepMachineError'), machine_fault: t('session.stepMachineFault'), session_limit: t('session.stepSessionLimit'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -709,6 +724,10 @@ function toggleLang() {
 
 const isAutoFlowRunning = ref(false)
 
+async function machineLocked() {
+  return is2Bin.value && isMachineFault(await getHardwareState())
+}
+
 async function autoStartFlow() {
   if (isAutoFlowRunning.value) return
   isAutoFlowRunning.value = true
@@ -716,6 +735,11 @@ async function autoStartFlow() {
   await delay(1950)
 
   await profileReady
+  if (await machineLocked()) {
+    rvm.setStep('machine_fault')
+    isAutoFlowRunning.value = false
+    return
+  }
   await ensureFlapEmpty()
   await refreshChamber()
   rvm.setStep('insert')

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
+import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
 
 describe('stepAfterClassify', () => {
   it('deposits tin and plastic', () => {
@@ -22,6 +22,20 @@ describe('readDepositResult', () => {
     expect(readDepositResult({ accepted: false, reason: 'not_accepted' })).toEqual({ kind: 'rejected' })
     expect(readDepositResult(null)).toEqual({ kind: 'error' })
     expect(readDepositResult({ success: false, error: 'machine_unavailable' })).toEqual({ kind: 'error' })
+  })
+  it('reports a locked machine (a hardware move failed) as a fault', () => {
+    expect(readDepositResult({ accepted: false, reason: 'fault', fault: { reason: 'Tilt stuck', job: 'flush' } }))
+      .toEqual({ kind: 'fault' })
+  })
+})
+
+describe('isMachineFault', () => {
+  it('is true only when the 2-bin machine reports a fault', () => {
+    expect(isMachineFault({ profile: '2bin', fault: { reason: 'Tilt stuck' } })).toBe(true)
+    expect(isMachineFault({ profile: '2bin', fault: null })).toBe(false)
+    expect(isMachineFault({ profile: '2bin' })).toBe(false)
+    expect(isMachineFault({ profile: 'unavailable' })).toBe(false)
+    expect(isMachineFault(null)).toBe(false)
   })
 })
 

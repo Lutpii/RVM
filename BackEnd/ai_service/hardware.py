@@ -6,8 +6,14 @@ batch and tilts it into the tin bin (right) or the plastic bin (left).
 
 Machine owns the chamber state and runs every hardware action on a single
 worker thread, in order, so two actions never overlap. The driver does the
-physical moves; PlaceholderDriver only sleeps for the real durations (no
-GPIO). The real driver will be ported from DSME's rvm.py later.
+physical moves: gpio_driver.GpioDriver on the Raspberry Pi (HW_DRIVER=gpio),
+or PlaceholderDriver, which only sleeps for the real durations (no GPIO).
+
+A failed move (e.g. the tilt not back at its limit switch) locks the machine:
+the driver stops every motor, queued jobs are cancelled and new work is
+refused with reason 'fault' until the service restarts (a technician fixes
+the machine, then restarts rvm-ai or reboots the Pi). The startup check runs
+again on that restart.
 """
 import json
 import logging
@@ -21,13 +27,19 @@ from materials import ACCEPTED_MATERIALS
 
 log = logging.getLogger(__name__)
 
-# Durations in seconds, taken from DSME's rvm.py.
-GATE_MOVE = 1.9        # 80 degrees at 0.02 s/degree, plus 0.3 s settle
-GATE_OPEN_HOLD = 2
-COMPACT_IN = 16
-COMPACT_OUT = 16
-TILT_MOVE = 3
+# Durations in seconds, as tuned on the DSME machine (rvm_combined.py).
+# gpio_driver.py moves the hardware with these same numbers; here they also
+# give the kiosk its time estimates.
+GATE_STEPS = 180       # both flap servos move in this many small steps
+GATE_STEP_DELAY = 0.02
+GATE_SETTLE = 0.3      # wait at the target before the servo PWM is released
+GATE_MOVE = GATE_STEPS * GATE_STEP_DELAY + GATE_SETTLE   # ~3.9 s
+GATE_OPEN_HOLD = 2     # flap held open so the item falls into the chamber
+COMPACT_IN = 8
+COMPACT_OUT = 8
+TILT_MOVE = 3          # out to the bin; the way back usually takes about as long
 TILT_HOLD = 2
+TILT_HOME_TIMEOUT = 8  # the way back must reach the limit switch within this
 
 DEPOSIT_SECONDS = GATE_MOVE + GATE_OPEN_HOLD + GATE_MOVE
 FLUSH_SECONDS = COMPACT_IN + COMPACT_OUT + TILT_MOVE + TILT_HOLD + TILT_MOVE
@@ -65,6 +77,12 @@ class PlaceholderDriver:
     def flap_is_empty(self):
         return True
 
+    def startup(self):
+        return None  # always ready
+
+    def emergency_stop(self):
+        pass
+
 
 class Machine:
     def __init__(self, driver, state_path=None):
@@ -77,6 +95,7 @@ class Machine:
         self._phase = 'idle'
         self._chamber_material = None
         self._chamber_count = 0
+        self._fault = None  # {'reason', 'job', 'at'} once a hardware move failed
         self._thread = None
         self._load()
 
@@ -84,6 +103,7 @@ class Machine:
 
     def start(self):
         if self._thread is None:
+            self._startup_check()
             self._thread = threading.Thread(target=self._worker, daemon=True)
             self._thread.start()
 
@@ -91,6 +111,8 @@ class Machine:
         if material not in ACCEPTED_MATERIALS:
             return {'accepted': False, 'reason': 'not_accepted'}
         with self._cv:
+            if self._fault:
+                return self._refused()
             chamber, count, pending = self._projection()
             mismatch = chamber is not None and chamber != material
             full = chamber == material and count >= CHAMBER_CAPACITY
@@ -105,6 +127,8 @@ class Machine:
 
     def flush(self):
         with self._cv:
+            if self._fault:
+                return self._refused()
             chamber, _, pending = self._projection()
             eta = pending + (FLUSH_SECONDS if chamber is not None else 0)
             job_id = self._enqueue({'type': 'flush'})
@@ -121,6 +145,7 @@ class Machine:
                 'busy': self._running is not None or bool(self._queue),
                 'phase': self._phase,
                 'queue_length': len(self._queue),
+                'fault': dict(self._fault) if self._fault else None,
             }
             if job_id is not None:
                 job = self._jobs.get(job_id)
@@ -136,6 +161,39 @@ class Machine:
                     return False
                 self._cv.wait(remaining)
             return True
+
+    # ---------- faults ----------
+
+    def _startup_check(self):
+        """Ask the driver whether the machine is safe to run (flap closed,
+        tilt at its centre). A problem locks the machine from the start."""
+        try:
+            reason = self._driver.startup()
+        except Exception as e:
+            log.exception('Hardware startup failed')
+            self._stop_hardware()
+            reason = str(e) or type(e).__name__
+        if reason:
+            with self._cv:
+                self._set_fault(reason, 'startup')
+
+    def _stop_hardware(self):
+        try:
+            self._driver.emergency_stop()
+        except Exception:
+            log.exception('Emergency stop failed')
+
+    def _set_fault(self, reason, job_type):
+        self._fault = {'reason': str(reason)[:300], 'job': job_type,
+                       'at': time.strftime('%Y-%m-%dT%H:%M:%S')}
+        log.error('Machine locked (%s): %s', job_type, self._fault['reason'])
+        # Nothing queued may move the hardware any more.
+        for queued in self._queue:
+            queued['status'] = 'failed'
+        self._queue.clear()
+
+    def _refused(self):
+        return {'accepted': False, 'reason': 'fault', 'fault': dict(self._fault)}
 
     # ---------- internals (call with self._cv held) ----------
 
@@ -226,9 +284,11 @@ class Machine:
                     self._do_flush(finish_job=job)
                 else:
                     self._do_deposit(job)
-            except Exception:
+            except Exception as e:
                 log.exception('Hardware job %s (%s) failed', job['id'], job['type'])
+                self._stop_hardware()
                 with self._cv:
+                    self._set_fault(str(e) or type(e).__name__, job['type'])
                     # A failure after the drop (flap not closing) keeps the drop:
                     # the item is in the chamber and its points were awarded.
                     self._finish(job, 'dropped' if job['status'] == 'dropped' else 'failed')

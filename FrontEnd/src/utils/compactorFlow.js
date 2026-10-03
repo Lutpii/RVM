@@ -19,7 +19,15 @@ export function readDepositResult(data) {
     return { kind: 'mismatch', chamberMaterial: data.chamber_material, chamberCount: data.chamber_count ?? 0 }
   }
   if (data?.reason === 'not_accepted') return { kind: 'rejected' }
+  // A hardware move failed earlier: the machine is locked until a technician fixes it.
+  if (data?.reason === 'fault') return { kind: 'fault' }
   return { kind: 'error' }
+}
+
+// True when the 2-bin machine is locked after a hardware failure (see
+// ai_service/hardware.py); the kiosk then sends users away instead of taking items.
+export function isMachineFault(state) {
+  return state?.profile === '2bin' && !!state.fault
 }
 
 // Active stage of "compact old batch -> move to its bin -> drop new item":
