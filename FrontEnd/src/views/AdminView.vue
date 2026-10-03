@@ -564,7 +564,9 @@
                   <PhX weight="bold" /> {{ $t('admin.detectionReview.incorrect') }}
                 </div>
               </template>
-              <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb" :alt="$t('admin.detectionReview.captureAlt')" />
+              <!-- Tap the photo for the full-size viewer. v-tap ignores a swipe (the finger moves). -->
+              <img v-if="thumbnails[log.id]" :src="thumbnails[log.id]" class="detection-thumb tappable"
+                :alt="$t('admin.detectionReview.captureAlt')" v-tap="() => openDetectionViewer(log)" />
               <PhCamera v-else class="detection-thumb placeholder" weight="regular" aria-hidden="true" />
               <div class="detection-meta">
                 <div class="detection-badges">
@@ -727,11 +729,12 @@
           <PhX weight="bold" aria-hidden="true" />
         </button>
         <h3>{{ $t('admin.detectionReview.incorrectTitle') }}</h3>
+        <!-- Full photo, then the AI prediction right under it -->
         <div class="review-modal-summary">
           <img v-if="thumbnails[reviewingDetection.id]" :src="thumbnails[reviewingDetection.id]"
             class="review-modal-image" :alt="$t('admin.detectionReview.captureAlt')" />
           <PhCamera v-else class="review-modal-image placeholder" weight="regular" aria-hidden="true" />
-          <div>
+          <div class="review-modal-prediction">
             <span>{{ $t('admin.detectionReview.aiPrediction') }}</span>
             <strong>{{ reviewingDetection.ai_detected_type || 'unknown' }} — {{ Math.round((reviewingDetection.ai_confidence || 0) * 100) }}%</strong>
           </div>
@@ -745,6 +748,34 @@
             v-tap="() => saveIncorrectReview(material.value)">
             {{ material.label }}
             <small v-if="normalizedPrediction(reviewingDetection) === material.value">{{ $t('admin.detectionReview.aiPrediction') }}</small>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Detection Photo Viewer (tap a card's photo) ── -->
+    <div v-if="viewingDetection" class="modal-overlay detection-viewer-overlay" @click.self="closeDetectionViewer">
+      <div class="detection-viewer">
+        <button class="modal-close-btn" :aria-label="$t('admin.detectionReview.closeModal')"
+          v-tap="closeDetectionViewer">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
+        <img v-if="thumbnails[viewingDetection.id]" :src="thumbnails[viewingDetection.id]"
+          class="detection-viewer-image" :alt="$t('admin.detectionReview.captureAlt')" />
+        <div class="detection-viewer-caption">
+          <span>{{ $t('admin.detectionReview.aiPrediction') }}</span>
+          <strong>{{ viewingDetection.ai_detected_type || 'unknown' }} — {{ Math.round((viewingDetection.ai_confidence || 0) * 100) }}%</strong>
+          <small>{{ formatDate(viewingDetection.created_at) }}</small>
+        </div>
+        <div v-if="detectionView === 'pending'" class="detection-actions detection-viewer-actions">
+          <button class="review-btn" :title="correctDisabledReason(viewingDetection)"
+            :disabled="!isReviewable(viewingDetection) || isUnknownPrediction(viewingDetection)"
+            v-tap="viewerMarkCorrect">
+            <PhCheck weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.correct') }}
+          </button>
+          <button class="review-btn reject" :title="reviewDisabledReason(viewingDetection)"
+            :disabled="!isReviewable(viewingDetection)" v-tap="viewerMarkIncorrect">
+            <PhX weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.incorrect') }}
           </button>
         </div>
       </div>
@@ -1170,6 +1201,7 @@ const thumbnails         = ref({})
 const detectionView      = ref('pending')
 const detectionHistoryStatus = ref('reviewed')
 const reviewingDetection = ref(null)
+const viewingDetection   = ref(null) // card whose photo is open full-size
 // Reviewed cards taken out of the list before the server confirmed the save
 // (id -> savedAt, null while in flight). See utils/admin/detectionOptimistic.js.
 let hiddenDetectionIds = new Map()
@@ -1712,6 +1744,29 @@ function openIncorrectReview(log) {
 
 function closeIncorrectReview() {
   reviewingDetection.value = null
+}
+
+function openDetectionViewer(log) {
+  viewingDetection.value = log
+}
+
+function closeDetectionViewer() {
+  viewingDetection.value = null
+}
+
+// Review straight from the full-size viewer, same rules as the card buttons.
+async function viewerMarkCorrect() {
+  const log = viewingDetection.value
+  if (!log) return
+  closeDetectionViewer()
+  await markCorrect(log)
+}
+
+function viewerMarkIncorrect() {
+  const log = viewingDetection.value
+  if (!log) return
+  closeDetectionViewer()
+  openIncorrectReview(log)
 }
 
 // Tapping a material in the modal saves it right away. The modal closes at
@@ -3178,7 +3233,7 @@ onUnmounted(() => {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
 /* overflow-x: clip keeps a swiped-out card from adding a horizontal scrollbar. */
-.detection-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; overflow-x: clip; }
+.detection-grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; overflow-x: clip; align-items: start; }
 .detection-card {
   position: relative;
   background: var(--bg-card); border: 1px solid var(--border);
@@ -3197,8 +3252,10 @@ onUnmounted(() => {
 .swipe-hint-incorrect { background: rgba(239,68,68,0.85); }
 .detection-card[data-swipe-dir="right"] .swipe-hint-correct,
 .detection-card[data-swipe-dir="left"] .swipe-hint-incorrect { opacity: var(--swipe-progress, 0); }
-.detection-thumb { width: 100%; height: 160px; object-fit: cover; background: var(--bg-hover); }
-.detection-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--text-muted); }
+/* The whole photo, at its own aspect ratio (no cropping). */
+.detection-thumb { display: block; width: 100%; height: auto; background: var(--bg-hover); }
+.detection-thumb.tappable { cursor: zoom-in; }
+.detection-thumb.placeholder { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--text-muted); }
 .detection-meta { padding: 10px 12px; }
 .detection-badges { display: flex; gap: 6px; margin-bottom: 6px; }
 .detection-result { font-size: 13px; font-weight: 600; }
@@ -3233,20 +3290,38 @@ onUnmounted(() => {
 
 .detection-review-modal { width: 560px; }
 .review-modal-summary {
-  display: grid; grid-template-columns: 150px 1fr; gap: 16px;
-  align-items: center; padding: 12px; margin-bottom: 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; margin-bottom: 18px;
   background: var(--bg-hover); border: 1px solid var(--border); border-radius: 10px;
 }
+/* Whole photo; capped so the material buttons stay on screen. */
 .review-modal-image {
-  width: 150px; height: 110px; object-fit: cover;
+  display: block; width: 100%; height: auto; max-height: 50vh; object-fit: contain;
   background: var(--bg-card); border-radius: 8px;
 }
-.review-modal-image.placeholder {
+.review-modal-prediction { text-align: center; }
+.review-modal-image.placeholder { height: 110px;
   display: flex; align-items: center; justify-content: center;
   padding: 34px; color: var(--text-muted);
 }
 .review-modal-summary span { display: block; color: var(--text-muted); font-size: 12px; margin-bottom: 5px; }
 .review-modal-summary strong { color: var(--text-primary); font-size: 15px; text-transform: capitalize; }
+.detection-viewer {
+  position: relative; margin: auto; width: min(960px, 100%);
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 48px 16px 16px; box-sizing: border-box;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.35);
+}
+.detection-viewer-image {
+  display: block; width: 100%; height: auto; max-height: 72vh; object-fit: contain;
+  background: #000; border-radius: 10px;
+}
+.detection-viewer-caption { text-align: center; margin: 12px 0 4px; }
+.detection-viewer-caption span { display: block; color: var(--text-muted); font-size: 12px; }
+.detection-viewer-caption strong { display: block; color: var(--text-primary); font-size: 18px; text-transform: capitalize; }
+.detection-viewer-caption small { color: var(--text-muted); font-size: 12px; }
+.detection-viewer-actions { padding: 12px 0 0; }
+.detection-viewer-actions .review-btn { padding: 12px 8px; font-size: 14px; }
 .actual-material-prompt { color: var(--text-primary); font-size: 13px; font-weight: 600; margin: 0 0 10px; }
 .actual-material-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .actual-material-btn {
@@ -3424,8 +3499,6 @@ onUnmounted(() => {
   .filter-action { flex: 1; }
   .review-view-tabs, .history-filters { width: 100%; }
   .review-view-btn { flex: 1; }
-  .review-modal-summary { grid-template-columns: 100px 1fr; gap: 12px; }
-  .review-modal-image { width: 100px; height: 86px; }
   .user-actions     { flex-direction: column; align-items: stretch; gap: 8px; }
   .user-actions .action-btn { min-width: 82px; min-height: 40px; padding: 8px 12px; }
   .modal-overlay {
