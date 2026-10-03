@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
+import { ACCEPTED_2BIN, stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, AUTO_END_SECONDS, SESSION_LIMIT_PER_MATERIAL } from './compactorFlow.js'
 
 describe('stepAfterClassify', () => {
   it('deposits tin and plastic', () => {
@@ -140,5 +140,23 @@ describe('sessionLimitReached', () => {
     expect(sessionLimitReached(list, 'plastic')).toBe(false)
     expect(sessionLimitReached([], 'plastic')).toBe(false)
     expect(sessionLimitReached(undefined, 'plastic')).toBe(false)
+  })
+})
+
+describe('limitEndsSession', () => {
+  const txn = (material, is_valid = true) => ({ material, is_valid })
+  it('ends the session once the item just accepted is the 3rd of its material', () => {
+    const plastic3 = [txn('plastic'), txn('aluminum'), txn('plastic'), txn('plastic')]
+    expect(limitEndsSession(plastic3, 'plastic')).toBe(true)
+    expect(limitEndsSession([txn('aluminum'), txn('aluminum'), txn('aluminum')], 'aluminum')).toBe(true)
+  })
+  it('keeps the session open below the limit', () => {
+    expect(limitEndsSession([txn('plastic'), txn('plastic')], 'plastic')).toBe(false)
+    expect(limitEndsSession([txn('plastic'), txn('plastic'), txn('plastic', false)], 'plastic')).toBe(false)
+    // another material at its limit doesn't end it after this one
+    expect(limitEndsSession([txn('aluminum'), txn('aluminum'), txn('aluminum'), txn('plastic')], 'plastic')).toBe(false)
+  })
+  it('shows the result a few seconds before ending', () => {
+    expect(AUTO_END_SECONDS).toBe(3)
   })
 })

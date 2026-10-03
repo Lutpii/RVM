@@ -185,7 +185,11 @@
             <p class="earned-text">{{ rvm.isGuest ? $t('session.pointsDonatedLabel') : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
             <p class="carbon-text"><PhGlobe class="carbon-icon" weight="regular" /> {{ $t('session.carbonSavedLabel') }}: {{ itemCarbon.toFixed(3) }} kg CO2</p>
           </div>
-          <div class="action-buttons">
+          <!-- 3rd item of a material: the session ends by itself (see startLimitEnd) -->
+          <p v-if="limitEnd" class="limit-end-note">
+            {{ $t('session.limitEnding', { max: SESSION_LIMIT_PER_MATERIAL, material: materialLabel(limitEnd.material), seconds: Math.max(limitEnd.seconds, 0) }) }}
+          </p>
+          <div v-else class="action-buttons">
             <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
               {{ $t('session.endSession') }}
@@ -379,7 +383,7 @@ import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
-import { stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, SESSION_LIMIT_PER_MATERIAL } from '@/utils/compactorFlow'
+import { stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, AUTO_END_SECONDS, SESSION_LIMIT_PER_MATERIAL } from '@/utils/compactorFlow'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -410,6 +414,8 @@ const chamber         = ref({ material: null, count: 0, emptying: false })
 const machineQueued   = ref(false) // our deposit is waiting behind earlier jobs
 const switchInfo      = ref(null)  // { current, count, next } on the material_switch screen
 const switchCountdown = ref(0)
+const limitEnd        = ref(null) // {material, seconds} while a full batch ends the session
+let limitEndTimer = null
 const switchStageIdx  = ref(-1)
 let   switchTimer     = null
 const switchDecision  = oneDecision()
@@ -689,6 +695,7 @@ onBeforeUnmount(() => {
   stopCamera()
   stopSwitchTimer()
   clearTimeout(chamberTimer)
+  clearInterval(limitEndTimer)
   unmounted = true
 })
 
@@ -922,6 +929,22 @@ async function awardPoints() {
   }
   rvm.recordLocalTransaction({ material: rvm.selectedMaterial, weight: itemWeight.value, points: itemPoints.value, isValid: true, carbon: itemCarbon.value })
   rvm.setStep('complete')
+  startLimitEnd()
+}
+
+// 2-bin: the 3rd plastic or 3rd aluminum fills the compactor, so the session
+// ends by itself after a short look at the result; End Session compacts it.
+function startLimitEnd() {
+  const material = rvm.selectedMaterial
+  if (!is2Bin.value || limitEnd.value || !limitEndsSession(rvm.localSummary.transactions, material)) return
+  limitEnd.value = { material, seconds: AUTO_END_SECONDS }
+  limitEndTimer = setInterval(() => {
+    limitEnd.value.seconds -= 1
+    if (limitEnd.value.seconds > 0) return
+    clearInterval(limitEndTimer)
+    limitEndTimer = null
+    if (!unmounted && rvm.currentStep === 'complete') confirmEndSession()
+  }, 1000)
 }
 
 async function confirmEndSession() {
@@ -997,6 +1020,7 @@ onMounted(() => {
   }
 
   if (rvm.currentStep === 'bin_check') autoStartFlow()
+  if (rvm.currentStep === 'complete') profileReady.then(startLimitEnd)
 })
 </script>
 
@@ -1418,6 +1442,11 @@ onMounted(() => {
 .step-status.green { color: var(--accent-green); }
 .step-status.red   { color: var(--accent-red); }
 .step-sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 8px; }
+.limit-end-note {
+  margin-top: 16px; padding: 12px 16px; border-radius: 12px; max-width: 520px;
+  font-size: 15px; font-weight: 600; text-align: center;
+  color: var(--accent-green); background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.35);
+}
 
 .result-box {
   background: var(--bg-card);

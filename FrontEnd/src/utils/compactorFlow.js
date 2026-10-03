@@ -113,3 +113,13 @@ export function sessionLimitReached(transactions, material) {
   const used = (transactions || []).filter((t) => t.is_valid && t.material === material).length
   return used >= SESSION_LIMIT_PER_MATERIAL
 }
+
+// Seconds the "Success" screen stays up before a limit ends the session.
+export const AUTO_END_SECONDS = 3
+
+// True when the item just accepted (of `material`) is the last one allowed:
+// the chamber then holds a full batch, so the session ends on its own and
+// End Session compacts it.
+export function limitEndsSession(transactions, material) {
+  return sessionLimitReached(transactions, material)
+}
