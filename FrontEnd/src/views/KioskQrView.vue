@@ -93,6 +93,7 @@ import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
 import { PhHourglass } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
+import { QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, afterQrExpiry } from '@/utils/qrToken'
 
 const router      = useRouter()
 const route       = useRoute()
@@ -107,8 +108,9 @@ const qrSvgSrc       = ref('')
 const scanUrl        = ref('')
 const currentToken   = ref('')
 const scannedUser    = ref('')
-const QR_REFRESH_SECONDS = 60
-const QR_SCREEN_SECONDS  = 120
+const QR_REFRESH_SECONDS = QR_LIFETIME_SECONDS
+// Backstop only: the first QR plus QR_MAX_REFRESHES new ones, then landing page.
+const QR_SCREEN_SECONDS  = QR_LIFETIME_SECONDS * (QR_MAX_REFRESHES + 1) + 20
 
 const expiresInSec   = ref(QR_REFRESH_SECONDS)
 const timerPct       = ref(100)
@@ -119,6 +121,7 @@ let screenTimeout = null
 let isActive      = false
 let screenDeadline = 0
 let machineData   = null  // cached from generate response
+let refreshesDone = 0     // new QRs shown after the first one expired
 
 async function generateQr() {
   loadingQr.value  = true
@@ -255,11 +258,12 @@ function startTimer() {
 function handleExpiry() {
   clearIntervals()
 
-  if (Date.now() >= screenDeadline) {
+  if (afterQrExpiry(refreshesDone) === 'leave' || Date.now() >= screenDeadline) {
     returnToKiosk()
     return
   }
 
+  refreshesDone += 1
   state.value = 'expired'
   generateQr()
 }

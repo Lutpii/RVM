@@ -13,6 +13,10 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class QrController extends Controller
 {
+    // How long a kiosk login QR can be scanned. Must match QR_LIFETIME_SECONDS
+    // in FrontEnd/src/utils/qrToken.js, which replaces the QR on this schedule.
+    public const QR_LIFETIME_SECONDS = 100;
+
     // Generate QR code for RVM machine display
     public function generate(string $machineCode): JsonResponse
     {
@@ -41,9 +45,9 @@ class QrController extends Controller
             'machine_id' => $machine->id,
             'qr_token'   => $token,
             'status'     => 'pending',
-            // The kiosk replaces its QR every 60 seconds. Match the server-side
-            // validity window so a QR removed from the display cannot be scanned.
-            'expires_at' => Carbon::now()->addSeconds(60),
+            // The kiosk replaces its QR every QR_LIFETIME_SECONDS. Match the
+            // server-side validity window so a QR removed from the display cannot be scanned.
+            'expires_at' => Carbon::now()->addSeconds(self::QR_LIFETIME_SECONDS),
         ]);
 
         // Build scan URL — points to the Vue frontend /scan page
@@ -86,7 +90,7 @@ class QrController extends Controller
         }
 
         // expires_at means two different things depending on status: for a
-        // 'pending' QR it's the 60-second scan window; for a 'scanned' one it's the
+        // 'pending' QR it's the QR_LIFETIME_SECONDS scan window; for a 'scanned' one it's the
         // kiosk_token's own TTL (see scan()). Either way, once it's passed the
         // session (and its kiosk_token) is dead.
         if (Carbon::now()->isAfter($qrSession->expires_at) && $qrSession->status !== 'expired') {
