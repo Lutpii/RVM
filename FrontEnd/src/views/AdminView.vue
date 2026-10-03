@@ -627,7 +627,7 @@
           <div v-if="loadingRewardItems" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="reward-admin-grid">
             <div v-for="item in rewardItems" :key="item.id" class="reward-admin-card">
-              <img v-if="item.image_url" :src="item.image_url" alt="" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px" />
+              <img v-if="item.image_url" :src="item.image_url" alt="" class="reward-admin-image" />
               <div class="reward-admin-header">
                 <div>
                   <strong>{{ item.name }}</strong>
@@ -848,6 +848,14 @@
         <div class="form-group"><label>Active</label><select v-model="newRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
         <div class="form-group">
           <label>Image</label>
+          <!-- Reward images are cropped to 4:3 so every card in the Rewards menu looks the same. -->
+          <div v-if="rewardImagePreviewUrl" class="reward-image-preview">
+            <img :src="rewardImagePreviewUrl" alt="" />
+            <button type="button" class="action-btn edit-btn" @click="adjustRewardImage">
+              <PhCrop weight="regular" aria-hidden="true" />
+              {{ rewardItemImageFile ? 'Adjust crop' : 'Adjust current image' }}
+            </button>
+          </div>
           <label
             :class="['image-dropzone', { dragging: rewardImageDragging }]"
             @dragenter.prevent="rewardImageDragging = true"
@@ -857,7 +865,7 @@
           >
             <PhUploadSimple class="upload-icon" weight="regular" aria-hidden="true" />
             <strong>{{ rewardItemImageFile?.name || 'Drop image here or click to browse' }}</strong>
-            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG' }}</span>
+            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG · cropped to 4:3 next' }}</span>
             <input class="file-input-hidden" type="file" accept="image/jpeg,image/png" @change="handleRewardImageChange" />
           </label>
         </div>
@@ -889,6 +897,14 @@
         <div class="form-group"><label>Active</label><select v-model="editingRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
         <div class="form-group">
           <label>Replace Image</label>
+          <!-- Reward images are cropped to 4:3 so every card in the Rewards menu looks the same. -->
+          <div v-if="rewardImagePreviewUrl" class="reward-image-preview">
+            <img :src="rewardImagePreviewUrl" alt="" />
+            <button type="button" class="action-btn edit-btn" @click="adjustRewardImage">
+              <PhCrop weight="regular" aria-hidden="true" />
+              {{ rewardItemImageFile ? 'Adjust crop' : 'Adjust current image' }}
+            </button>
+          </div>
           <label
             :class="['image-dropzone', { dragging: rewardImageDragging }]"
             @dragenter.prevent="rewardImageDragging = true"
@@ -898,13 +914,30 @@
           >
             <PhUploadSimple class="upload-icon" weight="regular" aria-hidden="true" />
             <strong>{{ rewardItemImageFile?.name || 'Drop replacement image here or click to browse' }}</strong>
-            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG · leave empty to keep current image' }}</span>
+            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG · cropped to 4:3 next · leave empty to keep current image' }}</span>
             <input class="file-input-hidden" type="file" accept="image/jpeg,image/png" @change="handleRewardImageChange" />
           </label>
         </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
           <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="saveRewardItem">{{ savingRewardItem ? '...' : 'Save' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Reward Image Crop Modal (opens over Add/Edit Reward) ── -->
+    <div v-if="rewardCropSource" class="modal-overlay" @click.self="closeRewardCrop">
+      <div class="modal reward-crop-modal">
+        <button class="modal-close-btn" :aria-label="$t('admin.imageCropper.cancel')" @click="closeRewardCrop">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
+        <h3>{{ $t('admin.imageCropper.title') }}</h3>
+        <ImageCropper ref="rewardCropper" :source="rewardCropSource" />
+        <div class="modal-actions">
+          <button class="action-btn" @click="closeRewardCrop">{{ $t('admin.imageCropper.cancel') }}</button>
+          <button class="action-btn edit-btn" :disabled="!rewardCropper?.ready || applyingRewardCrop" @click="applyRewardCrop">
+            {{ applyingRewardCrop ? '...' : $t('admin.imageCropper.apply') }}
+          </button>
         </div>
       </div>
     </div>
@@ -1071,13 +1104,14 @@ import jsQR from 'jsqr'
 import { extractQrToken } from '@/utils/qrToken'
 import { materialIconSvg } from '@/utils/materialIcons'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
+import ImageCropper from '@/components/admin/ImageCropper.vue'
 import {
   PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
   PhCaretLeft, PhCaretRight,
   PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhMagnifyingGlass, PhGift,
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
-  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple,
+  PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple, PhCrop,
 } from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
@@ -1254,8 +1288,15 @@ const rewardItemsLastPage = ref(1)
 const showAddRewardItem = ref(false)
 const editingRewardItem = ref(null)
 const newRewardItem = ref({ name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true })
-const rewardItemImageFile = ref(null)
+const rewardItemImageFile = ref(null) // the cropped 4:3 JPEG that gets uploaded
 const rewardImageDragging = ref(false)
+const rewardImageOriginal = ref(null)  // the picked file, kept so the crop can be redone from it
+const rewardImagePreview  = ref('')    // object URL of rewardItemImageFile
+const rewardCropSource    = ref(null)  // File or image URL open in the crop dialog
+const rewardCropper       = ref(null)
+const applyingRewardCrop  = ref(false)
+// New crop first; while editing without one, the reward's current image.
+const rewardImagePreviewUrl = computed(() => rewardImagePreview.value || editingRewardItem.value?.image_url || '')
 const rewardItemError = ref('')
 const savingRewardItem = ref(false)
 
@@ -2384,12 +2425,54 @@ function setRewardImageFile(file) {
     rewardItemError.value = 'Please choose a PNG or JPG image.'
     return
   }
-  rewardItemImageFile.value = file
+  // Not uploaded as-is: it goes through the crop dialog first.
+  rewardImageOriginal.value = file
+  rewardCropSource.value = file
   rewardItemError.value = ''
 }
 
 function handleRewardImageChange(event) {
   setRewardImageFile(event.target.files?.[0] || null)
+  event.target.value = '' // picking the same file again still fires change
+}
+
+function setRewardImagePreview(file) {
+  if (rewardImagePreview.value) URL.revokeObjectURL(rewardImagePreview.value)
+  rewardImagePreview.value = file ? URL.createObjectURL(file) : ''
+}
+
+function resetRewardImage() {
+  rewardItemImageFile.value = null
+  rewardImageOriginal.value = null
+  rewardCropSource.value = null
+  setRewardImagePreview(null)
+}
+
+// Re-crop from the full original (never from an earlier crop, which would lose detail).
+function adjustRewardImage() {
+  rewardCropSource.value = rewardImageOriginal.value || editingRewardItem.value?.image_url || null
+}
+
+function closeRewardCrop() {
+  rewardCropSource.value = null
+}
+
+async function applyRewardCrop() {
+  applyingRewardCrop.value = true
+  try {
+    const file = await rewardCropper.value?.exportFile()
+    if (!file) {
+      rewardItemError.value = 'This image could not be cropped. Please choose another one.'
+      rewardCropSource.value = null
+      return
+    }
+    rewardItemImageFile.value = file
+    setRewardImagePreview(file)
+    rewardItemError.value = ''
+    rewardCropSource.value = null
+  } finally {
+    applyingRewardCrop.value = false
+  }
 }
 
 function handleRewardImageDrop(event) {
@@ -2398,7 +2481,7 @@ function handleRewardImageDrop(event) {
 
 function openAddRewardItem() {
   newRewardItem.value = { name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true }
-  rewardItemImageFile.value = null
+  resetRewardImage()
   rewardItemError.value = ''
   showAddRewardItem.value = true
 }
@@ -2409,7 +2492,7 @@ function openEditRewardItem(item) {
     valid_from: toDatetimeLocalValue(item.valid_from),
     valid_until: toDatetimeLocalValue(item.valid_until),
   }
-  rewardItemImageFile.value = null
+  resetRewardImage()
   rewardItemError.value = ''
 }
 
@@ -2547,6 +2630,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   releaseThumbnails()
   stopMaintCamera()
+  setRewardImagePreview(null)
 })
 </script>
 
@@ -3010,6 +3094,10 @@ onUnmounted(() => {
   font-size: 11px; font-family: monospace;
   color: var(--text-muted); margin-left: 8px;
 }
+.reward-admin-image {
+  display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 8px; margin-bottom: 8px; background: var(--bg-card);
+}
 .reward-admin-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
 .reward-admin-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -3094,6 +3182,13 @@ onUnmounted(() => {
   box-shadow: 0 18px 48px rgba(0,0,0,0.28);
 }
 .reward-modal { width: 620px; }
+.reward-crop-modal { width: 560px; }
+.reward-image-preview { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.reward-image-preview img {
+  width: 160px; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border); background: var(--bg-hover);
+}
+.reward-image-preview .action-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 12px; }
 .modal h3 { padding-right: 40px; font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; }
 .modal-close-btn {
   position: absolute;

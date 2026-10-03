@@ -165,7 +165,8 @@ onMounted(fetchItems)
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
   display: flex; flex-direction: column; cursor: pointer;
 }
-.reward-image { width: 100%; height: 100px; object-fit: cover; }
+/* Admin uploads are cropped to 4:3, so every card shows the same shape. */
+.reward-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .reward-image-placeholder { display: flex; align-items: center; justify-content: center; color: var(--accent-blue); background: var(--bg-hover); }
 .reward-image-placeholder :deep(svg) { width: 32px; height: 32px; }
 .reward-body { padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
@@ -187,8 +188,9 @@ onMounted(fetchItems)
 }
 .detail-modal {
   background: var(--bg-card); border-radius: var(--radius); overflow: hidden; max-width: 420px; width: 100%;
+  max-height: calc(100dvh - 32px); overflow-y: auto; /* the taller 4:3 photo must not push the buttons off a short screen */
 }
-.detail-image { width: 100%; height: 180px; object-fit: cover; }
+.detail-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .detail-body { padding: 20px; display: flex; flex-direction: column; gap: 6px; }
 .detail-name { font-size: 17px; color: var(--text-primary); }
 .detail-desc { font-size: 13px; color: var(--text-secondary); margin: 0; }

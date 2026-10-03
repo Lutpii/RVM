@@ -230,6 +230,14 @@ export const messages = {
         previous: 'Previous page',
         next: 'Next page',
       },
+      imageCropper: {
+        title: 'Adjust image',
+        hint: 'Drag to move. Pinch, scroll or use the slider to zoom. The framed part is saved (4:3).',
+        zoom: 'Zoom',
+        cancel: 'Cancel',
+        apply: 'Use image',
+        loadFailed: 'This image could not be loaded. Please choose another one.',
+      },
       detectionReview: {
         title: 'Detection Review',
         pending: 'Pending',
@@ -651,6 +659,14 @@ export const messages = {
         navigation: 'Penomboran halaman',
         previous: 'Halaman sebelumnya',
         next: 'Halaman seterusnya',
+      },
+      imageCropper: {
+        title: 'Laraskan imej',
+        hint: 'Seret untuk alih. Cubit, tatal atau guna gelangsar untuk zum. Bahagian dalam bingkai disimpan (4:3).',
+        zoom: 'Zum',
+        cancel: 'Batal',
+        apply: 'Guna imej',
+        loadFailed: 'Imej ini tidak dapat dimuatkan. Sila pilih imej lain.',
       },
       detectionReview: {
         title: 'Semakan Pengesanan',
