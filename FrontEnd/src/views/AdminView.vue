@@ -720,8 +720,10 @@
     <!-- ── Incorrect Detection Review Modal ── -->
     <div v-if="reviewingDetection" class="modal-overlay" @click.self="closeIncorrectReview">
       <div class="modal detection-review-modal">
+        <!-- v-tap, not @click: this modal usually opens from a swipe, and a tap
+             right after a swipe gets no click event (see directives/tap.js). -->
         <button class="modal-close-btn" :aria-label="$t('admin.detectionReview.closeModal')"
-          @click="closeIncorrectReview">
+          v-tap="closeIncorrectReview">
           <PhX weight="bold" aria-hidden="true" />
         </button>
         <h3>{{ $t('admin.detectionReview.incorrectTitle') }}</h3>
@@ -740,7 +742,7 @@
           <button v-for="material in detectionMaterials" :key="material.value"
             class="actual-material-btn"
             :disabled="normalizedPrediction(reviewingDetection) === material.value"
-            @click="saveIncorrectReview(material.value)">
+            v-tap="() => saveIncorrectReview(material.value)">
             {{ material.label }}
             <small v-if="normalizedPrediction(reviewingDetection) === material.value">{{ $t('admin.detectionReview.aiPrediction') }}</small>
           </button>

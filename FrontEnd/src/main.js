@@ -6,6 +6,7 @@ import router from './router'
 import { messages } from './locales'
 import scrollReveal from './directives/scrollReveal'
 import swipe from './directives/swipe'
+import tap from './directives/tap'
 import './assets/main.css'
 
 const pinia = createPinia()
@@ -23,4 +24,5 @@ app.use(router)
 app.use(i18n)
 app.directive('reveal', scrollReveal)
 app.directive('swipe', swipe)
+app.directive('tap', tap)
 app.mount('#app')
