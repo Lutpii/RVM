@@ -34,6 +34,9 @@ Route::prefix('auth')->group(function () {
 Route::get('/qr/generate/{machineCode}', [QrController::class, 'generate']);
 Route::get('/qr/status/{token}', [QrController::class, 'status'])->middleware('throttle:qr-status');
 
+// Voucher check page — the QR on a redeemed reward links here
+Route::get('/vouchers/{code}', [RewardController::class, 'showVoucher']);
+
 // Machine public info
 Route::get('/machines', [MachineController::class, 'index']);
 Route::get('/machines/{id}', [MachineController::class, 'show']);
@@ -135,6 +138,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
         Route::put('/reward-items/{id}', [AdminController::class, 'updateRewardItem']);
         Route::delete('/reward-items/{id}', [AdminController::class, 'deleteRewardItem']);
         Route::get('/redemptions', [AdminController::class, 'redemptions']);
+        Route::post('/vouchers/{code}/use', [AdminController::class, 'useVoucher']);
         Route::post('/request-bin-collection', [AdminController::class, 'requestBinCollection']);
         Route::get('/export-excel', [AdminController::class, 'exportExcel']);
         Route::post('/export-excel/email', [AdminController::class, 'emailExcelReport']);

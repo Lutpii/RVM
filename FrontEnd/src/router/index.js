@@ -19,6 +19,7 @@ const KioskQrView           = () => import('@/views/KioskQrView.vue')
 const GoogleCallbackView    = () => import('@/views/GoogleCallbackView.vue')
 const WelcomeView           = () => import('@/views/WelcomeView.vue')
 const GoodbyeView           = () => import('@/views/GoodbyeView.vue')
+const VoucherView           = () => import('@/views/VoucherView.vue')
 
 const routes = [
   // ── Kiosk routes (RVM machine side — no auth required) ──────────────────
@@ -136,6 +137,13 @@ const routes = [
     name: 'admin',
     component: AdminView,
     meta: { title: 'Admin Panel - RVM', requiresAuth: true, requiresAdmin: true },
+  },
+  // Public: the QR on a redeemed reward opens this, so shops/admins can check it
+  {
+    path: '/voucher/:code',
+    name: 'voucher',
+    component: VoucherView,
+    meta: { title: 'Voucher - RVM' },
   },
   {
     path: '/:pathMatch(.*)*',

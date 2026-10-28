@@ -67,15 +67,35 @@
         </div>
       </div>
     </div>
+
+    <section v-if="vouchers.length" class="my-vouchers">
+      <h2 class="section-title">{{ $t('rewards.myVouchers') }}</h2>
+      <button
+        v-for="v in vouchers" :key="v.id"
+        class="voucher-row" @click="activeVoucher = v; voucherFresh = false"
+      >
+        <PhTicket weight="regular" class="voucher-icon" aria-hidden="true" />
+        <span class="voucher-info">
+          <strong>{{ v.reward_name }}</strong>
+          <span class="voucher-sub">{{ v.voucher_code }}</span>
+        </span>
+        <span :class="['voucher-status', v.used_at ? 'used' : 'valid']">
+          {{ v.used_at ? $t('rewards.statusUsed') : $t('rewards.statusValid') }}
+        </span>
+      </button>
+    </section>
+
+    <VoucherModal v-if="activeVoucher" :voucher="activeVoucher" :fresh="voucherFresh" @close="activeVoucher = null" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
-import { PhGift } from '@phosphor-icons/vue'
+import { PhGift, PhTicket } from '@phosphor-icons/vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
+import VoucherModal from '@/components/VoucherModal.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -87,6 +107,9 @@ const activeCategory = ref('__all__')
 const detailItem = ref(null)
 const redeemingId = ref(null)
 const redeemError = ref('')
+const vouchers = ref([])
+const activeVoucher = ref(null)
+const voucherFresh = ref(false)
 
 const categories = computed(() => {
   const set = new Set(items.value.map(i => i.category).filter(Boolean))
@@ -112,6 +135,16 @@ async function fetchItems() {
   }
 }
 
+// Cash redemptions share the table but have no voucher_code — nothing to show.
+async function fetchVouchers() {
+  try {
+    const res = await api.get('/user/reward-redemptions')
+    vouchers.value = (res.data.redemptions?.data || []).filter(r => r.voucher_code)
+  } catch {
+    vouchers.value = []
+  }
+}
+
 async function redeem(item) {
   redeemingId.value = item.id
   redeemError.value = ''
@@ -120,7 +153,11 @@ async function redeem(item) {
     auth.updatePoints(res.data.total_points)
     detailItem.value = null
     showToast?.(t('rewards.redeemSuccess'))
-    await fetchItems()
+    if (res.data.redemption?.voucher_code) {
+      voucherFresh.value = true
+      activeVoucher.value = res.data.redemption
+    }
+    await Promise.all([fetchItems(), fetchVouchers()])
   } catch (err) {
     redeemError.value = err.response?.data?.message || t('rewards.redeemFailed')
   } finally {
@@ -128,7 +165,7 @@ async function redeem(item) {
   }
 }
 
-onMounted(fetchItems)
+onMounted(() => Promise.all([fetchItems(), fetchVouchers()]))
 </script>
 
 <style scoped>
@@ -200,4 +237,18 @@ onMounted(fetchItems)
   padding: 8px 14px; border-radius: 8px; font-size: 13px; background: var(--bg-hover);
   color: var(--text-primary); border: 1px solid var(--border); cursor: pointer;
 }
+
+.my-vouchers { margin-top: 28px; display: flex; flex-direction: column; gap: 8px; }
+.section-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.voucher-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; text-align: left;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
+}
+.voucher-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--accent-blue); }
+.voucher-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.voucher-info strong { font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voucher-sub { font-size: 11px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
+.voucher-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
+.voucher-status.valid { color: var(--accent-green); border: 1px solid var(--accent-green); }
+.voucher-status.used { color: var(--text-muted); border: 1px solid var(--border); }
 </style>

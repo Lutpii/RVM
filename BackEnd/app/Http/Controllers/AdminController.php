@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -766,6 +767,33 @@ class AdminController extends Controller
             ->paginate($this->resolvePerPage($request));
 
         return response()->json(['success' => true, 'redemptions' => $redemptions]);
+    }
+
+    // Marks a voucher as handed over, so the same QR can't be used twice.
+    public function useVoucher(Request $request, string $code): JsonResponse
+    {
+        return DB::transaction(function () use ($request, $code) {
+            $redemption = RewardRedemption::with('user:id,name')
+                ->where('voucher_code', strtoupper($code))
+                ->lockForUpdate()
+                ->first();
+
+            if (!$redemption) {
+                return response()->json(['success' => false, 'message' => 'Voucher not found.'], 404);
+            }
+            if ($redemption->used_at) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This voucher has already been used.',
+                    'voucher' => RewardController::formatVoucher($redemption),
+                ], 409);
+            }
+
+            $redemption->update(['used_at' => now(), 'used_by' => $request->user()->id]);
+            $this->log($request->user(), 'use_voucher', 'reward_redemption', $redemption->id, "Marked voucher {$redemption->voucher_code} as used");
+
+            return response()->json(['success' => true, 'voucher' => RewardController::formatVoucher($redemption)]);
+        });
     }
 
     // Notify that a physical collection has been requested for full bins —

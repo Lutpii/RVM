@@ -166,6 +166,7 @@ class RewardController extends Controller
                 'reward_item_id' => $item->id,
                 'reward_name'    => $item->name,
                 'points_spent'   => $item->points_cost,
+                'voucher_code'   => $this->newVoucherCode(),
             ]);
 
             PointsHistory::create([
@@ -194,5 +195,62 @@ class RewardController extends Controller
             ->paginate(20);
 
         return response()->json(['success' => true, 'redemptions' => $redemptions]);
+    }
+
+    // Public — the voucher QR links here, so whoever scans it (a shop, the
+    // admin) can see whether it is still valid without logging in. Only the
+    // holder's masked name is exposed, never their email or account.
+    public function showVoucher(string $code): JsonResponse
+    {
+        $redemption = RewardRedemption::with('user:id,name')
+            ->where('voucher_code', strtoupper($code))
+            ->first();
+
+        if (!$redemption) {
+            return response()->json(['success' => false, 'message' => 'Voucher not found.'], 404);
+        }
+
+        return response()->json(['success' => true, 'voucher' => $this->formatVoucher($redemption)]);
+    }
+
+    public static function formatVoucher(RewardRedemption $redemption): array
+    {
+        return [
+            'code'         => $redemption->voucher_code,
+            'reward_name'  => $redemption->reward_name,
+            'points_spent' => $redemption->points_spent,
+            'redeemed_at'  => $redemption->created_at,
+            'holder'       => self::maskName($redemption->user?->name),
+            'status'       => $redemption->used_at ? 'used' : 'valid',
+            'used_at'      => $redemption->used_at,
+        ];
+    }
+
+    // "Adi Luthfi" -> "Adi L***": enough for a shop to match the person in
+    // front of them, without publishing full names to anyone with the link.
+    private static function maskName(?string $name): string
+    {
+        $parts = preg_split('/\s+/', trim((string) $name), -1, PREG_SPLIT_NO_EMPTY);
+        if (!$parts) {
+            return '-';
+        }
+        $first = array_shift($parts);
+        return $parts ? $first . ' ' . mb_substr($parts[0], 0, 1) . '***' : $first;
+    }
+
+    // RVM-XXXX-XXXX without 0/O/1/I, so a code read out loud or typed from a
+    // screenshot can't be misread.
+    private function newVoucherCode(): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        do {
+            $chars = '';
+            for ($i = 0; $i < 8; $i++) {
+                $chars .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+            $code = 'RVM-' . substr($chars, 0, 4) . '-' . substr($chars, 4);
+        } while (RewardRedemption::where('voucher_code', $code)->exists());
+
+        return $code;
     }
 }
