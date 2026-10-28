@@ -9,8 +9,8 @@
       </div>
 
       <div class="auth-body">
-        <!-- Google Login — shown but disabled until Google OAuth is configured -->
-        <button class="google-btn" disabled>
+        <!-- Google Login — disabled unless VITE_GOOGLE_LOGIN=true (see utils/featureFlags.js) -->
+        <button class="google-btn" @click="handleGoogle" :disabled="!googleLoginEnabled || loading">
           <svg width="18" height="18" viewBox="0 0 18 18">
             <path fill="#4285F4"
               d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
@@ -120,6 +120,7 @@ import { ref, onUnmounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
+import { googleLoginEnabled } from '@/utils/featureFlags'
 import { PhEye, PhEyeSlash } from '@phosphor-icons/vue'
 
 const router = useRouter()

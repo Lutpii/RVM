@@ -49,7 +49,7 @@ export const messages = {
     landing: {
       welcome: 'Welcome to Smart Recycling!',
       subtitle: 'Turn your recyclables into rewards',
-      feature1: 'Recycle aluminum, glass, plastic & paper',
+      feature1: 'Recycle aluminum, plastic & paper',
       feature2: 'Earn points for every item',
       feature3: 'Every item recycled helps reduce carbon emissions',
       startBtn: 'Click to Start Recycling',
@@ -508,7 +508,7 @@ export const messages = {
     landing: {
       welcome: 'Selamat Datang ke Kitar Semula Pintar!',
       subtitle: 'Tukar bahan kitar semula anda kepada hadiah',
-      feature1: 'Kitar semula aluminium, kaca, plastik & kertas',
+      feature1: 'Kitar semula aluminium, plastik & kertas',
       feature2: 'Kumpul mata untuk setiap item',
       feature3: 'Setiap item yang dikitar semula membantu mengurangi jejak karbon',
       startBtn: 'Klik untuk Mula Kitar Semula',

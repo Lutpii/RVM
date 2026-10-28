@@ -426,10 +426,19 @@ class AuthController extends Controller
             // on the users.role column's own DB default ('user') would leave it
             // unset on this in-memory $user (Eloquent doesn't re-fetch DB-side
             // defaults after insert — same footgun as User::guest() below).
-            $user = User::firstOrNew(['google_id' => $googleUser->getId()]);
+            //
+            // An account first registered with email+password has no google_id
+            // yet — matching on google_id alone created a second row with the
+            // same email, which the users.email unique index rejected, and the
+            // user only ever saw google_auth_failed. Google has verified that
+            // address, so link the existing account to this Google ID instead.
+            $user = User::where('google_id', $googleUser->getId())->first()
+                ?? ($googleUser->getEmail() ? User::where('email', $googleUser->getEmail())->first() : null)
+                ?? new User();
             if (!$user->exists) {
                 $user->role = 'user';
             }
+            $user->google_id = $googleUser->getId();
             $user->fill([
                 'name'        => $googleUser->getName(),
                 'email'       => $googleUser->getEmail(),
