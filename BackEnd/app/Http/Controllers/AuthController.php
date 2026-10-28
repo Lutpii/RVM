@@ -153,6 +153,10 @@ class AuthController extends Controller
         // account proves it's really them, but doesn't grant a session. Resend
         // a fresh OTP (same cap as sendOtp()'s own resend endpoint) so they can
         // finish verifying right from the login screen instead of getting stuck.
+        if (!$user->is_verified && !config('services.otp_enabled')) {
+            $user->update(['is_verified' => 1, 'otp_code' => null, 'otp_expires_at' => null]);
+        }
+
         if (!$user->is_verified) {
             $identifier = $user->email ?: $user->phone;
             $sendKey = 'otp-send:' . $identifier;
@@ -495,6 +499,10 @@ class AuthController extends Controller
     // note at that call site).
     private function generateAndSendOtp(User $user): bool
     {
+        if (!config('services.otp_enabled')) {
+            return false;
+        }
+
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $user->update([
             'otp_code'       => $otp,

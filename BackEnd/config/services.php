@@ -30,6 +30,10 @@ return [
         'key' => env('AI_SERVICE_KEY'),
     ],
 
+    // Set OTP_ENABLED=false where no mailer can reach real users (the free
+    // cloud deploy) — accounts are then verified straight away.
+    'otp_enabled' => env('OTP_ENABLED', true),
+
     // Vue Frontend URL (used to build QR scan links)
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
