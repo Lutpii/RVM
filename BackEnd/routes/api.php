@@ -34,6 +34,9 @@ Route::prefix('auth')->group(function () {
 Route::get('/qr/generate/{machineCode}', [QrController::class, 'generate']);
 Route::get('/qr/status/{token}', [QrController::class, 'status'])->middleware('throttle:qr-status');
 
+// Reward photo (stored in the database, see RewardItemImage)
+Route::get('/reward-items/{id}/image', [RewardController::class, 'image'])->whereNumber('id');
+
 // Voucher check page — the QR on a redeemed reward links here
 Route::get('/vouchers/{code}', [RewardController::class, 'showVoucher']);
 

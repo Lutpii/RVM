@@ -197,6 +197,21 @@ class RewardController extends Controller
         return response()->json(['success' => true, 'redemptions' => $redemptions]);
     }
 
+    // Public, like the catalog itself — <img> tags can't send a bearer token.
+    public function image(int $id)
+    {
+        $image = \App\Models\RewardItemImage::where('reward_item_id', $id)->first();
+        if (!$image) {
+            abort(404);
+        }
+
+        return response($image->data, 200, [
+            'Content-Type'  => $image->mime,
+            // image_url carries ?v=<upload time>, so a URL's bytes never change.
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+        ]);
+    }
+
     // Public — the voucher QR links here, so whoever scans it (a shop, the
     // admin) can see whether it is still valid without logging in. Only the
     // holder's masked name is exposed, never their email or account.

@@ -688,21 +688,19 @@ class AdminController extends Controller
             'image'        => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
-        $imagePath = $request->hasFile('image')
-            ? $request->file('image')->store('reward-images', 'public')
-            : null;
-
         $item = RewardItem::create([
             'name'        => $validated['name'],
             'description' => $validated['description'] ?? null,
             'category'    => $validated['category'] ?? null,
-            'image_path'  => $imagePath,
             'points_cost' => $validated['points_cost'],
             'stock'       => $validated['stock'] ?? null,
             'valid_from'  => $validated['valid_from'] ?? null,
             'valid_until' => $validated['valid_until'] ?? null,
             'is_active'   => $request->boolean('is_active', true),
         ]);
+        if ($request->hasFile('image')) {
+            $item->storeImage($request->file('image'));
+        }
 
         $this->log($request->user(), 'create_reward_item', 'reward_item', $item->id, "Created reward item: {$item->name}");
         return response()->json(['success' => true, 'reward_item' => $item], 201);
@@ -725,10 +723,6 @@ class AdminController extends Controller
             'image'        => 'nullable|file|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
-        $oldImagePath = $item->image_path;
-        if ($request->hasFile('image')) {
-            $validated['image_path'] = $request->file('image')->store('reward-images', 'public');
-        }
         unset($validated['image']);
 
         if ($request->has('is_active')) {
@@ -737,11 +731,10 @@ class AdminController extends Controller
 
         $item->update($validated);
 
-        // Replacing the image leaves the old file with nothing referencing it —
-        // delete it after the update succeeds, not before (a failed validate()
-        // above must never orphan the still-in-use original).
-        if ($request->hasFile('image') && $oldImagePath) {
-            Storage::disk('public')->delete($oldImagePath);
+        // After the field update, so a failed validate() above never touches
+        // the still-in-use image.
+        if ($request->hasFile('image')) {
+            $item->storeImage($request->file('image'));
         }
         $this->log($request->user(), 'update_reward_item', 'reward_item', $id, "Updated reward item: {$item->name}");
         return response()->json(['success' => true, 'reward_item' => $item->fresh()]);

@@ -48,10 +48,45 @@ class AdminRewardItemsCrudTest extends TestCase
 
         $item = RewardItem::first();
         $this->assertEquals('Coffee Voucher', $item->name);
-        $this->assertNotNull($item->image_path);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($item->image_path);
+        // Stored in the database (Render's disk is wiped on deploy), not on disk.
+        $this->assertNull($item->image_path);
+        $this->assertNotNull($item->image);
+        $this->assertEmpty(\Illuminate\Support\Facades\Storage::disk('public')->allFiles());
         $this->assertEquals(1, AdminLog::where('action', 'create_reward_item')->count());
-        $this->assertNotNull($res->json('reward_item.image_url'));
+        $this->assertStringStartsWith("/api/reward-items/{$item->id}/image?v=", $res->json('reward_item.image_url'));
+    }
+
+    public function test_reward_image_is_served_publicly_from_the_database(): void
+    {
+        $this->actingAsAdmin();
+        $file = UploadedFile::fake()->image('voucher.png', 40, 30);
+        $this->postJson('/api/admin/reward-items', ['name' => 'Pic', 'points_cost' => 5, 'image' => $file])
+            ->assertStatus(201);
+        $item = RewardItem::first();
+        $this->app['auth']->forgetGuards();
+
+        $res = $this->get($item->image_url)->assertOk();
+        $this->assertEquals('image/png', $res->headers->get('Content-Type'));
+        $this->assertStringContainsString('immutable', $res->headers->get('Cache-Control'));
+        $this->assertEquals(file_get_contents($file->getPathname()), $res->getContent());
+    }
+
+    public function test_reward_lists_never_include_the_image_bytes(): void
+    {
+        $this->actingAsAdmin();
+        $this->postJson('/api/admin/reward-items', [
+            'name' => 'Pic', 'points_cost' => 5, 'image' => UploadedFile::fake()->image('a.jpg'),
+        ])->assertStatus(201);
+
+        $row = $this->getJson('/api/admin/reward-items')->assertOk()->json('reward_items.data.0');
+        $this->assertArrayNotHasKey('data', $row);
+        $this->assertArrayNotHasKey('image', $row);
+        $this->assertNotNull($row['image_url']);
+    }
+
+    public function test_missing_reward_image_is_404(): void
+    {
+        $this->get('/api/reward-items/999/image')->assertNotFound();
     }
 
     public function test_creates_a_reward_item_without_an_image(): void
@@ -104,10 +139,43 @@ class AdminRewardItemsCrudTest extends TestCase
             'image' => UploadedFile::fake()->image('new.jpg'),
         ])->assertOk();
 
+        // The legacy disk file is replaced by a database image and removed.
         $item->refresh();
-        $this->assertNotEquals($oldPath, $item->image_path);
+        $this->assertNull($item->image_path);
+        $this->assertNotNull($item->image);
         \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($oldPath);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($item->image_path);
+    }
+
+    public function test_replacing_a_database_image_keeps_one_row_and_changes_the_url(): void
+    {
+        $this->actingAsAdmin();
+        $this->postJson('/api/admin/reward-items', [
+            'name' => 'Pic', 'points_cost' => 5, 'image' => UploadedFile::fake()->image('a.jpg'),
+        ])->assertStatus(201);
+        $item = RewardItem::first();
+        $firstUrl = $item->image_url;
+
+        $this->travel(5)->seconds();
+        $this->postJson("/api/admin/reward-items/{$item->id}", [
+            '_method' => 'PUT', 'name' => 'Pic', 'points_cost' => 5,
+            'image' => UploadedFile::fake()->image('b.jpg'),
+        ])->assertOk();
+
+        $this->assertEquals(1, \App\Models\RewardItemImage::count());
+        $this->assertNotEquals($firstUrl, $item->fresh()->image_url);
+    }
+
+    public function test_deleting_a_reward_item_deletes_its_database_image(): void
+    {
+        $this->actingAsAdmin();
+        $this->postJson('/api/admin/reward-items', [
+            'name' => 'Pic', 'points_cost' => 5, 'image' => UploadedFile::fake()->image('a.jpg'),
+        ])->assertStatus(201);
+        $item = RewardItem::first();
+
+        $this->deleteJson("/api/admin/reward-items/{$item->id}")->assertOk();
+
+        $this->assertEquals(0, \App\Models\RewardItemImage::count());
     }
 
     public function test_updating_a_reward_item_without_a_new_image_keeps_the_existing_one(): void
