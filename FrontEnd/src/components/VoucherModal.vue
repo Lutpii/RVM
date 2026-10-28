@@ -13,7 +13,6 @@
 
       <strong class="voucher-code">{{ voucher.voucher_code }}</strong>
       <p class="voucher-date">{{ $t('rewards.redeemedOn', { date: formatDate(voucher.created_at) }) }}</p>
-      <p class="voucher-hint">{{ $t('rewards.voucherHint') }}</p>
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
       <div class="voucher-actions">
@@ -105,7 +104,6 @@ onMounted(async () => {
 }
 .voucher-code { font-family: ui-monospace, Menlo, monospace; font-size: 18px; letter-spacing: 1px; color: var(--text-primary); }
 .voucher-date { font-size: 12px; color: var(--text-muted); margin: 0; }
-.voucher-hint { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0; }
 .save-error { color: var(--accent-red); font-weight: 600; font-size: 13px; margin: 4px 0 0; }
 .voucher-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; width: 100%; }
 .cancel-btn {
