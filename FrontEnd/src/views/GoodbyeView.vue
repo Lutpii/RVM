@@ -7,8 +7,11 @@
         <PhRecycle class="welcome-icon" weight="regular" />
       </div>
 
-      <h1 class="welcome-title">{{ $t('goodbye.greeting') }} <span class="user-name">{{ userName }}</span>!</h1>
-      <p class="welcome-sub">{{ $t('goodbye.subtitle') }}</p>
+      <div class="welcome-text">
+        <p class="welcome-greeting">{{ $t('goodbye.greeting') }}</p>
+        <h1 class="user-name">{{ userName }}</h1>
+        <p class="welcome-sub">{{ $t('goodbye.subtitle') }}</p>
+      </div>
 
       <div class="progress-bar">
         <div class="progress-fill"></div>
@@ -137,19 +140,38 @@ onMounted(() => {
   50%      { transform: translateY(-10px); }
 }
 
-.welcome-title {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin: 4px 0 0;
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  /* One family for all three lines — body text is DM Sans/Syne, headings
+     Plus Jakarta Sans, and mixing them here made the splash look uneven. */
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.user-name { color: var(--accent-blue); }
+.welcome-greeting {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.user-name {
+  font-family: inherit;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--accent-blue);
+  overflow-wrap: anywhere;
+  margin: 0;
+}
 
 .welcome-sub {
   font-size: 15px;
+  font-weight: 500;
   color: var(--text-secondary);
-  margin: 0;
+  margin: 6px 0 0;
 }
 
 .progress-bar {
@@ -186,7 +208,8 @@ onMounted(() => {
 @media (orientation: portrait) and (min-width: 700px) {
   .welcome-content { max-width: 900px; gap: 24px; padding: 20px 60px; }
   .welcome-icon { font-size: 140px; }
-  .welcome-title { font-size: 72px; }
+  .welcome-greeting { font-size: 40px; }
+  .user-name { font-size: 80px; }
   .welcome-sub { font-size: 30px; }
   .progress-bar { width: 320px; height: 5px; margin-top: 16px; }
   .brand-logo { --brand-logo-height: 64px; }

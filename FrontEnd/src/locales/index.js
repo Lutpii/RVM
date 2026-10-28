@@ -412,12 +412,12 @@ export const messages = {
       failedConnect: 'Failed to connect to machine.',
     },
     welcome: {
-      greeting: 'Welcome,',
+      greeting: 'Welcome',
       subtitle: "Let's get recycling.",
       guestName: 'Guest',
     },
     goodbye: {
-      greeting: 'Thank You,',
+      greeting: 'Thank You',
       subtitle: 'Every item you recycle makes a difference.',
       guestName: 'Guest',
     },
@@ -871,12 +871,12 @@ export const messages = {
       failedConnect: 'Gagal menyambung ke mesin.',
     },
     welcome: {
-      greeting: 'Selamat Datang,',
+      greeting: 'Selamat Datang',
       subtitle: 'Jom mula kitar semula.',
       guestName: 'Tetamu',
     },
     goodbye: {
-      greeting: 'Terima Kasih,',
+      greeting: 'Terima Kasih',
       subtitle: 'Setiap item yang anda kitar semula memberi perbezaan.',
       guestName: 'Tetamu',
     },
