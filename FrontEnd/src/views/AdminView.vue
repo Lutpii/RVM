@@ -216,7 +216,8 @@
               </div>
               <div class="filter-actions formal-report-actions">
                 <button class="action-btn filter-action" @click="exportExcel"><PhDownloadSimple weight="regular" aria-hidden="true" /> Download Report</button>
-                <button class="action-btn edit-btn filter-action" @click="openEmailReportModal"><PhEnvelopeSimple weight="regular" aria-hidden="true" /> Send via Email</button>
+                <!-- Email sending disabled for now -->
+                <button class="action-btn edit-btn filter-action" disabled><PhEnvelopeSimple weight="regular" aria-hidden="true" /> Send via Email</button>
               </div>
             </div>
           </div>
@@ -3193,6 +3194,7 @@ onUnmounted(() => {
 .edit-btn  { border-color: var(--accent-blue);   color: var(--accent-blue);   }
 .del-btn   { border-color: var(--accent-red);    color: var(--accent-red);    }
 .maint-btn { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .add-btn  {
   padding: 8px 16px; background: var(--accent-green); color: white;
   border: none; border-radius: 6px; cursor: pointer;

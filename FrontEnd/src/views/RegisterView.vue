@@ -11,8 +11,9 @@
         <!-- Google + OR: only a "how do you want to sign up" choice — once
              showOtp is true the account already exists and this step is just
              confirming the code just sent, so neither belongs on screen anymore. -->
+        <!-- Google sign-up — shown but disabled until Google OAuth is configured -->
         <template v-if="!showOtp">
-          <button class="google-btn" @click="handleGoogle" :disabled="loading">
+          <button class="google-btn" disabled>
             <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
             {{ $t('auth.googleBtn') }}
           </button>
@@ -341,7 +342,8 @@ onUnmounted(() => clearInterval(resendTimer))
   color: var(--text-primary); font-size: 15px; font-weight: 500;
   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.2s;
 }
-.google-btn:hover { background: var(--bg-hover); }
+.google-btn:not(:disabled):hover { background: var(--bg-hover); }
+.google-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .separator { text-align: center; position: relative; margin: 16px 0; color: var(--text-muted); font-size: 12px; }
 .separator::before, .separator::after { content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: var(--border); }
 .separator::before { left: 0; } .separator::after { right: 0; }

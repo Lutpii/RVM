@@ -59,6 +59,10 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    // Set to "*" on cloud hosts (Render) that sit behind a load balancer, so
+    // HTTPS and the client IP are detected correctly. Unset on the Pi.
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

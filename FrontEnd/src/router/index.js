@@ -52,13 +52,13 @@ const routes = [
     path: '/',
     name: 'landing',
     component: LandingView,
-    meta: { title: 'RVM - Smart Recycling' },
+    meta: { title: 'RVM - Smart Recycling', guestOnly: true },
   },
   {
     path: '/login',
     name: 'login',
     component: LoginView,
-    meta: { title: 'Login - RVM' },
+    meta: { title: 'Login - RVM', guestOnly: true },
   },
   {
     path: '/auth/callback',
@@ -87,7 +87,7 @@ const routes = [
     path: '/register',
     name: 'register',
     component: RegisterView,
-    meta: { title: 'Register - RVM' },
+    meta: { title: 'Register - RVM', guestOnly: true },
   },
   {
     path: '/dashboard',
@@ -176,6 +176,15 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.guestOnly && authStore.isLoggedIn) {
+    // Already logged in (e.g. the user trimmed /dashboard off the URL, or
+    // scanned a kiosk QR that sends them through /login?redirect=...) —
+    // skip the guest page and go where they were headed. Only same-app
+    // paths are honored ('/x', never '//host'), so redirect can't be used
+    // to bounce the user off-site.
+    const redirect = to.query.redirect
+    if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) {
+      return next(redirect)
+    }
     return next({ name: 'dashboard' })
   }
 

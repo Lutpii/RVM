@@ -1,0 +1,15 @@
+.env
+.env.*
+vendor
+node_modules
+ai_service
+ai_service_4bin
+tests
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/public/*
+public/storage
+public/hot
+bootstrap/cache/*.php
