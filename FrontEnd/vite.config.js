@@ -37,8 +37,11 @@ export default defineConfig({
             if (id.includes('chart.js') || id.includes('vue-chartjs')) return 'vendor-charts'
             if (id.includes('jsqr') || id.includes('/qrcode/')) return 'vendor-qr'
             if (id.includes('axios')) return 'vendor-axios'
-            if (id.includes('@phosphor-icons')) return 'vendor-icons'
-            return 'vendor'
+            // Only the framework core is pinned to one shared chunk. Icons and
+            // other libraries are left to Rollup so each lazy route pulls just
+            // what it uses — a catch-all chunk made the landing page download
+            // every icon/library in the app before first paint.
+            if (/node_modules\/(@vue|vue|vue-router|pinia|vue-i18n|@intlify)\//.test(id)) return 'vendor'
           }
         },
       },

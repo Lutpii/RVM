@@ -123,7 +123,7 @@ onMounted(() => {
   --bg-hover:      #f6f8fa;
   --text-primary:  #1a202c;
   --text-secondary:#4a5568;
-  --text-muted:    #718096;
+  --text-muted:    #5f6b7a;
   --border:        #e2e8f0;
   --shadow:        0 4px 24px rgba(0,0,0,0.1);
 }

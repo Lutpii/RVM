@@ -9,7 +9,7 @@
             <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
             <PhMoon v-else weight="regular" aria-hidden="true" />
           </button>
-          <button class="lang-btn" @click="toggleLang" :aria-label="locale === 'en' ? 'Switch to Bahasa Melayu' : 'Switch to English'">
+          <button class="lang-btn" @click="toggleLang" :aria-label="locale === 'en' ? 'MY – Switch to Bahasa Melayu' : 'EN – Switch to English'">
             {{ locale === 'en' ? 'MY' : 'EN' }}
           </button>
         </div>
@@ -269,7 +269,7 @@ function goToScan() {
 }
 
 .landing-brand-logo {
-  /* logo-umpsa-trimmed.png has no built-in padding (unlike the untrimmed
+  /* logo-umpsa-trimmed.webp has no built-in padding (unlike the untrimmed
      source), so this is deliberately much smaller than the old 96px — that
      value was sized against ~45% dead transparent margin around the mark.
      54px here reproduces the same actual visual size as before. */
