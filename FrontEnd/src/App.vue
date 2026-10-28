@@ -27,7 +27,9 @@ import AppNav from '@/components/AppNav.vue'
 import { useLenisScroll } from '@/composables/useLenisScroll'
 import { useIdleLogout } from '@/composables/useIdleLogout'
 
-const theme = ref(localStorage.getItem('rvm_theme') || 'dark')
+// Light unless this browser picked dark via the toggle (a first visit, e.g.
+// a shared link opened on a phone, should not land on the dark theme).
+const theme = ref(localStorage.getItem('rvm_theme') || 'light')
 const auth  = useAuthStore()
 const route = useRoute()
 useLenisScroll()
