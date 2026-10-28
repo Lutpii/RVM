@@ -51,6 +51,7 @@
           <span class="divider">|</span>
           <RouterLink to="/register" class="auth-link">{{ $t('nav.register') }}</RouterLink>
         </div>
+        <RouterLink to="/privacy" class="privacy-link">{{ $t('landing.privacy') }}</RouterLink>
       </div>
     </div>
 
@@ -250,6 +251,8 @@ function goToScan() {
   font-weight: 500;
 }
 .auth-link:hover { text-decoration: underline; }
+.privacy-link { display: block; text-align: center; margin-top: 10px; font-size: 12px; color: var(--text-muted); text-decoration: none; }
+.privacy-link:hover { text-decoration: underline; }
 .divider { color: var(--text-muted); }
 
 .landing-brand-footer {

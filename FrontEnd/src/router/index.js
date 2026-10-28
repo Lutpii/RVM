@@ -20,6 +20,7 @@ const GoogleCallbackView    = () => import('@/views/GoogleCallbackView.vue')
 const WelcomeView           = () => import('@/views/WelcomeView.vue')
 const GoodbyeView           = () => import('@/views/GoodbyeView.vue')
 const VoucherView           = () => import('@/views/VoucherView.vue')
+const PrivacyView           = () => import('@/views/PrivacyView.vue')
 
 const routes = [
   // ── Kiosk routes (RVM machine side — no auth required) ──────────────────
@@ -144,6 +145,13 @@ const routes = [
     name: 'voucher',
     component: VoucherView,
     meta: { title: 'Voucher - RVM' },
+  },
+  // Public: linked from the Google OAuth consent screen
+  {
+    path: '/privacy',
+    name: 'privacy',
+    component: PrivacyView,
+    meta: { title: 'Privacy Policy - RVM' },
   },
   {
     path: '/:pathMatch(.*)*',
