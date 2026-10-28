@@ -12,8 +12,10 @@ class FonnteService
 
     public function __construct()
     {
-        $this->token  = config('services.fonnte.token', '');
-        $this->sender = config('services.fonnte.sender', '');
+        // The keys exist in config even when the env vars are unset (null), so
+        // the default argument never applies — e.g. the cloud deploy has no Fonnte.
+        $this->token  = (string) config('services.fonnte.token');
+        $this->sender = (string) config('services.fonnte.sender');
     }
 
     public function send(string $phone, string $message): bool

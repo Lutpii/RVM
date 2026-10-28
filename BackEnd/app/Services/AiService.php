@@ -15,7 +15,9 @@ class AiService
     public function __construct()
     {
         $this->baseUrl = config('services.ai.url', 'http://localhost:5000');
-        $this->apiKey  = config('services.ai.key', '');
+        // (string): the config key exists even when AI_SERVICE_KEY is unset (null),
+        // e.g. on the cloud deploy, which has no AI service.
+        $this->apiKey  = (string) config('services.ai.key');
     }
 
     /**
