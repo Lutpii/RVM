@@ -163,6 +163,63 @@ class DemoDataGeneratorTest extends TestCase
         }
         $this->assertSame(1, AdminLog::where('action', 'update_user')->count());
         $this->assertSame(1, AdminLog::whereNull('details->demo')->count());
+        $this->assertGreaterThanOrEqual(2, $logs->pluck('action')->unique()->count());
+        $this->assertLessThanOrEqual(0.6 * $perDay->count(), $logs->where('action', 'export_csv')->count());
+        foreach ($logs as $log) {
+            $h = (int) $log->created_at->copy()->setTimezone(self::TZ)->format('G');
+            $this->assertGreaterThanOrEqual(8, $h);
+            $this->assertLessThanOrEqual(20, $h);
+        }
+    }
+
+    public function test_morning_run_sequence_fills_every_day(): void
+    {
+        $gen = app(DemoDataGenerator::class);
+        $first = Carbon::parse('2026-11-09 21:00', self::TZ);
+        $gen->generate(30, $first, null);
+        $gen->generate(30, Carbon::parse('2026-11-10 09:30', self::TZ), null);
+        $gen->generate(30, Carbon::parse('2026-11-11 09:30', self::TZ), null);
+        $afterMorning = $this->dailyCounts();
+        $this->assertGreaterThanOrEqual(1, $afterMorning['2026-11-11'] ?? 0);
+        $gen->generate(30, Carbon::parse('2026-11-11 10:00', self::TZ), null);
+
+        $counts = $this->dailyCounts();
+        $this->assertGreaterThanOrEqual(1, $counts['2026-11-11'] ?? 0);
+        unset($counts['2026-11-11']);
+        $this->assertCount(31, $counts); // sliding window: 11 Oct .. 10 Nov
+        foreach ($counts as $date => $c) {
+            $this->assertGreaterThanOrEqual(6, $c, "day $date too small");
+        }
+        $this->assertLessThanOrEqual(3, max($counts) / min($counts));
+
+        // Deterministic quota: 10 Nov is complete and identical to a single full-day run.
+        $this->assertGreaterThanOrEqual(10, $counts['2026-11-10']);
+    }
+
+    public function test_dsme_bins_grow_by_at_least_one_per_valid_item(): void
+    {
+        $this->gen();
+        $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
+        $valid = Transaction::where('machine_id', $dsme->id)->where('is_valid', 1)->count();
+        $this->assertGreaterThan(0, $valid);
+        $this->assertGreaterThan(0, $dsme->plastic_level + $dsme->aluminum_level
+            + AdminLog::where('action', 'update_bin_levels')->count() * 90);
+    }
+
+    public function test_demo_users_have_join_dates_before_window_and_are_not_moved(): void
+    {
+        $this->gen();
+        $windowStart = Carbon::parse('2026-10-12 00:00', self::TZ);
+        $dates = [];
+        foreach (User::where('email', 'like', '%@demo.rvm')->get() as $u) {
+            $this->assertTrue($u->created_at->lt($windowStart->copy()->subDays(2)), $u->email);
+            $this->assertTrue($u->created_at->gte($windowStart->copy()->subDays(21)), $u->email);
+            $dates[$u->id] = $u->created_at->timestamp;
+        }
+        app(DemoDataGenerator::class)->generate(30, $this->now->copy()->addDay(), 1);
+        foreach (User::where('email', 'like', '%@demo.rvm')->get() as $u) {
+            $this->assertSame($dates[$u->id], $u->created_at->timestamp);
+        }
     }
 
     public function test_demo_users_cannot_log_in(): void
@@ -176,8 +233,13 @@ class DemoDataGeneratorTest extends TestCase
     public function test_purge_removes_only_demo_rows(): void
     {
         $this->gen();
+        $ids = $this->demoUserIds();
         $res = app(DemoDataGenerator::class)->purge();
         $this->assertSame(9, $res['users']);
+        $this->assertSame(0, Transaction::whereIn('user_id', $ids)->count());
+        $this->assertSame(0, PointsHistory::whereIn('user_id', $ids)->count());
+        $this->assertSame(0, RewardRedemption::whereIn('user_id', $ids)->count());
+        $this->assertSame(0, RecyclingSession::whereIn('user_id', $ids)->count());
 
         $this->assertSame(0, User::where('email', 'like', '%@demo.rvm')->count());
         $this->assertSame(0, RecyclingSession::where('session_code', 'like', 'DEMO-%')->count());

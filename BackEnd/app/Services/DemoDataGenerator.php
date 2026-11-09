@@ -45,6 +45,7 @@ class DemoDataGenerator
     private array $rewardItems = [];
     private ?User $admin = null;
     private array $rates;
+    private ?Carbon $windowStart = null;
 
     public function __construct(private RewardConfigService $rewards)
     {
@@ -61,20 +62,30 @@ class DemoDataGenerator
 
         $now = Carbon::instance($now)->setTimezone(self::TZ);
         $this->rates = $this->rewards->load();
-        $this->prepare();
 
         $result = ['days_filled' => 0, 'transactions' => 0, 'admin_logs' => 0, 'today' => 'skipped'];
-        $prevCount = null;
+        $windowStart = $now->copy()->startOfDay()->subDays($days - 1);
+        $this->windowStart = $windowStart;
+        $this->prepare();
 
         for ($i = $days - 1; $i >= 0; $i--) {
             $day = $now->copy()->startOfDay()->subDays($i);
             $isToday = $i === 0;
-            $quota = $this->quotaFor($day, $prevCount);
+            // Deterministic per-date quota, independent of what already exists.
+            $quota = $this->quotaFor($day);
             $existing = $this->demoItemCount($day);
 
             if (!$isToday) {
                 if ($this->dayFilled($day)) {
-                    $prevCount = $existing ?: $prevCount;
+                    // Complete a day that was first generated as a partial "today".
+                    $missing = $quota - $existing;
+                    if ($missing > 0) {
+                        $from = $this->lastDemoItemTime($day) ?? $day->copy()->addSeconds(self::DAY_START);
+                        $until = $day->copy()->addSeconds(self::DAY_END);
+                        if ($from->gt($until)) $from = $until->copy();
+                        $count = DB::transaction(fn () => $this->generateItems($day, $missing, $from, $until));
+                        $result['transactions'] += $count;
+                    }
                     continue;
                 }
                 $n = DB::transaction(function () use ($day, $quota) {
@@ -84,7 +95,6 @@ class DemoDataGenerator
                 $result['transactions'] += $n[0];
                 $result['admin_logs'] += $n[1];
                 $result['days_filled']++;
-                $prevCount = $n[0];
                 continue;
             }
 
@@ -95,7 +105,9 @@ class DemoDataGenerator
                 continue;
             }
             $frac = min(1, max(0, $open->diffInSeconds($now) / (self::DAY_END - self::DAY_START)));
-            $missing = (int) round($quota * $frac) - $existing;
+            $target = (int) round($quota * $frac);
+            if ($quota > 0) $target = max(1, $target);
+            $missing = $target - $existing;
             if ($missing <= 0) {
                 $result['today'] = 'skipped';
                 continue;
@@ -117,17 +129,24 @@ class DemoDataGenerator
 
     public function purge(): array
     {
-        $logs = AdminLog::where('details->demo', true)->delete();
-        $users = User::where('email', 'like', '%' . self::EMAIL_SUFFIX)->delete();
+        // Explicit deletes: do not rely on FK cascades (TiDB may not enforce them).
+        return DB::transaction(function () {
+            $ids = User::where('email', 'like', '%' . self::EMAIL_SUFFIX)->pluck('id')->all();
+            foreach (['points_history', 'transactions', 'reward_redemptions', 'recycling_sessions'] as $table) {
+                if ($ids) DB::table($table)->whereIn('user_id', $ids)->delete();
+            }
+            $users = $ids ? User::whereIn('id', $ids)->delete() : 0;
+            $logs = AdminLog::where('details->demo', true)->delete();
 
-        $deleted = false;
-        $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
-        if ($dsme && !RecyclingSession::where('machine_id', $dsme->id)->exists()) {
-            $dsme->delete();
-            $deleted = true;
-        }
+            $deleted = false;
+            $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
+            if ($dsme && !RecyclingSession::where('machine_id', $dsme->id)->exists()) {
+                $dsme->delete();
+                $deleted = true;
+            }
 
-        return ['users' => $users, 'admin_logs' => $logs, 'machine_deleted' => $deleted];
+            return ['users' => $users, 'admin_logs' => $logs, 'machine_deleted' => $deleted];
+        });
     }
 
     // ---- setup -----------------------------------------------------------
@@ -145,6 +164,11 @@ class DemoDataGenerator
                 'is_verified' => 1,
                 'total_points' => 0,
             ]);
+            if ($user->wasRecentlyCreated && $this->windowStart) {
+                // Join date 3-20 days before the window, deterministic per user; never moved on re-runs.
+                $joined = $this->windowStart->copy()->subDays(3 + crc32($email) % 18)->setTime(10, 0);
+                $user->forceFill(['created_at' => $joined, 'updated_at' => $joined])->saveQuietly();
+            }
             $this->users[$email] = ['model' => $user, 'weight' => $weight];
         }
 
@@ -163,13 +187,20 @@ class DemoDataGenerator
 
     // ---- per-day volume --------------------------------------------------
 
-    private function quotaFor(Carbon $day, ?int $prev): int
+    /** Raw (unclamped) quota: a pure function of the date. */
+    private function rawQuota(Carbon $day): int
     {
-        $quota = $day->isWeekend() ? mt_rand(6, 11) : mt_rand(10, 18);
-        if ($prev !== null) {
-            $quota = max((int) ceil($prev * 0.7), min((int) floor($prev * 1.3), $quota));
-        }
-        return $quota;
+        $h = crc32($day->toDateString());
+        [$lo, $hi] = $day->isWeekend() ? [6, 11] : [10, 18];
+        return $lo + $h % ($hi - $lo + 1);
+    }
+
+    /** Deterministic per-date quota, clamped to +-30% of the previous date's raw quota. */
+    private function quotaFor(Carbon $day): int
+    {
+        $quota = $this->rawQuota($day);
+        $prev = $this->rawQuota($day->copy()->subDay());
+        return max((int) ceil($prev * 0.7), min((int) floor($prev * 1.3), $quota));
     }
 
     private function dayBounds(Carbon $day): array
@@ -296,7 +327,7 @@ class DemoDataGenerator
                 // Bin levels are only ever written on the demo machine; real machines stay untouched.
                 if ($machine->id === $this->machines['dsme']->id) {
                     $field = $material . '_level';
-                    $machine->$field = min(100, $machine->$field + (int) ($weight / 50));
+                    $machine->$field = min(100, $machine->$field + max(1, (int) ceil($weight / 50)));
                 }
             }
             $at = $at->copy()->addSeconds(mt_rand(45, 150));
@@ -352,13 +383,13 @@ class DemoDataGenerator
 
     // ---- admin logs ------------------------------------------------------
 
-    /** $now null = a complete past day. Returns the number of logs written. */
+    /** $now null = a complete past day. Returns the number of logs written (1-4). */
     private function generateAdminLogs(Carbon $day, ?Carbon $now): int
     {
         if (!$this->admin) return 0;
 
-        $open = $day->copy()->setTime(9, 0);
-        $close = $now ? $now->copy() : $day->copy()->setTime(18, 0);
+        $open = $day->copy()->addSeconds(self::DAY_START);
+        $close = $now ? $now->copy() : $day->copy()->addSeconds(self::DAY_END);
         $at = fn () => $open->copy()->addSeconds($close->gt($open) ? mt_rand(0, $open->diffInSeconds($close)) : 0);
         $written = 0;
         $target = mt_rand(1, 4);
@@ -373,7 +404,7 @@ class DemoDataGenerator
             $t = $at();
             $this->log('request_bin_collection', 'system', 0, "Collection requested for 1 machine(s)", $t);
             $t = $t->copy()->addMinutes(mt_rand(5, 30));
-            if ($now && $t->gt($now)) $t = $now->copy();
+            if ($t->gt($close)) $t = $close->copy();
             $m->forceFill(['aluminum_level' => 0, 'plastic_level' => 0, 'glass_level' => 0, 'paper_level' => 0])->saveQuietly();
             $this->log('update_bin_levels', 'machine', $m->id, "Bin levels updated for {$m->name}", $t);
             $written += 2;
@@ -383,23 +414,50 @@ class DemoDataGenerator
         $latest = $close->copy()->subDay();
         $vouchers = RewardRedemption::whereIn('user_id', array_map(fn ($u) => $u['model']->id, $this->users))
             ->whereNull('used_at')->whereNotNull('voucher_code')->where('created_at', '<=', $latest)
-            ->inRandomOrder(mt_rand())->limit(mt_rand(0, 2))->get();
+            ->inRandomOrder(mt_rand())->limit(mt_rand(1, 2))->get();
         foreach ($vouchers as $r) {
             if ($written >= $target) break;
             $t = $at();
             if ($t->lt($r->created_at->copy()->addDay())) $t = $r->created_at->copy()->addDay();
+            if ($t->gt($close)) $t = $close->copy();
             $r->forceFill(['used_at' => $t, 'used_by' => $this->admin->id, 'updated_at' => $t])->saveQuietly();
             $this->log('use_voucher', 'reward_redemption', $r->id, "Marked voucher {$r->voucher_code} as used", $t);
             $written++;
         }
 
-        if ($written === 0 || ($written < 4 && mt_rand(0, 1))) {
+        // Machine edit entry (message only; the machine row is not changed), at most every few days.
+        if ($written < $target && $written < 4 && !$this->recentDemoLog('update_machine', $day, 1)) {
+            $this->log('update_machine', 'machine', $this->machines['dsme']->id, 'Updated machine: RVM DSME', $at());
+            $written++;
+        }
+
+        // Report export with a varied range, on roughly half of the days.
+        if ($written === 0 ? mt_rand(1, 100) <= 90 : ($written < 4 && mt_rand(1, 100) <= 10)) {
+            $to = $day->toDateString();
+            $from = match (mt_rand(0, 2)) {
+                0 => $day->copy()->subDays(6)->toDateString(),
+                1 => $day->copy()->startOfMonth()->toDateString(),
+                default => $to,
+            };
+            $this->log('export_csv', 'transactions', 0, "Exported formal report ({$from} to {$to})", $at());
+            $written++;
+        }
+
+        if ($written === 0) {
+            $to = $day->toDateString();
             $from = $day->copy()->subDays(6)->toDateString();
-            $this->log('export_csv', 'transactions', 0, "Exported formal report ({$from} to {$day->toDateString()})", $at());
+            $this->log('export_csv', 'transactions', 0, "Exported formal report ({$from} to {$to})", $at());
             $written++;
         }
 
         return $written;
+    }
+
+    private function recentDemoLog(string $action, Carbon $day, int $days): bool
+    {
+        return AdminLog::where('details->demo', true)->where('action', $action)
+            ->whereBetween('created_at', [$day->copy()->subDays($days)->startOfDay(), $day->copy()->endOfDay()])
+            ->exists();
     }
 
     private function log(string $action, string $targetType, int $targetId, string $message, Carbon $at): void
