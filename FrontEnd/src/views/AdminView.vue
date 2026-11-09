@@ -267,6 +267,21 @@
                 <option value="valid">OK</option>
                 <option value="rejected">Rejected</option>
               </select>
+              <select v-model="txMachine" @change="filterTransactions" class="filter-select" aria-label="Filter by machine">
+                <option value="">All machines</option>
+                <option v-for="m in adminMachines" :key="m.id" :value="m.id">{{ m.name }}</option>
+              </select>
+              <div class="date-range">
+                <label class="date-field picker-field" @click="openDatePicker">
+                  <span>From</span>
+                  <input v-model="txDateFrom" type="date" @change="filterTransactions" />
+                </label>
+                <label class="date-field picker-field" @click="openDatePicker">
+                  <span>To</span>
+                  <input v-model="txDateTo" type="date" @change="filterTransactions" />
+                </label>
+              </div>
+              <button class="action-btn filter-action" @click="clearTransactionFilters">Clear</button>
             </div>
           </div>
           <div v-if="loadingTransactions" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -1283,6 +1298,9 @@ function loadDetectionData(showSpinner = true) {
 const userSearch = ref('')
 const txSearch = ref('')
 const txFilter = ref('')
+const txMachine = ref('')
+const txDateFrom = ref('')
+const txDateTo = ref('')
 const sessionsSearch = ref('')
 
 const usersPage = ref(1)
@@ -1643,9 +1661,18 @@ async function fetchTabData(tab, showSpinner = false) {
       collectionCandidates.value = binsNeedingCollection
     } else if (tab === 'transactions') {
       if (showSpinner) loadingTransactions.value = true
+      // The machine filter needs the machine list even if the Machines tab was never opened.
+      if (!adminMachines.value.length) {
+        try {
+          const mres = await api.get('/admin/machines')
+          adminMachines.value = (mres.data.machines || []).map(normalizeMachine)
+        } catch { /* filter simply stays on "All machines" */ }
+      }
       const res = await api.get('/admin/transactions', { params: {
         page: txPage.value, per_page: txPerPage.value,
         search: txSearch.value || undefined, status: txFilter.value || undefined,
+        machine_id: txMachine.value || undefined,
+        date_from: txDateFrom.value || undefined, date_to: txDateTo.value || undefined,
       } })
       transactions.value = res.data.transactions?.data || []
       txTotal.value     = res.data.transactions?.total ?? 0
@@ -2129,6 +2156,14 @@ function searchTransactions() {
 function filterTransactions() {
   txPage.value = 1
   fetchTabData('transactions', true)
+}
+function clearTransactionFilters() {
+  txSearch.value = ''
+  txFilter.value = ''
+  txMachine.value = ''
+  txDateFrom.value = ''
+  txDateTo.value = ''
+  filterTransactions()
 }
 function goToTxPage(page) {
   txPage.value = page

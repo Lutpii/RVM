@@ -364,7 +364,17 @@ class AdminController extends Controller
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status');
 
+        $filters = $request->validate([
+            'machine_id' => 'nullable|integer',
+            'date_from'  => 'nullable|date',
+            'date_to'    => 'nullable|date|after_or_equal:date_from',
+        ]);
+
         $query = Transaction::with(['user', 'machine', 'session'])->latest();
+
+        if (!empty($filters['machine_id'])) $query->where('machine_id', $filters['machine_id']);
+        if (!empty($filters['date_from']))  $query->whereDate('created_at', '>=', $filters['date_from']);
+        if (!empty($filters['date_to']))    $query->whereDate('created_at', '<=', $filters['date_to']);
 
         if ($status === 'valid')    $query->where('is_valid', 1);
         if ($status === 'rejected') $query->where('is_valid', 0);
