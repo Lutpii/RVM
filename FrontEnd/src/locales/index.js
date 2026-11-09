@@ -392,6 +392,7 @@ export const messages = {
       redeemFail: 'Redemption failed. Please try again.',
     },
     scan: {
+      machinesLoadError: 'Could not load machines. Check your connection and try again.',
       title: 'Scan RVM QR Code',
       subtitle: 'Point your camera at the QR code on the machine',
       cameraActiveStatus: 'Camera active — point at QR code',
@@ -852,6 +853,7 @@ export const messages = {
       redeemFail: 'Tebusan gagal. Sila cuba lagi.',
     },
     scan: {
+      machinesLoadError: 'Tidak dapat memuatkan mesin. Semak sambungan anda dan cuba lagi.',
       title: 'Imbas Kod QR RVM',
       subtitle: 'Halakan kamera anda ke kod QR pada mesin',
       cameraActiveStatus: 'Kamera aktif — halakan ke kod QR',

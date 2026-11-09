@@ -113,9 +113,9 @@
                 <PhRobot class="ms-icon" weight="regular" aria-hidden="true" />
                 <div class="ms-label">MACHINE STATUS</div>
                 <div :class="['ms-status', activeMachines > 0 ? 'ms-online' : 'ms-offline']">
-                  {{ activeMachines > 0 ? 'ONLINE' : 'OFFLINE' }}
+                  {{ activeMachines > 0 ? 'ACTIVE' : 'INACTIVE' }}
                 </div>
-                <div class="ms-sub">{{ activeMachines }} Jetson Nano active</div>
+                <div class="ms-sub">{{ activeMachines }} of {{ adminMachines.length }} machines active</div>
               </div>
             </div>
           </div>
@@ -1501,7 +1501,7 @@ const systemStatusItems = computed(() => {
 
   return [
     { label: 'Camera',       value: cameraValue,                           color: cameraColor  },
-    { label: 'Jetson Nano',  value: `${onlineMachines}/${totalMachines} ONLINE`, color: machineColor },
+    { label: 'Machines',  value: `${onlineMachines}/${totalMachines} ACTIVE`, color: machineColor },
     { label: 'Reward Engine',value: rewardOk ? 'OK' : 'CHECK CONFIG',      color: rewardColor  },
     { label: 'Plastic Bin',  value: binLabel(plastic,  binColor(plastic)),  color: binColor(plastic)  },
     { label: 'Aluminum Bin', value: binLabel(aluminum, binColor(aluminum)), color: binColor(aluminum) },

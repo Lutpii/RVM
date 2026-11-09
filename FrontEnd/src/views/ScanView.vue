@@ -102,6 +102,8 @@
           {{ loading ? $t('scan.connecting') : $t('scan.connectBtn') }}
         </button>
 
+        <div v-if="machinesLoadError" class="error-msg">{{ $t('scan.machinesLoadError') }}</div>
+
         <!-- Machine list shortcut
         <div class="divider-text">— OR —</div>
 
@@ -151,6 +153,7 @@ const error           = ref('')
 const success         = ref('')
 const machines        = ref([])
 const loadingMachines = ref(true)
+const machinesLoadError = ref(false)
 
 // Camera state
 const videoRef     = ref(null)
@@ -348,10 +351,7 @@ onMounted(async () => {
     const res = await api.get('/machines')
     machines.value = res.data.machines || []
   } catch {
-    machines.value = [
-      { id: 1, machine_code: 'RVM-001', name: 'RVM Kuantan Mall', location_name: 'Kuantan Parade', status: 'active', aluminum_level: 45, plastic_level: 30, glass_level: 80, paper_level: 100 },
-      { id: 2, machine_code: 'RVM-002', name: 'RVM UMP', location_name: 'Universiti Malaysia Pahang', status: 'active', aluminum_level: 20, plastic_level: 60, glass_level: 15, paper_level: 40 },
-    ]
+    machinesLoadError.value = true
   } finally {
     loadingMachines.value = false
   }
