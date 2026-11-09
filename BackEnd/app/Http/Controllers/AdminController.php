@@ -163,8 +163,7 @@ class AdminController extends Controller
 
     public function updateUser(Request $request, int $id): JsonResponse
     {
-        $user = User::find($id);
-        if (!$user) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+        if (!User::whereKey($id)->exists()) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
 
         $data = $request->validate([
             'name'         => 'sometimes|string|max:100',
@@ -177,7 +176,9 @@ class AdminController extends Controller
 
         $admin = $request->user();
         $changes = [];
-        DB::transaction(function () use ($user, $data, $admin, &$changes) {
+        $user = null;
+        DB::transaction(function () use ($id, $data, $admin, &$changes, &$user) {
+            $user = User::lockForUpdate()->findOrFail($id);
             $user->fill($data);
             foreach ($user->getDirty() as $field => $new) {
                 $changes[$field] = [$user->getOriginal($field), $new];
