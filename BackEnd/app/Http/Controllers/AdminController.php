@@ -636,10 +636,32 @@ class AdminController extends Controller
         return $this->dashboard(request());
     }
 
-    public function logs(): JsonResponse
+    public function logs(Request $request): JsonResponse
     {
-        $logs = AdminLog::with('admin')->latest()->paginate(50);
-        return response()->json(['success' => true, 'logs' => $logs]);
+        $query = AdminLog::with('admin:id,name');
+
+        if ($action = $request->query('action')) {
+            $query->where('action', $action);
+        }
+        if ($from = $request->query('date_from')) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to = $request->query('date_to')) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+        if ($search = trim((string) $request->query('search', ''))) {
+            $like = '%' . addcslashes($search, '\\%_') . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('action', 'like', $like)
+                    ->orWhere('details', 'like', $like)
+                    ->orWhereHas('admin', fn ($a) => $a->where('name', 'like', $like));
+            });
+        }
+
+        $logs = $query->orderByDesc('created_at')->orderByDesc('id')->paginate($this->resolvePerPage($request));
+        $actions = AdminLog::query()->distinct()->orderBy('action')->pluck('action');
+
+        return response()->json(['success' => true, 'logs' => $logs, 'actions' => $actions]);
     }
 
     // Reward Points Configuration

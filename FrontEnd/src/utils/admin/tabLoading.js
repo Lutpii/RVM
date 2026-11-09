@@ -4,6 +4,7 @@ const TAB_LOADING_FLAG = {
   users: 'loadingUsers',
   machines: 'loadingMachines',
   sessions: 'loadingSessions',
+  audit: 'loadingAudit',
   detection: 'loadingDetectionLogs',
   rewards: 'loadingRewardItems',
 }

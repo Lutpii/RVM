@@ -513,6 +513,59 @@
         </div>
       </div>
 
+      <!-- ── AUDIT LOG ── -->
+      <div v-if="activeTab === 'audit'" class="tab-content">
+        <div class="section-card">
+          <div class="card-header">
+            <h3 class="card-title-bar"><span class="title-sq"></span> AUDIT LOG</h3>
+            <div class="topbar-right">
+              <input v-model="auditSearch" @keyup.enter="searchAudit" placeholder="Search admin / action / details... (press Enter)" class="search-input" />
+              <select v-model="auditAction" @change="searchAudit" class="filter-select">
+                <option value="">All actions</option>
+                <option v-for="a in auditActions" :key="a" :value="a">{{ auditActionLabel(a) }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="filter-toolbar">
+            <div class="date-range">
+              <label class="date-field picker-field" @click="openDatePicker">
+                <span>From</span>
+                <input v-model="auditDateFrom" type="date" @change="searchAudit" />
+              </label>
+              <label class="date-field picker-field" @click="openDatePicker">
+                <span>To</span>
+                <input v-model="auditDateTo" type="date" @change="searchAudit" />
+              </label>
+            </div>
+          </div>
+          <div v-if="loadingAudit" class="loading-overlay"><div class="spinner-lg"></div></div>
+          <div v-else class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in auditRows" :key="row.id">
+                  <td class="muted small">{{ row.time }}</td>
+                  <td>{{ row.admin }}</td>
+                  <td>{{ row.actionLabel }}</td>
+                  <td class="mono small">{{ row.target }}</td>
+                  <td>{{ row.message || '—' }}</td>
+                </tr>
+                <tr v-if="!auditRows.length">
+                  <td colspan="5" class="empty-cell">No admin activity found</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <AdminPagination :current-page="auditPage" :last-page="auditLastPage"
+            :per-page="auditPerPage" :total="auditTotal"
+            @change-page="goToAuditPage" @change-per-page="changeAuditPerPage" />
+        </div>
+      </div>
+
       <!-- ── DETECTION REVIEW ── -->
       <div v-if="activeTab === 'detection'" class="tab-content">
         <div class="section-card">
@@ -1131,12 +1184,13 @@ import ImageCropper from '@/components/admin/ImageCropper.vue'
 import {
   PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
   PhCaretLeft, PhCaretRight,
-  PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhMagnifyingGlass, PhGift,
+  PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhListChecks, PhMagnifyingGlass, PhGift,
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
   PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple, PhCrop,
 } from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
+import { formatAuditLog } from '@/utils/admin/auditLog.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
 import { validateMachineName } from '@/utils/admin/validateMachine.js'
 import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
@@ -1191,6 +1245,7 @@ const loadingStats = ref(false)
 const loadingUsers = ref(false)
 const loadingMachines = ref(false)
 const loadingSessions = ref(false)
+const loadingAudit = ref(false)
 const loadingTransactions = ref(false)
 
 const tabError = ref('')   // surfaced error message per tab
@@ -1198,7 +1253,7 @@ const tabError = ref('')   // surfaced error message per tab
 // Skip re-fetching a tab if it was loaded this recently — makes rapid tab
 // switching feel instant instead of flashing a spinner every click.
 const TAB_STALE_MS = 10000
-const tabFetchedAt = reactive({ dashboard: 0, transactions: 0, users: 0, machines: 0, sessions: 0, detection: 0 })
+const tabFetchedAt = reactive({ dashboard: 0, transactions: 0, users: 0, machines: 0, sessions: 0, audit: 0, detection: 0 })
 
 // Detection Review's Pending/History/Test Data sub-views (plus the History
 // All/Correct/Incorrect filter, date range and page) each return different
@@ -1246,6 +1301,21 @@ const sessionsPage = ref(1)
 const sessionsPerPage = ref(20)
 const sessionsTotal = ref(0)
 const sessionsLastPage = ref(1)
+
+const auditLogs = ref([])
+const auditActions = ref([])
+const auditSearch = ref('')
+const auditAction = ref('')
+const auditDateFrom = ref('')
+const auditDateTo = ref('')
+const auditPage = ref(1)
+const auditPerPage = ref(20)
+const auditTotal = ref(0)
+const auditLastPage = ref(1)
+const auditRows = computed(() => auditLogs.value.map(formatAuditLog))
+function auditActionLabel(a) {
+  return formatAuditLog({ action: a }).actionLabel
+}
 
 const loadingDetectionLogs = ref(false)
 const loadingRewardItems = ref(false)
@@ -1425,6 +1495,7 @@ const navItems = [
   { id: 'users',        icon: PhUsers,           label: 'Users' },
   { id: 'transactions', icon: PhReceipt,         label: 'Transactions' },
   { id: 'sessions',     icon: PhClipboardText,   label: 'Sessions' },
+  { id: 'audit',        icon: PhListChecks,      label: 'Audit Log' },
   { id: 'detection',    icon: PhMagnifyingGlass, label: 'Detection Review' },
 ]
 
@@ -1600,6 +1671,17 @@ async function fetchTabData(tab, showSpinner = false) {
       sessions.value = res.data.sessions?.data || []
       sessionsTotal.value    = res.data.sessions?.total ?? 0
       sessionsLastPage.value = res.data.sessions?.last_page ?? 1
+    } else if (tab === 'audit') {
+      if (showSpinner) loadingAudit.value = true
+      const res = await api.get('/admin/logs', { params: {
+        page: auditPage.value, per_page: auditPerPage.value,
+        search: auditSearch.value || undefined, action: auditAction.value || undefined,
+        date_from: auditDateFrom.value || undefined, date_to: auditDateTo.value || undefined,
+      } })
+      auditLogs.value     = res.data.logs?.data || []
+      auditActions.value  = res.data.actions || []
+      auditTotal.value    = res.data.logs?.total ?? 0
+      auditLastPage.value = res.data.logs?.last_page ?? 1
     } else if (tab === 'detection') {
       if (showSpinner) loadingDetectionLogs.value = true
       const requestStartedAt = performance.now()
@@ -1648,7 +1730,7 @@ async function fetchTabData(tab, showSpinner = false) {
     tabError.value = msg
     console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
   } finally {
-    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingTransactions, loadingDetectionLogs, loadingRewardItems }
+    const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingAudit, loadingTransactions, loadingDetectionLogs, loadingRewardItems }
     const flagName = resolveLoadingFlag(tab)
     if (flagName) flags[flagName].value = false
   }
@@ -2070,6 +2152,20 @@ function changeSessionsPerPage(perPage) {
   sessionsPerPage.value = perPage
   sessionsPage.value = 1
   fetchTabData('sessions', true)
+}
+
+function searchAudit() {
+  auditPage.value = 1
+  fetchTabData('audit', true)
+}
+function goToAuditPage(page) {
+  auditPage.value = page
+  fetchTabData('audit', true)
+}
+function changeAuditPerPage(perPage) {
+  auditPerPage.value = perPage
+  auditPage.value = 1
+  fetchTabData('audit', true)
 }
 
 function goToRewardItemsPage(page) {
