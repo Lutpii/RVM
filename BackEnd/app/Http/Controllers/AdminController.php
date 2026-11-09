@@ -7,6 +7,7 @@ use App\Models\RvmMachine;
 use App\Models\RecyclingSession;
 use App\Models\Transaction;
 use App\Models\AdminLog;
+use App\Models\PointsHistory;
 use App\Models\DetectionLog;
 use App\Models\RewardItem;
 use App\Models\RewardRedemption;
@@ -165,8 +166,38 @@ class AdminController extends Controller
         $user = User::find($id);
         if (!$user) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
 
-        $user->update($request->only(['name', 'email', 'phone', 'total_points', 'is_verified', 'role']));
-        $this->log($request->user(), 'update_user', 'user', $id, "Updated user: {$user->name}");
+        $data = $request->validate([
+            'name'         => 'sometimes|string|max:100',
+            'email'        => 'sometimes|email|max:255|unique:users,email,' . $id,
+            'phone'        => 'nullable|string|max:20',
+            'total_points' => 'sometimes|integer|min:0',
+            'is_verified'  => 'sometimes|boolean',
+            'role'         => 'sometimes|in:user,admin',
+        ]);
+
+        $admin = $request->user();
+        $changes = [];
+        DB::transaction(function () use ($user, $data, $admin, &$changes) {
+            $user->fill($data);
+            foreach ($user->getDirty() as $field => $new) {
+                $changes[$field] = [$user->getOriginal($field), $new];
+            }
+            $user->save();
+
+            if (isset($changes['total_points'])) {
+                [$old, $new] = $changes['total_points'];
+                $delta = (int) $new - (int) $old;
+                PointsHistory::create([
+                    'user_id'        => $user->id,
+                    'transaction_id' => null,
+                    'points_change'  => $delta,
+                    'balance_after'  => (int) $new,
+                    'type'           => $delta > 0 ? 'earned' : 'deducted',
+                    'description'    => "Admin adjustment by {$admin->name}",
+                ]);
+            }
+        });
+        $this->log($admin, 'update_user', 'user', $id, "Updated user: {$user->name}", ['changes' => $changes]);
 
         return response()->json(['success' => true, 'user' => $user]);
     }
@@ -964,14 +995,14 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'message' => 'Report emailed to ' . $validated['email'] . '.']);
     }
 
-    private function log(User $admin, string $action, string $targetType, int $targetId, string $details): void
+    private function log(User $admin, string $action, string $targetType, int $targetId, string $details, array $extra = []): void
     {
         AdminLog::create([
             'admin_id'    => $admin->id,
             'action'      => $action,
             'target_type' => $targetType,
             'target_id'   => $targetId,
-            'details'     => json_encode(['message' => $details]),
+            'details'     => json_encode(array_merge(['message' => $details], $extra)),
         ]);
     }
 }
