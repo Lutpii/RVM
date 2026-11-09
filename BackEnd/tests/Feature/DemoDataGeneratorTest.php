@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\DemoDataGenerator;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DemoDataGeneratorTest extends TestCase
@@ -154,6 +155,12 @@ class DemoDataGeneratorTest extends TestCase
                 $this->assertStringContainsString($r->voucher_code, json_decode($log->details, true)['message']);
             }
         }
+        $perDay = $logs->groupBy(fn ($l) => $l->created_at->copy()->setTimezone(self::TZ)->toDateString());
+        $this->assertGreaterThanOrEqual(29, $perDay->count());
+        foreach ($perDay as $date => $dayLogs) {
+            $this->assertGreaterThanOrEqual(1, $dayLogs->count(), $date);
+            $this->assertLessThanOrEqual(4, $dayLogs->count(), $date);
+        }
         $this->assertSame(1, AdminLog::where('action', 'update_user')->count());
         $this->assertSame(1, AdminLog::whereNull('details->demo')->count());
     }
@@ -203,5 +210,19 @@ class DemoDataGeneratorTest extends TestCase
         $this->assertSame(25, (int) $this->realUser->fresh()->total_points);
         $this->assertSame(0, PointsHistory::where('user_id', $this->admin->id)->count());
         $this->assertSame(1, PointsHistory::where('user_id', $this->realUser->id)->count());
+    }
+
+    public function test_real_machine_rows_are_never_modified(): void
+    {
+        $m = RvmMachine::where('machine_code', 'RVM-001')->first();
+        $m->forceFill(['glass_level' => 95, 'plastic_level' => 93])->saveQuietly();
+        $before = DB::table('rvm_machines')->where('machine_code', 'RVM-001')->first();
+
+        $this->gen();
+        $this->assertEquals($before, DB::table('rvm_machines')->where('machine_code', 'RVM-001')->first());
+        $this->assertGreaterThan(0, Transaction::where('machine_id', $m->id)->count());
+
+        app(DemoDataGenerator::class)->purge();
+        $this->assertEquals($before, DB::table('rvm_machines')->where('machine_code', 'RVM-001')->first());
     }
 }

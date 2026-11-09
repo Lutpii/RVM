@@ -293,14 +293,17 @@ class DemoDataGenerator
                     'points_change' => $points, 'balance_after' => $balance, 'type' => 'earned',
                     'description' => "Recycled {$weight}g of {$material}",
                 ]), $at);
-                $field = $material . '_level';
-                $machine->$field = min(100, $machine->$field + (int) ($weight / 50));
+                // Bin levels are only ever written on the demo machine; real machines stay untouched.
+                if ($machine->id === $this->machines['dsme']->id) {
+                    $field = $material . '_level';
+                    $machine->$field = min(100, $machine->$field + (int) ($weight / 50));
+                }
             }
             $at = $at->copy()->addSeconds(mt_rand(45, 150));
         }
         $endAt = $at->gt($until) ? $until->copy() : $at->copy();
 
-        $machine->save();
+        if ($machine->isDirty()) $machine->save();
         $user->update(['total_points' => $balance]);
         $session->forceFill([
             'status' => 'completed', 'total_items' => $items, 'points_earned' => $earnedTotal,
@@ -360,22 +363,20 @@ class DemoDataGenerator
         $written = 0;
         $target = mt_rand(1, 4);
 
-        // Full bin -> collection request, then the bins are reset.
-        $full = RvmMachine::where(fn ($q) => $q->where('aluminum_level', '>=', 90)->orWhere('plastic_level', '>=', 90)
-            ->orWhere('glass_level', '>=', 90)->orWhere('paper_level', '>=', 90))
-            ->whereIn('id', RecyclingSession::where('session_code', 'like', 'DEMO-%')->select('machine_id'))
-            ->get();
-        if ($full->isNotEmpty()) {
+        // Full DSME bin -> collection request, then the bins are reset (counts as 2 logs).
+        // Only the demo machine is ever touched; real machines are never written.
+        $m = RvmMachine::where('machine_code', 'RVM-DSME')
+            ->where(fn ($q) => $q->where('aluminum_level', '>=', 90)->orWhere('plastic_level', '>=', 90)
+                ->orWhere('glass_level', '>=', 90)->orWhere('paper_level', '>=', 90))
+            ->first();
+        if ($m) {
             $t = $at();
-            $this->log('request_bin_collection', 'system', 0, "Collection requested for {$full->count()} machine(s)", $t);
-            $written++;
-            foreach ($full as $m) {
-                $t = $t->copy()->addMinutes(mt_rand(5, 30));
-                if ($now && $t->gt($now)) $t = $now->copy();
-                $m->forceFill(['aluminum_level' => 0, 'plastic_level' => 0, 'glass_level' => 0, 'paper_level' => 0])->saveQuietly();
-                $this->log('update_bin_levels', 'machine', $m->id, "Bin levels updated for {$m->name}", $t);
-                $written++;
-            }
+            $this->log('request_bin_collection', 'system', 0, "Collection requested for 1 machine(s)", $t);
+            $t = $t->copy()->addMinutes(mt_rand(5, 30));
+            if ($now && $t->gt($now)) $t = $now->copy();
+            $m->forceFill(['aluminum_level' => 0, 'plastic_level' => 0, 'glass_level' => 0, 'paper_level' => 0])->saveQuietly();
+            $this->log('update_bin_levels', 'machine', $m->id, "Bin levels updated for {$m->name}", $t);
+            $written += 2;
         }
 
         // Mark older, still-unused demo vouchers as used.
@@ -392,7 +393,7 @@ class DemoDataGenerator
             $written++;
         }
 
-        if ($written === 0 || mt_rand(0, 1)) {
+        if ($written === 0 || ($written < 4 && mt_rand(0, 1))) {
             $from = $day->copy()->subDays(6)->toDateString();
             $this->log('export_csv', 'transactions', 0, "Exported formal report ({$from} to {$day->toDateString()})", $at());
             $written++;
