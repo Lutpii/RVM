@@ -94,10 +94,9 @@ class SessionController extends Controller
         $earned     = $session->transactions->where('is_valid', true)->sum('points_earned');
         $deducted   = $session->transactions->where('is_valid', false)->sum('points_deducted');
         $totalItems = $session->transactions->where('is_valid', true)->count();
-        $endPoints  = max(0, $session->start_points + $earned - $deducted);
-
-        // Persist correct total_points to users table
-        $user->update(['total_points' => $endPoints]);
+        // Balance is already maintained per item by complete()/reject();
+        // never overwrite users.total_points here (it may include redemptions).
+        $endPoints  = (int) $user->total_points;
 
         $session->update([
             'status'        => 'completed',
