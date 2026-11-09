@@ -22,7 +22,18 @@ function detailsMessage(details) {
     try { parsed = JSON.parse(details) } catch { return details }
   }
   if (parsed && typeof parsed === 'object') {
-    return typeof parsed.message === 'string' ? parsed.message : ''
+    let msg = typeof parsed.message === 'string' ? parsed.message : ''
+    const ch = parsed.changes
+    if (ch && typeof ch === 'object' && !Array.isArray(ch)) {
+      const parts = Object.entries(ch).map(([field, v]) => {
+        const hasPair = v && typeof v === 'object' && ('old' in v || 'new' in v)
+        const from = hasPair ? v.old : v?.[0]
+        const to = hasPair ? v.new : v?.[1]
+        return `${field}: ${from} → ${to}`
+      })
+      if (parts.length) msg += (msg ? ' — ' : '') + parts.join(', ')
+    }
+    return msg
   }
   return typeof parsed === 'string' ? parsed : String(parsed)
 }
@@ -35,7 +46,7 @@ export function formatAuditLog(log) {
     admin: log.admin?.name || '—',
     action: log.action,
     actionLabel: AUDIT_ACTION_LABELS[log.action] ?? titleCase(log.action),
-    target: hasTarget ? `${log.target_type} #${log.target_id}` : '—',
+    target: !hasTarget ? '—' : (log.target_id ? `${log.target_type} #${log.target_id}` : log.target_type),
     message: detailsMessage(log.details),
   }
 }

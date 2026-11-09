@@ -300,7 +300,7 @@
               </thead>
               <tbody>
                 <tr v-for="tx in transactions" :key="tx.id">
-                  <td class="mono small">{{ timeOnly(tx.created_at) }}</td>
+                  <td class="mono small">{{ txDateTime(tx.created_at) }}</td>
                   <td class="mono">{{ formatUserId(tx.user) }}</td>
                   <td>
                     <span class="item-cell">
@@ -316,7 +316,8 @@
                       <span class="confidence-pct">{{ Math.round((tx.ai_confidence || 0) * 100) }}%</span>
                     </div>
                   </td>
-                  <td :class="tx.points_earned > 0 ? 'pts-green' : 'muted'">
+                  <td v-if="!tx.is_valid && tx.points_deducted > 0" class="pts-red">-{{ tx.points_deducted }}</td>
+                  <td v-else :class="tx.points_earned > 0 ? 'pts-green' : 'muted'">
                     {{ tx.points_earned > 0 ? '+' + tx.points_earned : '0' }}
                   </td>
                   <td class="compartment">{{ getCompartment(tx) }}</td>
@@ -1621,6 +1622,13 @@ function formatDate(ts) {
   if (!ts) return '—'
   const d = new Date(ts)
   return d.toLocaleDateString() + ' ' + fmtTime(d)
+}
+
+function txDateTime(ts) {
+  if (!ts) return '—'
+  const d = new Date(ts)
+  const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return date + ', ' + fmtTime(d).toUpperCase()
 }
 
 function timeOnly(ts) {

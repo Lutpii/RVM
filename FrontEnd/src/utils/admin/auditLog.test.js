@@ -32,4 +32,18 @@ describe('formatAuditLog', () => {
   it('handles a missing admin', () => {
     expect(formatAuditLog({ ...base, admin: null, details: null }).admin).toBe('—')
   })
+
+  it('appends before/after values from details.changes', () => {
+    const d = JSON.stringify({ message: 'Updated user: X', changes: { total_points: [100, 150], name: ['A', 'B'] } })
+    expect(formatAuditLog({ ...base, details: d }).message).toBe('Updated user: X — total_points: 100 → 150, name: A → B')
+    const d2 = JSON.stringify({ message: 'M', changes: { name: { old: 'A', new: 'B' } } })
+    expect(formatAuditLog({ ...base, details: d2 }).message).toBe('M — name: A → B')
+    expect(formatAuditLog({ ...base, details: JSON.stringify({ message: 'M', changes: {} }) }).message).toBe('M')
+  })
+
+  it('omits "#0" when target_id is 0, null or missing', () => {
+    expect(formatAuditLog({ ...base, target_type: 'transactions', target_id: 0, details: null }).target).toBe('transactions')
+    expect(formatAuditLog({ ...base, target_type: 'transactions', target_id: null, details: null }).target).toBe('transactions')
+    expect(formatAuditLog({ ...base, target_type: 'transactions', target_id: undefined, details: null }).target).toBe('transactions')
+  })
 })
