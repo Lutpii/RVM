@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
@@ -252,7 +253,8 @@ class TransactionController extends Controller
         $request->validate([
             'session_code'      => 'required|string',
             'material_selected' => 'nullable|in:aluminum,plastic,glass,paper',
-            'ai_detected_type'  => 'nullable|string',
+            // Used as a bin column name below, so only the four real materials.
+            'ai_detected_type'  => 'nullable|in:aluminum,plastic,glass,paper',
             'ai_confidence'     => 'nullable|numeric',
             'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
@@ -278,46 +280,50 @@ class TransactionController extends Controller
 
         // Save transaction — material comes from AI detection (no pre-selection)
         $materialUsed = $request->ai_detected_type ?? $request->material_selected ?? 'unknown';
-        $transaction = Transaction::create([
-            'session_id'        => $session->id,
-            'user_id'           => $user->id,
-            'machine_id'        => $machine->id,
-            'material_selected' => $materialUsed,
-            'ai_detected_type'  => $materialUsed,
-            'ai_confidence'     => $request->ai_confidence,
-            'is_valid'          => 1,
-            'weight_grams'      => $weightGrams,
-            'points_earned'     => $pointsEarned,
-            'points_deducted'   => 0,
-            'image_path'        => $request->image_path,
-        ]);
 
-        // Drop the item into the physical bin that matches its detected material.
+        // All-or-nothing: a failure part-way must not leave a transaction
+        // without its points, or points without their history row (U04).
+        $transaction = DB::transaction(function () use ($session, $user, $machine, $materialUsed, $weightGrams, $pointsEarned, $request) {
+            $transaction = Transaction::create([
+                'session_id'        => $session->id,
+                'user_id'           => $user->id,
+                'machine_id'        => $machine->id,
+                'material_selected' => $materialUsed,
+                'ai_detected_type'  => $materialUsed,
+                'ai_confidence'     => $request->ai_confidence,
+                'is_valid'          => 1,
+                'weight_grams'      => $weightGrams,
+                'points_earned'     => $pointsEarned,
+                'points_deducted'   => 0,
+                'image_path'        => $request->image_path,
+            ]);
+
+            $user->increment('total_points', $pointsEarned);
+
+            PointsHistory::create([
+                'user_id'        => $user->id,
+                'transaction_id' => $transaction->id,
+                'session_id'     => $session->id,
+                'points_change'  => $pointsEarned,
+                'balance_after'  => $user->fresh()->total_points,
+                'type'           => 'earned',
+                'description'    => "Recycled {$weightGrams}g of {$materialUsed}",
+            ]);
+
+            $binField = $materialUsed . '_level';
+            $newLevel = min(100, $machine->$binField + (int)($weightGrams / 50));
+            $machine->update([$binField => $newLevel]);
+
+            $session->increment('total_items');
+            $session->increment('points_earned', $pointsEarned);
+            $session->update(['end_points' => $user->fresh()->total_points]);
+
+            return $transaction;
+        });
+
+        // Drop the item into the physical bin only after the records are safely
+        // committed, so the hardware never moves for a rolled-back write.
         $this->ai->sort($materialUsed);
-
-        // Update user points
-        $user->increment('total_points', $pointsEarned);
-
-        // Record points history
-        PointsHistory::create([
-            'user_id'        => $user->id,
-            'transaction_id' => $transaction->id,
-            'session_id'     => $session->id,
-            'points_change'  => $pointsEarned,
-            'balance_after'  => $user->fresh()->total_points,
-            'type'           => 'earned',
-            'description'    => "Recycled {$weightGrams}g of {$materialUsed}",
-        ]);
-
-        // Update bin level
-        $binField = $materialUsed . '_level';
-        $newLevel = min(100, $machine->$binField + (int)($weightGrams / 50));
-        $machine->update([$binField => $newLevel]);
-
-        // Update session totals
-        $session->increment('total_items');
-        $session->increment('points_earned', $pointsEarned);
-        $session->update(['end_points' => $user->fresh()->total_points]);
 
         return response()->json([
             'success'        => true,
@@ -349,38 +355,40 @@ class TransactionController extends Controller
         $user    = $request->user();
         $machine = $session->machine;
 
-        // Save rejected transaction
-        $transaction = Transaction::create([
-            'session_id'        => $session->id,
-            'user_id'           => $user->id,
-            'machine_id'        => $machine->id,
-            'material_selected' => $request->material_selected,
-            'ai_detected_type'  => $request->ai_detected_type,
-            'ai_confidence'     => $request->ai_confidence,
-            'is_valid'          => 0,
-            'weight_grams'      => 0,
-            'points_earned'     => 0,
-            'points_deducted'   => self::DEDUCTION_INVALID,
-            'image_path'        => $request->image_path,
-        ]);
+        // Rejected transaction + deduction + history are written all-or-nothing (U04).
+        [$transaction, $deduction] = DB::transaction(function () use ($session, $user, $machine, $request) {
+            $transaction = Transaction::create([
+                'session_id'        => $session->id,
+                'user_id'           => $user->id,
+                'machine_id'        => $machine->id,
+                'material_selected' => $request->material_selected,
+                'ai_detected_type'  => $request->ai_detected_type,
+                'ai_confidence'     => $request->ai_confidence,
+                'is_valid'          => 0,
+                'weight_grams'      => 0,
+                'points_earned'     => 0,
+                'points_deducted'   => self::DEDUCTION_INVALID,
+                'image_path'        => $request->image_path,
+            ]);
 
-        // Drop the rejected item into the reject bin.
+            $deduction = min($user->total_points, self::DEDUCTION_INVALID);
+            $user->decrement('total_points', $deduction);
+
+            PointsHistory::create([
+                'user_id'        => $user->id,
+                'transaction_id' => $transaction->id,
+                'session_id'     => $session->id,
+                'points_change'  => -$deduction,
+                'balance_after'  => $user->fresh()->total_points,
+                'type'           => 'deducted',
+                'description'    => "Invalid item: selected {$request->material_selected}, detected {$request->ai_detected_type}",
+            ]);
+
+            return [$transaction, $deduction];
+        });
+
+        // Drop the rejected item into the reject bin, after the commit.
         $this->ai->sort('reject');
-
-        // Deduct points
-        $deduction = min($user->total_points, self::DEDUCTION_INVALID);
-        $user->decrement('total_points', $deduction);
-
-        // Record deduction
-        PointsHistory::create([
-            'user_id'        => $user->id,
-            'transaction_id' => $transaction->id,
-            'session_id'     => $session->id,
-            'points_change'  => -$deduction,
-            'balance_after'  => $user->fresh()->total_points,
-            'type'           => 'deducted',
-            'description'    => "Invalid item: selected {$request->material_selected}, detected {$request->ai_detected_type}",
-        ]);
 
         return response()->json([
             'success'          => false,
