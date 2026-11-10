@@ -98,4 +98,56 @@ class TransactionCompleteAtomicityTest extends TestCase
         $this->assertSame(0, Transaction::count());
         $this->assertSame(50, (int) $this->user->fresh()->total_points);
     }
+
+    public function test_retry_with_same_key_returns_original_and_credits_once(): void
+    {
+        $first = $this->postJson('/api/transactions/complete', $this->payload(['idempotency_key' => 'k1']))->assertOk();
+        // The pending item is gone now; a retry with the same key replays the first result.
+        $again = $this->postJson('/api/transactions/complete', $this->payload(['idempotency_key' => 'k1']))->assertOk();
+
+        $again->assertJsonPath('replayed', true);
+        $this->assertSame($first->json('transaction_id'), $again->json('transaction_id'));
+        $this->assertSame(5, $again->json('points_earned'));
+        $this->assertSame(5, (int) $this->user->fresh()->total_points);
+        $this->assertSame(1, Transaction::count());
+        $this->assertSame(1, PointsHistory::count());
+    }
+
+    public function test_same_key_in_another_users_session_does_not_replay(): void
+    {
+        $this->postJson('/api/transactions/complete', $this->payload(['idempotency_key' => 'k1']))->assertOk();
+        $aTx = Transaction::first();
+
+        $userB = User::create([
+            'name' => 'B', 'email' => 'b@test.local', 'phone' => '0199999999',
+            'password_hash' => bcrypt('password'), 'role' => 'user', 'is_verified' => 1, 'total_points' => 0,
+        ]);
+        $sessionB = RecyclingSession::create([
+            'session_code' => 'SESS-B-' . uniqid(), 'user_id' => $userB->id,
+            'machine_id' => $this->session->machine_id, 'status' => 'active', 'start_points' => 0,
+        ]);
+        Cache::put("rvm:pending_txn:{$sessionB->id}", ['weight_grams' => 30, 'points_earned' => 7]);
+        Sanctum::actingAs($userB, ['*']);
+
+        $res = $this->postJson('/api/transactions/complete', [
+            'session_code' => $sessionB->session_code, 'ai_detected_type' => 'aluminum', 'idempotency_key' => 'k1',
+        ])->assertOk();
+
+        $res->assertJsonMissingPath('replayed');
+        $this->assertNotSame($aTx->id, $res->json('transaction_id'));
+        $this->assertSame(7, (int) $userB->fresh()->total_points);
+        $this->assertSame(5, (int) $this->user->fresh()->total_points);
+        $this->assertSame(2, Transaction::count());
+    }
+
+    public function test_complete_without_key_behaves_as_before(): void
+    {
+        $this->postJson('/api/transactions/complete', $this->payload())->assertOk()->assertJsonMissingPath('replayed');
+        $this->postJson('/api/transactions/complete', $this->payload())->assertStatus(400);
+    }
+
+    public function test_idempotency_key_is_length_limited(): void
+    {
+        $this->postJson('/api/transactions/complete', $this->payload(['idempotency_key' => str_repeat('x', 65)]))->assertStatus(422);
+    }
 }

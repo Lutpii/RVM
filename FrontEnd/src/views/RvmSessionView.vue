@@ -383,6 +383,7 @@ import api from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
+import { retryOnce, newIdempotencyKey } from '@/utils/retryOnce'
 import { stepAfterClassify, readDepositResult, isMachineFault, switchStage, waitForJob, singleFlight, verifiedMaterial, oneDecision, sessionLimitReached, limitEndsSession, limitFor, AUTO_END_SECONDS } from '@/utils/compactorFlow'
 
 const router   = useRouter()
@@ -916,13 +917,17 @@ async function awardPoints() {
 
   // Step 3: Complete — always call API to save to DB
   try {
-    const completeRes = await rvm.processStep('complete', {
+    // One key per item: if the answer is lost and we retry, the backend
+    // returns the first result instead of failing or crediting twice (U04).
+    const idempotencyKey = newIdempotencyKey()
+    const completeRes = await retryOnce(() => rvm.processStep('complete', {
       material_selected: rvm.selectedMaterial,
       ai_detected_type: aiDetected.value,
       ai_confidence: aiConfidence.value,
       weight_grams: itemWeight.value,
       points_earned: itemPoints.value,
-    })
+      idempotency_key: idempotencyKey,
+    }))
     displayPoints.value = completeRes.total_points || (displayPoints.value + itemPoints.value)
     // completeRes has no carbon_saved for guests (mocked, no DB record) —
     // keep the value classify() already set instead of zeroing it out.

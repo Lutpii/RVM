@@ -257,10 +257,23 @@ class TransactionController extends Controller
             'ai_detected_type'  => 'nullable|in:aluminum,plastic,glass,paper',
             'ai_confidence'     => 'nullable|numeric',
             'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
+            'idempotency_key'   => 'nullable|string|max:64',
         ]);
 
         $session = $this->getActiveSession($request);
         if (!$session) return $this->sessionError();
+
+        // Retry of an item this session already completed (the kiosk lost the
+        // first response): return that result, credit nothing (U04). Looked up
+        // only inside the caller's own active session, so a key can't reach
+        // another user's transaction.
+        $key = $request->idempotency_key;
+        if ($key !== null) {
+            $done = Transaction::where('session_id', $session->id)->where('idempotency_key', $key)->first();
+            if ($done) {
+                return response()->json($this->completedBody($done, $request->user()->fresh()->total_points) + ['replayed' => true]);
+            }
+        }
 
         // weight_grams / points_earned are never taken from the client — they must
         // have been computed and cached by weigh() for this exact session. Cache::pull
@@ -283,7 +296,7 @@ class TransactionController extends Controller
 
         // All-or-nothing: a failure part-way must not leave a transaction
         // without its points, or points without their history row (U04).
-        $transaction = DB::transaction(function () use ($session, $user, $machine, $materialUsed, $weightGrams, $pointsEarned, $request) {
+        $transaction = DB::transaction(function () use ($session, $user, $machine, $materialUsed, $weightGrams, $pointsEarned, $request, $key) {
             $transaction = Transaction::create([
                 'session_id'        => $session->id,
                 'user_id'           => $user->id,
@@ -296,6 +309,7 @@ class TransactionController extends Controller
                 'points_earned'     => $pointsEarned,
                 'points_deducted'   => 0,
                 'image_path'        => $request->image_path,
+                'idempotency_key'   => $key,
             ]);
 
             $user->increment('total_points', $pointsEarned);
@@ -325,17 +339,7 @@ class TransactionController extends Controller
         // committed, so the hardware never moves for a rolled-back write.
         $this->ai->sort($materialUsed);
 
-        return response()->json([
-            'success'        => true,
-            'message'        => __('messages.transaction_completed'),
-            'transaction_id' => $transaction->id,
-            'points_earned'  => $pointsEarned,
-            'total_points'   => $user->fresh()->total_points,
-            'weight_grams'   => $weightGrams,
-            'material'       => $materialUsed,
-            'carbon_saved'   => \App\Services\CarbonService::forMaterial($materialUsed),
-            'step'           => 'complete',
-        ]);
+        return response()->json($this->completedBody($transaction, $user->fresh()->total_points));
     }
 
     // Step 8b: Reject item (invalid material)
@@ -664,6 +668,22 @@ class TransactionController extends Controller
     }
 
     // Helpers
+    // Response of a completed deposit; shared by the first call and a replay.
+    private function completedBody(Transaction $transaction, int $totalPoints): array
+    {
+        return [
+            'success'        => true,
+            'message'        => __('messages.transaction_completed'),
+            'transaction_id' => $transaction->id,
+            'points_earned'  => (int) $transaction->points_earned,
+            'total_points'   => $totalPoints,
+            'weight_grams'   => (int) $transaction->weight_grams,
+            'material'       => $transaction->material_selected,
+            'carbon_saved'   => \App\Services\CarbonService::forMaterial($transaction->material_selected),
+            'step'           => 'complete',
+        ];
+    }
+
     private function getActiveSession(Request $request): ?RecyclingSession
     {
         return RecyclingSession::with('machine')
