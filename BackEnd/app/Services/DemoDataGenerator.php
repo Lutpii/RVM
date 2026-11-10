@@ -2,7 +2,6 @@
 // BackEnd/app/Services/DemoDataGenerator.php
 namespace App\Services;
 
-use App\Http\Controllers\TransactionController;
 use App\Models\AdminLog;
 use App\Models\MaintenanceRecord;
 use App\Models\PointsHistory;
@@ -343,21 +342,18 @@ class DemoDataGenerator
             $rejected = mt_rand(1, 100) <= self::REJECT_PERCENT;
 
             if ($rejected) {
-                $detected = mt_rand(0, 1) ? 'unknown' : $materials[mt_rand(0, count($materials) - 1)];
-                $tx = $this->stamp(Transaction::create([
+                // Same rule as the kiosk: the AI service turns anything below
+                // 60 % confidence into 'unknown', and a recognised material with
+                // no slot on this machine (metal, wood, bricks) into 'reject'.
+                // Either way the item is returned with 0 points and no deduction,
+                // so no points-history row is written.
+                $unknown = mt_rand(0, 1) === 1;
+                $detected = $unknown ? 'unknown' : 'reject';
+                $this->stamp(Transaction::create([
                     'session_id' => $session->id, 'user_id' => $user->id, 'machine_id' => $machine->id,
-                    'material_selected' => $material, 'ai_detected_type' => $detected,
-                    'ai_confidence' => mt_rand(5500, 8800) / 10000,
-                    'is_valid' => 0, 'weight_grams' => 0, 'points_earned' => 0,
-                    'points_deducted' => TransactionController::DEDUCTION_INVALID,
-                ]), $at);
-                $deduction = min($balance, TransactionController::DEDUCTION_INVALID);
-                $balance -= $deduction;
-                $earnedTotal -= $deduction;
-                $this->stamp(PointsHistory::create([
-                    'user_id' => $user->id, 'transaction_id' => $tx->id, 'session_id' => $session->id,
-                    'points_change' => -$deduction, 'balance_after' => $balance, 'type' => 'deducted',
-                    'description' => "Invalid item: selected {$material}, detected {$detected}",
+                    'material_selected' => $detected, 'ai_detected_type' => $detected,
+                    'ai_confidence' => $unknown ? mt_rand(2000, 5900) / 10000 : mt_rand(6500, 9500) / 10000,
+                    'is_valid' => 0, 'weight_grams' => 0, 'points_earned' => 0, 'points_deducted' => 0,
                 ]), $at);
             } else {
                 $weight = in_array($material, ['aluminum', 'plastic'], true) ? mt_rand(9, 49) : mt_rand(50, 500);

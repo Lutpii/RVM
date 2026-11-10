@@ -84,21 +84,6 @@ class TransactionCompleteAtomicityTest extends TestCase
         $this->assertSame(1, Transaction::count());
     }
 
-    public function test_db_failure_mid_reject_leaves_no_partial_rows(): void
-    {
-        $this->user->update(['total_points' => 50]);
-        PointsHistory::creating(function () {
-            throw new \RuntimeException('simulated failure');
-        });
-
-        $this->postJson('/api/transactions/reject', $this->payload([
-            'material_selected' => 'plastic', 'ai_detected_type' => 'glass',
-        ]))->assertStatus(500);
-
-        $this->assertSame(0, Transaction::count());
-        $this->assertSame(50, (int) $this->user->fresh()->total_points);
-    }
-
     public function test_retry_with_same_key_returns_original_and_credits_once(): void
     {
         $first = $this->postJson('/api/transactions/complete', $this->payload(['idempotency_key' => 'k1']))->assertOk();

@@ -83,6 +83,24 @@ class DemoDataGeneratorTest extends TestCase
         }
     }
 
+    public function test_rejected_items_follow_the_kiosk_rule_and_cost_no_points(): void
+    {
+        $this->gen();
+        $rejected = Transaction::whereIn('user_id', $this->demoUserIds())->where('is_valid', 0)->get();
+        $this->assertGreaterThan(0, $rejected->count());
+
+        foreach ($rejected as $t) {
+            $this->assertSame(0, (int) $t->points_deducted);
+            $this->assertSame(0, (int) $t->points_earned);
+            $this->assertContains($t->ai_detected_type, ['unknown', 'reject']);
+            if ($t->ai_detected_type === 'unknown') {
+                $this->assertLessThan(0.6, (float) $t->ai_confidence);
+            }
+            $this->assertFalse(PointsHistory::where('transaction_id', $t->id)->exists());
+        }
+        $this->assertFalse(PointsHistory::whereIn('user_id', $this->demoUserIds())->where('type', 'deducted')->exists());
+    }
+
     public function test_daily_volume_is_not_lopsided(): void
     {
         $this->gen();

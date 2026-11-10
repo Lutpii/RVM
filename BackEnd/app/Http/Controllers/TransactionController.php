@@ -28,7 +28,6 @@ class TransactionController extends Controller
     }
 
     const BIN_FULL_THRESHOLD = 90; // 90% = full
-    const DEDUCTION_INVALID  = 10;
 
     protected AiService $ai;
 
@@ -359,37 +358,22 @@ class TransactionController extends Controller
         $user    = $request->user();
         $machine = $session->machine;
 
-        // Rejected transaction + deduction + history are written all-or-nothing (U04).
-        [$transaction, $deduction] = DB::transaction(function () use ($session, $user, $machine, $request) {
-            $transaction = Transaction::create([
-                'session_id'        => $session->id,
-                'user_id'           => $user->id,
-                'machine_id'        => $machine->id,
-                'material_selected' => $request->material_selected,
-                'ai_detected_type'  => $request->ai_detected_type,
-                'ai_confidence'     => $request->ai_confidence,
-                'is_valid'          => 0,
-                'weight_grams'      => 0,
-                'points_earned'     => 0,
-                'points_deducted'   => self::DEDUCTION_INVALID,
-                'image_path'        => $request->image_path,
-            ]);
-
-            $deduction = min($user->total_points, self::DEDUCTION_INVALID);
-            $user->decrement('total_points', $deduction);
-
-            PointsHistory::create([
-                'user_id'        => $user->id,
-                'transaction_id' => $transaction->id,
-                'session_id'     => $session->id,
-                'points_change'  => -$deduction,
-                'balance_after'  => $user->fresh()->total_points,
-                'type'           => 'deducted',
-                'description'    => "Invalid item: selected {$request->material_selected}, detected {$request->ai_detected_type}",
-            ]);
-
-            return [$transaction, $deduction];
-        });
+        // A rejected item earns nothing and costs nothing: the user simply gets
+        // it back. Same rule as the kiosk flow (unknown / reject = 0 points).
+        $transaction = Transaction::create([
+            'session_id'        => $session->id,
+            'user_id'           => $user->id,
+            'machine_id'        => $machine->id,
+            'material_selected' => $request->material_selected,
+            'ai_detected_type'  => $request->ai_detected_type,
+            'ai_confidence'     => $request->ai_confidence,
+            'is_valid'          => 0,
+            'weight_grams'      => 0,
+            'points_earned'     => 0,
+            'points_deducted'   => 0,
+            'image_path'        => $request->image_path,
+        ]);
+        $deduction = 0;
 
         // Drop the rejected item into the reject bin, after the commit.
         $this->ai->sort('reject');
