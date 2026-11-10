@@ -4,7 +4,7 @@ Reference: *RVM Web Application Technical Assessment & Development Improvement R
 
 | | |
 |---|---|
-| Date run | 10 Nov 2026, 11:00–11:20 (MYT) |
+| Date run | 10 Nov 2026 |
 | Environment | Local test stack (report §10 "safe test environment"): Laravel `php artisan serve` on 127.0.0.1:8000, local MySQL `rvm_db`, Vue/Vite dev build. No production (TiDB / Vercel) data was read or changed. |
 | Code version | branch `feat/dsme-assessment-2`, commit `c56c7e4` (round-1 changes + U02/U04/U05/U06/§6 logging) |
 | Test data | `php artisan rvm:demo-data --days=30` (demo users, 30 days of transactions, demo machine RVM-DSME) plus one throwaway recycler `t01.recycler@test.local` with 3 items (+6, +8, −2 = 12 points). Both were removed after the run (`rvm:demo-data --purge`). |
