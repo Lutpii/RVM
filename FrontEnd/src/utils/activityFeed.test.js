@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeActivityFeed } from './activityFeed.js'
+import { mergeActivityFeed, filterActivityFeed } from './activityFeed.js'
 
 describe('mergeActivityFeed', () => {
   it('merges points-history and session entries into one list', () => {
@@ -83,5 +83,43 @@ describe('mergeActivityFeed', () => {
     const feed = mergeActivityFeed(pointsHistory, sessions, redemptions)
 
     expect(feed.map((e) => e.id)).toEqual(['redemption-9', 'points-1'])
+  })
+})
+
+describe('filterActivityFeed', () => {
+  const now = new Date('2026-11-10T12:00:00Z')
+  const feed = [
+    { id: 's1', kind: 'session',    timestamp: '2026-11-09T10:00:00Z' },
+    { id: 'r1', kind: 'redemption', timestamp: '2026-10-20T10:00:00Z' },
+    { id: 'p1', kind: 'points',     timestamp: '2026-09-01T10:00:00Z' },
+    { id: 'x1', kind: 'points',     timestamp: null },
+    { id: 'x2', kind: 'points',     timestamp: 'not-a-date' },
+  ]
+  const ids = (list) => list.map((e) => e.id)
+
+  it('returns everything with default filters', () => {
+    expect(ids(filterActivityFeed(feed, {}, now))).toEqual(['s1', 'r1', 'p1', 'x1', 'x2'])
+  })
+  it('kind=recycling keeps only sessions', () => {
+    expect(ids(filterActivityFeed(feed, { kind: 'recycling' }, now))).toEqual(['s1'])
+  })
+  it('kind=rewards keeps only redemptions', () => {
+    expect(ids(filterActivityFeed(feed, { kind: 'rewards' }, now))).toEqual(['r1'])
+  })
+  it('kind=points keeps only points entries', () => {
+    expect(ids(filterActivityFeed(feed, { kind: 'points' }, now))).toEqual(['p1', 'x1', 'x2'])
+  })
+  it('range=7d keeps the last 7 days only', () => {
+    expect(ids(filterActivityFeed(feed, { range: '7d' }, now))).toEqual(['s1'])
+  })
+  it('range=30d keeps the last 30 days', () => {
+    expect(ids(filterActivityFeed(feed, { range: '30d' }, now))).toEqual(['s1', 'r1'])
+  })
+  it('missing or invalid timestamps stay under all and drop under a range', () => {
+    expect(ids(filterActivityFeed(feed, { kind: 'points' }, now))).toContain('x1')
+    expect(ids(filterActivityFeed(feed, { kind: 'points', range: '30d' }, now))).toEqual([])
+  })
+  it('combines kind and range', () => {
+    expect(ids(filterActivityFeed(feed, { kind: 'rewards', range: '7d' }, now))).toEqual([])
   })
 })

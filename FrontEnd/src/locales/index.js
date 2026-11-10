@@ -4,7 +4,15 @@ export const messages = {
     app: { name: 'Reverse Vending Machine', tagline: 'Smart Recycling' },
     nav: { dashboard: 'Dashboard', logout: 'Logout', login: 'Login', register: 'Register', admin: 'Admin Panel' },
     appNav: { home: 'Home', activity: 'Activity', scan: 'Scan', rewards: 'Rewards', account: 'Account' },
-    activity: { title: 'Activity', empty: 'No activity yet.', loadError: 'Some activity could not be loaded. Showing what did load.', session: 'Recycling session {code}', redemption: 'Redeemed: {name}' },
+    activity: {
+      title: 'Activity', empty: 'No activity yet.', loadError: 'Some activity could not be loaded. Showing what did load.', session: 'Recycling session {code}', redemption: 'Redeemed: {name}',
+      noMatch: 'No activity matches this filter.',
+      filter: { label: 'Filter activity', all: 'All', recycling: 'Recycling', rewards: 'Rewards', points: 'Points', allTime: 'All time', last7: '7 days', last30: '30 days' },
+      detail: {
+        title: 'Session details', machine: 'Machine', started: 'Started', ended: 'Ended', items: 'Items', totalPoints: 'Points earned',
+        rejected: 'Rejected', noItems: 'No items in this session.', loadError: 'Session details could not be loaded.', close: 'Close', viewDetails: 'View details',
+      },
+    },
     rewards: {
       comingSoon: 'Rewards are coming soon — check back later!',
       title: 'Rewards',
@@ -465,7 +473,15 @@ export const messages = {
     app: { name: 'Reverse Vending Machine', tagline: 'Kitar Semula Pintar' },
     nav: { dashboard: 'Papan Pemuka', logout: 'Log Keluar', login: 'Log Masuk', register: 'Daftar', admin: 'Panel Pentadbir' },
     appNav: { home: 'Utama', activity: 'Aktiviti', scan: 'Imbas', rewards: 'Ganjaran', account: 'Akaun' },
-    activity: { title: 'Aktiviti', empty: 'Belum ada aktiviti.', loadError: 'Sebahagian aktiviti tidak dapat dimuatkan. Memaparkan apa yang berjaya dimuatkan.', session: 'Sesi kitar semula {code}', redemption: 'Ditebus: {name}' },
+    activity: {
+      title: 'Aktiviti', empty: 'Belum ada aktiviti.', loadError: 'Sebahagian aktiviti tidak dapat dimuatkan. Memaparkan apa yang berjaya dimuatkan.', session: 'Sesi kitar semula {code}', redemption: 'Ditebus: {name}',
+      noMatch: 'Tiada aktiviti yang sepadan dengan penapis ini.',
+      filter: { label: 'Tapis aktiviti', all: 'Semua', recycling: 'Kitar semula', rewards: 'Ganjaran', points: 'Mata', allTime: 'Semua masa', last7: '7 hari', last30: '30 hari' },
+      detail: {
+        title: 'Butiran sesi', machine: 'Mesin', started: 'Mula', ended: 'Tamat', items: 'Item', totalPoints: 'Mata diperoleh',
+        rejected: 'Ditolak', noItems: 'Tiada item dalam sesi ini.', loadError: 'Butiran sesi tidak dapat dimuatkan.', close: 'Tutup', viewDetails: 'Lihat butiran',
+      },
+    },
     rewards: {
       comingSoon: 'Ganjaran akan hadir tidak lama lagi — sila semak semula kemudian!',
       title: 'Ganjaran',

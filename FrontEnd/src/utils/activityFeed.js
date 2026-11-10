@@ -32,3 +32,22 @@ export function mergeActivityFeed(pointsHistoryEntries = [], sessions = [], rede
     (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
   )
 }
+
+const RANGE_DAYS = { '7d': 7, '30d': 30 }
+const KIND_FOR_FILTER = { recycling: 'session', rewards: 'redemption', points: 'points' }
+
+// Filters a merged activity feed by type and recent date range (U05).
+// Pure: `now` is passed in. Entries with a missing or unparsable timestamp
+// stay visible under range 'all' and are left out of a ranged view.
+export function filterActivityFeed(entries = [], { kind = 'all', range = 'all' } = {}, now = new Date()) {
+  const wantedKind = KIND_FOR_FILTER[kind] ?? null
+  const days = RANGE_DAYS[range] ?? null
+  const cutoff = days === null ? null : now.getTime() - days * 24 * 60 * 60 * 1000
+
+  return entries.filter((e) => {
+    if (wantedKind && e.kind !== wantedKind) return false
+    if (cutoff === null) return true
+    const t = e.timestamp ? new Date(e.timestamp).getTime() : NaN
+    return Number.isFinite(t) && t >= cutoff
+  })
+}

@@ -11,8 +11,28 @@
     <div v-else-if="feed.length === 0" class="empty-state">
       <p>{{ $t('activity.empty') }}</p>
     </div>
+    <template v-else>
+    <div class="filter-bar" role="group" :aria-label="$t('activity.filter.label')">
+      <div class="chip-row">
+        <button v-for="k in KIND_OPTIONS" :key="k.value" type="button"
+                :class="['chip', { active: filters.kind === k.value }]" :aria-pressed="filters.kind === k.value"
+                @click="filters.kind = k.value">{{ $t(k.label) }}</button>
+      </div>
+      <div class="chip-row">
+        <button v-for="r in RANGE_OPTIONS" :key="r.value" type="button"
+                :class="['chip', { active: filters.range === r.value }]" :aria-pressed="filters.range === r.value"
+                @click="filters.range = r.value">{{ $t(r.label) }}</button>
+      </div>
+    </div>
+    <div v-if="visibleFeed.length === 0" class="empty-state">
+      <p>{{ $t('activity.noMatch') }}</p>
+    </div>
     <div v-else class="activity-list">
-      <div v-for="(entry, index) in feed" :key="entry.id" class="activity-item" v-reveal="index">
+      <component :is="entry.kind === 'session' ? 'button' : 'div'" v-for="(entry, index) in visibleFeed" :key="entry.id"
+                 :type="entry.kind === 'session' ? 'button' : undefined"
+                 :class="['activity-item', { clickable: entry.kind === 'session' }]"
+                 :aria-label="entry.kind === 'session' ? $t('activity.detail.viewDetails') + ': ' + entry.description : undefined"
+                 @click="entry.kind === 'session' && openSession(entry.description)" v-reveal="index">
         <div class="activity-icon" aria-hidden="true">
           <PhRecycle v-if="entry.kind === 'session'" class="icon-session" weight="regular" />
           <PhGift v-else-if="entry.kind === 'redemption'" class="icon-redemption" weight="regular" />
@@ -26,19 +46,40 @@
         <span v-if="entry.pointsChange != null" :class="['activity-pts', entry.pointsChange > 0 ? 'pts-green' : 'pts-red']">
           {{ entry.pointsChange > 0 ? '+' : '' }}{{ entry.pointsChange }}
         </span>
-      </div>
+        <PhCaretRight v-if="entry.kind === 'session'" class="row-caret" weight="regular" aria-hidden="true" />
+      </component>
     </div>
+    </template>
+
+    <SessionDetailModal v-if="openSessionCode" :session-code="openSessionCode" @close="openSessionCode = null" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { PhGift, PhMinus, PhPlus, PhRecycle } from '@phosphor-icons/vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { PhCaretRight, PhGift, PhMinus, PhPlus, PhRecycle } from '@phosphor-icons/vue'
 import api from '@/services/api'
-import { mergeActivityFeed } from '@/utils/activityFeed'
+import { mergeActivityFeed, filterActivityFeed } from '@/utils/activityFeed'
+import SessionDetailModal from '@/components/SessionDetailModal.vue'
+
+const KIND_OPTIONS = [
+  { value: 'all',       label: 'activity.filter.all' },
+  { value: 'recycling', label: 'activity.filter.recycling' },
+  { value: 'rewards',   label: 'activity.filter.rewards' },
+  { value: 'points',    label: 'activity.filter.points' },
+]
+const RANGE_OPTIONS = [
+  { value: 'all', label: 'activity.filter.allTime' },
+  { value: '7d',  label: 'activity.filter.last7' },
+  { value: '30d', label: 'activity.filter.last30' },
+]
 
 const feed    = ref([])
 const loading = ref(true)
+const filters = reactive({ kind: 'all', range: 'all' })
+const visibleFeed = computed(() => filterActivityFeed(feed.value, filters, new Date()))
+const openSessionCode = ref(null)
+function openSession(code) { if (code) openSessionCode.value = code }
 
 const pointsHistoryFailed = ref(false)
 const sessionsFailed      = ref(false)
@@ -99,7 +140,19 @@ onMounted(async () => {
   background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);
 }
 .activity-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.filter-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.chip-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.chip-row::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; padding: 6px 12px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary);
+}
+.chip.active { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
 .activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+button.activity-item { width: 100%; border-left: none; border-right: none; border-top: none; background: transparent; text-align: left; font: inherit; color: inherit; }
+.activity-item.clickable { cursor: pointer; }
+.activity-item.clickable:hover { background: var(--bg-hover, rgba(0,0,0,0.03)); }
+.row-caret { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-muted); }
 .activity-item:last-child { border-bottom: none; }
 .activity-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-secondary); }
 .activity-icon :deep(svg) { display: block; width: 100%; height: 100%; }
