@@ -454,14 +454,31 @@ class AdminController extends Controller
         if ($status === 'rejected') $query->where('is_valid', 0);
 
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
+            // "USR-0042" / "42" as shown in the table also find that user.
+            $userId = preg_match('/^(?:usr-)?0*(\d+)$/i', $search, $m) ? (int) $m[1] : null;
+            $query->where(function ($q) use ($search, $userId) {
                 $q->where('material_selected', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+                  ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%"));
+                if ($userId !== null) $q->orWhere('user_id', $userId);
             });
         }
 
+        // Totals for everything the filters match (not just this page), so the
+        // admin sees at a glance how many items were accepted and rejected.
+        $totals = (clone $query)->reorder()->toBase()
+            ->selectRaw('COUNT(*) AS items, COALESCE(SUM(is_valid = 1), 0) AS accepted, COALESCE(SUM(points_earned), 0) AS points, COALESCE(SUM(weight_grams), 0) AS grams')
+            ->first();
+        $summary = [
+            'items'    => (int) $totals->items,
+            'accepted' => (int) $totals->accepted,
+            'rejected' => (int) $totals->items - (int) $totals->accepted,
+            'points'   => (int) $totals->points,
+            'grams'    => (int) $totals->grams,
+        ];
+
         $transactions = $query->paginate($this->resolvePerPage($request));
-        return response()->json(['success' => true, 'transactions' => $transactions]);
+        return response()->json(['success' => true, 'transactions' => $transactions, 'summary' => $summary]);
     }
 
     /**

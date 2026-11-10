@@ -106,4 +106,46 @@ class AdminTransactionFiltersTest extends TestCase
         $this->getJson('/api/admin/transactions?machine_id=abc')->assertStatus(422);
         $this->getJson('/api/admin/transactions?date_from=2026-11-06&date_to=2026-11-04')->assertStatus(422);
     }
+
+    public function test_summary_counts_everything_the_filters_match(): void
+    {
+        $m = $this->makeMachine('M1');
+        $u = $this->makeUser('Alice');
+        $this->makeTx($m, $u, ['points_earned' => 10, 'weight_grams' => 20]);
+        $this->makeTx($m, $u, ['points_earned' => 5, 'weight_grams' => 30]);
+        $this->makeTx($m, $u, ['material_selected' => 'unknown', 'ai_detected_type' => 'unknown',
+            'is_valid' => 0, 'points_earned' => 0, 'weight_grams' => 0]);
+        $this->asAdmin();
+
+        $this->getJson('/api/admin/transactions?per_page=1')
+            ->assertOk()
+            ->assertJsonPath('summary.items', 3)
+            ->assertJsonPath('summary.accepted', 2)
+            ->assertJsonPath('summary.rejected', 1)
+            ->assertJsonPath('summary.points', 15)
+            ->assertJsonPath('summary.grams', 50);
+
+        $this->getJson('/api/admin/transactions?status=rejected')
+            ->assertJsonPath('summary.items', 1)
+            ->assertJsonPath('summary.accepted', 0);
+    }
+
+    public function test_search_finds_a_user_by_the_id_shown_in_the_table(): void
+    {
+        $m = $this->makeMachine('M1');
+        $alice = $this->makeUser('Alice');
+        $bob = $this->makeUser('Bob');
+        $this->makeTx($m, $alice);
+        $this->makeTx($m, $bob);
+        $this->asAdmin();
+
+        $this->getJson('/api/admin/transactions?search=USR-' . str_pad((string) $bob->id, 4, '0', STR_PAD_LEFT))
+            ->assertOk()
+            ->assertJsonCount(1, 'transactions.data')
+            ->assertJsonPath('transactions.data.0.user_id', $bob->id);
+
+        $this->getJson('/api/admin/transactions?search=' . urlencode($alice->email))
+            ->assertJsonCount(1, 'transactions.data')
+            ->assertJsonPath('transactions.data.0.user_id', $alice->id);
+    }
 }
