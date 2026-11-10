@@ -289,77 +289,136 @@
       <!-- ── TRANSACTIONS ── -->
       <div v-if="activeTab === 'transactions'" class="tab-content">
         <div class="section-card">
-          <div class="card-header">
+          <div class="tx-intro">
             <h3 class="card-title-bar"><span class="title-sq"></span> TRANSACTION LOG</h3>
-            <div class="topbar-right">
-              <input v-model="txSearch" @keyup.enter="searchTransactions" placeholder="Search user / item... (press Enter)" class="search-input" />
-              <select v-model="txFilter" @change="filterTransactions" class="filter-select">
-                <option value="">All</option>
-                <option value="valid">OK</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <select v-model="txMachine" @change="filterTransactions" class="filter-select" aria-label="Filter by machine">
+            <p class="tx-help">
+              One row for every item put into a machine.
+              <strong class="tx-help-ok">Accepted</strong> items go into a bin and earn points.
+              <strong class="tx-help-rej">Rejected</strong> items are given back to the user with 0 points, nothing is taken away.
+            </p>
+          </div>
+
+          <!-- Totals for the current filters -->
+          <div class="tx-summary" aria-live="polite">
+            <div class="tx-sum-card">
+              <span class="tx-sum-value">{{ txNum(txSummary.items) }}</span>
+              <span class="tx-sum-label">Items</span>
+            </div>
+            <div class="tx-sum-card tx-sum-ok">
+              <span class="tx-sum-value">{{ txNum(txSummary.accepted) }}</span>
+              <span class="tx-sum-label">Accepted<template v-if="txSummary.items"> ({{ txPct(txSummary.accepted) }}%)</template></span>
+            </div>
+            <div class="tx-sum-card tx-sum-rej">
+              <span class="tx-sum-value">{{ txNum(txSummary.rejected) }}</span>
+              <span class="tx-sum-label">Rejected<template v-if="txSummary.items"> ({{ txPct(txSummary.rejected) }}%)</template></span>
+            </div>
+            <div class="tx-sum-card">
+              <span class="tx-sum-value">{{ txNum(txSummary.points) }}</span>
+              <span class="tx-sum-label">Points given</span>
+            </div>
+            <div class="tx-sum-card">
+              <span class="tx-sum-value">{{ txWeight(txSummary.grams) }}</span>
+              <span class="tx-sum-label">Weight collected</span>
+            </div>
+          </div>
+          <p class="tx-sum-note">{{ txFiltersActive ? 'Totals for the filters below.' : 'Totals for all transactions.' }}</p>
+
+          <!-- Filters, each with a visible label -->
+          <div class="tx-filters">
+            <div class="tx-field">
+              <span>Show</span>
+              <div class="tx-segment" role="group" aria-label="Show">
+                <button v-for="opt in TX_RESULT_OPTIONS" :key="opt.value" type="button"
+                  :class="['tx-seg-btn', { active: txFilter === opt.value }]" :aria-pressed="txFilter === opt.value"
+                  @click="setTxResult(opt.value)">{{ opt.label }}</button>
+              </div>
+            </div>
+            <label class="tx-field tx-field-search">
+              <span>Search</span>
+              <input v-model="txSearch" @input="debouncedTxSearch" @keyup.enter="searchTransactions"
+                type="search" placeholder="Name, email, user ID or material" class="search-input" />
+            </label>
+            <label class="tx-field">
+              <span>Machine</span>
+              <select v-model="txMachine" @change="filterTransactions" class="filter-select">
                 <option value="">All machines</option>
                 <option v-for="m in adminMachines" :key="m.id" :value="m.id">{{ m.name }}</option>
               </select>
-              <div class="date-range">
-                <label class="date-field picker-field" @click="openDatePicker">
-                  <span>From</span>
-                  <input v-model="txDateFrom" type="date" @change="filterTransactions" />
-                </label>
-                <label class="date-field picker-field" @click="openDatePicker">
-                  <span>To</span>
-                  <input v-model="txDateTo" type="date" @change="filterTransactions" />
-                </label>
-              </div>
-              <button class="action-btn filter-action" @click="clearTransactionFilters">Clear</button>
-            </div>
+            </label>
+            <label class="tx-field date-field picker-field" @click="openDatePicker">
+              <span>From</span>
+              <input v-model="txDateFrom" type="date" @change="filterTransactions" />
+            </label>
+            <label class="tx-field date-field picker-field" @click="openDatePicker">
+              <span>To</span>
+              <input v-model="txDateTo" type="date" @change="filterTransactions" />
+            </label>
+            <button v-if="txFiltersActive" class="action-btn tx-clear" @click="clearTransactionFilters">Clear filters</button>
           </div>
+
           <div v-if="loadingTransactions" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="table-wrap">
-            <table class="data-table">
+            <table class="data-table tx-table">
               <thead>
                 <tr>
-                  <th>TIME</th>
-                  <th>USER ID</th>
-                  <th>ITEM</th>
-                  <th>AI CONFIDENCE</th>
-                  <th>POINTS</th>
-                  <th>COMPARTMENT</th>
-                  <th>STATUS</th>
+                  <th>When</th>
+                  <th>User</th>
+                  <th>Machine</th>
+                  <th>Item</th>
+                  <th>Result</th>
+                  <th title="How sure the AI was about the material. Below 60% the item is rejected.">
+                    AI confidence <span class="tx-th-hint" aria-hidden="true">?</span>
+                  </th>
+                  <th class="num">Weight</th>
+                  <th class="num">Points</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="tx in transactions" :key="tx.id">
-                  <td class="mono small">{{ txDateTime(tx.created_at) }}</td>
-                  <td class="mono">{{ formatUserId(tx.user) }}</td>
+                <tr v-for="tx in transactions" :key="tx.id" :class="{ 'tx-row-rej': !tx.is_valid }">
+                  <td>
+                    <div class="tx-main">{{ txDate(tx.created_at) }}</div>
+                    <div class="tx-sub">{{ txTime(tx.created_at) }}</div>
+                  </td>
+                  <td>
+                    <div class="tx-main">{{ txUserName(tx.user) }}</div>
+                    <div v-if="tx.user" class="tx-sub mono">{{ formatUserId(tx.user) }}</div>
+                  </td>
+                  <td>
+                    <div class="tx-main">{{ tx.machine?.name || '—' }}</div>
+                    <div v-if="tx.machine?.location_name" class="tx-sub">{{ tx.machine.location_name }}</div>
+                  </td>
                   <td>
                     <span class="item-cell">
                       <svg v-if="materialIconSvg(tx.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(tx.material_selected)"></svg>
-                      {{ capitalize(tx.material_selected) }}
+                      {{ txItemLabel(tx) }}
                     </span>
                   </td>
                   <td>
-                    <div class="confidence-wrap">
-                      <div class="confidence-bar">
-                        <div class="confidence-fill" :style="{ width: Math.round((tx.ai_confidence || 0) * 100) + '%' }"></div>
-                      </div>
-                      <span class="confidence-pct">{{ Math.round((tx.ai_confidence || 0) * 100) }}%</span>
-                    </div>
-                  </td>
-                  <td v-if="!tx.is_valid && tx.points_deducted > 0" class="pts-red">-{{ tx.points_deducted }}</td>
-                  <td v-else :class="tx.points_earned > 0 ? 'pts-green' : 'muted'">
-                    {{ tx.points_earned > 0 ? '+' + tx.points_earned : '0' }}
-                  </td>
-                  <td class="compartment">{{ getCompartment(tx) }}</td>
-                  <td>
-                    <span :class="tx.is_valid ? 'badge-ok' : 'badge-rejected'">
-                      {{ tx.is_valid ? 'OK' : 'REJECTED' }}
+                    <span :class="['tx-badge', tx.is_valid ? 'tx-badge-ok' : 'tx-badge-rej']">
+                      <PhCheckCircle v-if="tx.is_valid" weight="fill" aria-hidden="true" />
+                      <PhXCircle v-else weight="fill" aria-hidden="true" />
+                      {{ tx.is_valid ? 'Accepted' : 'Rejected' }}
                     </span>
+                    <div class="tx-sub tx-reason">{{ txReason(tx) }}</div>
+                  </td>
+                  <td>
+                    <span v-if="tx.ai_confidence != null" :class="['tx-conf', txConfClass(tx.ai_confidence)]">
+                      {{ Math.round(tx.ai_confidence * 100) }}%
+                    </span>
+                    <span v-else class="muted">—</span>
+                  </td>
+                  <td class="num">{{ tx.weight_grams > 0 ? tx.weight_grams + ' g' : '—' }}</td>
+                  <td class="num">
+                    <span v-if="tx.points_earned > 0" class="pts-green">+{{ tx.points_earned }}</span>
+                    <span v-else-if="tx.points_deducted > 0" class="pts-red">-{{ tx.points_deducted }}</span>
+                    <span v-else class="muted">0</span>
                   </td>
                 </tr>
                 <tr v-if="!transactions.length">
-                  <td colspan="7" class="empty-cell">No transactions found</td>
+                  <td colspan="8" class="empty-cell">
+                    No items match these filters.
+                    <button v-if="txFiltersActive" class="tx-link-btn" @click="clearTransactionFilters">Clear filters</button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1264,6 +1323,7 @@ import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
+import { itemLabel, resultReason, confidenceLevel, percentOf, formatWeight } from '@/utils/admin/transactionDisplay.js'
 import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -1352,6 +1412,14 @@ const txFilter = ref('')
 const txMachine = ref('')
 const txDateFrom = ref('')
 const txDateTo = ref('')
+const txSummary = ref({ items: 0, accepted: 0, rejected: 0, points: 0, grams: 0 })
+const TX_RESULT_OPTIONS = [
+  { value: '', label: 'All' },
+  { value: 'valid', label: 'Accepted' },
+  { value: 'rejected', label: 'Rejected' },
+]
+const txFiltersActive = computed(() =>
+  !!(txSearch.value || txFilter.value || txMachine.value || txDateFrom.value || txDateTo.value))
 const sessionsSearch = ref('')
 
 const usersPage = ref(1)
@@ -1597,7 +1665,6 @@ const overviewMaterials = [
   { key: 'glass',    label: 'GLASS BOTTLES'     },
 ]
 
-const COMPARTMENTS = { plastic: 'A', aluminum: 'B', paper: 'C', glass: 'D' }
 
 // ── Computed ──
 const currentNavItem = computed(() => navItems.find(n => n.id === activeTab.value))
@@ -1700,13 +1767,6 @@ function formatDate(ts) {
   return d.toLocaleDateString() + ' ' + fmtTime(d)
 }
 
-function txDateTime(ts) {
-  if (!ts) return '—'
-  const d = new Date(ts)
-  const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  return date + ', ' + fmtTime(d).toUpperCase()
-}
-
 function timeOnly(ts) {
   if (!ts) return '—'
   return fmtTime(new Date(ts), true)
@@ -1722,9 +1782,24 @@ function formatUserId(user) {
   return 'USR-' + String(user.id).padStart(4, '0')
 }
 
-function getCompartment(tx) {
-  if (!tx.is_valid) return '—'
-  return COMPARTMENTS[tx.material_selected] || '—'
+// ── Transactions table display ──
+const txItemLabel = itemLabel
+const txReason = resultReason
+const txWeight = formatWeight
+function txConfClass(conf) { return 'tx-conf-' + confidenceLevel(conf) }
+function txPct(part) { return percentOf(part, txSummary.value.items) }
+function txDate(ts) {
+  if (!ts) return '—'
+  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+function txTime(ts) {
+  if (!ts) return ''
+  return new Date(ts).toLocaleTimeString('en-MY', { hour: 'numeric', minute: '2-digit', hour12: true })
+}
+function txNum(n) { return Number(n || 0).toLocaleString('en-MY') }
+function txUserName(user) {
+  if (!user) return 'Guest'
+  return user.name || formatUserId(user)
 }
 
 // ── Data fetching ──
@@ -1760,6 +1835,7 @@ async function fetchTabData(tab, showSpinner = false) {
       } })
       transactions.value = res.data.transactions?.data || []
       txTotal.value     = res.data.transactions?.total ?? 0
+      txSummary.value   = { items: 0, accepted: 0, rejected: 0, points: 0, grams: 0, ...(res.data.summary || {}) }
       txLastPage.value  = res.data.transactions?.last_page ?? 1
     } else if (tab === 'users') {
       if (showSpinner) loadingUsers.value = true
@@ -2249,7 +2325,19 @@ function filterTransactions() {
   txPage.value = 1
   fetchTabData('transactions', true)
 }
+function setTxResult(value) {
+  if (txFilter.value === value) return
+  txFilter.value = value
+  filterTransactions()
+}
+// Search as the admin types (Enter still searches at once).
+let txSearchTimer = null
+function debouncedTxSearch() {
+  clearTimeout(txSearchTimer)
+  txSearchTimer = setTimeout(searchTransactions, 400)
+}
 function clearTransactionFilters() {
+  clearTimeout(txSearchTimer)
   txSearch.value = ''
   txFilter.value = ''
   txMachine.value = ''
@@ -3262,17 +3350,73 @@ onUnmounted(() => {
 .reward-stat-value { font-size: 24px; font-weight: 800; color: var(--text-primary); }
 
 /* ── Transaction log ── */
-.confidence-wrap { display: flex; align-items: center; gap: 8px; min-width: 140px; }
-.confidence-bar {
-  flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
-}
-.confidence-fill {
-  height: 100%; background: var(--accent-green); border-radius: 3px;
-  transition: width 0.4s ease;
-}
-.confidence-pct { font-size: 12px; color: var(--text-muted); min-width: 32px; }
+.tx-intro { margin-bottom: 14px; }
+.tx-intro .card-title-bar { margin-bottom: 6px; }
+.tx-help { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); max-width: 760px; }
+.tx-help-ok { color: var(--accent-green); }
+.tx-help-rej { color: var(--accent-red); }
 
-.compartment { font-weight: 700; color: var(--text-secondary); font-size: 13px; }
+.tx-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.tx-sum-card {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg-hover);
+}
+.tx-sum-value { font-size: 20px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.tx-sum-label { font-size: 12px; color: var(--text-muted); }
+.tx-sum-ok { border-color: color-mix(in srgb, var(--accent-green) 45%, var(--border)); }
+.tx-sum-ok .tx-sum-value { color: var(--accent-green); }
+.tx-sum-rej { border-color: color-mix(in srgb, var(--accent-red) 45%, var(--border)); }
+.tx-sum-rej .tx-sum-value { color: var(--accent-red); }
+.tx-sum-note { margin: 6px 0 14px; font-size: 11px; color: var(--text-muted); }
+
+.tx-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+.tx-field { display: flex; flex-direction: column; min-width: 0; }
+.tx-field > span { margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 600; }
+.tx-field .filter-select, .tx-field .search-input { min-height: 38px; box-sizing: border-box; }
+.tx-field-search { flex: 1 1 240px; }
+.tx-field-search .search-input { width: 100%; }
+.tx-field.date-field { flex: 0 0 150px; }
+.tx-segment { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; min-height: 38px; }
+.tx-seg-btn {
+  padding: 0 14px; border: 0; background: var(--bg-hover); color: var(--text-secondary);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.tx-seg-btn + .tx-seg-btn { border-left: 1px solid var(--border); }
+.tx-seg-btn.active { background: var(--accent-blue); color: #fff; }
+.tx-seg-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
+.tx-clear { min-height: 38px; }
+
+.tx-table td { vertical-align: top; }
+.tx-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tx-main { font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.tx-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.tx-reason { white-space: normal; max-width: 240px; }
+.tx-row-rej td { background: color-mix(in srgb, var(--accent-red) 5%, transparent); }
+.tx-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.tx-badge svg { width: 14px; height: 14px; }
+.tx-badge-ok { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 14%, transparent); }
+.tx-badge-rej { color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 14%, transparent); }
+.tx-conf { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tx-conf::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: currentColor; vertical-align: 1px; }
+.tx-conf-high { color: var(--accent-green); }
+.tx-conf-mid { color: var(--accent-yellow, #d97706); }
+.tx-conf-low { color: var(--accent-red); }
+.tx-th-hint {
+  display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;
+  margin-left: 4px; border-radius: 50%; border: 1px solid currentColor; font-size: 9px; cursor: help;
+}
+.tx-link-btn { margin-left: 6px; border: 0; background: none; color: var(--accent-blue); font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+@media (max-width: 1100px) {
+  .tx-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .tx-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tx-field.date-field { flex: 1 1 140px; }
+}
 
 .badge-ok {
   display: inline-block; padding: 2px 10px; border-radius: 4px;
