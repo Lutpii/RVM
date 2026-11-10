@@ -6,8 +6,12 @@ export const messages = {
     appNav: { home: 'Home', activity: 'Activity', scan: 'Scan', rewards: 'Rewards', account: 'Account' },
     activity: {
       title: 'Activity', empty: 'No activity yet.', loadError: 'Some activity could not be loaded. Showing what did load.', session: 'Recycling session {code}', redemption: 'Redeemed: {name}',
-      noMatch: 'No activity matches this filter.',
-      filter: { label: 'Filter activity', all: 'All', recycling: 'Recycling', rewards: 'Rewards', points: 'Points', allTime: 'All time', last7: '7 days', last30: '30 days', allMaterials: 'All materials', allStatuses: 'All points', credited: 'Credited', deducted: 'Deducted' },
+      noMatch: 'No activity matches these filters.',
+      today: 'Today', yesterday: 'Yesterday', unknownDate: 'Date unknown',
+      recycledAt: 'Recycled at {machine}', recycledSession: 'Recycling session',
+      itemsCount: '{n} item | {n} items',
+      tabs: { all: 'All', recycling: 'Recycling', rewards: 'Rewards' },
+      filter: { label: 'Activity type', button: 'Filter', date: 'Date', material: 'Material', done: 'Done', clear: 'Clear filters', remove: 'Remove filter: {name}', allTime: 'All time', last7: 'Last 7 days', last30: 'Last 30 days', allMaterials: 'All materials' },
       detail: {
         title: 'Session details', machine: 'Machine', started: 'Started', ended: 'Ended', items: 'Items', totalPoints: 'Points earned',
         rejected: 'Rejected', noItems: 'No items in this session.', loadError: 'Session details could not be loaded.', close: 'Close', viewDetails: 'View details',
@@ -480,7 +484,11 @@ export const messages = {
     activity: {
       title: 'Aktiviti', empty: 'Belum ada aktiviti.', loadError: 'Sebahagian aktiviti tidak dapat dimuatkan. Memaparkan apa yang berjaya dimuatkan.', session: 'Sesi kitar semula {code}', redemption: 'Ditebus: {name}',
       noMatch: 'Tiada aktiviti yang sepadan dengan penapis ini.',
-      filter: { label: 'Tapis aktiviti', all: 'Semua', recycling: 'Kitar semula', rewards: 'Ganjaran', points: 'Mata', allTime: 'Semua masa', last7: '7 hari', last30: '30 hari', allMaterials: 'Semua bahan', allStatuses: 'Semua mata', credited: 'Dikreditkan', deducted: 'Dipotong' },
+      today: 'Hari ini', yesterday: 'Semalam', unknownDate: 'Tarikh tidak diketahui',
+      recycledAt: 'Dikitar semula di {machine}', recycledSession: 'Sesi kitar semula',
+      itemsCount: '{n} item',
+      tabs: { all: 'Semua', recycling: 'Kitar semula', rewards: 'Ganjaran' },
+      filter: { label: 'Jenis aktiviti', button: 'Tapis', date: 'Tarikh', material: 'Bahan', done: 'Selesai', clear: 'Kosongkan penapis', remove: 'Buang penapis: {name}', allTime: 'Semua masa', last7: '7 hari lepas', last30: '30 hari lepas', allMaterials: 'Semua bahan' },
       detail: {
         title: 'Butiran sesi', machine: 'Mesin', started: 'Mula', ended: 'Tamat', items: 'Item', totalPoints: 'Mata diperoleh',
         rejected: 'Ditolak', noItems: 'Tiada item dalam sesi ini.', loadError: 'Butiran sesi tidak dapat dimuatkan.', close: 'Tutup', viewDetails: 'Lihat butiran',
