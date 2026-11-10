@@ -27,7 +27,8 @@
               <span v-if="t.id" class="item-ref">#{{ t.id }}<template v-if="t.created_at"> · {{ formatClock(t.created_at) }}</template></span>
             </span>
             <span v-if="t.is_valid" class="pts-green">+{{ t.points_earned }}</span>
-            <span v-else class="pts-red">-{{ t.points_deducted }}</span>
+            <span v-else-if="t.points_deducted > 0" class="pts-red">-{{ t.points_deducted }}</span>
+            <span v-else class="pts-zero">0</span>
           </li>
         </ul>
       </template>
@@ -112,6 +113,7 @@ onMounted(async () => {
 .item-ref { display: block; font-size: 11px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
 .pts-green { color: var(--accent-green); font-weight: 700; }
 .pts-red { color: var(--accent-red); font-weight: 700; }
+.pts-zero { color: var(--text-muted); font-weight: 700; }
 .close-btn {
   margin-top: 8px; padding: 10px; border-radius: var(--radius); border: 1px solid var(--border);
   background: transparent; color: var(--text-primary); font-size: 14px; cursor: pointer;
