@@ -112,10 +112,17 @@
               <div>
                 <PhRobot class="ms-icon" weight="regular" aria-hidden="true" />
                 <div class="ms-label">MACHINE STATUS</div>
-                <div :class="['ms-status', activeMachines > 0 ? 'ms-online' : 'ms-offline']">
-                  {{ activeMachines > 0 ? 'ACTIVE' : 'INACTIVE' }}
-                </div>
-                <div class="ms-sub">{{ activeMachines }} of {{ adminMachines.length }} machines active</div>
+                <!-- From kiosk heartbeats; "NO DATA" when no machine has ever reported (A02). -->
+                <template v-if="machineSummary.anyReported">
+                  <div :class="['ms-status', machineSummary.online > 0 ? 'ms-online' : 'ms-offline']">
+                    {{ machineSummary.online > 0 ? 'ONLINE' : 'OFFLINE' }}
+                  </div>
+                  <div class="ms-sub">{{ machineSummary.online }} of {{ machineSummary.total }} machines online</div>
+                </template>
+                <template v-else>
+                  <div class="ms-status ms-nodata">NO DATA</div>
+                  <div class="ms-sub">No machine has reported a heartbeat yet ({{ activeMachines }} of {{ adminMachines.length }} registered as active)</div>
+                </template>
               </div>
             </div>
           </div>
@@ -134,6 +141,25 @@
               <div class="chart-wrap donut-wrap">
                 <Doughnut v-if="donutChartData" :data="donutChartData" :options="donutChartOptions" />
                 <div v-else class="chart-empty">No data yet</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Machine alerts: hardware faults and machines that stopped sending heartbeats (A05) -->
+          <div class="section-card" v-if="machineAlerts.length">
+            <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> MACHINE ALERTS</h3>
+            <div class="alert-list">
+              <div v-for="alert in machineAlerts" :key="alert.type + '-' + alert.machineId" class="alert-item">
+                <PhWarningOctagon v-if="alert.type === 'fault'" class="alert-icon" weight="regular" aria-hidden="true" />
+                <PhWifiSlash v-else class="alert-icon" weight="regular" aria-hidden="true" />
+                <strong>{{ alert.name }}</strong>
+                <div class="alert-bins">
+                  <span class="bin-tag">{{ alert.type === 'fault' ? 'Hardware fault' : 'Offline' }}</span>
+                  <span v-if="alert.detail" class="alert-detail">{{ alert.detail }}</span>
+                  <span v-if="alert.since" class="alert-detail">
+                    {{ alert.type === 'fault' ? 'since' : 'last seen' }} {{ relativeTime(alert.since) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -462,6 +488,12 @@
                 <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
               </div>
               <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ machine.location_name || 'No location set' }}</p>
+              <p class="machine-heartbeat">
+                <span :class="['hb-dot', 'hb-' + machineConnectivity(machine, nowTick)]"></span>
+                <template v-if="machineConnectivity(machine, nowTick) === 'never'">Never reported</template>
+                <template v-else>{{ machineConnectivity(machine, nowTick) === 'online' ? 'Online' : 'Offline' }} · last seen {{ relativeTime(machine.last_seen_at) }}</template>
+                <span v-if="machine.fault_active" class="fault-badge">FAULT{{ machine.fault_reason ? ': ' + machine.fault_reason : '' }}</span>
+              </p>
               <div class="bin-admin-grid">
                 <div v-for="bin in binTypes" :key="bin.id" class="bin-admin">
                   <span>
@@ -1201,7 +1233,7 @@ import {
   PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
   PhCaretLeft, PhCaretRight,
   PhChartBar, PhReceipt, PhUsers, PhFactory, PhClipboardText, PhListChecks, PhMagnifyingGlass, PhGift,
-  PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear,
+  PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear, PhWifiSlash,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
   PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple, PhCrop,
 } from '@phosphor-icons/vue'
@@ -1210,6 +1242,7 @@ import { formatAuditLog } from '@/utils/admin/auditLog.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
 import { validateMachineName } from '@/utils/admin/validateMachine.js'
 import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
+import { machineConnectivity, buildMachineAlerts, connectivitySummary } from '@/utils/admin/machineAlerts.js'
 import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
@@ -1565,6 +1598,24 @@ const activeMachines = computed(() =>
   adminMachines.value.filter(m => m.status === 'active').length
 )
 
+// Heartbeat-based machine state (A02/A05). nowTick is bumped by the 1 s clock
+// so a machine turns offline on screen without waiting for a refetch.
+const nowTick = ref(new Date())
+const machineSummary = computed(() => connectivitySummary(adminMachines.value, nowTick.value))
+const machineAlerts  = computed(() => buildMachineAlerts(adminMachines.value, nowTick.value))
+
+function relativeTime(ts) {
+  const t = ts ? new Date(ts).getTime() : NaN
+  if (!Number.isFinite(t)) return '—'
+  const s = Math.max(0, Math.round((nowTick.value.getTime() - t) / 1000))
+  if (s < 60) return `${s}s ago`
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m} min ago`
+  const h = Math.round(m / 60)
+  if (h < 48) return `${h} h ago`
+  return `${Math.round(h / 24)} days ago`
+}
+
 const systemStatusItems = computed(() => {
   const machines = adminMachines.value
   const activeSessions = statsData.value.active_sessions ?? 0
@@ -1579,9 +1630,12 @@ const systemStatusItems = computed(() => {
   const paper    = binLevel('paper_level')
   const glass    = binLevel('glass_level')
 
+  // Heartbeat-based once any kiosk reports; until then, the registered status.
+  const summary        = machineSummary.value
   const totalMachines  = machines.length
-  const onlineMachines = machines.filter(m => m.status === 'active').length
-  const machineColor   = onlineMachines > 0 ? 'green' : 'red'
+  const onlineMachines = summary.anyReported ? summary.online : machines.filter(m => m.status === 'active').length
+  const machineColor   = summary.anyReported ? (onlineMachines > 0 ? 'green' : 'red') : 'yellow'
+  const machineWord    = summary.anyReported ? 'ONLINE' : 'REGISTERED'
 
   const cameraColor = activeSessions > 0 ? 'green' : 'yellow'
   const cameraValue = activeSessions > 0 ? `LIVE (${activeSessions})` : 'STANDBY'
@@ -1591,7 +1645,7 @@ const systemStatusItems = computed(() => {
 
   return [
     { label: 'Camera',       value: cameraValue,                           color: cameraColor  },
-    { label: 'Machines',  value: `${onlineMachines}/${totalMachines} ACTIVE`, color: machineColor },
+    { label: 'Machines',  value: `${onlineMachines}/${totalMachines} ${machineWord}`, color: machineColor },
     { label: 'Reward Engine',value: rewardOk ? 'OK' : 'CHECK CONFIG',      color: rewardColor  },
     { label: 'Plastic Bin',  value: binLabel(plastic,  binColor(plastic)),  color: binColor(plastic)  },
     { label: 'Aluminum Bin', value: binLabel(aluminum, binColor(aluminum)), color: binColor(aluminum) },
@@ -2788,6 +2842,7 @@ async function handleLogout() {
 // ── Lifecycle ──
 function updateClock() {
   const now = new Date()
+  nowTick.value = now
   liveTime.value = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     + ', ' + fmtTime(now, true)
 }
@@ -2809,7 +2864,11 @@ onMounted(async () => {
   ])
   refreshTimer = setInterval(() => {
     fetchTabData(activeTab.value)
-    if (activeTab.value === 'dashboard') fetchChartData()
+    if (activeTab.value === 'dashboard') {
+      fetchChartData()
+      // the status card + Machine Alerts read the machine list's heartbeats
+      fetchTabData('machines')
+    }
   }, 30000)
 })
 
@@ -3196,6 +3255,13 @@ onUnmounted(() => {
   border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;
 }
 .alert-icon { font-size: 18px; color: var(--accent-red); }
+.alert-detail { font-size: 12px; color: var(--text-muted); }
+.ms-nodata { color: var(--text-muted); }
+.machine-heartbeat { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--text-muted); margin: -6px 0 12px; }
+.hb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+.hb-online { background: var(--accent-green); }
+.hb-offline { background: var(--accent-red); }
+.fault-badge { background: var(--accent-red); color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 .alert-bins { display: flex; gap: 6px; flex-wrap: wrap; margin-left: 4px; }
 .bin-tag {
   background: var(--accent-red); color: white;
