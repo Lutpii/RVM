@@ -23,9 +23,13 @@
       <div v-else class="machines-list">
         <div v-for="(machine, index) in machines" :key="machine.id" class="machine-card" v-reveal="index" @click="selectMachine(machine)">
           <div class="machine-header">
-            <div class="machine-dot" :class="machine.status === 'active' ? 'dot-green' : 'dot-red'"></div>
+            <div class="machine-dot" :class="machineDotClass(machine)"></div>
             <div class="machine-info">
               <strong>{{ machine.name }}</strong>
+              <!-- U06: only shown once the machine has sent a heartbeat -->
+              <em v-if="machineAvailability(machine, nowTick) !== 'unknown'" :class="['avail-label', 'avail-' + machineAvailability(machine, nowTick)]">
+                {{ $t(AVAILABILITY_LABEL[machineAvailability(machine, nowTick)]) }}
+              </em>
               <span><PhMapPin class="points-sub-icon" weight="regular" /> {{ machine.location_name }}</span>
             </div>
             <span class="machine-code">{{ machine.machine_code }}</span>
@@ -81,6 +85,24 @@ import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
+import { machineAvailability } from '@/utils/machineConnectivity'
+
+const AVAILABILITY_LABEL = {
+  available: 'dashboard.machineAvailable',
+  offline: 'dashboard.machineOffline',
+  fault: 'dashboard.machineFault',
+}
+// Re-evaluated every 30 s so a machine that stops reporting turns offline on screen.
+const nowTick = ref(new Date())
+const nowTimer = setInterval(() => { nowTick.value = new Date() }, 30000)
+onUnmounted(() => clearInterval(nowTimer))
+
+function machineDotClass(machine) {
+  const a = machineAvailability(machine, nowTick.value)
+  if (a === 'available') return 'dot-green'
+  if (a === 'offline' || a === 'fault') return 'dot-red'
+  return machine.status === 'active' ? 'dot-green' : 'dot-red' // never reported: registered status, as before
+}
 
 // Leaflet's default marker icon paths are relative and break once bundled by Vite.
 // Icon.Default._getIconUrl always prepends an auto-detected imagePath even when the
@@ -219,6 +241,9 @@ onMounted(async () => {
 .machine-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
 .dot-green { background: var(--accent-green); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
 .dot-red   { background: var(--accent-red); }
+.avail-label { font-style: normal; font-size: 11px; font-weight: 600; }
+.avail-available { color: var(--accent-green); }
+.avail-offline, .avail-fault { color: var(--accent-red); }
 .machine-info { flex: 1; }
 .machine-info strong { display: block; color: var(--text-primary); font-size: 14px; font-weight: 600; }
 .machine-info span   { color: var(--text-muted); font-size: 12px; }

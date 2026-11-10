@@ -4,18 +4,9 @@
 // deploy with no kiosk connected (the cloud demo) that must not look like an
 // outage. Bin-level alerts stay in the existing Bin Alerts card.
 
-export const ONLINE_WINDOW_MS = 3 * 60 * 1000
+import { ONLINE_WINDOW_MS, machineConnectivity } from '@/utils/machineConnectivity'
 
-function toMs(ts) {
-  if (!ts) return NaN
-  return new Date(ts).getTime()
-}
-
-export function machineConnectivity(machine, now = new Date()) {
-  const seen = toMs(machine?.last_seen_at)
-  if (!Number.isFinite(seen)) return 'never'
-  return now.getTime() - seen <= ONLINE_WINDOW_MS ? 'online' : 'offline'
-}
+export { ONLINE_WINDOW_MS, machineConnectivity }
 
 export function buildMachineAlerts(machines = [], now = new Date()) {
   const faults = []

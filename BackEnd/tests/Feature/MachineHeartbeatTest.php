@@ -110,6 +110,17 @@ class MachineHeartbeatTest extends TestCase
         $this->getJson('/api/admin/machines')->assertOk()->assertDontSee('api_key_hash')->assertDontSee(hash('sha256', $this->key));
     }
 
+    public function test_public_machine_list_has_heartbeat_fields_but_no_key(): void
+    {
+        $this->heartbeat(['fault' => true, 'fault_reason' => 'jam'], $this->key)->assertOk();
+
+        $res = $this->getJson('/api/machines')->assertOk();
+        $row = collect($res->json('machines'))->firstWhere('machine_code', 'RVM-HB');
+        $this->assertNotNull($row['last_seen_at'] ?? null);
+        $this->assertTrue($row['fault_active'] ?? null);
+        $this->assertArrayNotHasKey('api_key_hash', $row);
+    }
+
     public function test_machine_key_command_prints_a_key_that_authenticates(): void
     {
         $this->assertSame(0, Artisan::call('rvm:machine-key', ['machine_code' => 'RVM-HB']));
