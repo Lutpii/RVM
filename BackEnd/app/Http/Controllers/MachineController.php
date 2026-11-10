@@ -52,7 +52,11 @@ class MachineController extends Controller
         } else {
             $machine->forceFill(['fault_active' => false, 'fault_reason' => null, 'fault_since' => null]);
         }
+        $changed = $machine->isDirty('fault_active');
         $machine->saveQuietly();
+        if ($changed) {
+            \App\Support\SecurityLog::machineFault($machine, $fault, $fault ? ($validated['fault_reason'] ?? null) : null);
+        }
 
         return response()->json(['success' => true, 'server_time' => now()->toIso8601String()]);
     }

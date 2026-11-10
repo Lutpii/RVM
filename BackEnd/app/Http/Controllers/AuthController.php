@@ -6,6 +6,7 @@ use App\Mail\OtpMail;
 use App\Models\User;
 use App\Services\FonnteService;
 use Illuminate\Http\Request;
+use App\Support\SecurityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
@@ -135,6 +136,7 @@ class AuthController extends Controller
         $throttleKey = 'login:' . Str::lower($request->email ?? $request->phone);
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
+            SecurityLog::auth('login_locked', null, $request->email ?? $request->phone, $request);
             return response()->json(['success' => false, 'message' => __('messages.too_many_login_attempts', ['seconds' => $seconds])], 429);
         }
 
@@ -144,6 +146,7 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             RateLimiter::hit($throttleKey, 60);
+            SecurityLog::auth('login_failed', null, $request->email ?? $request->phone, $request);
             return response()->json(['success' => false, 'message' => __('messages.invalid_credentials')], 401);
         }
 
@@ -152,6 +155,7 @@ class AuthController extends Controller
         // Checked only after the password, so the account's state is never
         // revealed to someone who doesn't know it (A08).
         if ($user->account_status === 'suspended') {
+            SecurityLog::auth('login_suspended', $user, null, $request);
             return $this->suspendedResponse();
         }
 
@@ -179,6 +183,7 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('rvm_token')->plainTextToken;
+        SecurityLog::auth('login_success', $user, null, $request);
 
         return response()->json([
             'success' => true,
@@ -462,6 +467,7 @@ class AuthController extends Controller
             }
 
             $token = $user->createToken('rvm_token')->plainTextToken;
+            SecurityLog::auth('google_login', $user, null, $request);
 
             $code = Str::random(40);
             Cache::put("oauth_code:{$code}", ['token' => $token, 'user' => $this->formatUser($user)], now()->addSeconds(60));
@@ -510,6 +516,7 @@ class AuthController extends Controller
     // Logout
     public function logout(Request $request): JsonResponse
     {
+        SecurityLog::auth('logout', $request->user(), null, $request);
         $request->user()->currentAccessToken()->delete();
         return response()->json(['success' => true, 'message' => __('messages.logout_success')]);
     }
