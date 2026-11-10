@@ -27,15 +27,15 @@ Evidence screenshots are in `docs/testing/2026-11-10/`.
 | T08 | Inspect reports and date filters | Totals agree with source transactions | Formal report for 4–10 Nov: TOTAL row plastic 29, aluminium 30, paper 11, glass 8, reject rate 4.9 %, points 1219, unique users 9, **identical** to direct DB counts for the same range. Export endpoint returns 200 `.xlsx` | **Pass** |
 | T09 | Check desktop and mobile layouts | No clipping; controls readable and keyboard accessible | At 390×844 and 1366×800, Dashboard / Activity / Rewards / Account / Admin have no horizontal page scroll; Tab moves focus to a visible, outlined control. Evidence `T09-mobile-*.png` | **Pass** |
 
-**Summary: 9 of 9 tests passed. No Critical or High issue found. Three Low issues recorded below.**
+**Summary: 9 of 9 tests passed. No Critical or High issue found. Three Low issues recorded below, all three since fixed.**
 
 ## Issue Register (§8)
 
 | Issue ID | Page / role | Steps / evidence | Severity | Status |
 |---|---|---|---|---|
-| BUG-001 | Activity / Recycler (`GET /api/user/points-history`) | Two points-history rows created in the same second come back in arbitrary order (query sorts by `created_at` only). In T06 the top row showed `balance_after` 6 instead of 12. Balance itself is correct. Expected: newest row first, ties broken by ID | Low | Open |
-| BUG-002 | Admin panel / Admin | Change `?tab=machines` to `?tab=transactions` in the address bar without reloading: the URL changes but the panel stays on the old tab. Clicking the sidebar or reloading works. Expected: the tab follows the URL | Low | Open |
-| BUG-003 | Activity / Recycler | A recycling session that earned 0 points shows "0" in red, the colour used for deductions. Expected: neutral colour for 0. Evidence `T09-mobile-activity.png` | Low | Open |
+| BUG-001 | Activity / Recycler (`GET /api/user/points-history`) | Two points-history rows created in the same second come back in arbitrary order (query sorts by `created_at` only). In T06 the top row showed `balance_after` 6 instead of 12. Balance itself is correct. Expected: newest row first, ties broken by ID | Low | **Fixed**: ties now ordered by ID, regression test `PointsHistoryOrderTest` |
+| BUG-002 | Admin panel / Admin | Change `?tab=machines` to `?tab=transactions` in the address bar without reloading: the URL changes but the panel stays on the old tab. Clicking the sidebar or reloading works. Expected: the tab follows the URL | Low | **Fixed**: the panel now follows `?tab=` changes and Back/Forward |
+| BUG-003 | Activity / Recycler | A recycling session that earned 0 points shows "0" in red, the colour used for deductions. Expected: neutral colour for 0. Evidence `T09-mobile-activity.png` | Low | **Fixed**: 0 is grey in Activity (redesign) and in the session receipt (rejected item with no deduction shows 0, not red −0) |
 
 Not an issue: on a phone, the material filter row scrolls sideways inside its own row ("Paper" sits at the edge); the page itself does not scroll horizontally.
 
