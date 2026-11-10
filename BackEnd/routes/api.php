@@ -137,6 +137,9 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(functio
         Route::delete('/machines/{id}', [AdminController::class, 'deleteMachine']);
         Route::put('/machines/{id}/bin-levels', [AdminController::class, 'updateBinLevels']);
         Route::post('/machines/{id}/maintenance', [AdminController::class, 'maintainMachine']);
+        Route::get('/machines/{id}/maintenance-records', [AdminController::class, 'maintenanceRecords'])->whereNumber('id');
+        Route::post('/machines/{id}/maintenance-records', [AdminController::class, 'createMaintenanceRecord'])->whereNumber('id');
+        Route::patch('/maintenance-records/{recordId}/close', [AdminController::class, 'closeMaintenanceRecord'])->whereNumber('recordId');
         Route::get('/sessions', [AdminController::class, 'allSessions']);
         Route::get('/transactions', [AdminController::class, 'allTransactions']);
         Route::get('/stats', [AdminController::class, 'stats']);

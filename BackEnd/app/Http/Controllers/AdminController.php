@@ -12,6 +12,7 @@ use App\Models\DetectionLog;
 use App\Models\RewardItem;
 use App\Models\RewardRedemption;
 use App\Models\QrSession;
+use App\Models\MaintenanceRecord;
 use App\Mail\BinCollectionRequested;
 use App\Mail\FormalReportGenerated;
 use App\Services\FormalReportService;
@@ -322,6 +323,65 @@ class AdminController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Kiosk closed for maintenance.']);
+    }
+
+    // ── Maintenance records (A06): service history per machine ──
+
+    public function maintenanceRecords(int $id): JsonResponse
+    {
+        if (!RvmMachine::whereKey($id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+        }
+        $records = MaintenanceRecord::with(['opener:id,name', 'closer:id,name'])
+            ->where('machine_id', $id)
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->get()
+            ->map->toApi();
+
+        return response()->json(['success' => true, 'records' => $records]);
+    }
+
+    public function createMaintenanceRecord(Request $request, int $id): JsonResponse
+    {
+        $machine = RvmMachine::find($id);
+        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+
+        $validated = $request->validate([
+            'technician_name' => 'required|string|max:100',
+            'issue'           => 'required|string|max:2000',
+        ]);
+
+        $record = MaintenanceRecord::create($validated + [
+            'machine_id' => $machine->id,
+            'status'     => 'open',
+            'opened_by'  => $request->user()->id,
+        ]);
+        $this->log($request->user(), 'maintenance_open', 'machine', $machine->id,
+            "Opened maintenance record for {$machine->name} ({$validated['technician_name']})", ['record_id' => $record->id]);
+
+        return response()->json(['success' => true, 'record' => $record->load(['opener', 'closer'])->toApi()], 201);
+    }
+
+    public function closeMaintenanceRecord(Request $request, int $recordId): JsonResponse
+    {
+        $validated = $request->validate(['action_taken' => 'required|string|max:2000']);
+
+        $record = MaintenanceRecord::with('machine')->find($recordId);
+        if (!$record) return response()->json(['success' => false, 'message' => 'Maintenance record not found.'], 404);
+        if ($record->status === 'closed') {
+            return response()->json(['success' => false, 'message' => 'This maintenance record is already closed.'], 409);
+        }
+
+        $record->update([
+            'status'       => 'closed',
+            'action_taken' => $validated['action_taken'],
+            'closed_by'    => $request->user()->id,
+            'closed_at'    => now(),
+        ]);
+        $this->log($request->user(), 'maintenance_close', 'machine', $record->machine_id,
+            "Closed maintenance record for " . ($record->machine?->name ?? "machine #{$record->machine_id}"), ['record_id' => $record->id]);
+
+        return response()->json(['success' => true, 'record' => $record->load(['opener', 'closer'])->toApi()]);
     }
 
     public function updateBinLevels(Request $request, int $id): JsonResponse

@@ -5,6 +5,8 @@ export const AUDIT_ACTION_LABELS = {
   export_csv: 'Report exported',
   update_user: 'User updated',
   update_machine: 'Machine updated',
+  maintenance_open: 'Maintenance opened',
+  maintenance_close: 'Maintenance closed',
 }
 
 function titleCase(slug) {

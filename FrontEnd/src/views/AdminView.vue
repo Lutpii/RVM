@@ -513,6 +513,7 @@
                 <button class="action-btn edit-btn" @click="openEditMachine(machine)">Edit</button>
                 <button class="action-btn" @click="resetBins(machine)">Reset Bins</button>
                 <button class="action-btn maint-btn" @click="openMaintenance(machine)">Maintenance</button>
+                <button class="action-btn" @click="historyMachine = machine">Service History</button>
                 <button class="action-btn del-btn" @click="deleteMachine(machine.id)">Delete</button>
               </div>
             </div>
@@ -906,6 +907,8 @@
     </div>
 
     <!-- ── Add Machine Modal ── -->
+    <MaintenanceHistoryModal v-if="historyMachine" :machine="historyMachine" @close="historyMachine = null" />
+
     <div v-if="showAddMachine" class="modal-overlay" @click.self="showAddMachine = false">
       <div class="modal">
         <button class="modal-close-btn" aria-label="Close modal" @click="showAddMachine = false">
@@ -1229,6 +1232,7 @@ import { extractQrToken } from '@/utils/qrToken'
 import { materialIconSvg } from '@/utils/materialIcons'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import ImageCropper from '@/components/admin/ImageCropper.vue'
+import MaintenanceHistoryModal from '@/components/admin/MaintenanceHistoryModal.vue'
 import {
   PhRecycle, PhSun, PhMoon, PhUser, PhList, PhArrowsClockwise, PhWarning, PhX,
   PhCaretLeft, PhCaretRight,
@@ -1601,6 +1605,7 @@ const activeMachines = computed(() =>
 // Heartbeat-based machine state (A02/A05). nowTick is bumped by the 1 s clock
 // so a machine turns offline on screen without waiting for a refetch.
 const nowTick = ref(new Date())
+const historyMachine = ref(null) // machine whose Service History modal is open (A06)
 const machineSummary = computed(() => connectivitySummary(adminMachines.value, nowTick.value))
 const machineAlerts  = computed(() => buildMachineAlerts(adminMachines.value, nowTick.value))
 
