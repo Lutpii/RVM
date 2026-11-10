@@ -23,6 +23,16 @@
                 :class="['chip', { active: filters.range === r.value }]" :aria-pressed="filters.range === r.value"
                 @click="filters.range = r.value">{{ $t(r.label) }}</button>
       </div>
+      <div class="chip-row">
+        <button v-for="m in MATERIAL_OPTIONS" :key="m.value" type="button"
+                :class="['chip', { active: filters.material === m.value }]" :aria-pressed="filters.material === m.value"
+                @click="filters.material = m.value">{{ $t(m.label) }}</button>
+      </div>
+      <div class="chip-row">
+        <button v-for="st in STATUS_OPTIONS" :key="st.value" type="button"
+                :class="['chip', { active: filters.status === st.value }]" :aria-pressed="filters.status === st.value"
+                @click="filters.status = st.value">{{ $t(st.label) }}</button>
+      </div>
     </div>
     <div v-if="visibleFeed.length === 0" class="empty-state">
       <p>{{ $t('activity.noMatch') }}</p>
@@ -74,9 +84,22 @@ const RANGE_OPTIONS = [
   { value: '30d', label: 'activity.filter.last30' },
 ]
 
+const MATERIAL_OPTIONS = [
+  { value: 'all',      label: 'activity.filter.allMaterials' },
+  { value: 'plastic',  label: 'session.plastic' },
+  { value: 'aluminum', label: 'session.aluminum' },
+  { value: 'glass',    label: 'session.glass' },
+  { value: 'paper',    label: 'session.paper' },
+]
+const STATUS_OPTIONS = [
+  { value: 'all',      label: 'activity.filter.allStatuses' },
+  { value: 'credited', label: 'activity.filter.credited' },
+  { value: 'deducted', label: 'activity.filter.deducted' },
+]
+
 const feed    = ref([])
 const loading = ref(true)
-const filters = reactive({ kind: 'all', range: 'all' })
+const filters = reactive({ kind: 'all', range: 'all', material: 'all', status: 'all' })
 const visibleFeed = computed(() => filterActivityFeed(feed.value, filters, new Date()))
 const openSessionCode = ref(null)
 function openSession(code) { if (code) openSessionCode.value = code }

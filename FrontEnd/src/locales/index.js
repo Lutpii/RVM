@@ -7,7 +7,7 @@ export const messages = {
     activity: {
       title: 'Activity', empty: 'No activity yet.', loadError: 'Some activity could not be loaded. Showing what did load.', session: 'Recycling session {code}', redemption: 'Redeemed: {name}',
       noMatch: 'No activity matches this filter.',
-      filter: { label: 'Filter activity', all: 'All', recycling: 'Recycling', rewards: 'Rewards', points: 'Points', allTime: 'All time', last7: '7 days', last30: '30 days' },
+      filter: { label: 'Filter activity', all: 'All', recycling: 'Recycling', rewards: 'Rewards', points: 'Points', allTime: 'All time', last7: '7 days', last30: '30 days', allMaterials: 'All materials', allStatuses: 'All points', credited: 'Credited', deducted: 'Deducted' },
       detail: {
         title: 'Session details', machine: 'Machine', started: 'Started', ended: 'Ended', items: 'Items', totalPoints: 'Points earned',
         rejected: 'Rejected', noItems: 'No items in this session.', loadError: 'Session details could not be loaded.', close: 'Close', viewDetails: 'View details',
@@ -477,7 +477,7 @@ export const messages = {
     activity: {
       title: 'Aktiviti', empty: 'Belum ada aktiviti.', loadError: 'Sebahagian aktiviti tidak dapat dimuatkan. Memaparkan apa yang berjaya dimuatkan.', session: 'Sesi kitar semula {code}', redemption: 'Ditebus: {name}',
       noMatch: 'Tiada aktiviti yang sepadan dengan penapis ini.',
-      filter: { label: 'Tapis aktiviti', all: 'Semua', recycling: 'Kitar semula', rewards: 'Ganjaran', points: 'Mata', allTime: 'Semua masa', last7: '7 hari', last30: '30 hari' },
+      filter: { label: 'Tapis aktiviti', all: 'Semua', recycling: 'Kitar semula', rewards: 'Ganjaran', points: 'Mata', allTime: 'Semua masa', last7: '7 hari', last30: '30 hari', allMaterials: 'Semua bahan', allStatuses: 'Semua mata', credited: 'Dikreditkan', deducted: 'Dipotong' },
       detail: {
         title: 'Butiran sesi', machine: 'Mesin', started: 'Mula', ended: 'Tamat', items: 'Item', totalPoints: 'Mata diperoleh',
         rejected: 'Ditolak', noItems: 'Tiada item dalam sesi ini.', loadError: 'Butiran sesi tidak dapat dimuatkan.', close: 'Tutup', viewDetails: 'Lihat butiran',

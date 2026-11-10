@@ -15,11 +15,11 @@ describe('mergeActivityFeed', () => {
     expect(feed).toHaveLength(2)
     expect(feed[0]).toEqual({
       id: 'points-1', kind: 'points', description: 'Recycled 40g of plastic',
-      pointsChange: 12, timestamp: '2026-09-10T08:00:00Z',
+      pointsChange: 12, timestamp: '2026-09-10T08:00:00Z', material: null, status: 'credited',
     })
     expect(feed[1]).toEqual({
       id: 'session-5', kind: 'session', description: 'ABC123',
-      pointsChange: 12, timestamp: '2026-09-10T07:00:00Z',
+      pointsChange: 12, timestamp: '2026-09-10T07:00:00Z', material: null, status: null,
     })
   })
 
@@ -58,7 +58,7 @@ describe('mergeActivityFeed', () => {
     expect(feed.map((e) => e.id)).toEqual(['redemption-9', 'points-1'])
     expect(feed[0]).toEqual({
       id: 'redemption-9', kind: 'redemption', description: 'Coffee Voucher',
-      pointsChange: -30, timestamp: '2026-09-10T09:00:00Z',
+      pointsChange: -30, timestamp: '2026-09-10T09:00:00Z', material: null, status: 'deducted',
     })
   })
 
@@ -121,5 +121,44 @@ describe('filterActivityFeed', () => {
   })
   it('combines kind and range', () => {
     expect(ids(filterActivityFeed(feed, { kind: 'rewards', range: '7d' }, now))).toEqual([])
+  })
+})
+
+describe('material and status (U05)', () => {
+  const now = new Date('2026-11-10T12:00:00Z')
+  const merged = mergeActivityFeed(
+    [
+      { id: 1, type: 'earned', description: 'a', points_change: 5, created_at: '2026-11-09T10:00:00Z', transaction: { material_selected: 'plastic', is_valid: 1 } },
+      { id: 2, type: 'deducted', description: 'b', points_change: -2, created_at: '2026-11-08T10:00:00Z', transaction: { material_selected: 'glass', is_valid: 0 } },
+      { id: 3, type: 'earned', description: 'c', points_change: 4, created_at: '2026-10-01T10:00:00Z', transaction: { material_selected: 'aluminum', is_valid: 1 } },
+      { id: 4, type: 'earned', description: 'admin', points_change: 10, created_at: '2026-11-09T09:00:00Z', transaction: null },
+    ],
+    [{ id: 7, session_code: 'S7', points_earned: 0, started_at: '2026-11-09T08:00:00Z' }],
+    [{ id: 9, reward_name: 'Mug', points_spent: 50, created_at: '2026-11-07T10:00:00Z' }],
+  )
+  const ids = (list) => list.map((e) => e.id)
+
+  it('maps the transaction material and the credited/deducted status', () => {
+    const p1 = merged.find((e) => e.id === 'points-1')
+    const p2 = merged.find((e) => e.id === 'points-2')
+    expect(p1.material).toBe('plastic')
+    expect(p1.status).toBe('credited')
+    expect(p2.material).toBe('glass')
+    expect(p2.status).toBe('deducted')
+    expect(merged.find((e) => e.id === 'session-7').status).toBeNull()
+    expect(merged.find((e) => e.id === 'redemption-9').status).toBe('deducted')
+    expect(merged.find((e) => e.id === 'points-4').material).toBeNull()
+  })
+  it('material filter keeps only that material and drops entries without one', () => {
+    expect(ids(filterActivityFeed(merged, { material: 'plastic' }, now))).toEqual(['points-1'])
+    expect(ids(filterActivityFeed(merged, { material: 'all' }, now))).toContain('points-4')
+  })
+  it('status filter keeps credited or deducted entries, redemptions count as deducted', () => {
+    expect(ids(filterActivityFeed(merged, { status: 'deducted' }, now))).toEqual(['points-2', 'redemption-9'])
+    expect(ids(filterActivityFeed(merged, { status: 'credited' }, now))).toEqual(['points-1', 'points-4', 'points-3'])
+  })
+  it('combines kind, material and range', () => {
+    expect(ids(filterActivityFeed(merged, { kind: 'points', material: 'aluminum', range: '7d' }, now))).toEqual([])
+    expect(ids(filterActivityFeed(merged, { kind: 'points', material: 'aluminum' }, now))).toEqual(['points-3'])
   })
 })
