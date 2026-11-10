@@ -4,7 +4,7 @@
 <template>
   <div class="mh-overlay" @click.self="$emit('close')">
     <div class="mh-modal" role="dialog" aria-modal="true" :aria-label="'Service history: ' + machine.name">
-      <button class="mh-close" aria-label="Close" @click="$emit('close')"><PhX weight="bold" aria-hidden="true" /></button>
+      <button ref="closeBtn" class="mh-close" aria-label="Close" @click="$emit('close')"><PhX weight="bold" aria-hidden="true" /></button>
       <h3 class="mh-title">Service History</h3>
       <p class="mh-sub">{{ machine.name }} · {{ machine.machine_code }}</p>
 
@@ -20,8 +20,10 @@
           <textarea v-model.trim="form.issue" rows="2" maxlength="2000" placeholder="What is wrong with the machine?"></textarea>
         </label>
         <p v-if="formError" class="mh-error">{{ formError }}</p>
-        <button class="mh-btn mh-primary" type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Open record' }}</button>
+        <button class="mh-btn mh-primary" type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Add record' }}</button>
       </form>
+
+      <p v-if="notice" class="mh-notice" role="status">{{ notice }}</p>
 
       <div v-if="loading" class="mh-loading"><div class="mh-spinner"></div></div>
       <p v-else-if="loadError" class="mh-error">{{ loadError }}</p>
@@ -30,7 +32,7 @@
         <li v-for="r in records" :key="r.id" class="mh-item">
           <div class="mh-item-head">
             <strong>{{ r.technician_name }}</strong>
-            <span :class="['mh-status', 'mh-' + r.status]">{{ r.status === 'open' ? 'OPEN' : 'CLOSED' }}</span>
+            <span :class="['mh-status', 'mh-' + r.status]">{{ r.status === 'open' ? 'Open' : 'Resolved' }}</span>
           </div>
           <p class="mh-issue">{{ r.issue }}</p>
           <p class="mh-meta">Opened {{ fmt(r.opened_at) }}<template v-if="r.opened_by_name"> by {{ r.opened_by_name }}</template></p>
@@ -39,14 +41,14 @@
             <p class="mh-meta">Closed {{ fmt(r.closed_at) }}<template v-if="r.closed_by_name"> by {{ r.closed_by_name }}</template></p>
           </template>
           <div v-else-if="closingId === r.id" class="mh-close-form">
-            <textarea v-model.trim="actionTaken" rows="2" maxlength="2000" placeholder="What was done to fix it?"></textarea>
+            <textarea v-model.trim="actionTaken" rows="2" maxlength="2000" placeholder="What was done to fix it? (required)"></textarea>
             <p v-if="closeError" class="mh-error">{{ closeError }}</p>
             <div class="mh-close-actions">
               <button class="mh-btn" type="button" @click="cancelClose">Cancel</button>
-              <button class="mh-btn mh-primary" type="button" :disabled="saving" @click="closeRecord(r)">Close record</button>
+              <button class="mh-btn mh-primary" type="button" :disabled="saving" @click="closeRecord(r)">{{ saving ? 'Saving...' : 'Mark resolved' }}</button>
             </div>
           </div>
-          <button v-else class="mh-btn" type="button" @click="startClose(r)">Close…</button>
+          <button v-else class="mh-btn mh-resolve" type="button" @click="startClose(r)">Mark resolved…</button>
         </li>
       </ul>
     </div>
@@ -57,11 +59,14 @@
 import { ref, reactive, onMounted } from 'vue'
 import { PhX } from '@phosphor-icons/vue'
 import api from '@/services/api'
+import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
 const props = defineProps({
   machine: { type: Object, required: true },
 })
-defineEmits(['close'])
+const emit = defineEmits(['close'])
+const closeBtn = ref(null)
+useEscapeToClose(() => emit('close'), closeBtn)
 
 const records   = ref([])
 const loading   = ref(true)
@@ -72,6 +77,7 @@ const formError = ref('')
 const closingId   = ref(null)
 const actionTaken = ref('')
 const closeError  = ref('')
+const notice      = ref('') // short confirmation after add / resolve
 
 function fmt(ts) {
   if (!ts) return '—'
@@ -112,6 +118,7 @@ async function openRecord() {
     records.value = [res.data.record, ...records.value]
     form.technician_name = ''
     form.issue = ''
+    notice.value = 'Record added.'
   } catch (err) {
     formError.value = errorMessage(err, 'The record could not be saved.')
   } finally {
@@ -137,6 +144,7 @@ async function closeRecord(record) {
     const res = await api.patch(`/admin/maintenance-records/${record.id}/close`, { action_taken: actionTaken.value })
     records.value = records.value.map((r) => (r.id === record.id ? res.data.record : r))
     closingId.value = null
+    notice.value = 'Record marked resolved.'
   } catch (err) {
     closeError.value = errorMessage(err, 'The record could not be closed.')
     if (err?.response?.status === 409) load()
@@ -185,6 +193,8 @@ onMounted(load)
 .mh-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
 .mh-open { background: rgba(239, 68, 68, 0.12); color: var(--accent-red); }
 .mh-closed { background: rgba(16, 185, 129, 0.12); color: var(--accent-green); }
+.mh-resolve { border-color: var(--accent-green); color: var(--accent-green); }
+.mh-notice { margin: 0; padding: 8px 12px; border-radius: 8px; font-size: 13px; background: rgba(16, 185, 129, 0.12); color: var(--accent-green); }
 .mh-issue { margin: 0; font-size: 13px; white-space: pre-wrap; }
 .mh-action { margin: 0; font-size: 13px; white-space: pre-wrap; }
 .mh-action span { color: var(--text-muted); }

@@ -32,7 +32,7 @@
         </ul>
       </template>
 
-      <button class="close-btn" @click="$emit('close')">{{ $t('activity.detail.close') }}</button>
+      <button ref="closeBtn" class="close-btn" @click="$emit('close')">{{ $t('activity.detail.close') }}</button>
     </div>
   </div>
 </template>
@@ -41,11 +41,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
+import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
 const props = defineProps({
   sessionCode: { type: String, required: true },
 })
-defineEmits(['close'])
+const emit = defineEmits(['close'])
+const closeBtn = ref(null)
+useEscapeToClose(() => emit('close'), closeBtn)
 
 const { t, te } = useI18n()
 const loading   = ref(true)

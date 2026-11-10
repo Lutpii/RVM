@@ -160,6 +160,11 @@
                     {{ alert.type === 'fault' ? 'since' : 'last seen' }} {{ relativeTime(alert.since) }}
                   </span>
                 </div>
+                <!-- actionable alert (A05): log the repair or jump to the machine -->
+                <div class="alert-actions">
+                  <button type="button" class="action-btn" @click="openHistoryFor(alert.machineId)">Service history</button>
+                  <button type="button" class="action-btn" @click="switchTab('machines')">View machine</button>
+                </div>
               </div>
             </div>
           </div>
@@ -413,7 +418,9 @@
                         <PhPencilSimple class="user-action-icon" weight="regular" aria-hidden="true" />
                         Edit
                       </button>
-                      <button v-if="user.id !== auth.user?.id" class="action-btn" @click="toggleSuspend(user)">
+                      <button v-if="user.id !== auth.user?.id"
+                              :class="['action-btn', user.account_status === 'suspended' ? 'reactivate-btn' : 'suspend-btn']"
+                              @click="toggleSuspend(user)">
                         {{ user.account_status === 'suspended' ? 'Reactivate' : 'Suspend' }}
                       </button>
                       <button class="action-btn del-btn" @click="deleteUser(user.id)">
@@ -1612,6 +1619,10 @@ const activeMachines = computed(() =>
 // so a machine turns offline on screen without waiting for a refetch.
 const nowTick = ref(new Date())
 const historyMachine = ref(null) // machine whose Service History modal is open (A06)
+function openHistoryFor(machineId) {
+  const machine = adminMachines.value.find(m => m.id === machineId)
+  if (machine) historyMachine.value = machine
+}
 const machineSummary = computed(() => connectivitySummary(adminMachines.value, nowTick.value))
 const machineAlerts  = computed(() => buildMachineAlerts(adminMachines.value, nowTick.value))
 
@@ -3284,6 +3295,10 @@ onUnmounted(() => {
 }
 .alert-icon { font-size: 18px; color: var(--accent-red); }
 .alert-detail { font-size: 12px; color: var(--text-muted); }
+.alert-item { flex-wrap: wrap; }
+.alert-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.suspend-btn { border-color: var(--accent-yellow, #f59e0b) !important; color: var(--accent-yellow, #b45309) !important; }
+.reactivate-btn { border-color: var(--accent-green) !important; color: var(--accent-green) !important; }
 .suspended-badge { margin-left: 6px; background: rgba(239, 68, 68, 0.12); color: var(--accent-red); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 .ms-nodata { color: var(--text-muted); }
 .machine-heartbeat { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--text-muted); margin: -6px 0 12px; }
