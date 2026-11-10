@@ -89,6 +89,7 @@ class UserController extends Controller
         $history = PointsHistory::with('transaction')
             ->where('user_id', $request->user()->id)
             ->orderByDesc('created_at')
+            ->orderByDesc('id') // same-second rows: newest first (BUG-001)
             ->paginate(20);
 
         // Built fresh in the current request's locale rather than read from
