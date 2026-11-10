@@ -24,6 +24,7 @@
             <span class="item-material">
               {{ materialLabel(t.material) }}
               <span v-if="!t.is_valid" class="item-rejected">{{ $t('activity.detail.rejected') }}</span>
+              <span v-if="t.id" class="item-ref">#{{ t.id }}<template v-if="t.created_at"> · {{ formatClock(t.created_at) }}</template></span>
             </span>
             <span v-if="t.is_valid" class="pts-green">+{{ t.points_earned }}</span>
             <span v-else class="pts-red">-{{ t.points_deducted }}</span>
@@ -64,6 +65,11 @@ function formatTime(ts) {
   return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatClock(ts) {
+  const d = new Date(ts)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 onMounted(async () => {
   try {
     const res = await api.get(`/sessions/${encodeURIComponent(props.sessionCode)}/summary`)
@@ -100,6 +106,7 @@ onMounted(async () => {
 .detail-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-primary); }
 .detail-item:last-child { border-bottom: none; }
 .item-rejected { margin-left: 6px; font-size: 11px; color: var(--accent-red); }
+.item-ref { display: block; font-size: 11px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
 .pts-green { color: var(--accent-green); font-weight: 700; }
 .pts-red { color: var(--accent-red); font-weight: 700; }
 .close-btn {

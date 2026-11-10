@@ -140,6 +140,9 @@ class SessionController extends Controller
                 'started_at'    => $session->started_at,
                 'ended_at'      => $session->ended_at,
                 'transactions'  => $session->transactions->map(fn($t) => [
+                    // per-item receipt reference (U02)
+                    'id'             => $t->id,
+                    'created_at'     => $t->created_at?->toIso8601String(),
                     'material'       => $t->material_selected,
                     'weight'         => $t->weight_grams,
                     'points_earned'  => $t->points_earned,
