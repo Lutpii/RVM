@@ -132,6 +132,8 @@ const loginMethod = ref('email')
 const form = ref({ email: '', password: '', phone: '', otp: '' })
 const loading = ref(false)
 const error = ref('')
+// Sent here by api.js (or the Google callback) when the account is suspended (A08).
+if (route.query.error === 'account_suspended') error.value = t('auth.accountSuspended')
 const otpSent = ref(false)
 const showPwd = ref(false)
 

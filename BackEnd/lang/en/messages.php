@@ -17,6 +17,7 @@ return [
     'register_success_otp_sent' => 'Registration successful. OTP sent for verification.',
     'too_many_login_attempts'   => 'Too many login attempts. Try again in :seconds seconds.',
     'invalid_credentials'       => 'Invalid credentials.',
+    'account_suspended'         => 'Your account has been suspended. Please contact the administrator.',
     'login_success'             => 'Login successful.',
     'too_many_otp_requests'     => 'Too many OTP requests. Try again in :seconds seconds.',
     'account_not_found'         => 'Account not found.',

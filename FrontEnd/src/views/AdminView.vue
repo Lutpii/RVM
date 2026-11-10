@@ -398,7 +398,10 @@
                   </td>
                   <td class="muted">{{ user.email || user.phone }}</td>
                   <td class="pts-green">{{ user.total_points?.toLocaleString() }}</td>
-                  <td><span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span></td>
+                  <td>
+                    <span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span>
+                    <span v-if="user.account_status === 'suspended'" class="suspended-badge">suspended</span>
+                  </td>
                   <td>
                     <PhCheckCircle v-if="user.is_verified" class="verified-icon verified-yes" weight="regular" aria-hidden="true" />
                     <PhXCircle v-else class="verified-icon verified-no" weight="regular" aria-hidden="true" />
@@ -409,6 +412,9 @@
                       <button class="action-btn edit-btn" @click="editUser(user)">
                         <PhPencilSimple class="user-action-icon" weight="regular" aria-hidden="true" />
                         Edit
+                      </button>
+                      <button v-if="user.id !== auth.user?.id" class="action-btn" @click="toggleSuspend(user)">
+                        {{ user.account_status === 'suspended' ? 'Reactivate' : 'Suspend' }}
                       </button>
                       <button class="action-btn del-btn" @click="deleteUser(user.id)">
                         <PhTrash class="user-action-icon" weight="regular" aria-hidden="true" />
@@ -2462,6 +2468,23 @@ async function saveUser() {
   } catch { showToast('Failed to save user.', 'error') }
 }
 
+// Suspend / reactivate (A08). Suspending signs the user out everywhere.
+async function toggleSuspend(user) {
+  const suspending = user.account_status !== 'suspended'
+  const question = suspending
+    ? `Suspend "${user.name}"? They will be signed out and cannot log in until reactivated.`
+    : `Reactivate "${user.name}"?`
+  if (!(await askConfirm(question))) return
+  try {
+    const res = await api.put(`/admin/users/${user.id}`, { account_status: suspending ? 'suspended' : 'active' })
+    const idx = users.value.findIndex(u => u.id === user.id)
+    if (idx > -1) users.value[idx] = { ...users.value[idx], account_status: res.data.user?.account_status ?? (suspending ? 'suspended' : 'active') }
+    showToast(suspending ? `"${user.name}" suspended.` : `"${user.name}" reactivated.`)
+  } catch (err) {
+    showToast(err?.response?.data?.message || 'Failed to update the account status.', 'error')
+  }
+}
+
 async function deleteUser(id) {
   if (!(await askConfirm('Delete this user? This cannot be undone.'))) return
   try {
@@ -3261,6 +3284,7 @@ onUnmounted(() => {
 }
 .alert-icon { font-size: 18px; color: var(--accent-red); }
 .alert-detail { font-size: 12px; color: var(--text-muted); }
+.suspended-badge { margin-left: 6px; background: rgba(239, 68, 68, 0.12); color: var(--accent-red); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 .ms-nodata { color: var(--text-muted); }
 .machine-heartbeat { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--text-muted); margin: -6px 0 12px; }
 .hb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }

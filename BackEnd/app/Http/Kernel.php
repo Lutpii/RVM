@@ -78,6 +78,7 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'kiosk.auth' => \App\Http\Middleware\KioskAuthMiddleware::class,
         'machine.auth' => \App\Http\Middleware\MachineAuthMiddleware::class,
+        'account.active' => \App\Http\Middleware\EnsureAccountActive::class,
         'idle.timeout' => \App\Http\Middleware\EnforceIdleTimeout::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,

@@ -17,6 +17,7 @@ return [
     'register_success_otp_sent' => 'Pendaftaran berjaya. OTP telah dihantar untuk pengesahan.',
     'too_many_login_attempts'   => 'Terlalu banyak percubaan log masuk. Cuba lagi dalam :seconds saat.',
     'invalid_credentials'       => 'Kelayakan tidak sah.',
+    'account_suspended'         => 'Akaun anda telah digantung. Sila hubungi pentadbir.',
     'login_success'             => 'Log masuk berjaya.',
     'too_many_otp_requests'     => 'Terlalu banyak permintaan OTP. Cuba lagi dalam :seconds saat.',
     'account_not_found'         => 'Akaun tidak dijumpai.',

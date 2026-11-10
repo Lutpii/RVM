@@ -61,14 +61,17 @@ export function setKioskToken(token) {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !_kioskMode) {
+    // A suspended account (A08) is signed out the same way as an expired one,
+    // but lands on the login page with an explanation.
+    const suspended = error.response?.status === 403 && error.response?.data?.account_suspended === true
+    if ((error.response?.status === 401 || suspended) && !_kioskMode) {
       if (_clearAuthFn) {
         _clearAuthFn()
       } else {
         localStorage.removeItem('rvm_token')
         localStorage.removeItem('rvm_user')
       }
-      window.location.hash = '/login'
+      window.location.hash = suspended ? '/login?error=account_suspended' : '/login'
     }
     return Promise.reject(error)
   }

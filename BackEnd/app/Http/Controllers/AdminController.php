@@ -173,9 +173,18 @@ class AdminController extends Controller
             'total_points' => 'sometimes|integer|min:0',
             'is_verified'  => 'sometimes|boolean',
             'role'         => 'sometimes|in:user,admin',
+            'account_status' => 'sometimes|in:active,suspended',
         ]);
 
         $admin = $request->user();
+        // An admin can't lock themselves out (A08).
+        if ((int) $id === (int) $admin->id && ($data['account_status'] ?? 'active') !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot suspend your own account.',
+                'errors'  => ['account_status' => ['You cannot suspend your own account.']],
+            ], 422);
+        }
         $changes = [];
         $user = null;
         DB::transaction(function () use ($id, $data, $admin, &$changes, &$user) {
@@ -185,6 +194,11 @@ class AdminController extends Controller
                 $changes[$field] = [$user->getOriginal($field), $new];
             }
             $user->save();
+
+            // Suspending ends every session the user has, right away.
+            if (($changes['account_status'][1] ?? null) === 'suspended') {
+                $user->tokens()->delete();
+            }
 
             if (isset($changes['total_points'])) {
                 [$old, $new] = $changes['total_points'];

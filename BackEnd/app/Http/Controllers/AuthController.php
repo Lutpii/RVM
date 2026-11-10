@@ -149,6 +149,12 @@ class AuthController extends Controller
 
         RateLimiter::clear($throttleKey);
 
+        // Checked only after the password, so the account's state is never
+        // revealed to someone who doesn't know it (A08).
+        if ($user->account_status === 'suspended') {
+            return $this->suspendedResponse();
+        }
+
         // OTP verification is mandatory — a correct password on an unverified
         // account proves it's really them, but doesn't grant a session. Resend
         // a fresh OTP (same cap as sendOtp()'s own resend endpoint) so they can
@@ -256,6 +262,10 @@ class AuthController extends Controller
 
         RateLimiter::clear($verifyKey);
         $user->update(['is_verified' => 1, 'otp_code' => null, 'otp_expires_at' => null]);
+
+        if ($user->account_status === 'suspended') {
+            return $this->suspendedResponse();
+        }
 
         $token = $user->createToken('rvm_token')->plainTextToken;
 
@@ -447,6 +457,10 @@ class AuthController extends Controller
             ]);
             $user->save();
 
+            if ($user->account_status === 'suspended') {
+                return redirect("{$frontendUrl}/#/login?error=account_suspended")->withoutCookie('oauth_nonce');
+            }
+
             $token = $user->createToken('rvm_token')->plainTextToken;
 
             $code = Str::random(40);
@@ -475,6 +489,16 @@ class AuthController extends Controller
         }
 
         return response()->json(['success' => true, 'token' => $payload['token'], 'user' => $payload['user']]);
+    }
+
+    // Same shape as EnsureAccountActive, so the frontend handles both alike.
+    private function suspendedResponse(): JsonResponse
+    {
+        return response()->json([
+            'success'           => false,
+            'account_suspended' => true,
+            'message'           => __('messages.account_suspended'),
+        ], 403);
     }
 
     // Get current user

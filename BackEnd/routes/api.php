@@ -81,7 +81,7 @@ Route::post('/hardware/session/end', [TransactionController::class, 'guestSessio
 }); // end machine.auth
 
 // Protected routes (require auth or valid kiosk token)
-Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(function () {
+Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active'])->group(function () {
 
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
