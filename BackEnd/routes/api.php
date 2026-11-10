@@ -44,6 +44,15 @@ Route::get('/vouchers/{code}', [RewardController::class, 'showVoucher']);
 Route::get('/machines', [MachineController::class, 'index']);
 Route::get('/machines/{id}', [MachineController::class, 'show']);
 
+// Kiosk heartbeat: always needs a valid X-Machine-Key; records last seen + fault state.
+Route::post('/hardware/heartbeat', [MachineController::class, 'heartbeat'])->middleware('machine.auth:required');
+
+// Every /hardware/* route below goes through machine.auth: a valid
+// X-Machine-Key identifies the machine (and counts as a heartbeat). Calls
+// without one are only refused once MACHINE_AUTH_ENFORCE=true (config/rvm.php),
+// so kiosks keep working until each has been given its key.
+Route::middleware('machine.auth')->group(function () {
+
 // Hardware-only actions (camera capture, AI classify, servo sort) — no login
 // required, used by the kiosk's "Continue as Guest" flow so the physical
 // machine still works for guests. No points/session records are created here;
@@ -68,6 +77,8 @@ Route::get('/hardware/flap-check', [TransactionController::class, 'hardwareFlapC
 Route::post('/hardware/session/start', [TransactionController::class, 'guestSessionStart']);
 Route::post('/hardware/session/complete', [TransactionController::class, 'guestSessionComplete']);
 Route::post('/hardware/session/end', [TransactionController::class, 'guestSessionEnd']);
+
+}); // end machine.auth
 
 // Protected routes (require auth or valid kiosk token)
 Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum'])->group(function () {

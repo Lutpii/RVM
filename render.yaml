@@ -51,5 +51,8 @@ services:
       # skipped and mail goes to the log (admin "Send via Email" is disabled).
       - key: OTP_ENABLED
         value: "false"
+      # Hardware routes accept calls without X-Machine-Key until each kiosk has its key.
+      - key: MACHINE_AUTH_ENFORCE
+        value: "false"
       - key: MAIL_MAILER
         value: log
