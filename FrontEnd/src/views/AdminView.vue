@@ -2197,6 +2197,14 @@ watch([activeTab, detectionView], ([tab, view]) => {
   router.replace({ query })
 }, { immediate: true })
 
+// The other direction: a ?tab= edited in the address bar (or Back/Forward)
+// changes the route without remounting this view, so follow it here.
+watch(() => [route.query.tab, route.query.view], () => {
+  const wanted = parseAdminQuery(route.query, navItems.map(item => item.id))
+  if (wanted.detectionView !== detectionView.value) detectionView.value = wanted.detectionView
+  if (wanted.tab !== activeTab.value) switchTab(wanted.tab)
+})
+
 function switchTab(tab) {
   activeTab.value = tab
   mobileSidebarOpen.value = false
