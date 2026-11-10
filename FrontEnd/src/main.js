@@ -8,6 +8,9 @@ import scrollReveal from './directives/scrollReveal'
 import swipe from './directives/swipe'
 import tap from './directives/tap'
 import './assets/main.css'
+import api, { hasMachineKey } from './services/api'
+import { startHeartbeat } from './services/heartbeat'
+import { getHardwareState } from './services/compactor'
 
 const pinia = createPinia()
 
@@ -26,3 +29,9 @@ app.directive('reveal', scrollReveal)
 app.directive('swipe', swipe)
 app.directive('tap', tap)
 app.mount('#app')
+
+// Kiosk builds (VITE_MACHINE_KEY set) report a heartbeat + fault state every
+// minute for as long as the kiosk app is open, whichever screen it is on.
+if (hasMachineKey) {
+  startHeartbeat({ post: (url, body) => api.post(url, body), getState: () => getHardwareState() })
+}

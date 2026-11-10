@@ -169,6 +169,22 @@ npm run build
 ```
 Hasil build ada di `FrontEnd/dist/` — tidak perlu ubah apa pun di kode-nya, `api.js` sudah default ke `/api` relatif (same-origin lewat Nginx nanti).
 
+### 6a. Machine key + heartbeat (opsional, untuk monitoring online/offline)
+
+Supaya admin bisa melihat mesin online/offline dan fault hardware, kiosk perlu key mesinnya sendiri:
+
+1. Di backend yang dipakai kiosk ini, buat key untuk mesinnya (ditampilkan **sekali saja**):
+   ```bash
+   cd ~/RVM/BackEnd
+   php artisan rvm:machine-key RVM-DSME
+   ```
+2. Simpan key itu di `FrontEnd/.env.local` (jangan di-commit):
+   ```
+   VITE_MACHINE_KEY=<key-dari-langkah-1>
+   ```
+3. Build ulang frontend (`npm run build`). Kiosk lalu mengirim heartbeat tiap 60 detik dan header `X-Machine-Key` di setiap panggilan `/hardware/*`.
+4. **Setelah semua kiosk punya key**, baru set `MACHINE_AUTH_ENFORCE=true` di `.env` backend lalu `php artisan config:clear`. Kalau di-set lebih dulu, kiosk tanpa key akan ditolak (401) di semua route hardware.
+
 ---
 
 ## 7. Nginx + HTTPS

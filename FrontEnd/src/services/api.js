@@ -9,6 +9,13 @@ const api = axios.create({
   timeout: 30000,
 })
 
+// Kiosk builds only: the machine's API key (php artisan rvm:machine-key <code>)
+// identifies this machine on /hardware/* calls and counts as a heartbeat.
+// Empty in normal web builds, so phones/laptops never send it.
+const MACHINE_KEY = import.meta.env.VITE_MACHINE_KEY || ''
+if (MACHINE_KEY) api.defaults.headers.common['X-Machine-Key'] = MACHINE_KEY
+export const hasMachineKey = MACHINE_KEY !== ''
+
 // Registered by auth store so the interceptor can clear Pinia state on 401
 let _clearAuthFn = null
 export function registerClearAuth(fn) { _clearAuthFn = fn }
