@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AdminLog;
+use App\Models\MaintenanceRecord;
 use App\Models\PointsHistory;
 use App\Models\RecyclingSession;
 use App\Models\RewardItem;
@@ -247,6 +248,42 @@ class DemoDataGeneratorTest extends TestCase
         $this->assertNotNull(User::find($this->realUser->id));
         $this->assertSame(1, AdminLog::where('action', 'update_user')->count());
         $this->assertFalse(RvmMachine::where('machine_code', 'RVM-DSME')->exists());
+    }
+
+    public function test_demo_maintenance_records_are_closed_labelled_and_not_duplicated(): void
+    {
+        $res = $this->gen();
+        $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
+        $records = MaintenanceRecord::where('machine_id', $dsme->id)->get();
+
+        $this->assertSame(3, $res['maintenance_records']);
+        $this->assertCount(3, $records);
+        foreach ($records as $r) {
+            $this->assertStringStartsWith('Demo Technician', $r->technician_name);
+            $this->assertSame('closed', $r->status);
+            $this->assertNotEmpty($r->action_taken);
+            $this->assertTrue($r->created_at->lt($r->closed_at));
+            $this->assertTrue($r->closed_at->lte($this->now));
+            $this->assertTrue($r->created_at->gte($this->now->copy()->startOfDay()->subDays(29)));
+        }
+
+        // A second run the same day adds none.
+        $again = app(DemoDataGenerator::class)->generate(30, $this->now, 7);
+        $this->assertSame(0, $again['maintenance_records']);
+        $this->assertSame(3, MaintenanceRecord::count());
+    }
+
+    public function test_purge_removes_demo_maintenance_records_only(): void
+    {
+        $this->gen();
+        $real = RvmMachine::create(['machine_code' => 'RVM-REAL', 'name' => 'Real', 'location_name' => 'X', 'status' => 'active']);
+        MaintenanceRecord::create(['machine_id' => $real->id, 'technician_name' => 'Ali', 'issue' => 'Real issue', 'status' => 'open']);
+
+        $res = app(DemoDataGenerator::class)->purge();
+
+        $this->assertSame(3, $res['maintenance_records']);
+        $this->assertSame(0, MaintenanceRecord::where('technician_name', 'like', 'Demo Technician%')->count());
+        $this->assertSame(1, MaintenanceRecord::where('machine_id', $real->id)->count());
     }
 
     public function test_purge_keeps_dsme_machine_with_real_sessions(): void

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Controllers\TransactionController;
 use App\Models\AdminLog;
+use App\Models\MaintenanceRecord;
 use App\Models\PointsHistory;
 use App\Models\RecyclingSession;
 use App\Models\RewardItem;
@@ -124,6 +125,8 @@ class DemoDataGenerator
             if (!$hadSessions) $result['days_filled']++;
         }
 
+        $result['maintenance_records'] = $this->generateMaintenanceRecords($windowStart, $now);
+
         return $result;
     }
 
@@ -137,6 +140,7 @@ class DemoDataGenerator
             }
             $users = $ids ? User::whereIn('id', $ids)->delete() : 0;
             $logs = AdminLog::where('details->demo', true)->delete();
+            $maintenance = MaintenanceRecord::where('technician_name', 'like', self::DEMO_TECHNICIAN . '%')->delete();
 
             $deleted = false;
             $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
@@ -145,8 +149,55 @@ class DemoDataGenerator
                 $deleted = true;
             }
 
-            return ['users' => $users, 'admin_logs' => $logs, 'machine_deleted' => $deleted];
+            return ['users' => $users, 'admin_logs' => $logs, 'maintenance_records' => $maintenance, 'machine_deleted' => $deleted];
         });
+    }
+
+    // ---- maintenance records (A06) ----------------------------------------
+
+    /** Demo service history is recognisable by this technician-name prefix. */
+    private const DEMO_TECHNICIAN = 'Demo Technician';
+
+    /** [days ago opened, hours until closed, technician, issue, action taken] */
+    private const MAINTENANCE_DEMO = [
+        [24, 3, 'Demo Technician A', 'Plastic flap did not open fully during a deposit.', 'Cleaned the flap guide and re-tested 5 deposits.'],
+        [13, 2, 'Demo Technician B', 'Camera image too dark in the early morning.', 'Adjusted the LED strip angle and checked detection on 10 items.'],
+        [4, 1, 'Demo Technician A', 'Aluminium bin level read full while half empty.', 'Re-seated the level sensor cable and recalibrated the reading.'],
+    ];
+
+    /**
+     * A few closed service records on the demo machine, so the Service History
+     * panel has something to show. Created once; reruns add nothing.
+     */
+    private function generateMaintenanceRecords(Carbon $windowStart, Carbon $now): int
+    {
+        $dsme = $this->machines['dsme'];
+        $exists = MaintenanceRecord::where('machine_id', $dsme->id)
+            ->where('technician_name', 'like', self::DEMO_TECHNICIAN . '%')->exists();
+        if ($exists) return 0;
+
+        $written = 0;
+        foreach (self::MAINTENANCE_DEMO as [$daysAgo, $hours, $technician, $issue, $action]) {
+            $opened = $now->copy()->startOfDay()->subDays($daysAgo)->setTime(10, 15);
+            $closed = $opened->copy()->addHours($hours);
+            if ($opened->lt($windowStart) || $closed->gt($now)) continue;
+
+            $record = new MaintenanceRecord([
+                'machine_id'      => $dsme->id,
+                'technician_name' => $technician,
+                'issue'           => $issue,
+                'action_taken'    => $action,
+                'status'          => 'closed',
+                'opened_by'       => $this->admin?->id,
+                'closed_by'       => $this->admin?->id,
+                'closed_at'       => $closed,
+            ]);
+            $record->created_at = $opened;
+            $record->updated_at = $closed;
+            $record->save();
+            $written++;
+        }
+        return $written;
     }
 
     // ---- setup -----------------------------------------------------------
