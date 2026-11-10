@@ -18,9 +18,9 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794278349.2592266,
-    "seen": 1794303756.3227649,
-    "ast_hash": "dd6043b8b88c86cca0d75a95866ed624",
+    "mtime": 1794305761.3780394,
+    "seen": 1794306305.6760998,
+    "ast_hash": "e8877cd1bdc50d4d875f13035ab4b51b",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
@@ -60,14 +60,14 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/TransactionController.php": {
-    "mtime": 1794282225.7900422,
-    "seen": 1794303756.3227649,
-    "ast_hash": "a606f0c154fc90bdc66b1c2ca254327d",
+    "mtime": 1794305614.1453545,
+    "seen": 1794306305.677195,
+    "ast_hash": "5dda9fe576f96b1a85a9a89368202e8e",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/UserController.php": {
-    "mtime": 1794303630.491969,
-    "seen": 1794303756.3227649,
+    "mtime": 1794303955.53781,
+    "seen": 1794306305.677195,
     "ast_hash": "9b3d45406c7cddeab582904abcf5b61e",
     "semantic_hash": ""
   },
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794303549.8055396,
-    "seen": 1794303756.360362,
-    "ast_hash": "f5bfc1dc91a7af2999cd1593e9ce4763",
+    "mtime": 1794306085.3178647,
+    "seen": 1794306305.7156222,
+    "ast_hash": "d86ce91f57279d23a52b2c76f249ac9c",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1320,9 +1320,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DemoDataGenerator.php": {
-    "mtime": 1794278349.4726744,
-    "seen": 1794303756.3301184,
-    "ast_hash": "14b827981ffc1d3a7d2d46190861936c",
+    "mtime": 1794305614.1453545,
+    "seen": 1794306305.68113,
+    "ast_hash": "ec71362e60d09198456bcdec233db24c",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DetectionCaptureStorage.php": {
@@ -1416,9 +1416,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminTransactionFiltersTest.php": {
-    "mtime": 1794274773.0610228,
-    "seen": 1794278174.8891845,
-    "ast_hash": "a68c73d9bc7f9f087ee11faa44c758da",
+    "mtime": 1794305772.2110648,
+    "seen": 1794306305.6974957,
+    "ast_hash": "7f27ca41c3c0063e24348fda577c3b79",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminUpdateUserTest.php": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/DemoDataGeneratorTest.php": {
-    "mtime": 1794278349.5697665,
-    "seen": 1794303756.3424363,
-    "ast_hash": "1ae0942a330d749cb73202bb53cd1903",
+    "mtime": 1794305627.5575902,
+    "seen": 1794306305.6974957,
+    "ast_hash": "0737cbe5320cf6598cdeb339418c795e",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/GoogleCallbackAccountLinkTest.php": {
@@ -1500,9 +1500,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/TransactionCompleteAtomicityTest.php": {
-    "mtime": 1794282225.7951884,
-    "seen": 1794303756.34817,
-    "ast_hash": "c19eff454fe0cf62df8c89d5406e3129",
+    "mtime": 1794305693.1550317,
+    "seen": 1794306305.699752,
+    "ast_hash": "39e56300852b936e9200294fc5438b96",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/BrandFooter.vue": {
@@ -1512,8 +1512,8 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/SessionDetailModal.vue": {
-    "mtime": 1794303576.373361,
-    "seen": 1794303756.34817,
+    "mtime": 1794303955.5515075,
+    "seen": 1794306305.7035475,
     "ast_hash": "f6db15be60b78c45926649003704138b",
     "semantic_hash": ""
   },
@@ -1776,8 +1776,8 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PointsHistoryOrderTest.php": {
-    "mtime": 1794303585.2895436,
-    "seen": 1794303756.3457537,
+    "mtime": 1794303955.5450792,
+    "seen": 1794306305.699752,
     "ast_hash": "21e8c39b1c3e088f38e0e19f98b82b43",
     "semantic_hash": ""
   },
@@ -1842,8 +1842,8 @@
     "semantic_hash": ""
   },
   "docs/testing/2026-11-10-dsme-test-plan-results.md": {
-    "mtime": 1794303743.374946,
-    "seen": 1794303756.3656516,
+    "mtime": 1794303955.5672975,
+    "seen": 1794306305.7218761,
     "ast_hash": "ea6fdc8e93412301fe482960315ffa6d",
     "semantic_hash": ""
   },
@@ -1935,6 +1935,24 @@
     "mtime": 1794282225.8236873,
     "seen": 1794303756.3659866,
     "ast_hash": "59c93537767a367729b14ebe6a49a3f2",
+    "semantic_hash": ""
+  },
+  "BackEnd/tests/Feature/TransactionRejectNoDeductionTest.php": {
+    "mtime": 1794305637.2477458,
+    "seen": 1794306305.7025433,
+    "ast_hash": "7b75c5f4f272361c394ea1600e67e8c8",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/transactionDisplay.js": {
+    "mtime": 1794305887.02436,
+    "seen": 1794306305.7120502,
+    "ast_hash": "3d9dad959deb822acd20f31681d431d7",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/transactionDisplay.test.js": {
+    "mtime": 1794305882.1332743,
+    "seen": 1794306305.7120502,
+    "ast_hash": "9f95de82fc83bff8fd8da39264e043c8",
     "semantic_hash": ""
   }
 }
