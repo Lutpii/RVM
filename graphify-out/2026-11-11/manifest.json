@@ -18,15 +18,15 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794362424.2858155,
-    "seen": 1794362847.9268467,
-    "ast_hash": "7ca114d0ea158b5c70bb0553b820fbe6",
+    "mtime": 1794363891.7985504,
+    "seen": 1794365986.0204616,
+    "ast_hash": "dcbe6520eac4cd3064018acb1e23d551",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
-    "mtime": 1794282225.785036,
-    "seen": 1794303756.3227649,
-    "ast_hash": "9cbe7463c8d178f40579b0a386f2f6a1",
+    "mtime": 1794365413.8495507,
+    "seen": 1794365986.0204616,
+    "ast_hash": "54c740b5f3ebd57a2ff074089fdfb754",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/Controller.php": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/UserController.php": {
-    "mtime": 1794303955.53781,
-    "seen": 1794306305.677195,
-    "ast_hash": "9b3d45406c7cddeab582904abcf5b61e",
+    "mtime": 1794365392.8166175,
+    "seen": 1794365986.0219557,
+    "ast_hash": "2405b15c9348f2e1529a56346faf8c0b",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Kernel.php": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Models/User.php": {
-    "mtime": 1794278349.354983,
-    "seen": 1794303756.327386,
-    "ast_hash": "f869b58e835863590fd3f9a5b07c5429",
+    "mtime": 1794365393.3599083,
+    "seen": 1794365986.027563,
+    "ast_hash": "cf3a0fec8bd9f681831141a81e5bed30",
     "semantic_hash": ""
   },
   "BackEnd/app/Providers/AppServiceProvider.php": {
@@ -546,9 +546,9 @@
     "semantic_hash": "477b725a852c34ce0aaad68e17b7019a"
   },
   "BackEnd/routes/api.php": {
-    "mtime": 1794362302.0263872,
-    "seen": 1794362847.9471924,
-    "ast_hash": "0f2bf2785f9fe5c18204fa7c85511d80",
+    "mtime": 1794365393.4374697,
+    "seen": 1794365986.0413291,
+    "ast_hash": "958ce828ec5a5965018d2a247c674675",
     "semantic_hash": ""
   },
   "BackEnd/routes/channels.php": {
@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794362560.4386444,
-    "seen": 1794362847.9606657,
-    "ast_hash": "83f06c8aaf305c461683ea1188c36d2b",
+    "mtime": 1794365699.0587428,
+    "seen": 1794365986.054881,
+    "ast_hash": "3a436484164022822ad3968996cea921",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794362547.3261662,
-    "seen": 1794362847.9696863,
-    "ast_hash": "22052d2c5edbe9dd3a20fbbaf1ae42c6",
+    "mtime": 1794363891.810738,
+    "seen": 1794365986.0664816,
+    "ast_hash": "abd6d63dd80407544ed6e81412fc650b",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/UserSettingsView.vue": {
-    "mtime": 1790760941.939512,
-    "seen": 1794278174.8931174,
-    "ast_hash": "08fc36baf4bcd1f00021d065d619691e",
+    "mtime": 1794365822.08395,
+    "seen": 1794365986.068484,
+    "ast_hash": "bfdc6357de0006aca58a584ab8dfb655",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/WelcomeView.vue": {
@@ -1968,9 +1968,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminTableExportTest.php": {
-    "mtime": 1794362424.394618,
-    "seen": 1794362847.951039,
-    "ast_hash": "78639c4fc381fcda6cfe912c3e53a3f4",
+    "mtime": 1794363916.8681796,
+    "seen": 1794365986.0443335,
+    "ast_hash": "d755d97939f4b9edb0b076d7a4c219c0",
     "semantic_hash": ""
   },
   "FrontEnd/src/utils/admin/excelExport.js": {
@@ -1983,6 +1983,42 @@
     "mtime": 1794362628.415389,
     "seen": 1794362847.9645116,
     "ast_hash": "cf7f40ec97a001ad8c548cdca697e91b",
+    "semantic_hash": ""
+  },
+  "BackEnd/app/Support/AvatarIcon.php": {
+    "mtime": 1794365373.4345326,
+    "seen": 1794365986.0301483,
+    "ast_hash": "118a2b4ba344e79069b8239e3bbe74ad",
+    "semantic_hash": ""
+  },
+  "BackEnd/database/migrations/2026_11_12_000001_add_avatar_icon_to_users_table.php": {
+    "mtime": 1794365373.2200432,
+    "seen": 1794365986.0392299,
+    "ast_hash": "3afd48bbe89b7eeac47b2062ff16c2eb",
+    "semantic_hash": ""
+  },
+  "BackEnd/tests/Feature/AccountSummaryTest.php": {
+    "mtime": 1794365414.133171,
+    "seen": 1794365986.042337,
+    "ast_hash": "00af9b5b3ed047c076563b1135fc2fe7",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/components/UserAvatar.vue": {
+    "mtime": 1794365511.7070694,
+    "seen": 1794365986.053369,
+    "ast_hash": "90563c3e58c33a98ead722e27071f52b",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/avatarIcons.js": {
+    "mtime": 1794365472.598231,
+    "seen": 1794365986.0624304,
+    "ast_hash": "698c4b1a2b1a02adf0f58c1bcd3f34ef",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/avatarIcons.test.js": {
+    "mtime": 1794365472.7598464,
+    "seen": 1794365986.0624304,
+    "ast_hash": "87ac5e6bd2246d377e7ef2cb2158318c",
     "semantic_hash": ""
   }
 }
