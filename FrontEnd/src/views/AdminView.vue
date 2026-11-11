@@ -130,14 +130,16 @@
           <!-- Charts Row -->
           <div class="charts-row">
             <div class="section-card chart-card-main">
-              <h3 class="card-title-bar"><span class="title-sq"></span> DAILY COLLECTION TREND (LAST 7 DAYS)</h3>
+              <h3 class="card-title-bar chart-title"><span class="title-sq"></span> DAILY COLLECTION TREND (LAST 7 DAYS)</h3>
+              <p class="chart-sub">CO₂ saved each day by material, in kg (accepted items only)</p>
               <div class="chart-wrap">
                 <Bar v-if="barChartData" :data="barChartData" :options="barChartOptions" />
                 <div v-else class="chart-empty">No data yet</div>
               </div>
             </div>
             <div class="section-card chart-card-side">
-              <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> CATEGORY BREAKDOWN</h3>
+              <h3 class="card-title-bar chart-title"><span class="title-sq title-sq-yellow"></span> CATEGORY BREAKDOWN (ALL TIME)</h3>
+              <p class="chart-sub">CO₂ saved per material since the first item, in kg</p>
               <div class="chart-wrap donut-wrap">
                 <Doughnut v-if="donutChartData" :data="donutChartData" :options="donutChartOptions" />
                 <div v-else class="chart-empty">No data yet</div>
@@ -1638,7 +1640,21 @@ const barChartOptions = {
 
 const donutChartOptions = {
   responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 16 } } },
+  plugins: {
+    legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 16 } },
+    // "Plastic: 3.2 kg CO₂ (18%)" so the slice reads without guessing the unit.
+    tooltip: {
+      callbacks: {
+        label: (ctx) => {
+          const values = ctx.dataset.data.map(Number)
+          const total = values.reduce((a, b) => a + b, 0)
+          const kg = Number(ctx.raw) || 0
+          const pct = total ? Math.round((kg / total) * 100) : 0
+          return `${ctx.label}: ${kg.toFixed(1)} kg CO₂ (${pct}%)`
+        },
+      },
+    },
+  },
   cutout: '65%',
 }
 
@@ -3309,6 +3325,8 @@ onUnmounted(() => {
    page, wider than the screen. min-width:0 lets the grid track actually
    respect its column size regardless of what the canvas reports. */
 .chart-card-main, .chart-card-side { margin-bottom: 0; min-width: 0; }
+.card-title-bar.chart-title { margin-bottom: 4px; }
+.chart-sub { margin: 0 0 12px; font-size: 12px; color: var(--text-muted); }
 .chart-wrap { height: 260px; position: relative; overflow: hidden; min-width: 0; }
 .chart-wrap canvas { max-width: 100% !important; }
 .donut-wrap { display: flex; align-items: center; justify-content: center; }
