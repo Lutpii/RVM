@@ -179,7 +179,6 @@
                 <div class="alert-bins">
                   <span v-if="machine.aluminum_level >= 90" class="bin-tag">Aluminum {{ machine.aluminum_level }}%</span>
                   <span v-if="machine.plastic_level >= 90" class="bin-tag">Plastic {{ machine.plastic_level }}%</span>
-                  <span v-if="machine.glass_level >= 90" class="bin-tag">Glass {{ machine.glass_level }}%</span>
                   <span v-if="machine.paper_level >= 90" class="bin-tag">Paper {{ machine.paper_level }}%</span>
                 </div>
               </div>
@@ -1669,10 +1668,10 @@ const navItems = [
   detectionView.value = saved.detectionView
 }
 
+// Glass is not accepted, so it is left out of every material list shown here.
 const binTypes = [
   { id: 'aluminum', label: 'Aluminum' },
   { id: 'plastic',  label: 'Plastic'  },
-  { id: 'glass',    label: 'Glass'    },
   { id: 'paper',    label: 'Paper'    },
 ]
 
@@ -1680,14 +1679,12 @@ const rewardMaterials = [
   { key: 'plastic',  label: 'Plastic Bottle (pts)' },
   { key: 'aluminum', label: 'Aluminium Can (pts)'  },
   { key: 'paper',    label: 'Paper / Card (pts)'   },
-  { key: 'glass',    label: 'Glass Bottle (pts)'   },
 ]
 
 const overviewMaterials = [
   { key: 'plastic',  label: 'PLASTIC BOTTLES'   },
   { key: 'aluminum', label: 'ALUMINIUM CANS'    },
   { key: 'paper',    label: 'PAPER / RECYCLABLES'},
-  { key: 'glass',    label: 'GLASS BOTTLES'     },
 ]
 
 
@@ -1742,7 +1739,6 @@ const systemStatusItems = computed(() => {
   const plastic  = binLevel('plastic_level')
   const aluminum = binLevel('aluminum_level')
   const paper    = binLevel('paper_level')
-  const glass    = binLevel('glass_level')
 
   // Heartbeat-based once any kiosk reports; until then, the registered status.
   const summary        = machineSummary.value
@@ -1764,7 +1760,6 @@ const systemStatusItems = computed(() => {
     { label: 'Plastic Bin',  value: binLabel(plastic,  binColor(plastic)),  color: binColor(plastic)  },
     { label: 'Aluminum Bin', value: binLabel(aluminum, binColor(aluminum)), color: binColor(aluminum) },
     { label: 'Paper Bin',    value: binLabel(paper,    binColor(paper)),    color: binColor(paper)    },
-    { label: 'Glass Bin',    value: binLabel(glass,    binColor(glass)),    color: binColor(glass)    },
   ]
 })
 
@@ -1835,9 +1830,11 @@ async function fetchTabData(tab, showSpinner = false) {
       if (showSpinner) loadingStats.value = true
       const res = await api.get('/admin/stats')
       statsData.value      = res.data.stats                   || {}
-      materialStats.value  = res.data.stats?.material_stats   || []
+      materialStats.value  = (res.data.stats?.material_stats || []).filter(m => m.material_selected !== 'glass')
       recentSessions.value = res.data.stats?.recent_sessions  || []
-      const binsNeedingCollection = res.data.stats?.full_bins || []
+      // Only bins for accepted materials count (glass is not accepted).
+      const binsNeedingCollection = (res.data.stats?.full_bins || [])
+        .filter(m => ['aluminum', 'plastic', 'paper'].some(t => Number(m[`${t}_level`]) >= 90))
       fullBins.value = binsNeedingCollection
       // Keep eligibility separate from the dismissible alert list. Dismissing
       // a warning does not change the physical bin level.
@@ -2274,15 +2271,14 @@ async function fetchChartData() {
         { label: 'Plastic',  data: datasets.plastic,  backgroundColor: CHART_COLORS.plastic  },
         { label: 'Aluminum', data: datasets.aluminum, backgroundColor: CHART_COLORS.aluminum },
         { label: 'Paper',    data: datasets.paper,    backgroundColor: CHART_COLORS.paper    },
-        { label: 'Glass',    data: datasets.glass,    backgroundColor: CHART_COLORS.glass    },
       ],
     }
 
     donutChartData.value = {
-      labels: ['Plastic', 'Aluminum', 'Paper', 'Glass'],
+      labels: ['Plastic', 'Aluminum', 'Paper'],
       datasets: [{
-        data: [breakdown.plastic, breakdown.aluminum, breakdown.paper, breakdown.glass],
-        backgroundColor: [CHART_COLORS.plastic, CHART_COLORS.aluminum, CHART_COLORS.paper, CHART_COLORS.glass],
+        data: [breakdown.plastic, breakdown.aluminum, breakdown.paper],
+        backgroundColor: [CHART_COLORS.plastic, CHART_COLORS.aluminum, CHART_COLORS.paper],
         borderWidth: 0,
       }],
     }
@@ -2566,7 +2562,7 @@ async function requestBinCollection() {
   }
 
   const details = collectionCandidates.value.map((machine) => {
-    const bins = ['aluminum', 'plastic', 'glass', 'paper']
+    const bins = ['aluminum', 'plastic', 'paper']
       .filter(type => Number(machine[`${type}_level`]) >= 90)
       .map(type => `${capitalize(type)} ${machine[`${type}_level`]}%`)
       .join(', ')
@@ -3284,7 +3280,7 @@ onUnmounted(() => {
 }
 .overview-clock { font-size: 13px; color: var(--text-muted); }
 .overview-cards {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
   margin-bottom: 16px;
 }
 .overview-card {
@@ -3364,7 +3360,7 @@ onUnmounted(() => {
 
 /* ── Reward Config ── */
 .reward-materials {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 12px; margin-bottom: 16px;
 }
 .reward-mat-card {
@@ -4041,11 +4037,11 @@ onUnmounted(() => {
 /* Tablet: ≤ 1024px */
 @media (max-width: 1024px) {
   .stats-grid       { grid-template-columns: repeat(4, 1fr); }
-  .overview-cards   { grid-template-columns: repeat(2, 1fr); }
+  .overview-cards   { grid-template-columns: repeat(3, 1fr); }
   .charts-row       { grid-template-columns: 1fr; }
   .chart-card-side  { min-height: 260px; }
   .breakdown-status-row { grid-template-columns: 1fr; }
-  .reward-materials { grid-template-columns: repeat(2, 1fr); }
+  .reward-materials { grid-template-columns: repeat(3, 1fr); }
   .sys-grid         { grid-template-columns: 1fr 1fr; }
 }
 
@@ -4073,9 +4069,9 @@ onUnmounted(() => {
   .admin-main          { margin-left: 0 !important; }
 
   .stats-grid       { grid-template-columns: repeat(2, 1fr); }
-  .overview-cards   { grid-template-columns: repeat(2, 1fr); }
+  .overview-cards   { grid-template-columns: repeat(3, 1fr); }
   .controls-grid    { grid-template-columns: 1fr 1fr; }
-  .reward-materials { grid-template-columns: repeat(2, 1fr); }
+  .reward-materials { grid-template-columns: repeat(3, 1fr); }
   .sys-grid         { grid-template-columns: 1fr; }
   .form-row         { grid-template-columns: 1fr; }
   .charts-row       { grid-template-columns: 1fr; }
@@ -4107,7 +4103,7 @@ onUnmounted(() => {
 /* Small mobile: ≤ 480px */
 @media (max-width: 480px) {
   .stats-grid       { grid-template-columns: repeat(2, 1fr); }
-  .overview-cards   { grid-template-columns: 1fr 1fr; }
+  .overview-cards   { grid-template-columns: 1fr; }
   .ov-count         { font-size: 26px; }
   .controls-grid    { grid-template-columns: 1fr; }
   .reward-materials { grid-template-columns: 1fr; }
