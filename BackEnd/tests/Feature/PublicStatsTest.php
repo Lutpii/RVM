@@ -47,6 +47,7 @@ class PublicStatsTest extends TestCase
         $this->assertEqualsWithDelta(0.30, $res->json('stats.month.carbon_saved_kg'), 0.01);
         $this->assertEqualsWithDelta(0.23, $res->json('stats.month.carbon_by_material_kg.aluminum'), 0.01);
         $this->assertSame((int) now()->month, $res->json('stats.month.month'));
+        $this->assertSame(['plastic' => 1, 'aluminum' => 1, 'paper' => 1, 'glass' => 0], $res->json('stats.month.items_by_material'));
         $this->assertArrayNotHasKey('users', $res->json('stats'));
     }
 }

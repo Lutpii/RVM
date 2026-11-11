@@ -55,7 +55,7 @@
             <div class="co2-legend">
               <div v-for="m in monthMaterials" :key="m.key" class="legend-item">
                 <span class="legend-name"><span :class="['legend-dot', `seg-${m.key}`]"></span>{{ m.label }}</span>
-                <span class="legend-kg">{{ kg(m.kg) }}</span>
+                <span class="legend-kg">{{ itemsText(m.items) }}</span>
               </div>
             </div>
             <span class="live-note"><span class="live-dot"></span>{{ $t('landing.liveNote') }}</span>
@@ -207,7 +207,7 @@ const acceptedChips = ['landing.chipPlastic', 'landing.chipCans', 'landing.chipP
 // ── Live numbers (GET /api/stats/public) ──
 const stats = ref({
   items_recycled: null, carbon_saved_kg: null, machines: null,
-  month: { year: null, month: null, items_recycled: null, carbon_saved_kg: null, carbon_by_material_kg: {} },
+  month: { year: null, month: null, items_recycled: null, carbon_saved_kg: null, carbon_by_material_kg: null, items_by_material: null },
 })
 
 onMounted(async () => {
@@ -239,15 +239,20 @@ const MONTH_MATERIALS = [
   // show up here when they exist, so the legend still adds up.
   { key: 'glass', label: 'landing.matGlass', optional: true },
 ]
+// The bar splits this month's ITEMS by material. A CO2 split would always be
+// mostly aluminium (a can saves ~6x the CO2 of a bottle or paper), which
+// hides how evenly people recycle; the big number above stays total CO2.
 const monthMaterials = computed(() => {
-  const by = stats.value.month.carbon_by_material_kg || {}
+  const loaded = !!stats.value.month.items_by_material
+  const by = stats.value.month.items_by_material || {}
   const total = MONTH_MATERIALS.reduce((sum, m) => sum + (Number(by[m.key]) || 0), 0)
   return MONTH_MATERIALS.filter(m => !m.optional || (Number(by[m.key]) || 0) > 0).map(m => {
-    const v = Number(by[m.key]) || 0
-    return { key: m.key, label: t(m.label), kg: stats.value.month.carbon_by_material_kg ? v : null, share: total ? (v / total) * 100 : 0 }
+    const n = Number(by[m.key]) || 0
+    return { key: m.key, label: t(m.label), items: loaded ? n : null, share: total ? (n / total) * 100 : 0 }
   })
 })
-const barLabel = computed(() => monthMaterials.value.map(m => `${m.label} ${kg(m.kg)}`).join(', '))
+function itemsText(n) { return n == null ? '—' : t('landing.itemsCount', { n: num(n) }) }
+const barLabel = computed(() => monthMaterials.value.map(m => `${m.label} ${itemsText(m.items)}`).join(', '))
 </script>
 
 <style scoped>

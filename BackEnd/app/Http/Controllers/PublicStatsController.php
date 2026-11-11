@@ -24,8 +24,10 @@ class PublicStatsController extends Controller
             $month = $this->countsByMaterial(now()->startOfMonth());
 
             $monthByMaterial = [];
+            $monthItems = [];
             foreach (self::MATERIALS as $m) {
                 $monthByMaterial[$m] = round(($month[$m] ?? 0) * CarbonService::forMaterial($m), 2);
+                $monthItems[$m] = (int) ($month[$m] ?? 0);
             }
 
             return [
@@ -38,6 +40,10 @@ class PublicStatsController extends Controller
                     'items_recycled'  => array_sum($month),
                     'carbon_saved_kg' => $this->carbon($month),
                     'carbon_by_material_kg' => $monthByMaterial,
+                    // The landing page bar shows items, not CO2: per item an
+                    // aluminium can saves ~6x the CO2 of a bottle or paper,
+                    // so a CO2 bar is always mostly aluminium.
+                    'items_by_material'     => $monthItems,
                 ],
             ];
         });
