@@ -350,6 +350,7 @@
               <input v-model="txDateTo" type="date" @change="filterTransactions" />
             </label>
             <button v-if="txFiltersActive" class="action-btn tx-clear" @click="clearTransactionFilters">Clear filters</button>
+            <button class="action-btn filter-action export-btn tx-export" :disabled="exportingTable === 'transactions'" @click="exportTable('transactions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'transactions' ? 'Exporting…' : 'Export Excel' }}</button>
           </div>
 
           <div v-if="loadingTransactions" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -429,7 +430,10 @@
         <div v-else class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> ALL USERS</h3>
-            <input v-model="userSearch" @keyup.enter="searchUsers" placeholder="Search users... (press Enter)" class="search-input" />
+            <div class="topbar-right">
+              <input v-model="userSearch" @keyup.enter="searchUsers" placeholder="Search users... (press Enter)" class="search-input" />
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'users'" @click="exportTable('users')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'users' ? 'Exporting…' : 'Export Excel' }}</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table class="data-table">
@@ -541,7 +545,10 @@
         <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> RVM MACHINES</h3>
-            <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
+            <div class="topbar-right">
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'machines'" @click="exportTable('machines')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'machines' ? 'Exporting…' : 'Export Excel' }}</button>
+              <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
+            </div>
           </div>
           <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="machines-grid">
@@ -596,7 +603,10 @@
         <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> ALL SESSIONS</h3>
-            <input v-model="sessionsSearch" @keyup.enter="searchSessions" placeholder="Search user / machine / status... (press Enter)" class="search-input" />
+            <div class="topbar-right">
+              <input v-model="sessionsSearch" @keyup.enter="searchSessions" placeholder="Search user / machine / status... (press Enter)" class="search-input" />
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'sessions'" @click="exportTable('sessions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'sessions' ? 'Exporting…' : 'Export Excel' }}</button>
+            </div>
           </div>
           <div v-if="loadingSessions" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="table-wrap">
@@ -639,6 +649,7 @@
                 <option value="">All actions</option>
                 <option v-for="a in auditActions" :key="a" :value="a">{{ auditActionLabel(a) }}</option>
               </select>
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'audit'" @click="exportTable('audit')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'audit' ? 'Exporting…' : 'Export Excel' }}</button>
             </div>
           </div>
           <div class="filter-toolbar">
@@ -731,8 +742,8 @@
               </label>
             </div>
             <div v-if="detectionView === 'history'" class="filter-actions">
-              <button class="action-btn filter-action" @click="exportDetectionLogsCsv">
-                <PhDownloadSimple weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.exportReviewedCsv') }}
+              <button class="action-btn filter-action" @click="exportDetectionLogsExcel">
+                <PhDownloadSimple weight="regular" aria-hidden="true" /> {{ $t('admin.detectionReview.exportReviewedExcel') }}
               </button>
             </div>
           </div>
@@ -813,7 +824,10 @@
         <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> REWARD CATALOG</h3>
-            <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
+            <div class="topbar-right">
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'rewardItems'" @click="exportTable('rewardItems')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'rewardItems' ? 'Exporting…' : 'Export Excel' }}</button>
+              <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
+            </div>
           </div>
           <div v-if="loadingRewardItems" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="reward-admin-grid">
@@ -846,7 +860,10 @@
         </div>
 
         <div class="section-card">
-          <h3 class="card-title-bar"><span class="title-sq"></span> REDEMPTION HISTORY</h3>
+          <div class="card-header">
+            <h3 class="card-title-bar"><span class="title-sq"></span> REDEMPTION HISTORY</h3>
+            <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'redemptions'" @click="exportTable('redemptions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'redemptions' ? 'Exporting…' : 'Export Excel' }}</button>
+          </div>
           <div class="table-wrap">
             <table class="data-table">
               <thead>
@@ -1318,6 +1335,7 @@ import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
 import { itemLabel, resultReason, confidenceLevel, percentOf } from '@/utils/admin/transactionDisplay.js'
+import { downloadExcel } from '@/utils/admin/excelExport.js'
 import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -2132,29 +2150,51 @@ async function undoDetectionReview() {
   }
 }
 
-async function exportDetectionLogsCsv() {
+async function exportDetectionLogsExcel() {
   if (detectionView.value !== 'history') return
   try {
     // Export only the reviewed rows represented by the active History filters.
     // The backend also enforces reviewed/non-mock data as a second guard.
-    const res = await api.get('/admin/detection-logs/export', {
-      params: {
-        date_from: activeDetectionDateFilter.value.from || undefined,
-        date_to: activeDetectionDateFilter.value.to || undefined,
-        review_status: detectionReviewStatus.value,
-      },
-      responseType: 'blob',
-    })
-    const url = URL.createObjectURL(res.data)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `detection_reviews_${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    await downloadExcel(api, '/admin/detection-logs/export', {
+      date_from: activeDetectionDateFilter.value.from,
+      date_to: activeDetectionDateFilter.value.to,
+      review_status: detectionReviewStatus.value,
+    }, 'detection_reviews')
   } catch {
     showToast(t('admin.detectionReview.exportFailed'), 'error')
+  }
+}
+
+// ── Excel export per admin table ──
+// Each entry: [endpoint, the same filters the table is showing, file prefix].
+const TABLE_EXPORTS = {
+  transactions: () => ['/admin/transactions/export', {
+    search: txSearch.value, status: txFilter.value, machine_id: txMachine.value,
+    date_from: txDateFrom.value, date_to: txDateTo.value,
+  }, 'rvm_transactions'],
+  users: () => ['/admin/users/export', {
+    search: userSearch.value, sort: usersSortColumn.value, direction: usersSortDirection.value,
+  }, 'rvm_users'],
+  machines: () => ['/admin/machines/export', {}, 'rvm_machines'],
+  sessions: () => ['/admin/sessions/export', { search: sessionsSearch.value }, 'rvm_sessions'],
+  audit: () => ['/admin/logs/export', {
+    search: auditSearch.value, action: auditAction.value,
+    date_from: auditDateFrom.value, date_to: auditDateTo.value,
+  }, 'rvm_audit_log'],
+  rewardItems: () => ['/admin/reward-items/export', {}, 'rvm_reward_catalog'],
+  redemptions: () => ['/admin/redemptions/export', {}, 'rvm_redemptions'],
+}
+const exportingTable = ref('')
+async function exportTable(key) {
+  if (exportingTable.value) return
+  exportingTable.value = key
+  try {
+    const [path, params, prefix] = TABLE_EXPORTS[key]()
+    await downloadExcel(api, path, params, prefix)
+  } catch {
+    showToast('Export failed. Please try again.', 'error')
+  } finally {
+    exportingTable.value = ''
   }
 }
 
@@ -3378,6 +3418,9 @@ onUnmounted(() => {
 .tx-seg-btn.active { background: var(--accent-blue); color: #fff; }
 .tx-seg-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
 .tx-clear { min-height: 38px; }
+.tx-export { margin-left: auto; }
+.export-btn { white-space: nowrap; }
+.export-btn:disabled { opacity: .6; cursor: wait; }
 
 .tx-table td { vertical-align: top; }
 .tx-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }

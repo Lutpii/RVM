@@ -20,6 +20,7 @@ use App\Services\CashRedeemSettingsService;
 use App\Services\CompactorSettingsService;
 use App\Services\DetectionCaptureStorage;
 use App\Services\RewardConfigService;
+use App\Services\AdminTableExport;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -128,6 +129,38 @@ class AdminController extends Controller
 
     public function users(Request $request): JsonResponse
     {
+        $users = $this->usersQuery($request)->paginate($this->resolvePerPage($request));
+
+        return response()->json(['success' => true, 'users' => $users]);
+    }
+
+    public function exportUsers(Request $request, AdminTableExport $export)
+    {
+        $users = $this->usersQuery($request)->get();
+        $this->log($request->user(), 'export_csv', 'users', 0, "Exported {$users->count()} users (Excel)");
+
+        return $export->download('Users', 'rvm_users', [
+            'Search' => trim((string) $request->query('search', '')),
+            'Sorted by' => $request->query('sort') ? $request->query('sort') . ' ' . ($request->query('direction') === 'asc' ? 'ascending' : 'descending') : null,
+        ], ['User ID', 'Name', 'Email', 'Phone', 'Points', 'Role', 'Account status', 'Verified', 'Registered'],
+        $users->map(fn ($u) => [
+            $this->displayUserId($u),
+            $u->name, $u->email, $u->phone, (int) $u->total_points, $u->role,
+            $u->account_status ?? 'active', $u->is_verified ? 'Yes' : 'No',
+            $u->created_at?->format('Y-m-d H:i'),
+        ]));
+    }
+
+    // Same IDs as the admin tables (AdminView formatUserId).
+    private function displayUserId(?User $user): string
+    {
+        if (!$user) return 'GUEST';
+        if ($user->role === 'admin') return 'ADMIN-' . str_pad((string) $user->id, 3, '0', STR_PAD_LEFT);
+        return 'USR-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function usersQuery(Request $request): Builder
+    {
         $search = trim((string) $request->query('search', ''));
 
         // Never interpolate the raw query param as a column name — resolve
@@ -150,9 +183,7 @@ class AdminController extends Controller
             });
         }
 
-        $users = $query->paginate($this->resolvePerPage($request));
-
-        return response()->json(['success' => true, 'users' => $users]);
+        return $query;
     }
 
     public function showUser(Request $request, int $id): JsonResponse
@@ -231,6 +262,21 @@ class AdminController extends Controller
     public function machines(): JsonResponse
     {
         return response()->json(['success' => true, 'machines' => RvmMachine::all()]);
+    }
+
+    public function exportMachines(Request $request, AdminTableExport $export)
+    {
+        $machines = RvmMachine::orderBy('name')->get();
+        $this->log($request->user(), 'export_csv', 'machines', 0, "Exported {$machines->count()} machines (Excel)");
+
+        return $export->download('Machines', 'rvm_machines', [],
+            ['Code', 'Name', 'Location', 'Status', 'Last seen', 'Fault', 'Plastic bin %', 'Aluminium bin %', 'Paper bin %', 'Glass bin %'],
+            $machines->map(fn ($m) => [
+                $m->machine_code, $m->name, $m->location_name, $m->status,
+                $m->last_seen_at?->format('Y-m-d H:i') ?? 'Never reported',
+                $m->fault_active ? ('Yes' . ($m->fault_reason ? ': ' . $m->fault_reason : '')) : 'No',
+                (int) $m->plastic_level, (int) $m->aluminum_level, (int) $m->paper_level, (int) $m->glass_level,
+            ]));
     }
 
     public function createMachine(Request $request): JsonResponse
@@ -418,6 +464,28 @@ class AdminController extends Controller
     // Sessions & Transactions
     public function allSessions(Request $request): JsonResponse
     {
+        $sessions = $this->sessionsQuery($request)->paginate($this->resolvePerPage($request));
+        return response()->json(['success' => true, 'sessions' => $sessions]);
+    }
+
+    public function exportSessions(Request $request, AdminTableExport $export)
+    {
+        $sessions = $this->sessionsQuery($request)->get();
+        $this->log($request->user(), 'export_csv', 'sessions', 0, "Exported {$sessions->count()} sessions (Excel)");
+
+        return $export->download('Sessions', 'rvm_sessions', [
+            'Search' => trim((string) $request->query('search', '')),
+        ], ['Session code', 'User', 'User ID', 'Machine', 'Status', 'Items accepted', 'Points earned', 'Started', 'Ended'],
+        $sessions->map(fn ($s) => [
+            $s->session_code, $s->user?->name ?? 'Guest', $this->displayUserId($s->user),
+            $s->machine?->name, $s->status, (int) $s->total_items, (int) $s->points_earned,
+            $s->started_at ? \Illuminate\Support\Carbon::parse($s->started_at)->format('Y-m-d H:i') : null,
+            $s->ended_at ? \Illuminate\Support\Carbon::parse($s->ended_at)->format('Y-m-d H:i') : null,
+        ]));
+    }
+
+    private function sessionsQuery(Request $request): Builder
+    {
         $search = trim((string) $request->query('search', ''));
 
         $query = RecyclingSession::with(['user', 'machine'])->latest();
@@ -429,11 +497,83 @@ class AdminController extends Controller
             });
         }
 
-        $sessions = $query->paginate($this->resolvePerPage($request));
-        return response()->json(['success' => true, 'sessions' => $sessions]);
+        return $query;
     }
 
     public function allTransactions(Request $request): JsonResponse
+    {
+        $query = $this->transactionsQuery($request);
+
+        // Totals for everything the filters match (not just this page), so the
+        // admin sees at a glance how many items were accepted and rejected.
+        $totals = (clone $query)->reorder()->toBase()
+            ->selectRaw('COUNT(*) AS items, COALESCE(SUM(is_valid = 1), 0) AS accepted, COALESCE(SUM(points_earned), 0) AS points')
+            ->first();
+        $summary = [
+            'items'    => (int) $totals->items,
+            'accepted' => (int) $totals->accepted,
+            'rejected' => (int) $totals->items - (int) $totals->accepted,
+            'points'   => (int) $totals->points,
+        ];
+
+        $transactions = $query->paginate($this->resolvePerPage($request));
+        return response()->json(['success' => true, 'transactions' => $transactions, 'summary' => $summary]);
+    }
+
+    public function exportTransactions(Request $request, AdminTableExport $export)
+    {
+        $transactions = $this->transactionsQuery($request)->get();
+        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported {$transactions->count()} transactions (Excel)");
+
+        $status = $request->query('status');
+        $machineName = $request->filled('machine_id') ? RvmMachine::find($request->query('machine_id'))?->name : null;
+
+        return $export->download('Transactions', 'rvm_transactions', [
+            'Show' => $status === 'valid' ? 'Accepted' : ($status === 'rejected' ? 'Rejected' : null),
+            'Search' => trim((string) $request->query('search', '')),
+            'Machine' => $machineName,
+            'From' => $request->query('date_from'),
+            'To' => $request->query('date_to'),
+        ], ['Date', 'Time', 'User', 'User ID', 'Machine', 'Location', 'Item', 'Result', 'Reason', 'AI confidence %', 'Points'],
+        $transactions->map(function ($tx) {
+            $selected = strtolower((string) $tx->material_selected);
+            $detected = strtolower((string) $tx->ai_detected_type);
+            return [
+                $tx->created_at?->format('Y-m-d'), $tx->created_at?->format('H:i'),
+                $tx->user?->name ?? 'Guest', $this->displayUserId($tx->user),
+                $tx->machine?->name, $tx->machine?->location_name,
+                self::TX_ITEM_LABELS[$selected] ?? ucfirst($selected),
+                $tx->is_valid ? 'Accepted' : 'Rejected',
+                $this->transactionReason($tx->is_valid, $selected, $detected),
+                $tx->ai_confidence !== null ? (int) round($tx->ai_confidence * 100) : null,
+                $tx->is_valid ? (int) $tx->points_earned : ((int) $tx->points_deducted > 0 ? -(int) $tx->points_deducted : 0),
+            ];
+        }));
+    }
+
+    // Same wording as the Transactions tab (FrontEnd utils/admin/transactionDisplay.js).
+    private const TX_ITEM_LABELS = [
+        'plastic' => 'Plastic', 'aluminum' => 'Aluminium can', 'paper' => 'Paper', 'glass' => 'Glass',
+        'unknown' => 'Not recognised', 'reject' => 'Material not accepted',
+    ];
+    private const TX_BIN_LETTERS = ['plastic' => 'A', 'aluminum' => 'B', 'paper' => 'C', 'glass' => 'D'];
+
+    private function transactionReason(bool $valid, string $selected, string $detected): string
+    {
+        if ($valid) {
+            $letter = self::TX_BIN_LETTERS[$selected] ?? null;
+            return $letter ? 'Put in the ' . strtolower(self::TX_ITEM_LABELS[$selected]) . " bin ({$letter})" : 'Put in the bin';
+        }
+        if ($detected === 'unknown' || $selected === 'unknown') return 'AI was not sure what it was (below 60%)';
+        if ($detected === 'reject' || $selected === 'reject') return 'This machine does not take this material';
+        if ($detected && $selected && $detected !== $selected) {
+            $label = fn ($m) => strtolower(self::TX_ITEM_LABELS[$m] ?? $m);
+            return "AI saw {$label($detected)}, not {$label($selected)}";
+        }
+        return 'Given back to the user';
+    }
+
+    private function transactionsQuery(Request $request): Builder
     {
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status');
@@ -464,20 +604,7 @@ class AdminController extends Controller
             });
         }
 
-        // Totals for everything the filters match (not just this page), so the
-        // admin sees at a glance how many items were accepted and rejected.
-        $totals = (clone $query)->reorder()->toBase()
-            ->selectRaw('COUNT(*) AS items, COALESCE(SUM(is_valid = 1), 0) AS accepted, COALESCE(SUM(points_earned), 0) AS points')
-            ->first();
-        $summary = [
-            'items'    => (int) $totals->items,
-            'accepted' => (int) $totals->accepted,
-            'rejected' => (int) $totals->items - (int) $totals->accepted,
-            'points'   => (int) $totals->points,
-        ];
-
-        $transactions = $query->paginate($this->resolvePerPage($request));
-        return response()->json(['success' => true, 'transactions' => $transactions, 'summary' => $summary]);
+        return $query;
     }
 
     /**
@@ -692,7 +819,7 @@ class AdminController extends Controller
 
     // Separate from exportExcel() (transactions) — this is a different unit
     // of analysis: one row per detection event, not per completed transaction.
-    public function exportDetectionLogs(Request $request)
+    public function exportDetectionLogs(Request $request, AdminTableExport $export)
     {
         $requestedStatus = $request->query('review_status', 'reviewed');
         $exportStatus = in_array($requestedStatus, ['reviewed', 'correct', 'incorrect'], true)
@@ -703,32 +830,25 @@ class AdminController extends Controller
             $request,
             $exportStatus
         )->get();
-        $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs");
+        $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs (Excel)");
 
-        $filename = 'detection_reviews_' . now()->format('Y-m-d') . '.csv';
-
-        return response()->streamDownload(function () use ($logs) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, [
-                'image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock',
-                'ground_truth_correct', 'ground_truth_label', 'reviewed_by', 'reviewed_at', 'created_at',
-            ]);
-            foreach ($logs as $log) {
-                fputcsv($handle, [
-                    $log->image_path,
-                    $log->ai_detected_type,
-                    $log->ai_confidence,
-                    $log->is_guest ? '1' : '0',
-                    $log->is_mock ? '1' : '0',
-                    is_null($log->ground_truth_correct) ? '' : ($log->ground_truth_correct ? '1' : '0'),
-                    $log->ground_truth_label,
-                    $log->reviewer?->name,
-                    $log->reviewed_at?->toDateTimeString(),
-                    $log->created_at?->toDateTimeString(),
-                ]);
-            }
-            fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        return $export->download('Detection reviews', 'detection_reviews', [
+            'Review status' => $exportStatus,
+            'From' => $request->query('date_from'),
+            'To' => $request->query('date_to'),
+        ], ['Image', 'AI detected', 'AI confidence %', 'Guest', 'Mock', 'AI correct', 'Correct label', 'Reviewed by', 'Reviewed at', 'Captured at'],
+        $logs->map(fn ($log) => [
+            $log->image_path,
+            $log->ai_detected_type,
+            $log->ai_confidence !== null ? round($log->ai_confidence * 100, 1) : null,
+            $log->is_guest ? 'Yes' : 'No',
+            $log->is_mock ? 'Yes' : 'No',
+            is_null($log->ground_truth_correct) ? null : ($log->ground_truth_correct ? 'Yes' : 'No'),
+            $log->ground_truth_label,
+            $log->reviewer?->name,
+            $log->reviewed_at?->format('Y-m-d H:i'),
+            $log->created_at?->format('Y-m-d H:i'),
+        ]));
     }
 
     public function stats(): JsonResponse
@@ -737,6 +857,40 @@ class AdminController extends Controller
     }
 
     public function logs(Request $request): JsonResponse
+    {
+        $logs = $this->logsQuery($request)->paginate($this->resolvePerPage($request));
+        $actions = AdminLog::query()->distinct()->orderBy('action')->pluck('action');
+
+        return response()->json(['success' => true, 'logs' => $logs, 'actions' => $actions]);
+    }
+
+    public function exportLogs(Request $request, AdminTableExport $export)
+    {
+        // Read before logging this export, so the file doesn't list itself.
+        $logs = $this->logsQuery($request)->get();
+        $this->log($request->user(), 'export_csv', 'admin_logs', 0, "Exported {$logs->count()} audit log rows (Excel)");
+
+        return $export->download('Audit log', 'rvm_audit_log', [
+            'Search' => trim((string) $request->query('search', '')),
+            'Action' => $request->query('action'),
+            'From' => $request->query('date_from'),
+            'To' => $request->query('date_to'),
+        ], ['Time', 'Admin', 'Action', 'Target', 'Details'],
+        $logs->map(function ($log) {
+            $details = $log->details;
+            $decoded = is_string($details) ? json_decode($details, true) : $details;
+            if (is_array($decoded)) $details = $decoded['message'] ?? json_encode($decoded);
+            return [
+                $log->created_at?->format('Y-m-d H:i'),
+                $log->admin?->name,
+                $log->action,
+                trim(($log->target_type ?? '') . ' #' . ($log->target_id ?? ''), ' #'),
+                $details,
+            ];
+        }));
+    }
+
+    private function logsQuery(Request $request): Builder
     {
         $query = AdminLog::with('admin:id,name');
 
@@ -758,10 +912,7 @@ class AdminController extends Controller
             });
         }
 
-        $logs = $query->orderByDesc('created_at')->orderByDesc('id')->paginate($this->resolvePerPage($request));
-        $actions = AdminLog::query()->distinct()->orderBy('action')->pluck('action');
-
-        return response()->json(['success' => true, 'logs' => $logs, 'actions' => $actions]);
+        return $query->orderByDesc('created_at')->orderByDesc('id');
     }
 
     // Reward Points Configuration
@@ -905,6 +1056,37 @@ class AdminController extends Controller
         }
         $item->delete();
         return response()->json(['success' => true, 'message' => 'Reward item deleted.']);
+    }
+
+    public function exportRewardItems(Request $request, AdminTableExport $export)
+    {
+        $items = RewardItem::latest()->get();
+        $this->log($request->user(), 'export_csv', 'reward_items', 0, "Exported {$items->count()} reward items (Excel)");
+
+        return $export->download('Reward catalog', 'rvm_reward_catalog', [],
+            ['Name', 'Category', 'Description', 'Points cost', 'Stock', 'Status', 'Valid from', 'Valid until', 'Created'],
+            $items->map(fn ($i) => [
+                $i->name, $i->category, $i->description, (int) $i->points_cost,
+                $i->stock === null ? 'Unlimited' : (int) $i->stock,
+                $i->is_active ? 'Active' : 'Inactive',
+                $i->valid_from?->format('Y-m-d'), $i->valid_until?->format('Y-m-d'),
+                $i->created_at?->format('Y-m-d H:i'),
+            ]));
+    }
+
+    public function exportRedemptions(Request $request, AdminTableExport $export)
+    {
+        $redemptions = RewardRedemption::with('user')->orderByDesc('created_at')->get();
+        $this->log($request->user(), 'export_csv', 'reward_redemptions', 0, "Exported {$redemptions->count()} redemptions (Excel)");
+
+        return $export->download('Redemption history', 'rvm_redemptions', [],
+            ['Date', 'User', 'User ID', 'Reward', 'Points spent', 'Cash (RM)', 'E-wallet', 'E-wallet account', 'Voucher code', 'Voucher used'],
+            $redemptions->map(fn ($r) => [
+                $r->created_at?->format('Y-m-d H:i'), $r->user?->name, $this->displayUserId($r->user),
+                $r->reward_name, (int) $r->points_spent, $r->cash_amount_rm,
+                $r->ewallet_provider, $r->ewallet_account, $r->voucher_code,
+                $r->used_at?->format('Y-m-d H:i') ?? 'Not yet',
+            ]));
     }
 
     public function redemptions(Request $request): JsonResponse

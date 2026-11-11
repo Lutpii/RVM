@@ -7,11 +7,12 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\ReadsExcelDownloads;
 use Tests\TestCase;
 
 class AdminDetectionLogsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, ReadsExcelDownloads;
 
     private static int $seq = 0;
 
@@ -83,11 +84,10 @@ class AdminDetectionLogsTest extends TestCase
         $this->makeLogDated('2026-09-01 10:00:00', array_merge($reviewed, ['image_path' => 'captures/old.jpg']));
         $this->makeLogDated('2026-09-08 10:00:00', array_merge($reviewed, ['image_path' => 'captures/recent.jpg']));
 
-        $response = $this->get('/api/admin/detection-logs/export?date_from=2026-09-05&date_to=2026-09-09')->assertOk();
+        $table = $this->excelTable($this->get('/api/admin/detection-logs/export?date_from=2026-09-05&date_to=2026-09-09'));
 
-        $lines = array_filter(explode("\n", trim($response->streamedContent())));
-        $this->assertCount(2, $lines, 'Expected a header row plus exactly one in-range data row');
-        $this->assertSame('captures/recent.jpg', str_getcsv($lines[1])[0]);
+        $this->assertCount(2, $table, 'Expected a header row plus exactly one in-range data row');
+        $this->assertSame('captures/recent.jpg', $table[1][0]);
     }
 
     /**
@@ -322,7 +322,7 @@ class AdminDetectionLogsTest extends TestCase
         $this->get("/api/admin/detection-logs/{$log->id}/image")->assertStatus(404);
     }
 
-    public function test_export_produces_a_csv_with_expected_columns(): void
+    public function test_export_produces_an_excel_file_with_expected_columns(): void
     {
         $this->actingAsAdmin();
         DetectionLog::create([
@@ -338,24 +338,13 @@ class AdminDetectionLogsTest extends TestCase
 
         // Even a manually supplied test-data status cannot contaminate the
         // reviewed accuracy export with mock or pending rows.
-        $response = $this->get('/api/admin/detection-logs/export?review_status=test')->assertOk();
-        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $table = $this->excelTable($this->get('/api/admin/detection-logs/export?review_status=test'));
 
-        $lines = array_filter(explode("\n", trim($response->streamedContent())));
-        $this->assertCount(2, $lines);
-        $header = str_getcsv($lines[0]);
-        $row    = str_getcsv($lines[1]);
-
+        $this->assertCount(2, $table);
         $this->assertSame(
-            [
-                'image_path', 'ai_detected_type', 'ai_confidence', 'is_guest', 'is_mock',
-                'ground_truth_correct', 'ground_truth_label', 'reviewed_by', 'reviewed_at', 'created_at',
-            ],
-            $header
+            ['Image', 'AI detected', 'AI confidence %', 'Guest', 'Mock', 'AI correct', 'Correct label', 'Reviewed by', 'Reviewed at', 'Captured at'],
+            $table[0]
         );
-        $this->assertSame('captures/a.jpg', $row[0]);
-        $this->assertSame('plastic', $row[1]);
-        $this->assertSame('1', $row[3]); // is_guest
-        $this->assertSame('1', $row[5]); // ground_truth_correct
+        $this->assertSame(['captures/a.jpg', 'plastic', 80.0, 'Yes', 'No', 'Yes'], array_slice($table[1], 0, 6));
     }
 }
