@@ -115,7 +115,8 @@ const RANGES = [
   { value: '7d',  label: 'activity.filter.last7' },
   { value: '30d', label: 'activity.filter.last30' },
 ]
-const MATERIALS = ['all', 'plastic', 'aluminum', 'glass', 'paper']
+// Glass is not accepted, so it is not offered as a filter.
+const MATERIALS = ['all', 'plastic', 'aluminum', 'paper']
 
 const timeline  = ref([])
 const loading   = ref(true)

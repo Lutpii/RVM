@@ -124,7 +124,6 @@ const selectedMachineId  = ref(null)
 const binTypes = [
   { id: 'aluminum' },
   { id: 'plastic' },
-  { id: 'glass' },
   { id: 'paper' },
 ]
 
