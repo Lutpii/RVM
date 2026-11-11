@@ -130,11 +130,9 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
         // Excel exports of the admin tables (same filters as the list endpoints).
         // Registered before /users/{id} so 'export' is never read as an id.
         Route::get('/users/export', [AdminController::class, 'exportUsers']);
-        Route::get('/machines/export', [AdminController::class, 'exportMachines']);
         Route::get('/sessions/export', [AdminController::class, 'exportSessions']);
         Route::get('/transactions/export', [AdminController::class, 'exportTransactions']);
         Route::get('/logs/export', [AdminController::class, 'exportLogs']);
-        Route::get('/reward-items/export', [AdminController::class, 'exportRewardItems']);
         Route::get('/redemptions/export', [AdminController::class, 'exportRedemptions']);
         Route::get('/users', [AdminController::class, 'users']);
         Route::get('/users/{id}', [AdminController::class, 'showUser']);

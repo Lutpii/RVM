@@ -107,20 +107,6 @@ class AdminTableExportTest extends TestCase
         $this->assertSame(['Alice', 'RVM DSME', 'completed', 1, 15], [$table[1][1], $table[1][3], $table[1][4], $table[1][5], $table[1][6]]);
     }
 
-    public function test_machines_export_lists_bin_levels(): void
-    {
-        $m = $this->makeMachine('RVM DSME');
-        $m->forceFill(['plastic_level' => 40])->save();
-        $this->asAdmin();
-
-        $table = $this->excelTable($this->get('/api/admin/machines/export'));
-
-        // The migration seeds one machine of its own, so look ours up by name.
-        $this->assertCount(RvmMachine::count() + 1, $table);
-        $row = collect($table)->firstWhere(1, 'RVM DSME');
-        $this->assertSame(40, $row[6]);
-    }
-
     public function test_audit_log_export_follows_the_action_filter_and_logs_itself_afterwards(): void
     {
         $admin = $this->asAdmin();
@@ -134,15 +120,12 @@ class AdminTableExportTest extends TestCase
         $this->assertSame(1, AdminLog::where('target_type', 'admin_logs')->count());
     }
 
-    public function test_reward_catalog_and_redemptions_export(): void
+    public function test_redemptions_export(): void
     {
         $item = RewardItem::create(['name' => 'Coffee', 'points_cost' => 100, 'stock' => null, 'is_active' => true]);
         $u = $this->makeUser('Alice');
         RewardRedemption::create(['user_id' => $u->id, 'reward_item_id' => $item->id, 'reward_name' => 'Coffee', 'points_spent' => 100, 'voucher_code' => 'ABC123']);
         $this->asAdmin();
-
-        $catalog = $this->excelTable($this->get('/api/admin/reward-items/export'));
-        $this->assertSame(['Coffee', 100, 'Unlimited', 'Active'], [$catalog[1][0], $catalog[1][3], $catalog[1][4], $catalog[1][5]]);
 
         $history = $this->excelTable($this->get('/api/admin/redemptions/export'));
         $this->assertSame(['Alice', 'Coffee', 100, 'ABC123', 'Not yet'], [$history[1][1], $history[1][3], $history[1][4], $history[1][8], $history[1][9]]);
@@ -152,8 +135,19 @@ class AdminTableExportTest extends TestCase
     {
         Sanctum::actingAs($this->makeUser('Alice'), ['*']);
 
-        foreach (['users', 'machines', 'sessions', 'transactions', 'logs', 'reward-items', 'redemptions', 'detection-logs'] as $table) {
+        foreach (['users', 'sessions', 'transactions', 'logs', 'redemptions', 'detection-logs'] as $table) {
             $this->getJson("/api/admin/{$table}/export")->assertStatus(403);
+        }
+    }
+
+    public function test_machines_and_reward_catalog_have_no_export(): void
+    {
+        $this->asAdmin();
+
+        // Small, already fully visible on screen: no Excel export (removed on purpose).
+        // 405 rather than 404: PUT/DELETE /{id} routes share the path shape.
+        foreach (['reward-items', 'machines'] as $table) {
+            $this->assertContains($this->get("/api/admin/{$table}/export")->status(), [404, 405]);
         }
     }
 }

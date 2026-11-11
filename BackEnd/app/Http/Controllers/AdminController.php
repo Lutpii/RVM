@@ -264,21 +264,6 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'machines' => RvmMachine::all()]);
     }
 
-    public function exportMachines(Request $request, AdminTableExport $export)
-    {
-        $machines = RvmMachine::orderBy('name')->get();
-        $this->log($request->user(), 'export_csv', 'machines', 0, "Exported {$machines->count()} machines (Excel)");
-
-        return $export->download('Machines', 'rvm_machines', [],
-            ['Code', 'Name', 'Location', 'Status', 'Last seen', 'Fault', 'Plastic bin %', 'Aluminium bin %', 'Paper bin %', 'Glass bin %'],
-            $machines->map(fn ($m) => [
-                $m->machine_code, $m->name, $m->location_name, $m->status,
-                $m->last_seen_at?->format('Y-m-d H:i') ?? 'Never reported',
-                $m->fault_active ? ('Yes' . ($m->fault_reason ? ': ' . $m->fault_reason : '')) : 'No',
-                (int) $m->plastic_level, (int) $m->aluminum_level, (int) $m->paper_level, (int) $m->glass_level,
-            ]));
-    }
-
     public function createMachine(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -1056,22 +1041,6 @@ class AdminController extends Controller
         }
         $item->delete();
         return response()->json(['success' => true, 'message' => 'Reward item deleted.']);
-    }
-
-    public function exportRewardItems(Request $request, AdminTableExport $export)
-    {
-        $items = RewardItem::latest()->get();
-        $this->log($request->user(), 'export_csv', 'reward_items', 0, "Exported {$items->count()} reward items (Excel)");
-
-        return $export->download('Reward catalog', 'rvm_reward_catalog', [],
-            ['Name', 'Category', 'Description', 'Points cost', 'Stock', 'Status', 'Valid from', 'Valid until', 'Created'],
-            $items->map(fn ($i) => [
-                $i->name, $i->category, $i->description, (int) $i->points_cost,
-                $i->stock === null ? 'Unlimited' : (int) $i->stock,
-                $i->is_active ? 'Active' : 'Inactive',
-                $i->valid_from?->format('Y-m-d'), $i->valid_until?->format('Y-m-d'),
-                $i->created_at?->format('Y-m-d H:i'),
-            ]));
     }
 
     public function exportRedemptions(Request $request, AdminTableExport $export)

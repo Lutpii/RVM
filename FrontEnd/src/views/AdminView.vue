@@ -545,10 +545,7 @@
         <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> RVM MACHINES</h3>
-            <div class="topbar-right">
-              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'machines'" @click="exportTable('machines')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'machines' ? 'Exporting…' : 'Export Excel' }}</button>
-              <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
-            </div>
+            <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
           </div>
           <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="machines-grid">
@@ -841,10 +838,7 @@
         <div class="section-card">
           <div class="card-header">
             <h3 class="card-title-bar"><span class="title-sq"></span> REWARD CATALOG</h3>
-            <div class="topbar-right">
-              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'rewardItems'" @click="exportTable('rewardItems')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'rewardItems' ? 'Exporting…' : 'Export Excel' }}</button>
-              <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
-            </div>
+            <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
           </div>
           <div v-if="loadingRewardItems" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="reward-admin-grid">
@@ -2193,13 +2187,11 @@ const TABLE_EXPORTS = {
   users: () => ['/admin/users/export', {
     search: userSearch.value, sort: usersSortColumn.value, direction: usersSortDirection.value,
   }, 'rvm_users'],
-  machines: () => ['/admin/machines/export', {}, 'rvm_machines'],
   sessions: () => ['/admin/sessions/export', { search: sessionsSearch.value }, 'rvm_sessions'],
   audit: () => ['/admin/logs/export', {
     search: auditSearch.value, action: auditAction.value,
     date_from: auditDateFrom.value, date_to: auditDateTo.value,
   }, 'rvm_audit_log'],
-  rewardItems: () => ['/admin/reward-items/export', {}, 'rvm_reward_catalog'],
   redemptions: () => ['/admin/redemptions/export', {}, 'rvm_redemptions'],
 }
 const exportingTable = ref('')
