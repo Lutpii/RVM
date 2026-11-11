@@ -18,9 +18,9 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794305761.3780394,
-    "seen": 1794306305.6760998,
-    "ast_hash": "e8877cd1bdc50d4d875f13035ab4b51b",
+    "mtime": 1794362424.2858155,
+    "seen": 1794362847.9268467,
+    "ast_hash": "7ca114d0ea158b5c70bb0553b820fbe6",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/TransactionController.php": {
-    "mtime": 1794305614.1453545,
-    "seen": 1794306305.677195,
-    "ast_hash": "5dda9fe576f96b1a85a9a89368202e8e",
+    "mtime": 1794306320.082775,
+    "seen": 1794362847.9285471,
+    "ast_hash": "7794c5f2d570f24566419d9f956e2a99",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/UserController.php": {
@@ -546,9 +546,9 @@
     "semantic_hash": "477b725a852c34ce0aaad68e17b7019a"
   },
   "BackEnd/routes/api.php": {
-    "mtime": 1794278349.551821,
-    "seen": 1794303756.3395278,
-    "ast_hash": "ca952e1c59a76c8c4d7cfc416d199aab",
+    "mtime": 1794362302.0263872,
+    "seen": 1794362847.9471924,
+    "ast_hash": "0f2bf2785f9fe5c18204fa7c85511d80",
     "semantic_hash": ""
   },
   "BackEnd/routes/channels.php": {
@@ -594,9 +594,9 @@
     "semantic_hash": "cc05243d603114257071b1cee3d35258"
   },
   "BackEnd/tests/Feature/AdminDetectionLogsTest.php": {
-    "mtime": 1790818792.7496026,
-    "seen": 1794278174.888171,
-    "ast_hash": "205ca34d27ff28b31bc3baa3dc936df6",
+    "mtime": 1794362453.4491754,
+    "seen": 1794362847.9471924,
+    "ast_hash": "63ab4d6e1c8d7ff48aa9ce6375690564",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminEmailFormalReportTest.php": {
@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794282947.5107038,
-    "seen": 1794303756.3516767,
-    "ast_hash": "20e348eb906d7023f4aa22f8248c795b",
+    "mtime": 1794362560.4386444,
+    "seen": 1794362847.9606657,
+    "ast_hash": "83f06c8aaf305c461683ea1188c36d2b",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794306085.3178647,
-    "seen": 1794306305.7156222,
-    "ast_hash": "d86ce91f57279d23a52b2c76f249ac9c",
+    "mtime": 1794362547.3261662,
+    "seen": 1794362847.9696863,
+    "ast_hash": "22052d2c5edbe9dd3a20fbbaf1ae42c6",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1320,9 +1320,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DemoDataGenerator.php": {
-    "mtime": 1794305614.1453545,
-    "seen": 1794306305.68113,
-    "ast_hash": "ec71362e60d09198456bcdec233db24c",
+    "mtime": 1794306320.0831208,
+    "seen": 1794362847.9355428,
+    "ast_hash": "7dce407f96116a6d8eb02aaecb42708a",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DetectionCaptureStorage.php": {
@@ -1416,9 +1416,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminTransactionFiltersTest.php": {
-    "mtime": 1794305772.2110648,
-    "seen": 1794306305.6974957,
-    "ast_hash": "7f27ca41c3c0063e24348fda577c3b79",
+    "mtime": 1794361566.8048267,
+    "seen": 1794362847.951039,
+    "ast_hash": "fc570c851190f1be01df35f86e8080ec",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminUpdateUserTest.php": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/DemoDataGeneratorTest.php": {
-    "mtime": 1794305627.5575902,
-    "seen": 1794306305.6974957,
-    "ast_hash": "0737cbe5320cf6598cdeb339418c795e",
+    "mtime": 1794306320.0904586,
+    "seen": 1794362847.951039,
+    "ast_hash": "574b2ba1ff88f12c2b251424956bf8c0",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/GoogleCallbackAccountLinkTest.php": {
@@ -1500,9 +1500,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/TransactionCompleteAtomicityTest.php": {
-    "mtime": 1794305693.1550317,
-    "seen": 1794306305.699752,
-    "ast_hash": "39e56300852b936e9200294fc5438b96",
+    "mtime": 1794306320.0904586,
+    "seen": 1794362847.9523733,
+    "ast_hash": "3742d6ecd270ffb299c17b598f091892",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/BrandFooter.vue": {
@@ -1938,21 +1938,51 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/TransactionRejectNoDeductionTest.php": {
-    "mtime": 1794305637.2477458,
-    "seen": 1794306305.7025433,
+    "mtime": 1794306320.0904586,
+    "seen": 1794362847.9523733,
     "ast_hash": "7b75c5f4f272361c394ea1600e67e8c8",
     "semantic_hash": ""
   },
   "FrontEnd/src/utils/admin/transactionDisplay.js": {
-    "mtime": 1794305887.02436,
-    "seen": 1794306305.7120502,
-    "ast_hash": "3d9dad959deb822acd20f31681d431d7",
+    "mtime": 1794361566.5506742,
+    "seen": 1794362847.9670281,
+    "ast_hash": "c5f3b1a736069f51fa213bb3a14885aa",
     "semantic_hash": ""
   },
   "FrontEnd/src/utils/admin/transactionDisplay.test.js": {
-    "mtime": 1794305882.1332743,
-    "seen": 1794306305.7120502,
-    "ast_hash": "9f95de82fc83bff8fd8da39264e043c8",
+    "mtime": 1794361566.653201,
+    "seen": 1794362847.9670281,
+    "ast_hash": "84c2e4cfed645bfe3cae832c76a67b11",
+    "semantic_hash": ""
+  },
+  "BackEnd/app/Services/AdminTableExport.php": {
+    "mtime": 1794362180.3302057,
+    "seen": 1794362847.9355428,
+    "ast_hash": "da4d168b3a849e75c84b903c93109c7a",
+    "semantic_hash": ""
+  },
+  "BackEnd/tests/Concerns/ReadsExcelDownloads.php": {
+    "mtime": 1794362347.2706993,
+    "seen": 1794362847.9471924,
+    "ast_hash": "7722aea9d3d8b5c969e6ea9d8940c908",
+    "semantic_hash": ""
+  },
+  "BackEnd/tests/Feature/AdminTableExportTest.php": {
+    "mtime": 1794362424.394618,
+    "seen": 1794362847.951039,
+    "ast_hash": "78639c4fc381fcda6cfe912c3e53a3f4",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/excelExport.js": {
+    "mtime": 1794362481.801777,
+    "seen": 1794362847.9645116,
+    "ast_hash": "96029082c77a76b62ffccb6d02e3eb20",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/excelExport.test.js": {
+    "mtime": 1794362628.415389,
+    "seen": 1794362847.9645116,
+    "ast_hash": "cf7f40ec97a001ad8c548cdca697e91b",
     "semantic_hash": ""
   }
 }
