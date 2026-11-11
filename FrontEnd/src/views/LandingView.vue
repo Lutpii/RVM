@@ -306,7 +306,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .co2-head-text span { font-size: 13px; color: var(--text-muted); }
 .co2-value-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
 .co2-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; line-height: 1; color: #0f766e; }
-:global([data-theme="dark"]) .co2-value { color: #2dd4bf; }
+[data-theme="dark"] .co2-value { color: #2dd4bf; }
 .co2-items { font-size: 14px; color: var(--text-muted); }
 .co2-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--border); }
 .seg-plastic { background: #4e6ef2; }
@@ -361,7 +361,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
 .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .chip-ok { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: rgba(34,197,94,0.12); color: #15803d; font-size: 15px; font-weight: 700; }
-:global([data-theme="dark"]) .chip-ok { color: #4ade80; }
+[data-theme="dark"] .chip-ok { color: #4ade80; }
 .not-accepted { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
 .chip-no { padding: 4px 10px; border-radius: 999px; background: var(--bg-hover); color: var(--text-secondary); }
 .wallets { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
@@ -390,8 +390,8 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .foot-divider { width: 1px; height: 40px; background: var(--border); }
 /* Dark mode: the navy DSME logo disappears on a dark page, so both logos
    sit on a small white plate (the artwork itself stays unchanged). */
-:global([data-theme="dark"]) .foot-logos { background: #fff; padding: 10px 20px; border-radius: 10px; }
-:global([data-theme="dark"]) .foot-divider { background: #e2e8f0; }
+[data-theme="dark"] .foot-logos { background: #fff; padding: 10px 20px; border-radius: 10px; }
+[data-theme="dark"] .foot-divider { background: #e2e8f0; }
 .foot-tagline { font-size: 14px; color: var(--text-muted); }
 .foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 24px; font-size: 14px; }
 .foot-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent-blue); font-weight: 600; text-decoration: none; }

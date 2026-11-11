@@ -824,7 +824,7 @@ onMounted(async () => {
 .sum-label { font-size: 12px; font-weight: 600; color: var(--text-primary); }
 .sum-sub { font-size: 12px; font-weight: 600; }
 .sum-sub-green { color: #15803d; }
-:global([data-theme="dark"]) .sum-sub-green { color: #4ade80; }
+[data-theme="dark"] .sum-sub-green { color: #4ade80; }
 .sum-month { border-top: 1px solid var(--border); padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
 .sum-month-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
 .sum-month-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
