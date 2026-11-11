@@ -316,10 +316,6 @@
               <span class="tx-sum-value">{{ txNum(txSummary.points) }}</span>
               <span class="tx-sum-label">Points given</span>
             </div>
-            <div class="tx-sum-card">
-              <span class="tx-sum-value">{{ txWeight(txSummary.grams) }}</span>
-              <span class="tx-sum-label">Weight collected</span>
-            </div>
           </div>
           <p class="tx-sum-note">{{ txFiltersActive ? 'Totals for the filters below.' : 'Totals for all transactions.' }}</p>
 
@@ -369,7 +365,6 @@
                   <th title="How sure the AI was about the material. Below 60% the item is rejected.">
                     AI confidence <span class="tx-th-hint" aria-hidden="true">?</span>
                   </th>
-                  <th class="num">Weight</th>
                   <th class="num">Points</th>
                 </tr>
               </thead>
@@ -407,7 +402,6 @@
                     </span>
                     <span v-else class="muted">—</span>
                   </td>
-                  <td class="num">{{ tx.weight_grams > 0 ? tx.weight_grams + ' g' : '—' }}</td>
                   <td class="num">
                     <span v-if="tx.points_earned > 0" class="pts-green">+{{ tx.points_earned }}</span>
                     <span v-else-if="tx.points_deducted > 0" class="pts-red">-{{ tx.points_deducted }}</span>
@@ -415,7 +409,7 @@
                   </td>
                 </tr>
                 <tr v-if="!transactions.length">
-                  <td colspan="8" class="empty-cell">
+                  <td colspan="7" class="empty-cell">
                     No items match these filters.
                     <button v-if="txFiltersActive" class="tx-link-btn" @click="clearTransactionFilters">Clear filters</button>
                   </td>
@@ -1323,7 +1317,7 @@ import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
-import { itemLabel, resultReason, confidenceLevel, percentOf, formatWeight } from '@/utils/admin/transactionDisplay.js'
+import { itemLabel, resultReason, confidenceLevel, percentOf } from '@/utils/admin/transactionDisplay.js'
 import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -1412,7 +1406,7 @@ const txFilter = ref('')
 const txMachine = ref('')
 const txDateFrom = ref('')
 const txDateTo = ref('')
-const txSummary = ref({ items: 0, accepted: 0, rejected: 0, points: 0, grams: 0 })
+const txSummary = ref({ items: 0, accepted: 0, rejected: 0, points: 0 })
 const TX_RESULT_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'valid', label: 'Accepted' },
@@ -1785,7 +1779,6 @@ function formatUserId(user) {
 // ── Transactions table display ──
 const txItemLabel = itemLabel
 const txReason = resultReason
-const txWeight = formatWeight
 function txConfClass(conf) { return 'tx-conf-' + confidenceLevel(conf) }
 function txPct(part) { return percentOf(part, txSummary.value.items) }
 function txDate(ts) {
@@ -1835,7 +1828,7 @@ async function fetchTabData(tab, showSpinner = false) {
       } })
       transactions.value = res.data.transactions?.data || []
       txTotal.value     = res.data.transactions?.total ?? 0
-      txSummary.value   = { items: 0, accepted: 0, rejected: 0, points: 0, grams: 0, ...(res.data.summary || {}) }
+      txSummary.value   = { items: 0, accepted: 0, rejected: 0, points: 0, ...(res.data.summary || {}) }
       txLastPage.value  = res.data.transactions?.last_page ?? 1
     } else if (tab === 'users') {
       if (showSpinner) loadingUsers.value = true
@@ -3356,7 +3349,7 @@ onUnmounted(() => {
 .tx-help-ok { color: var(--accent-green); }
 .tx-help-rej { color: var(--accent-red); }
 
-.tx-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.tx-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .tx-sum-card {
   display: flex; flex-direction: column; gap: 2px; padding: 12px 14px;
   border: 1px solid var(--border); border-radius: 8px; background: var(--bg-hover);
@@ -3410,9 +3403,6 @@ onUnmounted(() => {
 }
 .tx-link-btn { margin-left: 6px; border: 0; background: none; color: var(--accent-blue); font-weight: 600; cursor: pointer; text-decoration: underline; }
 
-@media (max-width: 1100px) {
-  .tx-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
 @media (max-width: 640px) {
   .tx-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tx-field.date-field { flex: 1 1 140px; }

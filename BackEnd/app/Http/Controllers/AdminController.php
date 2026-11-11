@@ -467,14 +467,13 @@ class AdminController extends Controller
         // Totals for everything the filters match (not just this page), so the
         // admin sees at a glance how many items were accepted and rejected.
         $totals = (clone $query)->reorder()->toBase()
-            ->selectRaw('COUNT(*) AS items, COALESCE(SUM(is_valid = 1), 0) AS accepted, COALESCE(SUM(points_earned), 0) AS points, COALESCE(SUM(weight_grams), 0) AS grams')
+            ->selectRaw('COUNT(*) AS items, COALESCE(SUM(is_valid = 1), 0) AS accepted, COALESCE(SUM(points_earned), 0) AS points')
             ->first();
         $summary = [
             'items'    => (int) $totals->items,
             'accepted' => (int) $totals->accepted,
             'rejected' => (int) $totals->items - (int) $totals->accepted,
             'points'   => (int) $totals->points,
-            'grams'    => (int) $totals->grams,
         ];
 
         $transactions = $query->paginate($this->resolvePerPage($request));

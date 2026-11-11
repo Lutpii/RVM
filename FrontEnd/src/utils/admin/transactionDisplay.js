@@ -43,9 +43,3 @@ export function percentOf(part, total) {
   if (!total) return 0
   return Math.round((part / total) * 100)
 }
-
-export function formatWeight(grams) {
-  const g = Number(grams) || 0
-  if (g >= 1000) return `${(g / 1000).toFixed(1)} kg`
-  return `${g} g`
-}

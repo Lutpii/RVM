@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { itemLabel, resultReason, confidenceLevel, percentOf, formatWeight } from './transactionDisplay.js'
+import { itemLabel, resultReason, confidenceLevel, percentOf } from './transactionDisplay.js'
 
 describe('itemLabel', () => {
   it('names real materials', () => {
@@ -35,11 +35,9 @@ describe('confidenceLevel', () => {
   })
 })
 
-describe('percentOf / formatWeight', () => {
-  it('handles zero totals and kilograms', () => {
+describe('percentOf', () => {
+  it('handles zero totals', () => {
     expect(percentOf(3, 0)).toBe(0)
     expect(percentOf(1, 3)).toBe(33)
-    expect(formatWeight(950)).toBe('950 g')
-    expect(formatWeight(12345)).toBe('12.3 kg')
   })
 })

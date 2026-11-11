@@ -123,7 +123,7 @@ class AdminTransactionFiltersTest extends TestCase
             ->assertJsonPath('summary.accepted', 2)
             ->assertJsonPath('summary.rejected', 1)
             ->assertJsonPath('summary.points', 15)
-            ->assertJsonPath('summary.grams', 50);
+            ->assertJsonMissingPath('summary.grams');
 
         $this->getJson('/api/admin/transactions?status=rejected')
             ->assertJsonPath('summary.items', 1)
