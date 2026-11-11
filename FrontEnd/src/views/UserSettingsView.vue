@@ -1,332 +1,401 @@
 <template>
-  <div class="settings-page">
+  <div class="acct-page">
 
-    <!-- Profile hero -->
-    <div class="profile-hero">
-      <div class="profile-bg"></div>
-      <div class="avatar-large">{{ auth.user?.name?.charAt(0)?.toUpperCase() }}</div>
-      <div class="profile-meta">
-        <strong>{{ auth.user?.name }}</strong>
-        <span class="role-badge">
-          <PhGear v-if="auth.user?.role === 'admin'" class="role-icon" weight="regular" aria-hidden="true" />
-          <PhRecycle v-else class="role-icon" weight="regular" aria-hidden="true" />
-          {{ auth.user?.role === 'admin' ? 'Admin' : 'Recycler' }}
-        </span>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs">
-      <button v-for="tab in tabs" :key="tab.key"
-        :class="['tab-btn', activeTab === tab.key ? 'tab-active' : '']"
-        @click="activeTab = tab.key">
-        <component :is="tab.icon" class="tab-icon" weight="regular" aria-hidden="true" />
-        <span class="tab-label">{{ $t(tab.label) }}</span>
-      </button>
-    </div>
-
-    <!-- ── PROFILE TAB ── -->
-    <div v-if="activeTab === 'profile'" class="tab-content">
-
-      <!-- Profile Info Card -->
-      <div class="form-card">
-        <div class="card-header">
-          <h3 class="form-title">{{ $t('settings.profileInfo') }}</h3>
-          <button v-if="!editingProfile" class="edit-btn" @click="startEditProfile">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            {{ $t('settings.edit') }}
+    <!-- ══ MAIN: one scroll page (layout after the DANA "Me" page, RVM look) ══ -->
+    <template v-if="view === 'main'">
+      <header class="acct-hero">
+        <div class="hero-row">
+          <button type="button" class="hero-avatar" :aria-label="$t('settings.changePicture')" @click="openAvatarSheet">
+            <UserAvatar :user="auth.user" :size="80" />
+            <span class="hero-avatar-edit"><PhPencilSimple :size="13" weight="bold" aria-hidden="true" /></span>
+            <span class="hero-role">{{ auth.isAdmin ? $t('settings.admin') : $t('settings.recycler') }}</span>
           </button>
-          <div v-else class="edit-actions">
-            <button class="cancel-btn" @click="cancelEditProfile">{{ $t('settings.cancel') }}</button>
-            <button class="save-btn-sm" @click="saveProfile" :disabled="savingProfile">
-              {{ savingProfile ? '...' : $t('settings.save') }}
+          <div class="hero-info">
+            <button type="button" class="hero-name" @click="openView('info')">
+              <span>{{ auth.user?.name }}</span>
+              <PhCaretRight :size="16" weight="bold" aria-hidden="true" />
             </button>
+            <span class="hero-email">{{ maskEmail(auth.user?.email) }}</span>
+            <div class="hero-pills">
+              <RouterLink to="/scan" class="hero-pill"><PhScan :size="15" weight="bold" aria-hidden="true" /> {{ $t('settings.scanShort') }}</RouterLink>
+              <RouterLink to="/activity" class="hero-pill"><PhClockCounterClockwise :size="15" weight="bold" aria-hidden="true" /> {{ $t('settings.pointsHistory') }}</RouterLink>
+            </div>
           </div>
         </div>
+      </header>
 
-        <!-- View mode -->
-        <div v-if="!editingProfile" class="info-rows">
-          <div class="info-row">
-            <span class="info-label">{{ $t('auth.name') }}</span>
-            <span class="info-value">{{ auth.user?.name || '—' }}</span>
+      <section class="acct-summary" :aria-label="$t('settings.yourPoints')">
+        <div class="sum-tiles">
+          <div class="sum-tile">
+            <span class="sum-icon sum-icon-green"><PhCoins :size="22" aria-hidden="true" /></span>
+            <span class="sum-value">{{ num(summary.total_points) }}</span>
+            <span class="sum-label">{{ $t('settings.points') }}</span>
+            <span class="sum-sub sum-sub-green">≈ RM {{ pointsToMoney(summary.total_points) }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">{{ $t('auth.email') }}</span>
-            <span class="info-value">{{ auth.user?.email || '—' }}</span>
+          <div class="sum-tile">
+            <span class="sum-icon sum-icon-blue"><PhRecycle :size="22" aria-hidden="true" /></span>
+            <span class="sum-value">{{ num(summary.items_recycled) }}</span>
+            <span class="sum-label">{{ $t('settings.itemsRecycled') }}</span>
+          </div>
+          <div class="sum-tile">
+            <span class="sum-icon sum-icon-teal"><PhLeaf :size="22" aria-hidden="true" /></span>
+            <span class="sum-value">{{ carbonText }}</span>
+            <span class="sum-label">{{ $t('settings.carbonSaved') }}</span>
           </div>
         </div>
-
-        <!-- Edit mode -->
-        <div v-else class="edit-form">
-          <div class="form-group">
-            <label class="form-label">{{ $t('auth.name') }}</label>
-            <input v-model="profileForm.name" type="text" class="form-input" :placeholder="$t('auth.name')" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">{{ $t('auth.email') }}</label>
-            <input v-model="profileForm.email" type="email" class="form-input" :placeholder="$t('auth.email')" />
-          </div>
-          <div v-if="profileMsg" :class="['msg', profileSuccess ? 'msg-ok' : 'msg-err']" style="margin-top:12px;margin-bottom:0">{{ profileMsg }}</div>
-        </div>
-      </div>
-
-      <!-- Password Card: hidden for Google-only accounts (no password_hash) —
-           "Change Password" needs a "Current Password" they never set. -->
-      <div v-if="auth.user?.has_password" class="form-card">
-        <div class="card-header">
-          <h3 class="form-title">{{ $t('settings.changePassword') }}</h3>
-          <button v-if="!editingPassword" class="edit-btn" @click="editingPassword = true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            {{ $t('settings.change') }}
-          </button>
-          <button v-else class="cancel-btn" @click="cancelEditPassword">{{ $t('settings.cancel') }}</button>
-        </div>
-
-        <!-- Placeholder when collapsed -->
-        <div v-if="!editingPassword" class="info-rows">
-          <div class="info-row">
-            <span class="info-label">{{ $t('settings.password') }}</span>
-            <span class="info-value muted">••••••••</span>
-          </div>
-        </div>
-
-        <!-- Password form -->
-        <div v-else class="edit-form">
-          <div class="form-group">
-            <label class="form-label">{{ $t('settings.currentPassword') }}</label>
-            <input v-model="pwForm.current" type="password" class="form-input" autocomplete="current-password" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">{{ $t('settings.newPassword') }}</label>
-            <input v-model="pwForm.newPw" type="password" class="form-input" autocomplete="new-password" />
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">{{ $t('settings.confirmNewPassword') }}</label>
-            <input v-model="pwForm.confirm" type="password" class="form-input" autocomplete="new-password" />
-          </div>
-          <div v-if="pwMsg" :class="['msg', pwSuccess ? 'msg-ok' : 'msg-err']" style="margin-top:12px;margin-bottom:0">{{ pwMsg }}</div>
-          <button class="save-btn full-btn" @click="changePassword" :disabled="savingPw" style="margin-top:14px">
-            {{ savingPw ? $t('settings.saving') : $t('settings.updatePassword') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Admin Panel -->
-      <div v-if="auth.isAdmin" class="form-card">
-        <h3 class="form-title">{{ $t('nav.admin') }}</h3>
-        <p class="form-hint">{{ $t('settings.adminPanelHint') }}</p>
-        <RouterLink to="/admin" class="full-btn save-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-          {{ $t('nav.admin') }}
-        </RouterLink>
-      </div>
-
-      <!-- Session -->
-      <div class="form-card">
-        <h3 class="form-title">{{ $t('settings.session') }}</h3>
-        <p class="form-hint">{{ $t('settings.logoutHint') }}</p>
-        <button class="full-btn logout-btn-full" @click="handleLogout">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          {{ $t('nav.logout') }}
-        </button>
-      </div>
-
-    </div>
-
-    <!-- ── REWARDS TAB ── -->
-    <div v-if="activeTab === 'rewards'" class="tab-content">
-
-      <div class="points-card">
-        <div class="points-bg"></div>
-        <p class="points-label">{{ $t('settings.yourPoints') }}</p>
-        <div class="points-number">{{ auth.user?.total_points || 0 }}</div>
-        <p class="points-sub">≈ RM {{ pointsToMoney(auth.user?.total_points || 0) }}</p>
-      </div>
-
-      <div class="rate-row">
-        <div class="rate-card">
-          <PhArrowsLeftRight class="rate-icon" weight="regular" aria-hidden="true" />
-          <div class="rate-info">
-            <strong>{{ $t('settings.conversionRate') }}</strong>
-            <span>{{ conversionRate.points }} pts = RM {{ conversionRate.rm.toFixed(2) }}</span>
-          </div>
-        </div>
-        <div class="rate-card">
-          <PhCoins class="rate-icon" weight="regular" aria-hidden="true" />
-          <div class="rate-info">
-            <strong>{{ $t('settings.minRedeem') }}</strong>
-            <span>{{ minRedeem }} pts min</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-card">
-        <h3 class="form-title">{{ $t('settings.redeemTitle') }}</h3>
-        <p class="form-hint">{{ $t('settings.redeemHint') }}</p>
-        <div class="form-group">
-          <label class="form-label">{{ $t('settings.pointsToRedeem') }}</label>
-          <input v-model.number="redeemPoints" type="number" class="form-input"
-            :min="minRedeem" :max="auth.user?.total_points || 0" :step="conversionRate.points" />
-          <span class="input-hint">{{ $t('settings.available') }}: {{ auth.user?.total_points || 0 }} pts</span>
-        </div>
-        <div class="redeem-preview" v-if="redeemPoints >= minRedeem && redeemPoints <= (auth.user?.total_points || 0)">
-          <div class="preview-col">
-            <span class="preview-num">{{ redeemPoints }}</span>
-            <span class="preview-lbl">{{ $t('settings.pts') }}</span>
-          </div>
-          <span class="preview-arrow">→</span>
-          <div class="preview-col">
-            <span class="preview-num green">RM {{ pointsToMoney(redeemPoints) }}</span>
-            <span class="preview-lbl">{{ $t('settings.cash') }}</span>
-          </div>
-        </div>
-        <button class="save-btn full-btn redeem-btn"
-          @click="openEwalletModal"
-          :disabled="redeemPoints < minRedeem || redeeming || redeemPoints > (auth.user?.total_points || 0)">
-          {{ $t('settings.redeemBtn') }}
-        </button>
-      </div>
-
-      <div v-if="showEwalletModal" class="modal-overlay" @click.self="closeEwalletModal">
-        <div class="modal">
-          <button class="modal-close-btn" @click="closeEwalletModal" :disabled="redeeming" :aria-label="$t('settings.cancel')">
-            <PhX weight="bold" aria-hidden="true" />
-          </button>
-          <h3>{{ $t('settings.ewalletModalTitle') }}</h3>
-          <div class="form-group">
-            <label class="form-label">{{ $t('settings.ewalletProviderLabel') }}</label>
-            <select v-model="ewalletProvider" class="form-input">
-              <option value="" disabled>{{ $t('settings.ewalletProviderPlaceholder') }}</option>
-              <option v-for="p in ewalletProviders" :key="p" :value="p">{{ p }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">{{ $t('settings.ewalletAccountLabel') }}</label>
-            <input v-model="ewalletAccount" type="text" class="form-input" :placeholder="$t('settings.ewalletAccountPlaceholder')" />
-          </div>
-          <div v-if="redeemMsg" class="msg msg-err">{{ redeemMsg }}</div>
-          <div class="confirm-btns">
-            <button class="cancel-btn-lg" @click="closeEwalletModal" :disabled="redeeming">{{ $t('settings.cancel') }}</button>
-            <button class="ewallet-confirm-btn" @click="redeemNow" :disabled="redeeming || !ewalletProvider || !ewalletAccount">
-              {{ redeeming ? $t('settings.processing') : $t('settings.redeemBtn') }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-pad">
-        <h3 class="section-title">{{ $t('settings.redemptionHistory') }}</h3>
-        <div v-if="loadingHistory" class="loading-placeholder"><div class="spinner-sm"></div></div>
-        <div v-else-if="redemptionHistory.length === 0" class="empty-state">
-          <p>{{ $t('settings.noRedemptions') }}</p>
-        </div>
-        <div v-else class="activity-list">
-          <div v-for="r in redemptionHistory" :key="r.id" class="activity-item">
-            <div class="activity-dot dot-blue"></div>
-            <div class="activity-info">
-              <span class="activity-desc">{{ r.points_used }} pts → RM {{ Number(r.amount).toFixed(2) }}</span>
-              <span class="activity-time">
-                {{ formatTime(r.created_at) }}
-                <span :class="['status-badge', `badge-${r.status}`]">{{ r.status }}</span>
+        <div class="sum-month">
+          <span class="sum-month-title">{{ $t('settings.thisMonth') }}</span>
+          <div class="sum-month-row">
+            <div class="sum-flow">
+              <span class="flow-icon flow-in"><PhArrowDown :size="16" weight="bold" aria-hidden="true" /></span>
+              <span class="flow-text">
+                <span class="flow-label">{{ $t('settings.earned') }}</span>
+                <span class="flow-value">{{ signed(summary.earned_this_month, '+') }} pts</span>
               </span>
             </div>
-            <span class="activity-pts pts-green">RM {{ Number(r.amount).toFixed(2) }}</span>
+            <div class="sum-flow sum-flow-right">
+              <span class="flow-icon flow-out"><PhArrowUp :size="16" weight="bold" aria-hidden="true" /></span>
+              <span class="flow-text">
+                <span class="flow-label">{{ $t('settings.redeemed') }}</span>
+                <span class="flow-value">{{ signed(summary.redeemed_this_month, '−') }} pts</span>
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- ── PREFERENCES TAB ── -->
-    <div v-if="activeTab === 'preferences'" class="tab-content">
-
-      <div class="form-card">
-        <h3 class="form-title">{{ $t('settings.language') }}</h3>
-        <p class="form-hint">{{ $t('settings.languageHint') }}</p>
-        <div class="toggle-group">
-          <button :class="['toggle-opt', locale === 'en' ? 'toggle-active' : '']" @click="setLang('en')">
-            🇺🇸 English
+      <nav class="menu-group" :aria-label="$t('settings.sectionRewards')">
+        <h2 class="menu-title">{{ $t('settings.sectionRewards') }}</h2>
+        <div class="menu-card">
+          <RouterLink to="/rewards" class="menu-row">
+            <PhTicket class="menu-icon icon-purple" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.myVouchers') }}</span>
+            <span v-if="summary.active_vouchers > 0" class="menu-badge">{{ $t('settings.activeVouchers', { n: summary.active_vouchers }) }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+          </RouterLink>
+          <button type="button" class="menu-row" @click="openView('redeem')">
+            <PhWallet class="menu-icon icon-green" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.redeemEwallet') }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
           </button>
-          <button :class="['toggle-opt', locale === 'my' ? 'toggle-active' : '']" @click="setLang('my')">
-            🇲🇾 Bahasa Melayu
-          </button>
-        </div>
-      </div>
-
-      <div class="form-card">
-        <h3 class="form-title">{{ $t('settings.theme') }}</h3>
-        <p class="form-hint">{{ $t('settings.themeHint') }}</p>
-        <div class="toggle-group">
-          <button :class="['toggle-opt', theme === 'light' ? 'toggle-active' : '']" @click="setTheme('light')">
-            <PhSun class="toggle-icon" weight="regular" aria-hidden="true" /> {{ $t('settings.themeLight') }}
-          </button>
-          <button :class="['toggle-opt', theme === 'dark' ? 'toggle-active' : '']" @click="setTheme('dark')">
-            <PhMoon class="toggle-icon" weight="regular" aria-hidden="true" /> {{ $t('settings.themeDark') }}
+          <button type="button" class="menu-row" @click="openView('history')">
+            <PhReceipt class="menu-icon icon-orange" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.redemptionHistory') }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
           </button>
         </div>
-      </div>
+      </nav>
 
-    </div>
-
-    <!-- ── ACCOUNT TAB ── -->
-    <div v-if="activeTab === 'account'" class="tab-content">
-
-      <!-- Account info -->
-      <div class="form-card">
-        <h3 class="form-title">{{ $t('settings.accountInfo') }}</h3>
-        <div class="info-rows">
-          <div class="info-row">
-            <span class="info-label">{{ $t('settings.accountId') }}</span>
-            <span class="info-value mono">#{{ auth.user?.id }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">{{ $t('settings.accountRole') }}</span>
-            <span class="info-value">{{ auth.user?.role === 'admin' ? 'Admin' : 'User' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">{{ $t('settings.memberSince') }}</span>
-            <span class="info-value">{{ formatDate(auth.user?.created_at) }}</span>
-          </div>
+      <nav class="menu-group" :aria-label="$t('settings.sectionPreferences')">
+        <h2 class="menu-title">{{ $t('settings.sectionPreferences') }}</h2>
+        <div class="menu-card">
+          <button type="button" class="menu-row" @click="openView('language')">
+            <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.language') }}</span>
+            <span class="menu-value">{{ locale === 'my' ? 'Bahasa Melayu' : 'English' }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+          </button>
+          <button type="button" class="menu-row" role="switch" :aria-checked="theme === 'dark'" @click="toggleTheme()">
+            <PhMoonStars class="menu-icon icon-purple" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.darkMode') }}</span>
+            <span :class="['switch', { on: theme === 'dark' }]" aria-hidden="true"><span class="switch-knob"></span></span>
+          </button>
         </div>
-      </div>
+      </nav>
 
-      <!-- Danger zone -->
-      <div class="form-card danger-card">
-        <h3 class="form-title danger-title">{{ $t('settings.dangerZone') }}</h3>
-        <p class="form-hint">{{ $t('settings.deleteHint') }}</p>
+      <nav class="menu-group" :aria-label="$t('settings.sectionAccount')">
+        <h2 class="menu-title">{{ $t('settings.sectionAccount') }}</h2>
+        <div class="menu-card">
+          <button type="button" class="menu-row" @click="openView('profile')">
+            <PhUserCircle class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.editProfile') }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+          </button>
+          <button type="button" class="menu-row" @click="openView('info')">
+            <PhInfo class="menu-icon icon-teal" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.accountInfo') }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+          </button>
+          <RouterLink to="/privacy" class="menu-row">
+            <PhShieldCheck class="menu-icon icon-muted" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('settings.privacyPolicy') }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/admin" class="menu-row">
+            <PhGear class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+            <span class="menu-label">{{ $t('nav.admin') }}</span>
+            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+          </RouterLink>
+        </div>
+      </nav>
 
-        <button class="full-btn delete-btn" @click="confirmDelete = true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-          {{ $t('settings.deleteAccount') }}
+      <div class="acct-footer">
+        <button type="button" class="logout-btn" @click="handleLogout">
+          <PhSignOut :size="19" aria-hidden="true" /> {{ $t('nav.logout') }}
         </button>
+        <span class="app-version">{{ $t('settings.appVersion', { version: appVersion }) }}</span>
+      </div>
+    </template>
+
+    <!-- ══ SUB-PAGES: opened from the menu, browser Back returns here ══ -->
+    <template v-else>
+      <div class="sub-bar">
+        <button type="button" class="sub-back" :aria-label="$t('settings.back')" @click="goBack">
+          <PhCaretLeft :size="22" weight="bold" aria-hidden="true" />
+        </button>
+        <h1 class="sub-title">{{ subTitle }}</h1>
       </div>
 
+      <div class="sub-content">
+        <!-- Edit profile & password -->
+        <template v-if="view === 'profile'">
+          <div class="form-card">
+            <div class="card-header">
+              <h3 class="form-title">{{ $t('settings.profileInfo') }}</h3>
+              <button v-if="!editingProfile" class="edit-btn" @click="startEditProfile">
+                <PhPencilSimple :size="14" aria-hidden="true" /> {{ $t('settings.edit') }}
+              </button>
+              <div v-else class="edit-actions">
+                <button class="cancel-btn" @click="cancelEditProfile">{{ $t('settings.cancel') }}</button>
+                <button class="save-btn-sm" @click="saveProfile" :disabled="savingProfile">
+                  {{ savingProfile ? '...' : $t('settings.save') }}
+                </button>
+              </div>
+            </div>
+            <div v-if="!editingProfile" class="info-rows">
+              <div class="info-row">
+                <span class="info-label">{{ $t('auth.name') }}</span>
+                <span class="info-value">{{ auth.user?.name || '—' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">{{ $t('auth.email') }}</span>
+                <span class="info-value">{{ auth.user?.email || '—' }}</span>
+              </div>
+            </div>
+            <div v-else class="edit-form">
+              <div class="form-group">
+                <label class="form-label" for="pf-name">{{ $t('auth.name') }}</label>
+                <input id="pf-name" v-model="profileForm.name" type="text" class="form-input" :placeholder="$t('auth.name')" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pf-email">{{ $t('auth.email') }}</label>
+                <input id="pf-email" v-model="profileForm.email" type="email" class="form-input" :placeholder="$t('auth.email')" />
+              </div>
+              <div v-if="profileMsg" :class="['msg', profileSuccess ? 'msg-ok' : 'msg-err']">{{ profileMsg }}</div>
+            </div>
+          </div>
+
+          <!-- Hidden for Google-only accounts: they never set a current password. -->
+          <div v-if="auth.user?.has_password" class="form-card">
+            <div class="card-header">
+              <h3 class="form-title">{{ $t('settings.changePassword') }}</h3>
+              <button v-if="!editingPassword" class="edit-btn" @click="editingPassword = true">
+                <PhLock :size="14" aria-hidden="true" /> {{ $t('settings.change') }}
+              </button>
+              <button v-else class="cancel-btn" @click="cancelEditPassword">{{ $t('settings.cancel') }}</button>
+            </div>
+            <div v-if="!editingPassword" class="info-rows">
+              <div class="info-row">
+                <span class="info-label">{{ $t('settings.password') }}</span>
+                <span class="info-value muted">••••••••</span>
+              </div>
+            </div>
+            <div v-else class="edit-form">
+              <div class="form-group">
+                <label class="form-label" for="pw-cur">{{ $t('settings.currentPassword') }}</label>
+                <input id="pw-cur" v-model="pwForm.current" type="password" class="form-input" autocomplete="current-password" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pw-new">{{ $t('settings.newPassword') }}</label>
+                <input id="pw-new" v-model="pwForm.newPw" type="password" class="form-input" autocomplete="new-password" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pw-conf">{{ $t('settings.confirmNewPassword') }}</label>
+                <input id="pw-conf" v-model="pwForm.confirm" type="password" class="form-input" autocomplete="new-password" />
+              </div>
+              <div v-if="pwMsg" :class="['msg', pwSuccess ? 'msg-ok' : 'msg-err']">{{ pwMsg }}</div>
+              <button class="save-btn full-btn" @click="changePassword" :disabled="savingPw">
+                {{ savingPw ? $t('settings.saving') : $t('settings.updatePassword') }}
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Redeem to e-wallet -->
+        <template v-else-if="view === 'redeem'">
+          <div class="rate-row">
+            <div class="rate-card">
+              <PhArrowsLeftRight class="rate-icon" aria-hidden="true" />
+              <div class="rate-info">
+                <strong>{{ $t('settings.conversionRate') }}</strong>
+                <span>{{ conversionRate.points }} pts = RM {{ conversionRate.rm.toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="rate-card">
+              <PhCoins class="rate-icon" aria-hidden="true" />
+              <div class="rate-info">
+                <strong>{{ $t('settings.available') }}</strong>
+                <span>{{ num(auth.user?.total_points || 0) }} pts</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-card">
+            <h3 class="form-title">{{ $t('settings.redeemTitle') }}</h3>
+            <p class="form-hint">{{ $t('settings.redeemHint') }}</p>
+            <div class="form-group">
+              <label class="form-label" for="rd-pts">{{ $t('settings.pointsToRedeem') }}</label>
+              <input id="rd-pts" v-model.number="redeemPoints" type="number" class="form-input"
+                :min="minRedeem" :max="auth.user?.total_points || 0" :step="conversionRate.points" />
+              <span class="input-hint">{{ $t('settings.minRedeem') }}: {{ minRedeem }} pts</span>
+            </div>
+            <div class="redeem-preview" v-if="redeemPoints >= minRedeem && redeemPoints <= (auth.user?.total_points || 0)">
+              <div class="preview-col">
+                <span class="preview-num">{{ redeemPoints }}</span>
+                <span class="preview-lbl">{{ $t('settings.pts') }}</span>
+              </div>
+              <span class="preview-arrow" aria-hidden="true">→</span>
+              <div class="preview-col">
+                <span class="preview-num green">RM {{ pointsToMoney(redeemPoints) }}</span>
+                <span class="preview-lbl">{{ $t('settings.cash') }}</span>
+              </div>
+            </div>
+            <button class="save-btn full-btn redeem-btn" @click="openEwalletModal"
+              :disabled="redeemPoints < minRedeem || redeeming || redeemPoints > (auth.user?.total_points || 0)">
+              {{ $t('settings.redeemBtn') }}
+            </button>
+          </div>
+        </template>
+
+        <!-- Redemption history -->
+        <template v-else-if="view === 'history'">
+          <div v-if="loadingHistory" class="loading-placeholder"><div class="spinner-sm"></div></div>
+          <div v-else-if="redemptionHistory.length === 0" class="empty-state">
+            <p>{{ $t('settings.noRedemptions') }}</p>
+          </div>
+          <div v-else class="activity-list">
+            <div v-for="r in redemptionHistory" :key="r.id" class="activity-item">
+              <div class="activity-info">
+                <span class="activity-desc">{{ r.points_used }} pts → RM {{ Number(r.amount).toFixed(2) }}</span>
+                <span class="activity-time">
+                  {{ formatTime(r.created_at) }}
+                  <span :class="['status-badge', `badge-${r.status}`]">{{ r.status }}</span>
+                </span>
+              </div>
+              <span class="activity-pts pts-green">RM {{ Number(r.amount).toFixed(2) }}</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- Language -->
+        <template v-else-if="view === 'language'">
+          <div class="menu-card" role="radiogroup" :aria-label="$t('settings.language')">
+            <button v-for="opt in languages" :key="opt.code" type="button" class="menu-row"
+              role="radio" :aria-checked="locale === opt.code" @click="setLang(opt.code)">
+              <span class="menu-label">{{ opt.label }}</span>
+              <PhCheck v-if="locale === opt.code" class="menu-check" :size="20" weight="bold" aria-hidden="true" />
+            </button>
+          </div>
+          <p class="sub-hint">{{ $t('settings.languageHint') }}</p>
+        </template>
+
+        <!-- Account info + danger zone -->
+        <template v-else-if="view === 'info'">
+          <div class="menu-card">
+            <div class="info-line"><span class="info-label">{{ $t('auth.name') }}</span><span class="info-value">{{ auth.user?.name || '—' }}</span></div>
+            <div class="info-line"><span class="info-label">{{ $t('auth.email') }}</span><span class="info-value">{{ auth.user?.email || '—' }}</span></div>
+            <div class="info-line"><span class="info-label">{{ $t('settings.accountType') }}</span><span class="info-value">{{ auth.isAdmin ? $t('settings.admin') : $t('settings.recycler') }}</span></div>
+            <div class="info-line"><span class="info-label">{{ $t('settings.memberSince') }}</span><span class="info-value">{{ formatDate(auth.user?.created_at) }}</span></div>
+          </div>
+          <p class="sub-hint">{{ $t('settings.editNameHint') }}</p>
+          <div class="danger-card">
+            <h3 class="danger-title">{{ $t('settings.dangerZone') }}</h3>
+            <p class="danger-text">{{ $t('settings.deleteHint') }}</p>
+            <button type="button" class="delete-btn" @click="confirmDelete = true">
+              <PhTrash :size="18" aria-hidden="true" /> {{ $t('settings.deleteAccount') }}
+            </button>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <div class="bottom-space"></div>
+
+    <!-- ══ Profile picture sheet ══ -->
+    <div v-if="showAvatarSheet" class="sheet-overlay" @click.self="closeAvatarSheet">
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="avatar-sheet-title">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-head">
+          <h2 id="avatar-sheet-title" class="sheet-title">{{ $t('settings.profilePicture') }}</h2>
+          <button type="button" class="sheet-close" :aria-label="$t('settings.close')" @click="closeAvatarSheet">
+            <PhX :size="22" weight="bold" aria-hidden="true" />
+          </button>
+        </div>
+        <div class="sheet-preview">
+          <UserAvatar :user="auth.user" :value="draftValue" :size="84" />
+          <div class="sheet-preview-text">
+            <strong>{{ auth.user?.name }}</strong>
+            <span>{{ $t('settings.pictureHint') }}</span>
+          </div>
+        </div>
+        <h3 class="sheet-label">{{ $t('settings.pictureIcon') }}</h3>
+        <div class="pick-grid" role="radiogroup" :aria-label="$t('settings.pictureIcon')">
+          <button v-for="ic in AVATAR_ICONS" :key="ic.key" type="button" role="radio"
+            :aria-checked="draft.icon === ic.key" :aria-label="ic.label"
+            :class="['pick-icon', { on: draft.icon === ic.key }]"
+            :style="draft.icon === ic.key ? { background: draftHex, '--ring': draftHex } : null"
+            @click="draft.icon = ic.key">
+            <component :is="ic.icon" :size="24" aria-hidden="true" />
+          </button>
+        </div>
+        <h3 class="sheet-label">{{ $t('settings.pictureBackground') }}</h3>
+        <div class="pick-grid" role="radiogroup" :aria-label="$t('settings.pictureBackground')">
+          <button v-for="c in AVATAR_COLOURS" :key="c.key" type="button" role="radio"
+            :aria-checked="draft.colour === c.key" :aria-label="c.label"
+            :class="['pick-colour', { on: draft.colour === c.key }]"
+            :style="{ background: c.hex, '--ring': c.hex }"
+            @click="draft.colour = c.key"></button>
+        </div>
+        <button type="button" class="sheet-save" :disabled="savingAvatar" @click="saveAvatar(draftValue)">
+          {{ savingAvatar ? $t('settings.saving') : $t('settings.savePicture') }}
+        </button>
+        <button type="button" class="sheet-secondary" :disabled="savingAvatar" @click="saveAvatar(null)">
+          {{ $t('settings.useInitial') }}
+        </button>
+        <span class="sheet-credit">Icons: Phosphor Icons (MIT)</span>
+      </div>
     </div>
 
-    <div style="height: 40px"></div>
+    <!-- E-wallet modal -->
+    <div v-if="showEwalletModal" class="modal-overlay" @click.self="closeEwalletModal">
+      <div class="modal">
+        <button class="modal-close-btn" @click="closeEwalletModal" :disabled="redeeming" :aria-label="$t('settings.cancel')">
+          <PhX weight="bold" aria-hidden="true" />
+        </button>
+        <h3>{{ $t('settings.ewalletModalTitle') }}</h3>
+        <div class="form-group">
+          <label class="form-label" for="ew-prov">{{ $t('settings.ewalletProviderLabel') }}</label>
+          <select id="ew-prov" v-model="ewalletProvider" class="form-input">
+            <option value="" disabled>{{ $t('settings.ewalletProviderPlaceholder') }}</option>
+            <option v-for="p in ewalletProviders" :key="p" :value="p">{{ p }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ew-acc">{{ $t('settings.ewalletAccountLabel') }}</label>
+          <input id="ew-acc" v-model="ewalletAccount" type="text" class="form-input" :placeholder="$t('settings.ewalletAccountPlaceholder')" />
+        </div>
+        <div v-if="redeemMsg" class="msg msg-err">{{ redeemMsg }}</div>
+        <div class="confirm-btns">
+          <button class="cancel-btn-lg" @click="closeEwalletModal" :disabled="redeeming">{{ $t('settings.cancel') }}</button>
+          <button class="ewallet-confirm-btn" @click="redeemNow" :disabled="redeeming || !ewalletProvider || !ewalletAccount">
+            {{ redeeming ? $t('settings.processing') : $t('settings.redeemBtn') }}
+          </button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Delete account confirmation — the delete button stays disabled until
-         the user types their own email exactly, same "type the exact resource
-         name" pattern GitHub uses for deleting a repository. A plain
-         "Are you sure?" is too easy to click through by reflex for something
-         this irreversible (full cascade delete of sessions/transactions/points). -->
+    <!-- Delete account: the button stays disabled until the user types their
+         own email exactly (GitHub's "type the repo name" pattern), because a
+         plain "Are you sure?" is too easy to click through for a full delete. -->
     <div v-if="confirmDelete" class="modal-overlay" @click.self="closeDeleteModal">
       <div class="modal delete-modal">
         <button class="modal-close-btn" @click="closeDeleteModal" :disabled="deletingAccount" :aria-label="$t('settings.cancel')">
@@ -337,22 +406,11 @@
         <p class="delete-instruction">
           {{ $t('settings.deleteTypeToConfirm') }} <strong>{{ auth.user?.email }}</strong>
         </p>
-        <input
-          v-model="deleteConfirmText"
-          type="text"
-          class="delete-confirm-input"
-          :placeholder="auth.user?.email"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-        />
+        <input v-model="deleteConfirmText" type="text" class="delete-confirm-input" :placeholder="auth.user?.email"
+          autocomplete="off" autocapitalize="off" spellcheck="false" :aria-label="$t('settings.deleteTypeToConfirm')" />
         <div class="confirm-btns">
           <button class="cancel-btn-lg" @click="closeDeleteModal" :disabled="deletingAccount">{{ $t('settings.cancel') }}</button>
-          <button
-            class="delete-btn-confirm"
-            @click="deleteAccount"
-            :disabled="deletingAccount || deleteConfirmText !== auth.user?.email"
-          >
+          <button class="delete-btn-confirm" @click="deleteAccount" :disabled="deletingAccount || deleteConfirmText !== auth.user?.email">
             {{ deletingAccount ? $t('settings.deleting') : $t('settings.confirmYes') }}
           </button>
         </div>
@@ -362,32 +420,104 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, inject } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { ref, reactive, computed, onMounted, inject } from 'vue'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
+import UserAvatar from '@/components/UserAvatar.vue'
+import { AVATAR_ICONS, AVATAR_COLOURS, DEFAULT_AVATAR, parseAvatar, formatAvatar, maskEmail } from '@/utils/avatarIcons.js'
+import { version as appVersion } from '../../package.json'
 import {
-  PhUser, PhGift, PhPalette, PhLock,
-  PhGear, PhRecycle, PhArrowsLeftRight, PhCoins,
-  PhSun, PhMoon, PhX,
+  PhPencilSimple, PhCaretRight, PhCaretLeft, PhScan, PhClockCounterClockwise,
+  PhCoins, PhRecycle, PhLeaf, PhArrowDown, PhArrowUp, PhTicket, PhWallet, PhReceipt,
+  PhTranslate, PhMoonStars, PhUserCircle, PhInfo, PhShieldCheck, PhGear, PhSignOut,
+  PhLock, PhArrowsLeftRight, PhCheck, PhTrash, PhX,
 } from '@phosphor-icons/vue'
 
 const router      = useRouter()
+const route       = useRoute()
 const auth        = useAuthStore()
 const theme       = inject('theme')
 const toggleTheme = inject('toggleTheme')
 const showToast   = inject('showToast')
 const { locale, t } = useI18n()
 
-const activeTab = ref('profile')
+// ── Sub-pages live in ?view= so the phone's Back button returns to the menu ──
+const SUB_VIEWS = ['profile', 'redeem', 'history', 'language', 'info']
+const view = computed(() => (SUB_VIEWS.includes(route.query.view) ? route.query.view : 'main'))
+const subTitle = computed(() => ({
+  profile: t('settings.editProfile'),
+  redeem: t('settings.redeemEwallet'),
+  history: t('settings.redemptionHistory'),
+  language: t('settings.language'),
+  info: t('settings.accountInfo'),
+}[view.value] || ''))
 
-const tabs = [
-  { key: 'profile',     icon: PhUser,    label: 'settings.tabProfile'     },
-  { key: 'rewards',     icon: PhGift,    label: 'settings.tabRewards'     },
-  { key: 'preferences', icon: PhPalette, label: 'settings.tabPreferences' },
-  { key: 'account',     icon: PhLock,    label: 'settings.tabAccount'     },
-]
+function openView(v) {
+  router.push({ query: { ...route.query, view: v } })
+  window.scrollTo?.(0, 0)
+}
+function goBack() {
+  if (window.history.state?.back) router.back()
+  else router.replace({ query: {} })
+}
+
+// ── Summary card ──────────────────────────────────────────────────────────────
+const summary = ref({
+  total_points: auth.user?.total_points ?? 0,
+  items_recycled: 0,
+  carbon_saved_kg: auth.user?.total_carbon_saved ?? 0,
+  earned_this_month: 0,
+  redeemed_this_month: 0,
+  active_vouchers: 0,
+})
+const carbonText = computed(() => {
+  const kg = Number(summary.value.carbon_saved_kg) || 0
+  return `${kg >= 100 ? Math.round(kg) : kg.toFixed(1)} kg`
+})
+function num(n) { return (Number(n) || 0).toLocaleString('en-MY') }
+// "+513" / "−100", but a plain "0" (a sign on zero reads like a change).
+function signed(n, sign) { return (Number(n) || 0) > 0 ? sign + num(n) : '0' }
+
+async function loadSummary() {
+  try {
+    const res = await api.get('/user/account-summary')
+    if (res.data?.summary) summary.value = { ...summary.value, ...res.data.summary }
+  } catch { /* keep what auth.user already gave us */ }
+}
+
+// ── Profile picture ───────────────────────────────────────────────────────────
+const showAvatarSheet = ref(false)
+const savingAvatar = ref(false)
+const draft = reactive({ ...DEFAULT_AVATAR })
+const draftValue = computed(() => formatAvatar(draft.icon, draft.colour))
+const draftHex = computed(() => AVATAR_COLOURS.find(c => c.key === draft.colour)?.hex)
+
+function openAvatarSheet() {
+  const current = parseAvatar(auth.user?.avatar_icon)
+  draft.icon = current?.icon || DEFAULT_AVATAR.icon
+  draft.colour = current?.colour || DEFAULT_AVATAR.colour
+  showAvatarSheet.value = true
+}
+function closeAvatarSheet() {
+  if (!savingAvatar.value) showAvatarSheet.value = false
+}
+async function saveAvatar(value) {
+  savingAvatar.value = true
+  try {
+    const res = await api.put('/user/profile', { avatar_icon: value })
+    const updated = { ...auth.user, avatar_icon: res.data?.user?.avatar_icon ?? value }
+    auth.user = updated
+    localStorage.setItem('rvm_user', JSON.stringify(updated))
+    showAvatarSheet.value = false
+    showToast?.(t('settings.pictureSaved'))
+  } catch (e) {
+    showToast?.(e.response?.data?.message || t('settings.savedFail'), 'error')
+  } finally {
+    savingAvatar.value = false
+  }
+}
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 const editingProfile = ref(false)
@@ -502,7 +632,7 @@ const ewalletProviders  = ["Touch 'n Go eWallet", 'GrabPay', 'Boost', 'ShopeePay
 
 function pointsToMoney(pts) {
   const rate = conversionRate.value
-  return ((pts / rate.points) * rate.rm).toFixed(2)
+  return (((Number(pts) || 0) / rate.points) * rate.rm).toFixed(2)
 }
 
 function openEwalletModal() {
@@ -533,7 +663,7 @@ async function redeemNow() {
       showToast?.(res.data.message || t('settings.redeemOk'))
       showEwalletModal.value = false
       redeemPoints.value = minRedeem.value
-      await loadRedemptionHistory()
+      await Promise.all([loadRedemptionHistory(), loadSummary()])
     } else {
       redeemMsg.value = res.data.message || t('settings.redeemFail')
     }
@@ -556,18 +686,18 @@ async function loadRedemptionHistory() {
 }
 
 // ── Preferences ───────────────────────────────────────────────────────────────
+const languages = [
+  { code: 'en', label: 'English' },
+  { code: 'my', label: 'Bahasa Melayu' },
+]
 function setLang(lang) {
   locale.value = lang
   localStorage.setItem('rvm_lang', lang)
 }
 
-function setTheme(t) {
-  if (theme.value !== t) toggleTheme()
-}
-
 // ── Account ───────────────────────────────────────────────────────────────────
-const confirmDelete    = ref(false)
-const deletingAccount  = ref(false)
+const confirmDelete     = ref(false)
+const deletingAccount   = ref(false)
 const deleteConfirmText = ref('')
 
 function closeDeleteModal() {
@@ -577,11 +707,8 @@ function closeDeleteModal() {
 }
 
 async function handleLogout() {
-  // Captured before logout() clears the auth store — GoodbyeView reads
-  // user.name/theme_preference itself for the kiosk flow, but a regular web
-  // logout has already wiped that by the time it mounts, so both are handed
-  // through as query params instead (mirrors how the kiosk session-end path
-  // already does this for its own guest/no-login case).
+  // Captured before logout() clears the auth store: a regular web logout has
+  // already wiped name/theme by the time GoodbyeView mounts, so pass them on.
   const name = auth.user?.name
   await auth.logout()
   router.push({ path: '/thank-you', query: { redirect: '/', name, theme: theme.value } })
@@ -615,8 +742,9 @@ function formatDate(ts) {
 }
 
 onMounted(async () => {
-  // Fetch fresh user data from DB first (populates created_at, role, etc.)
+  // Fresh user data from the DB first (created_at, role, avatar_icon...).
   await auth.fetchMe()
+  summary.value.total_points = auth.user?.total_points ?? summary.value.total_points
 
   try {
     const res = await api.get('/user/reward-rate')
@@ -625,277 +753,286 @@ onMounted(async () => {
     if (redeemPoints.value < minRedeem.value) redeemPoints.value = minRedeem.value
   } catch { /* use defaults */ }
 
-  await loadRedemptionHistory()
+  await Promise.all([loadSummary(), loadRedemptionHistory()])
 })
 </script>
 
 <style scoped>
-.settings-page { background: var(--bg-primary); }
+/* Corner radius follows the DANA reference: 10px cards and buttons, pills
+   and avatars fully round. */
+.acct-page { background: var(--bg-primary); min-height: 100%; }
 
-/* ── Profile hero ── */
-.profile-hero {
-  background: var(--grad-header);
-  padding: 24px 20px 28px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  position: relative; overflow: hidden;
+/* ── Header ── */
+.acct-hero { background: var(--grad-header); padding: 26px 20px 60px; color: #fff; }
+.hero-row { display: flex; align-items: center; gap: 16px; max-width: 640px; margin: 0 auto; }
+.hero-avatar {
+  position: relative; flex-shrink: 0; padding: 0; border: 0; background: none; cursor: pointer;
+  border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
 }
-.profile-bg {
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 70% 50%, rgba(255,255,255,0.12) 0%, transparent 60%);
+.hero-avatar:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.hero-avatar-edit {
+  position: absolute; right: -2px; top: -2px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; color: var(--accent-blue); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
 }
-.avatar-large {
-  width: 72px; height: 72px; border-radius: 50%;
-  background: rgba(255,255,255,0.25);
-  color: white; display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 28px; border: 3px solid rgba(255,255,255,0.5);
-  position: relative; z-index: 1;
+.hero-role {
+  position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+  padding: 2px 8px; border-radius: 999px; background: #fff; color: #15803d;
+  font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
-.profile-meta { text-align: center; position: relative; z-index: 1; }
-.profile-meta strong { display: block; color: white; font-size: 18px; font-weight: 700; }
-.role-badge { color: rgba(255,255,255,0.85); font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
-.role-icon { font-size: 14px; }
+.hero-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.hero-name {
+  display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; max-width: 100%;
+  padding: 0; border: 0; background: none; color: #fff; cursor: pointer;
+  font: inherit; font-size: 19px; font-weight: 700; text-align: left;
+}
+.hero-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hero-email { font-size: 13px; opacity: 0.92; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hero-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.hero-pill {
+  min-height: 38px; padding: 0 14px; box-sizing: border-box;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1.5px solid rgba(255,255,255,0.8); border-radius: 999px;
+  color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap;
+}
+.hero-pill:hover { background: rgba(255,255,255,0.12); }
 
-/* ── Tabs ── */
-.tabs {
-  display: flex;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
+/* ── Summary card ── */
+.acct-summary {
+  position: relative; margin: -40px 16px 0; max-width: 640px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.10);
 }
-.tabs::-webkit-scrollbar { display: none; }
-.tab-btn {
-  flex: 1; min-width: 72px; padding: 10px 4px;
-  background: none; border: none;
-  color: var(--text-muted); font-size: 11px; font-weight: 600;
-  cursor: pointer; border-bottom: 2px solid transparent;
-  transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 3px;
-}
-.tab-btn:hover { color: var(--text-primary); }
-.tab-icon { font-size: 18px; }
-.tab-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
-.tab-active { color: var(--accent-blue) !important; border-bottom-color: var(--accent-blue) !important; }
+@media (min-width: 672px) { .acct-summary { margin-left: auto; margin-right: auto; } }
+.sum-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 18px 8px 16px; }
+.sum-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 0 4px; }
+.sum-tile + .sum-tile { border-left: 1px solid var(--border); }
+.sum-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.sum-icon-green { background: rgba(34,197,94,0.14); color: #16a34a; }
+.sum-icon-blue  { background: rgba(78,110,242,0.14); color: var(--accent-blue); }
+.sum-icon-teal  { background: rgba(20,184,166,0.15); color: #0f9488; }
+.sum-value { font-size: 18px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.sum-label { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.sum-sub { font-size: 12px; font-weight: 600; }
+.sum-sub-green { color: #15803d; }
+:global([data-theme="dark"]) .sum-sub-green { color: #4ade80; }
+.sum-month { border-top: 1px solid var(--border); padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.sum-month-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.sum-month-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sum-flow { display: flex; align-items: center; gap: 10px; }
+.sum-flow-right { padding-left: 14px; border-left: 1px solid var(--border); }
+.flow-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.flow-in  { background: rgba(34,197,94,0.14); color: #16a34a; }
+.flow-out { background: rgba(245,158,11,0.16); color: #d97706; }
+.flow-text { display: flex; flex-direction: column; }
+.flow-label { font-size: 13px; color: var(--text-muted); }
+.flow-value { font-size: 16px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
-/* ── Tab content ── */
-.tab-content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-
-/* ── Form card ── */
-.form-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
+/* ── Menu lists ── */
+.menu-group { margin: 20px 16px 0; }
+@media (min-width: 672px) { .menu-group, .acct-footer { max-width: 640px; margin-left: auto; margin-right: auto; } }
+.menu-title { margin: 0 4px 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.menu-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.menu-row {
+  width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 14px;
+  min-height: 56px; padding: 0 16px; border: 0; background: none; cursor: pointer;
+  color: var(--text-primary); font: inherit; text-align: left; text-decoration: none;
 }
+.menu-row + .menu-row { border-top: 1px solid var(--border); }
+.menu-row:hover { background: var(--bg-hover); }
+.menu-row:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
+.menu-icon { flex-shrink: 0; }
+.icon-purple { color: #a855f7; }
+.icon-green  { color: #16a34a; }
+.icon-orange { color: #d97706; }
+.icon-blue   { color: var(--accent-blue); }
+.icon-teal   { color: #0f9488; }
+.icon-muted  { color: var(--text-muted); }
+.menu-label { flex: 1; font-size: 16px; font-weight: 500; }
+.menu-value { font-size: 14px; color: var(--text-muted); }
+.menu-badge { padding: 2px 9px; border-radius: 999px; background: rgba(78,110,242,0.14); color: var(--accent-blue); font-size: 13px; font-weight: 700; }
+.menu-chevron { color: var(--text-muted); flex-shrink: 0; }
+.menu-check { color: var(--accent-blue); }
+
+.switch { width: 46px; height: 28px; border-radius: 999px; background: #cbd5e1; position: relative; flex-shrink: 0; transition: background .2s; }
+.switch.on { background: var(--accent-blue); }
+.switch-knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: left .2s; }
+.switch.on .switch-knob { left: 21px; }
+
+/* ── Footer ── */
+.acct-footer { margin: 24px 16px 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.logout-btn {
+  width: 100%; min-height: 48px; border-radius: 10px; border: 1.5px solid var(--accent-red);
+  background: transparent; color: var(--accent-red); font: inherit; font-size: 16px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+}
+.logout-btn:hover { background: rgba(239,68,68,0.08); }
+.app-version { font-size: 12px; color: var(--text-muted); }
+.bottom-space { height: 40px; }
+
+/* ── Sub-pages ── */
+.sub-bar {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 6px;
+  padding: 10px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border);
+}
+.sub-back {
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 10px; background: none; color: var(--text-primary); cursor: pointer;
+}
+.sub-back:hover { background: var(--bg-hover); }
+.sub-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.sub-content { padding: 16px; display: flex; flex-direction: column; gap: 14px; max-width: 640px; margin: 0 auto; box-sizing: border-box; }
+.sub-hint { margin: 0 4px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.info-line { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; padding: 0 16px; }
+.info-line + .info-line { border-top: 1px solid var(--border); }
+.danger-card { background: var(--bg-card); border: 1px solid rgba(239,68,68,0.35); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.danger-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-red); }
+.danger-text { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+.delete-btn {
+  min-height: 48px; border-radius: 10px; border: 0; background: #dc2626; color: #fff;
+  font: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+}
+.delete-btn:hover { background: #b91c1c; }
+
+/* ── Form cards (sub-pages) ── */
+.form-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
 .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .form-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; }
-.form-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.form-hint { font-size: 12px; color: var(--text-muted); margin: 6px 0 14px; }
 .form-group { margin-bottom: 12px; }
 .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
 .form-input {
-  width: 100%; box-sizing: border-box;
-  padding: 10px 12px; border-radius: 8px;
-  background: var(--bg-primary); border: 1px solid var(--border);
-  color: var(--text-primary); font-size: 14px;
-  transition: border-color 0.2s;
+  width: 100%; box-sizing: border-box; min-height: 44px; padding: 10px 12px; border-radius: 10px;
+  background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-size: 14px;
 }
 .form-input:focus { outline: none; border-color: var(--accent-blue); }
 .input-hint { display: block; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
-/* ── View mode rows ── */
-.info-rows { display: flex; flex-direction: column; gap: 0; }
-.info-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-bottom: 1px solid var(--border);
-}
+.info-rows { display: flex; flex-direction: column; }
+.info-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .info-row:last-child { border-bottom: none; }
-.info-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-.info-value { font-size: 14px; color: var(--text-primary); font-weight: 500; text-align: right; }
+.info-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.info-value { font-size: 14px; color: var(--text-primary); font-weight: 600; text-align: right; word-break: break-word; }
 .info-value.muted { color: var(--text-muted); letter-spacing: 2px; }
-.info-value.mono { font-family: monospace; font-size: 13px; }
-
-/* ── Edit / action buttons ── */
-.edit-btn {
-  display: flex; align-items: center; gap: 5px;
-  background: var(--bg-hover); border: 1px solid var(--border);
-  color: var(--text-secondary); padding: 5px 12px; border-radius: 20px;
-  cursor: pointer; font-size: 12px; font-weight: 600;
-  transition: all 0.2s;
+.edit-btn, .cancel-btn, .save-btn-sm {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 14px;
+  border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
+.edit-btn { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-secondary); }
 .edit-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
 .edit-actions { display: flex; gap: 8px; }
-.cancel-btn {
-  background: none; border: 1px solid var(--border);
-  color: var(--text-muted); padding: 5px 12px; border-radius: 20px;
-  cursor: pointer; font-size: 12px; font-weight: 600;
-}
-.cancel-btn:hover { background: var(--bg-hover); }
-.save-btn-sm {
-  background: var(--accent-blue); border: none; color: white;
-  padding: 5px 14px; border-radius: 20px;
-  cursor: pointer; font-size: 12px; font-weight: 700;
-  transition: opacity 0.2s;
-}
+.cancel-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); }
+.save-btn-sm { background: var(--accent-blue); border: none; color: #fff; }
 .save-btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
-.save-btn-sm:not(:disabled):hover { opacity: 0.88; }
-
-/* ── Full-width buttons ── */
 .full-btn {
-  width: 100%; padding: 12px; border: none; border-radius: 8px;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: opacity 0.2s;
-  text-decoration: none;
+  width: 100%; min-height: 48px; border: none; border-radius: 10px; margin-top: 14px;
+  font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .full-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.full-btn:not(:disabled):hover { opacity: 0.88; }
-.save-btn { background: var(--accent-blue); color: white; }
-.redeem-btn { background: var(--accent-green); color: white; }
-.logout-btn-full { background: none; color: var(--accent-red); border: 1px solid var(--accent-red); }
-.logout-btn-full:hover { background: var(--accent-red) !important; color: white; border-color: var(--accent-red); opacity: 1 !important; }
-.delete-btn { background: rgba(239,68,68,0.1); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
-.delete-btn:hover { background: var(--accent-red) !important; color: white; opacity: 1 !important; }
-
-/* ── Messages ── */
-.msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+.save-btn { background: var(--accent-blue); color: #fff; }
+.redeem-btn { background: #16a34a; }
+.msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-top: 12px; }
 .msg-ok  { background: rgba(34,197,94,0.15); color: var(--accent-green); border: 1px solid rgba(34,197,94,0.3); }
 .msg-err { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
-.msg-icon { font-size: 14px; vertical-align: -2px; margin-right: 4px; }
-
-/* ── Points card ── */
-.points-card {
-  background: var(--grad-header); border-radius: var(--radius);
-  padding: 24px 20px; text-align: center;
-  position: relative; overflow: hidden;
-}
-.points-bg { position: absolute; inset: 0; background: radial-gradient(circle at 70% 50%, rgba(255,255,255,0.1) 0%, transparent 60%); }
-.points-label { color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 6px; position: relative; z-index: 1; }
-.points-number { color: white; font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; position: relative; z-index: 1; }
-.points-sub { color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 6px; position: relative; z-index: 1; }
-
-/* ── Rate row ── */
 .rate-row { display: flex; gap: 10px; }
-.rate-card {
-  flex: 1; display: flex; align-items: center; gap: 10px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px;
-}
+.rate-card { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
 .rate-icon { font-size: 20px; color: var(--text-secondary); }
 .rate-info { display: flex; flex-direction: column; }
 .rate-info strong { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
 .rate-info span { font-size: 13px; color: var(--text-primary); font-weight: 700; margin-top: 2px; }
-
-/* ── Redeem preview ── */
-.redeem-preview {
-  display: flex; align-items: center; justify-content: center; gap: 16px;
-  background: var(--bg-hover); border-radius: 10px;
-  padding: 16px; margin-bottom: 14px;
-}
+.redeem-preview { display: flex; align-items: center; justify-content: center; gap: 16px; background: var(--bg-hover); border-radius: 10px; padding: 16px; }
 .preview-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.preview-num { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.preview-num { font-size: 20px; font-weight: 700; color: var(--text-primary); }
 .preview-num.green { color: var(--accent-green); }
 .preview-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
 .preview-arrow { font-size: 20px; color: var(--text-muted); }
+.loading-placeholder { display: flex; justify-content: center; padding: 24px; }
+.empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border); }
+.activity-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.activity-item + .activity-item { border-top: 1px solid var(--border); }
+.activity-info { flex: 1; display: flex; flex-direction: column; }
+.activity-desc { font-size: 14px; color: var(--text-primary); }
+.activity-time { font-size: 12px; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+.activity-pts { font-size: 14px; font-weight: 700; }
+.pts-green { color: var(--accent-green); }
+.status-badge { padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.badge-pending   { background: rgba(234,179,8,0.2); color: var(--accent-yellow); }
+.badge-approved, .badge-completed { background: rgba(34,197,94,0.2); color: var(--accent-green); }
+.badge-rejected  { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+.spinner-sm { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Preferences toggles ── */
-.toggle-group { display: flex; gap: 10px; }
-.toggle-opt {
-  flex: 1; padding: 12px 8px; border-radius: 10px;
-  background: var(--bg-primary); border: 2px solid var(--border);
-  color: var(--text-secondary); font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; text-align: center;
+/* ── Profile picture sheet ── */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 1100; background: rgba(15,23,42,0.55);
+  display: flex; align-items: flex-end; justify-content: center;
 }
-.toggle-opt:hover { border-color: var(--accent-blue); color: var(--text-primary); }
-.toggle-icon { font-size: 16px; vertical-align: -3px; margin-right: 2px; }
-.toggle-active { background: var(--accent-blue) !important; border-color: var(--accent-blue) !important; color: white !important; }
+.sheet {
+  width: 100%; max-width: 520px; max-height: 92dvh; overflow-y: auto; box-sizing: border-box;
+  background: var(--bg-card); border-radius: 16px 16px 0 0;
+  padding: 10px 20px max(24px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 16px; box-shadow: 0 -8px 30px rgba(0,0,0,0.25);
+}
+@media (min-width: 600px) { .sheet-overlay { align-items: center; } .sheet { border-radius: 16px; } }
+.sheet-handle { align-self: center; width: 40px; height: 5px; border-radius: 999px; background: #cbd5e1; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.sheet-title { margin: 0; font-size: 19px; font-weight: 700; color: var(--text-primary); }
+.sheet-close { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: none; color: var(--text-muted); cursor: pointer; }
+.sheet-close:hover { background: var(--bg-hover); }
+.sheet-preview { display: flex; align-items: center; gap: 16px; }
+.sheet-preview-text { display: flex; flex-direction: column; gap: 2px; }
+.sheet-preview-text strong { font-size: 16px; color: var(--text-primary); }
+.sheet-preview-text span { font-size: 13px; color: var(--text-muted); }
+.sheet-label { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.pick-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; justify-items: center; margin-top: -6px; }
+.pick-icon, .pick-colour {
+  width: 48px; height: 48px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pick-icon { background: var(--bg-hover); color: var(--text-secondary); }
+.pick-icon.on { color: #fff; }
+.pick-icon.on, .pick-colour.on { box-shadow: 0 0 0 3px var(--bg-card), 0 0 0 5px var(--ring); }
+.pick-icon:focus-visible, .pick-colour:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 3px; }
+.sheet-save {
+  min-height: 48px; border: 0; border-radius: 10px; background: var(--accent-blue); color: #fff;
+  font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+}
+.sheet-secondary { min-height: 44px; border: 0; background: none; color: var(--accent-blue); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: -8px; }
+.sheet-save:disabled, .sheet-secondary:disabled { opacity: 0.6; cursor: wait; }
+.sheet-credit { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: -8px; }
 
-/* ── Danger zone ── */
-.danger-card { border-color: rgba(239,68,68,0.3); }
-.danger-title { color: var(--accent-red); }
-.confirm-btns { display: flex; gap: 10px; margin-top: 18px; }
-
-/* ── Delete account modal ── */
+/* ── Modals (e-wallet, delete) ── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  width: 100%; height: 100vh; height: 100dvh;
-  display: flex; align-items: flex-start; justify-content: center;
-  z-index: 300;
+  display: flex; align-items: flex-start; justify-content: center; z-index: 1100;
   padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
   overflow-y: auto; overscroll-behavior: contain;
 }
 .modal {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 14px; padding: 28px; width: 420px; max-width: 100%;
-  margin: auto; position: relative; box-sizing: border-box;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 28px;
+  width: 420px; max-width: 100%; margin: auto; position: relative; box-sizing: border-box;
   box-shadow: 0 18px 48px rgba(0,0,0,0.28);
 }
-.modal h3 { font-size: 17px; font-weight: 700; color: var(--text-primary); padding-right: 32px; margin-bottom: 14px; }
-.modal-close-btn {
-  position: absolute; top: 20px; right: 20px;
-  background: none; border: none; color: var(--text-muted);
-  cursor: pointer; padding: 4px; font-size: 18px; line-height: 0;
-}
+.modal h3 { font-size: 17px; font-weight: 700; color: var(--text-primary); padding-right: 32px; margin: 0 0 14px; }
+.modal-close-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 18px; line-height: 0; }
 .modal-close-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .delete-warning { font-size: 13px; color: var(--text-primary); margin-bottom: 10px; }
 .delete-instruction { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; word-break: break-all; }
-.delete-confirm-input {
-  width: 100%; padding: 10px 12px; border-radius: 8px;
-  background: var(--bg-primary); border: 1px solid var(--border);
-  color: var(--text-primary); font-size: 14px; box-sizing: border-box;
-}
+.delete-confirm-input { width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 10px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-size: 14px; box-sizing: border-box; }
 .delete-confirm-input:focus { outline: none; border-color: var(--accent-red); }
-.cancel-btn-lg {
-  flex: 1; padding: 10px; border-radius: 8px;
-  background: var(--bg-hover); border: 1px solid var(--border);
-  color: var(--text-primary); font-size: 13px; font-weight: 600; cursor: pointer;
-}
-.delete-btn-confirm {
-  flex: 1; padding: 10px; border-radius: 8px;
-  background: var(--accent-red); border: none;
-  color: white; font-size: 13px; font-weight: 700; cursor: pointer;
-}
-.delete-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+.confirm-btns { display: flex; gap: 10px; margin-top: 18px; }
+.cancel-btn-lg, .delete-btn-confirm, .ewallet-confirm-btn { flex: 1; min-height: 44px; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.cancel-btn-lg { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); }
+.delete-btn-confirm { background: var(--accent-red); border: none; color: #fff; }
+.ewallet-confirm-btn { background: #16a34a; border: none; color: #fff; }
+.delete-btn-confirm:disabled, .ewallet-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.ewallet-confirm-btn {
-  flex: 1; padding: 10px; border-radius: 8px;
-  background: var(--accent-green); border: none;
-  color: white; font-size: 13px; font-weight: 700; cursor: pointer;
-}
-.ewallet-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* ── Activity ── */
-.section-pad { padding: 4px 0; }
-.section-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
-.loading-placeholder { display: flex; justify-content: center; padding: 24px; }
-.empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); }
-.activity-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
-.activity-item:last-child { border-bottom: none; }
-.activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot-blue { background: var(--accent-blue); }
-.activity-info { flex: 1; display: flex; flex-direction: column; }
-.activity-desc { font-size: 13px; color: var(--text-primary); }
-.activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
-.activity-pts  { font-size: 14px; font-weight: 700; }
-.pts-green { color: var(--accent-green); }
-.status-badge { padding: 1px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.badge-pending   { background: rgba(234,179,8,0.2);  color: var(--accent-yellow); }
-.badge-approved  { background: rgba(34,197,94,0.2);  color: var(--accent-green);  }
-.badge-completed { background: rgba(34,197,94,0.2);  color: var(--accent-green);  }
-.badge-rejected  { background: rgba(239,68,68,0.2);  color: var(--accent-red);    }
-
-.spinner-sm { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── Responsive ── */
-@media (max-width: 480px) {
-  .top-nav { padding: 10px 12px; }
-  .profile-hero { padding: 18px 16px 22px; }
-  .avatar-large { width: 60px; height: 60px; font-size: 22px; }
-  .profile-meta strong { font-size: 16px; }
-  .tab-content { padding: 12px; gap: 12px; }
-  .form-card { padding: 14px; }
-  .points-number { font-size: 40px; }
+@media (max-width: 380px) {
+  .sum-value { font-size: 16px; }
+  .sum-label { font-size: 11px; }
+  .menu-label { font-size: 15px; }
+  .pick-grid { gap: 6px; }
+  .pick-icon, .pick-colour { width: 44px; height: 44px; }
   .rate-row { flex-direction: column; }
-  .preview-num { font-size: 18px; }
-  .toggle-group { flex-direction: column; }
 }
 </style>

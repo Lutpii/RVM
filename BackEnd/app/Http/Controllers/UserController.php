@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\PointsHistory;
 use App\Models\RecyclingSession;
+use App\Models\RewardRedemption;
+use App\Models\Transaction;
+use App\Services\CarbonService;
+use App\Support\AvatarIcon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +25,7 @@ class UserController extends Controller
                 'email'        => $user->email,
                 'phone'        => $user->phone,
                 'avatar_url'   => $user->avatar_url,
+                'avatar_icon'  => $user->avatar_icon,
                 'total_points' => $user->total_points,
                 'role'         => $user->role,
                 'is_verified'  => $user->is_verified,
@@ -38,9 +43,14 @@ class UserController extends Controller
             'password' => 'sometimes|string|min:8|confirmed',
             'preferred_language' => 'sometimes|in:en,id',
             'theme_preference'   => 'sometimes|in:dark,light',
+            // null = back to the initial-letter avatar
+            'avatar_icon'        => ['sometimes', 'nullable', 'string', 'regex:' . AvatarIcon::pattern()],
         ]);
 
         $data = $request->only(['name', 'preferred_language', 'theme_preference']);
+        if ($request->exists('avatar_icon')) {
+            $data['avatar_icon'] = $request->input('avatar_icon');
+        }
         if ($request->filled('password')) {
             $data['password_hash'] = Hash::make($request->password);
         }
@@ -123,6 +133,45 @@ class UserController extends Controller
         return __('messages.invalid_item', [
             'selected' => __('messages.materials.' . $t->material_selected),
             'detected' => __('messages.materials.' . ($t->ai_detected_type ?? 'unknown')),
+        ]);
+    }
+
+    /**
+     * The numbers on the Account page summary card: lifetime items and CO2,
+     * this month's points in and out, and vouchers not used yet.
+     */
+    public function accountSummary(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $monthStart = now()->startOfMonth();
+
+        $counts = Transaction::where('user_id', $user->id)->where('is_valid', 1)
+            ->selectRaw('material_selected, COUNT(*) AS n')
+            ->groupBy('material_selected')
+            ->pluck('n', 'material_selected');
+
+        $carbon = 0.0;
+        foreach ($counts as $material => $n) {
+            $carbon += $n * CarbonService::forMaterial($material);
+        }
+
+        $month = PointsHistory::where('user_id', $user->id)
+            ->where('created_at', '>=', $monthStart)
+            ->selectRaw('COALESCE(SUM(CASE WHEN points_change > 0 THEN points_change ELSE 0 END), 0) AS earned,
+                         COALESCE(SUM(CASE WHEN points_change < 0 THEN -points_change ELSE 0 END), 0) AS redeemed')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'summary' => [
+                'total_points'        => (int) $user->total_points,
+                'items_recycled'      => (int) $counts->sum(),
+                'carbon_saved_kg'     => round($carbon, 2),
+                'earned_this_month'   => (int) $month->earned,
+                'redeemed_this_month' => (int) $month->redeemed,
+                'active_vouchers'     => RewardRedemption::where('user_id', $user->id)
+                    ->whereNotNull('voucher_code')->whereNull('used_at')->count(),
+            ],
         ]);
     }
 

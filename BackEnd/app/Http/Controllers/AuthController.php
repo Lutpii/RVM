@@ -571,6 +571,7 @@ class AuthController extends Controller
             'email'        => $user->email,
             'phone'        => $user->phone,
             'avatar_url'   => $user->avatar_url,
+            'avatar_icon'  => $user->avatar_icon,
             'total_points' => $user->total_points,
             'total_carbon_saved' => $this->totalCarbonSavedFor($user),
             'role'         => $user->role,
