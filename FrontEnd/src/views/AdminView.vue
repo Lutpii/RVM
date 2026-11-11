@@ -649,7 +649,6 @@
                 <option value="">All actions</option>
                 <option v-for="a in auditActions" :key="a" :value="a">{{ auditActionLabel(a) }}</option>
               </select>
-              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'audit'" @click="exportTable('audit')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'audit' ? 'Exporting…' : 'Export Excel' }}</button>
             </div>
           </div>
           <div class="filter-toolbar">
@@ -662,6 +661,10 @@
                 <span>To</span>
                 <input v-model="auditDateTo" type="date" @change="searchAudit" />
               </label>
+            </div>
+            <!-- After the filters, so the order reads "filter, then export" on a phone too. -->
+            <div class="filter-actions">
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'audit'" @click="exportTable('audit')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'audit' ? 'Exporting…' : 'Export Excel' }}</button>
             </div>
           </div>
           <div v-if="loadingAudit" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -4061,6 +4064,17 @@ onUnmounted(() => {
   /* Some tabs pair a title with search/filter controls via space-between.
      Stack those headers on mobile so both sides keep their full width. */
   .card-header      { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* Header tools on a phone: the search box gets a full row, the Export /
+     Add buttons share the next one at equal width, all 44px tall to tap. */
+  .card-header > .topbar-right { width: 100%; gap: 8px; }
+  .card-header > .topbar-right > .search-input,
+  .card-header > .topbar-right > .filter-select { flex: 1 1 100%; width: 100%; min-height: 44px; box-sizing: border-box; }
+  .card-header > .topbar-right > button { flex: 1 1 0; }
+  .card-header > .export-btn { width: 100%; }
+  .export-btn, .card-header .add-btn { min-height: 44px; font-size: 13px; }
+  /* Transactions: Export sits alone under the filters so it isn't read as a filter field. */
+  .tx-filters .tx-export { flex: 1 1 100%; margin-left: 0; }
 }
 
 /* Small mobile: ≤ 480px */
