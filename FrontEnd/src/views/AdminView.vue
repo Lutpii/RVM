@@ -582,12 +582,26 @@
                   </span>
                 </div>
               </div>
+              <!-- Everyday actions in an even 2×2 grid; Delete sits apart below
+                   a divider so it can't be hit by accident next to Edit. -->
               <div class="machine-actions">
-                <button class="action-btn edit-btn" @click="openEditMachine(machine)">Edit</button>
-                <button class="action-btn" @click="resetBins(machine)">Reset Bins</button>
-                <button class="action-btn maint-btn" @click="openMaintenance(machine)">Maintenance</button>
-                <button class="action-btn" @click="historyMachine = machine">Service History</button>
-                <button class="action-btn del-btn" @click="deleteMachine(machine.id)">Delete</button>
+                <div class="machine-actions-grid">
+                  <button class="action-btn machine-btn edit-btn" @click="openEditMachine(machine)">
+                    <PhPencilSimple weight="regular" aria-hidden="true" /> Edit
+                  </button>
+                  <button class="action-btn machine-btn maint-btn" @click="openMaintenance(machine)">
+                    <PhWrench weight="regular" aria-hidden="true" /> Maintenance
+                  </button>
+                  <button class="action-btn machine-btn" @click="resetBins(machine)">
+                    <PhArrowCounterClockwise weight="regular" aria-hidden="true" /> Reset Bins
+                  </button>
+                  <button class="action-btn machine-btn" @click="historyMachine = machine">
+                    <PhClockCounterClockwise weight="regular" aria-hidden="true" /> Service History
+                  </button>
+                </div>
+                <button class="action-btn machine-btn machine-delete" @click="deleteMachine(machine.id)">
+                  <PhTrash weight="regular" aria-hidden="true" /> Delete machine
+                </button>
               </div>
             </div>
             <div v-if="!adminMachines.length" class="empty-machines">
@@ -1326,6 +1340,7 @@ import {
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear, PhWifiSlash,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
   PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple, PhCrop,
+  PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise,
 } from '@phosphor-icons/vue'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { formatAuditLog } from '@/utils/admin/auditLog.js'
@@ -3560,7 +3575,22 @@ onUnmounted(() => {
 .bin-danger  { background: var(--accent-red); }
 .text-red    { color: var(--accent-red) !important; }
 .text-muted-sm { color: var(--text-muted) !important; font-size: 11px; }
-.machine-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.machine-actions { display: flex; flex-direction: column; gap: 10px; }
+.machine-actions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.action-btn.machine-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; margin: 0; padding: 6px 10px; border-radius: 6px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.action-btn.machine-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.action-btn.machine-btn:hover { background: var(--bg-card); }
+/* Delete: separated and quieter until hovered, so it isn't the loudest button. */
+.action-btn.machine-delete {
+  align-self: flex-end; border-color: transparent; background: transparent;
+  color: var(--accent-red); position: relative;
+}
+.action-btn.machine-delete:hover { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 8%, transparent); }
+.machine-actions-grid { padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 
 /* ── Rewards (own names — visually identical to Machines above by design,
    but kept separate so a future Machines-only restyle can't silently
@@ -4075,6 +4105,8 @@ onUnmounted(() => {
   .export-btn, .card-header .add-btn { min-height: 44px; font-size: 13px; }
   /* Transactions: Export sits alone under the filters so it isn't read as a filter field. */
   .tx-filters .tx-export { flex: 1 1 100%; margin-left: 0; }
+  .action-btn.machine-btn { min-height: 44px; }
+  .action-btn.machine-delete { align-self: stretch; border-color: color-mix(in srgb, var(--accent-red) 35%, var(--border)); }
 }
 
 /* Small mobile: ≤ 480px */
