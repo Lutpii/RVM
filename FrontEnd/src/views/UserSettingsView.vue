@@ -852,7 +852,7 @@ onMounted(async () => {
 
 /* ── Menu lists ── */
 .menu-group { margin: 20px 16px 0; }
-@media (min-width: 672px) { .menu-group, .acct-footer { max-width: 640px; margin-left: auto; margin-right: auto; } }
+@media (min-width: 672px) { .menu-group { max-width: 640px; margin-left: auto; margin-right: auto; } }
 .menu-title { margin: 0 4px 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 .menu-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .menu-row {
@@ -882,13 +882,22 @@ onMounted(async () => {
 .switch.on .switch-knob { left: 21px; }
 
 /* ── Footer ── */
-.acct-footer { margin: 24px 16px 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+/* Same 640px column as the menu cards, centred (the margin here used to
+   override the desktop centring and pushed Logout to the left). */
+.acct-footer {
+  margin: 24px auto 0; padding: 0 16px; max-width: 672px; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
 .logout-btn {
   width: 100%; min-height: 48px; border-radius: 10px; border: 1.5px solid var(--accent-red);
   background: transparent; color: var(--accent-red); font: inherit; font-size: 16px; font-weight: 600;
   display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
 }
 .logout-btn:hover { background: rgba(239,68,68,0.08); }
+/* Desktop: a full 640px red bar is too loud, so a compact centred button. */
+@media (min-width: 768px) {
+  .logout-btn { width: auto; min-width: 220px; min-height: 44px; padding: 0 28px; font-size: 15px; }
+}
 .app-version { font-size: 12px; color: var(--text-muted); }
 .bottom-space { height: 40px; }
 
