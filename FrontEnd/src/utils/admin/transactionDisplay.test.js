@@ -10,6 +10,12 @@ describe('itemLabel', () => {
     expect(itemLabel({ material_selected: 'unknown' })).toBe('Not recognised')
     expect(itemLabel({ material_selected: 'reject' })).toBe('Material not accepted')
   })
+  it('names the non-target item only when the AI was confident', () => {
+    expect(itemLabel({ material_selected: 'reject', ai_detected_type: 'bricks' })).toBe('Bricks')
+    expect(itemLabel({ material_selected: 'reject', ai_detected_type: 'wooden' })).toBe('Wooden item')
+    // below 60 %: still "Not recognised", whatever the AI's best guess was
+    expect(itemLabel({ material_selected: 'unknown', ai_detected_type: 'metal' })).toBe('Not recognised')
+  })
 })
 
 describe('resultReason', () => {
@@ -21,6 +27,10 @@ describe('resultReason', () => {
       .toBe('AI was not sure what it was (below 60%)')
     expect(resultReason({ is_valid: 0, material_selected: 'reject', ai_detected_type: 'reject' }))
       .toBe('This machine does not take this material')
+    expect(resultReason({ is_valid: 0, material_selected: 'reject', ai_detected_type: 'glass' }))
+      .toBe('This machine does not take glass')
+    expect(resultReason({ is_valid: 0, material_selected: 'unknown', ai_detected_type: 'bricks' }))
+      .toBe('AI was not sure what it was (below 60%)')
     expect(resultReason({ is_valid: 0, material_selected: 'plastic', ai_detected_type: 'glass' }))
       .toBe('AI saw glass, not plastic')
   })

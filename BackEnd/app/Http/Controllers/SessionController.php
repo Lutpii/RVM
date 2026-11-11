@@ -143,7 +143,11 @@ class SessionController extends Controller
                     // per-item receipt reference (U02)
                     'id'             => $t->id,
                     'created_at'     => $t->created_at?->toIso8601String(),
-                    'material'       => $t->material_selected,
+                    // A confident reject shows the class the AI saw (e.g. bricks);
+                    // 'unknown' (AI below 60 %) stays "Not recognised".
+                    'material'       => $t->material_selected === 'reject' && $t->ai_detected_type
+                        && !in_array($t->ai_detected_type, ['unknown', 'reject'], true)
+                        ? $t->ai_detected_type : $t->material_selected,
                     'weight'         => $t->weight_grams,
                     'points_earned'  => $t->points_earned,
                     'points_deducted'=> $t->points_deducted,

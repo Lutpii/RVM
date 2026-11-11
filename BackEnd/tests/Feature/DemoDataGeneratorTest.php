@@ -92,9 +92,14 @@ class DemoDataGeneratorTest extends TestCase
         foreach ($rejected as $t) {
             $this->assertSame(0, (int) $t->points_deducted);
             $this->assertSame(0, (int) $t->points_earned);
-            $this->assertContains($t->ai_detected_type, ['unknown', 'reject']);
-            if ($t->ai_detected_type === 'unknown') {
+            // The AI saw one of the model's non-target classes; below 60 % the
+            // result is "not recognised", otherwise "material not accepted".
+            $this->assertContains($t->ai_detected_type, ['bricks', 'glass', 'metal', 'wooden']);
+            $this->assertContains($t->material_selected, ['unknown', 'reject']);
+            if ($t->material_selected === 'unknown') {
                 $this->assertLessThan(0.6, (float) $t->ai_confidence);
+            } else {
+                $this->assertGreaterThanOrEqual(0.6, (float) $t->ai_confidence);
             }
             $this->assertFalse(PointsHistory::where('transaction_id', $t->id)->exists());
         }

@@ -31,6 +31,8 @@ class DemoDataGenerator
     private const REJECT_PERCENT = 7;
     private const REDEEM_PERCENT = 15;
     private const DSME_PERCENT = 60;
+    // Classes of the deployed model (best_rs.pt) that no machine accepts.
+    private const NON_TARGET = ['bricks', 'glass', 'metal', 'wooden'];
 
     // [name, activity weight 1-5]
     private const USERS = [
@@ -348,17 +350,19 @@ class DemoDataGenerator
             $rejected = mt_rand(1, 100) <= self::REJECT_PERCENT;
 
             if ($rejected) {
-                // Same rule as the kiosk: the AI service turns anything below
-                // 60 % confidence into 'unknown', and a recognised material with
-                // no slot on this machine (metal, wood, bricks) into 'reject'.
-                // Either way the item is returned with 0 points and no deduction,
-                // so no points-history row is written.
-                $unknown = mt_rand(0, 1) === 1;
-                $detected = $unknown ? 'unknown' : 'reject';
+                // Rejected items are the model's non-target classes (bricks,
+                // glass, metal, wooden) with a spread of AI confidence. Same
+                // rule as the kiosk: below 60 % the AI result is 'unknown',
+                // otherwise it is a recognised material this machine does not
+                // take ('reject'). The class the AI saw is kept in
+                // ai_detected_type. 0 points, no deduction, no history row.
+                $nonTarget = self::NON_TARGET[mt_rand(0, count(self::NON_TARGET) - 1)];
+                $confidence = mt_rand(3000, 9500) / 10000;
                 $this->stamp(Transaction::create([
                     'session_id' => $session->id, 'user_id' => $user->id, 'machine_id' => $machine->id,
-                    'material_selected' => $detected, 'ai_detected_type' => $detected,
-                    'ai_confidence' => $unknown ? mt_rand(2000, 5900) / 10000 : mt_rand(6500, 9500) / 10000,
+                    'material_selected' => $confidence < 0.6 ? 'unknown' : 'reject',
+                    'ai_detected_type' => $nonTarget,
+                    'ai_confidence' => $confidence,
                     'is_valid' => 0, 'weight_grams' => 0, 'points_earned' => 0, 'points_deducted' => 0,
                 ]), $at);
             } else {

@@ -527,7 +527,7 @@ class AdminController extends Controller
                 $tx->created_at?->format('Y-m-d'), $tx->created_at?->format('H:i'),
                 $tx->user?->name ?? 'Guest', $this->displayUserId($tx->user),
                 $tx->machine?->name, $tx->machine?->location_name,
-                self::TX_ITEM_LABELS[$selected] ?? ucfirst($selected),
+                $this->transactionItemLabel($selected, $detected),
                 $tx->is_valid ? 'Accepted' : 'Rejected',
                 $this->transactionReason($tx->is_valid, $selected, $detected),
                 $tx->ai_confidence !== null ? (int) round($tx->ai_confidence * 100) : null,
@@ -540,8 +540,18 @@ class AdminController extends Controller
     private const TX_ITEM_LABELS = [
         'plastic' => 'Plastic', 'aluminum' => 'Aluminium can', 'paper' => 'Paper', 'glass' => 'Glass',
         'unknown' => 'Not recognised', 'reject' => 'Material not accepted',
+        'bricks' => 'Bricks', 'metal' => 'Metal', 'wooden' => 'Wooden item',
     ];
     private const TX_BIN_LETTERS = ['plastic' => 'A', 'aluminum' => 'B', 'paper' => 'C', 'glass' => 'D'];
+
+    private function transactionItemLabel(string $selected, string $detected): string
+    {
+        // 'unknown' (AI below 60 %) stays "Not recognised"; a confident reject is named.
+        if ($selected === 'reject' && $detected && !in_array($detected, ['unknown', 'reject'], true)) {
+            return self::TX_ITEM_LABELS[$detected] ?? ucfirst($detected);
+        }
+        return self::TX_ITEM_LABELS[$selected] ?? ucfirst($selected);
+    }
 
     private function transactionReason(bool $valid, string $selected, string $detected): string
     {
@@ -550,6 +560,10 @@ class AdminController extends Controller
             return $letter ? 'Put in the ' . strtolower(self::TX_ITEM_LABELS[$selected]) . " bin ({$letter})" : 'Put in the bin';
         }
         if ($detected === 'unknown' || $selected === 'unknown') return 'AI was not sure what it was (below 60%)';
+        if ($selected === 'reject' && $detected && $detected !== 'reject') {
+            $noun = $detected === 'wooden' ? 'wooden items' : strtolower(self::TX_ITEM_LABELS[$detected] ?? $detected);
+            return 'This machine does not take ' . $noun;
+        }
         if ($detected === 'reject' || $selected === 'reject') return 'This machine does not take this material';
         if ($detected && $selected && $detected !== $selected) {
             $label = fn ($m) => strtolower(self::TX_ITEM_LABELS[$m] ?? $m);
