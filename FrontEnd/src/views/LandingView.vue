@@ -116,7 +116,6 @@
           <p class="card-text">{{ $t('landing.goesInText') }}</p>
           <div class="not-accepted">
             <span>{{ $t('landing.notAccepted') }}</span>
-            <span class="chip-no">{{ $t('landing.glass') }}</span>
             <span class="chip-no">{{ $t('landing.foodWaste') }}</span>
           </div>
         </div>
@@ -207,7 +206,7 @@ const steps = [
   { icon: PhTrayArrowDown, tone: 'tile-teal', title: 'landing.step2Title', text: 'landing.step2Text' },
   { icon: PhCoins, tone: 'tile-green', title: 'landing.step3Title', text: 'landing.step3Text' },
 ]
-const acceptedChips = ['landing.chipPlastic', 'landing.chipCans', 'landing.chipPaper']
+const acceptedChips = ['landing.chipPlastic', 'landing.chipCans', 'landing.chipGlass', 'landing.chipPaper']
 
 // ── Live numbers (GET /api/stats/public) ──
 const stats = ref({
@@ -240,14 +239,12 @@ const MONTH_MATERIALS = [
   { key: 'plastic', label: 'landing.matPlastic' },
   { key: 'aluminum', label: 'landing.matAluminium' },
   { key: 'paper', label: 'landing.matPaper' },
-  // Only some machines take glass: shown when it has a value, so the legend
-  // always adds up to the big number.
-  { key: 'glass', label: 'landing.matGlass', optional: true },
+  { key: 'glass', label: 'landing.matGlass' },
 ]
 const monthMaterials = computed(() => {
   const by = stats.value.month.carbon_by_material_kg || {}
   const total = MONTH_MATERIALS.reduce((sum, m) => sum + (Number(by[m.key]) || 0), 0)
-  return MONTH_MATERIALS.filter(m => !m.optional || (Number(by[m.key]) || 0) > 0).map(m => {
+  return MONTH_MATERIALS.map(m => {
     const v = Number(by[m.key]) || 0
     return { key: m.key, label: t(m.label), kg: stats.value.month.carbon_by_material_kg ? v : null, share: total ? (v / total) * 100 : 0 }
   })
