@@ -439,6 +439,7 @@ export const messages = {
       admin: 'Admin',
       appVersion: 'RVM web · v{version}',
       editNameHint: 'To change your name or password, go back and open Edit profile & password.',
+      openAdminPanel: 'Open Admin Panel',
     },
     scan: {
       machinesLoadError: 'Could not load machines. Check your connection and try again.',
@@ -949,6 +950,7 @@ export const messages = {
       admin: 'Admin',
       appVersion: 'RVM web · v{version}',
       editNameHint: 'Untuk menukar nama atau kata laluan, kembali dan buka Edit profil & kata laluan.',
+      openAdminPanel: 'Buka Panel Admin',
     },
     scan: {
       machinesLoadError: 'Tidak dapat memuatkan mesin. Semak sambungan anda dan cuba lagi.',

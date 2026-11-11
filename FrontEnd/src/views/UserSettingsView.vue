@@ -16,7 +16,8 @@
               <PhCaretRight :size="16" weight="bold" aria-hidden="true" />
             </button>
             <span class="hero-email">{{ maskEmail(auth.user?.email) }}</span>
-            <div class="hero-pills">
+            <!-- Admins don't recycle, so Scan / Points history aren't theirs. -->
+            <div v-if="!auth.isAdmin" class="hero-pills">
               <RouterLink to="/scan" class="hero-pill"><PhScan :size="15" weight="bold" aria-hidden="true" /> {{ $t('settings.scanShort') }}</RouterLink>
               <RouterLink to="/activity" class="hero-pill"><PhClockCounterClockwise :size="15" weight="bold" aria-hidden="true" /> {{ $t('settings.pointsHistory') }}</RouterLink>
             </div>
@@ -24,7 +25,19 @@
         </div>
       </header>
 
-      <section class="acct-summary" :aria-label="$t('settings.yourPoints')">
+      <!-- Admin: the summary card (all zeros for them) becomes a shortcut to the panel. -->
+      <section v-if="auth.isAdmin" class="acct-summary admin-card" :aria-label="$t('nav.admin')">
+        <span class="admin-card-icon"><PhGear :size="26" aria-hidden="true" /></span>
+        <div class="admin-card-text">
+          <strong>{{ $t('nav.admin') }}</strong>
+          <span>{{ $t('settings.adminPanelHint') }}</span>
+        </div>
+        <RouterLink to="/admin" class="admin-card-btn">
+          {{ $t('settings.openAdminPanel') }} <PhCaretRight :size="16" weight="bold" aria-hidden="true" />
+        </RouterLink>
+      </section>
+
+      <section v-else class="acct-summary" :aria-label="$t('settings.yourPoints')">
         <div class="sum-tiles">
           <div class="sum-tile">
             <span class="sum-icon sum-icon-green"><PhCoins :size="22" aria-hidden="true" /></span>
@@ -64,7 +77,7 @@
         </div>
       </section>
 
-      <nav class="menu-group" :aria-label="$t('settings.sectionRewards')">
+      <nav v-if="!auth.isAdmin" class="menu-group" :aria-label="$t('settings.sectionRewards')">
         <h2 class="menu-title">{{ $t('settings.sectionRewards') }}</h2>
         <div class="menu-card">
           <RouterLink to="/rewards" class="menu-row">
@@ -119,11 +132,6 @@
           <RouterLink to="/privacy" class="menu-row">
             <PhShieldCheck class="menu-icon icon-muted" :size="22" aria-hidden="true" />
             <span class="menu-label">{{ $t('settings.privacyPolicy') }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </RouterLink>
-          <RouterLink v-if="auth.isAdmin" to="/admin" class="menu-row">
-            <PhGear class="menu-icon icon-blue" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('nav.admin') }}</span>
             <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
           </RouterLink>
         </div>
@@ -753,7 +761,8 @@ onMounted(async () => {
     if (redeemPoints.value < minRedeem.value) redeemPoints.value = minRedeem.value
   } catch { /* use defaults */ }
 
-  await Promise.all([loadSummary(), loadRedemptionHistory()])
+  // Admins see the Admin Panel card instead of the points summary.
+  if (!auth.isAdmin) await Promise.all([loadSummary(), loadRedemptionHistory()])
 })
 </script>
 
@@ -827,6 +836,19 @@ onMounted(async () => {
 .flow-text { display: flex; flex-direction: column; }
 .flow-label { font-size: 13px; color: var(--text-muted); }
 .flow-value { font-size: 16px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* ── Admin shortcut card (in place of the summary for admins) ── */
+.admin-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: center; padding: 16px; }
+.admin-card-icon { width: 48px; height: 48px; border-radius: 10px; background: rgba(78,110,242,0.14); color: var(--accent-blue); display: flex; align-items: center; justify-content: center; }
+.admin-card-text { display: flex; flex-direction: column; gap: 2px; }
+.admin-card-text strong { font-size: 16px; color: var(--text-primary); }
+.admin-card-text span { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+.admin-card-btn {
+  grid-column: 1 / -1; min-height: 48px; border-radius: 10px; background: var(--accent-blue); color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 15px; font-weight: 700; text-decoration: none;
+}
+.admin-card-btn:hover { filter: brightness(1.08); }
 
 /* ── Menu lists ── */
 .menu-group { margin: 20px 16px 0; }

@@ -15,6 +15,8 @@ const props = defineProps({
   // Preview a choice that isn't saved yet ("leaf:green"); null = the user's own.
   value: { type: String, default: undefined },
   size: { type: Number, default: 40 },
+  // Background behind the initial when no icon is picked (CSS background).
+  fallback: { type: String, default: 'rgba(255,255,255,0.25)' },
 })
 
 const picked = computed(() => parseAvatar(props.value !== undefined ? props.value : props.user?.avatar_icon))
@@ -24,7 +26,7 @@ const style = computed(() => ({
   width: `${props.size}px`,
   height: `${props.size}px`,
   fontSize: `${Math.round(props.size * 0.4)}px`,
-  background: picked.value ? picked.value.hex : 'rgba(255,255,255,0.25)',
+  background: picked.value ? picked.value.hex : props.fallback,
 }))
 </script>
 

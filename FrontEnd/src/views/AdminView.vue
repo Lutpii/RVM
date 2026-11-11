@@ -19,7 +19,7 @@
       </nav>
       <div class="sidebar-footer">
         <div class="admin-info">
-          <div class="admin-avatar">{{ auth.user?.name?.charAt(0) || 'A' }}</div>
+          <UserAvatar :user="auth.user" :size="32" fallback="var(--grad-header)" class="admin-avatar" />
           <div>
             <div class="admin-name">{{ auth.user?.name }}</div>
             <div class="admin-role">Administrator</div>
@@ -1325,6 +1325,7 @@ import jsQR from 'jsqr'
 import { extractQrToken } from '@/utils/qrToken'
 import { materialIconSvg } from '@/utils/materialIcons'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 import ImageCropper from '@/components/admin/ImageCropper.vue'
 import MaintenanceHistoryModal from '@/components/admin/MaintenanceHistoryModal.vue'
 import {
@@ -3063,6 +3064,8 @@ onUnmounted(() => {
 
 <style scoped>
 .admin-page {
+  /* Cards and modals use 10px corners (same as the Account page); pills stay round. */
+  --radius: 10px;
   display: flex;
   height: 100vh;
   height: 100dvh;
@@ -3286,7 +3289,7 @@ onUnmounted(() => {
 }
 .overview-card {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 20px 22px;
+  border-radius: 10px; padding: 20px 22px;
 }
 /* stroke-width overrides the template's stroke-width="1.5" attribute (a CSS
    property always wins over a presentation attribute) — at 26px the thin
@@ -3681,7 +3684,7 @@ onUnmounted(() => {
 }
 .modal {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 14px; padding: 28px; width: 440px;
+  border-radius: 10px; padding: 28px; width: 440px;
   max-width: 100%;
   /* Auto margins center short dialogs. When a dialog is taller than the
      viewport, the vertical auto margins collapse and it starts at the safe
@@ -3915,7 +3918,7 @@ onUnmounted(() => {
 .review-modal-summary strong { color: var(--text-primary); font-size: 15px; text-transform: capitalize; }
 .detection-viewer {
   position: relative; margin: auto; width: min(960px, 100%);
-  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
   padding: 48px 16px 16px; box-sizing: border-box;
   box-shadow: 0 18px 48px rgba(0,0,0,0.35);
 }
