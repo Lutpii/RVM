@@ -318,7 +318,13 @@ class DemoDataGenerator
             ? $this->machines['dsme']
             : $this->machines['others'][mt_rand(0, count($this->machines['others']) - 1)];
         $machine = $machine->fresh();
-        $materials = $useDsme ? ['plastic', 'aluminum'] : ['plastic', 'aluminum', 'glass', 'paper'];
+        // Accepted materials are plastic, aluminium and paper (no glass), and
+        // the demo should show them in roughly equal numbers. The DSME machine
+        // only takes plastic and aluminium (2-bin), so the other machines lean
+        // on paper: with DSME_PERCENT = 60 this works out to about a third each.
+        $weights = $useDsme
+            ? ['plastic' => 1, 'aluminum' => 1]
+            : ['plastic' => 1, 'aluminum' => 1, 'paper' => 10];
 
         $session = $this->stamp(RecyclingSession::create([
             'session_code' => 'DEMO-' . strtoupper(Str::random(10)),
@@ -338,7 +344,7 @@ class DemoDataGenerator
 
         for ($k = 0; $k < $items; $k++) {
             if ($at->gt($until)) $at = $until->copy();
-            $material = $materials[mt_rand(0, count($materials) - 1)];
+            $material = $this->pickWeighted($weights);
             $rejected = mt_rand(1, 100) <= self::REJECT_PERCENT;
 
             if ($rejected) {
@@ -389,6 +395,17 @@ class DemoDataGenerator
         ])->saveQuietly();
 
         $this->maybeRedeem($user, $balance, $endAt, $until);
+    }
+
+    /** @param array<string, int> $weights */
+    private function pickWeighted(array $weights): string
+    {
+        $roll = mt_rand(1, array_sum($weights));
+        foreach ($weights as $key => $w) {
+            $roll -= $w;
+            if ($roll <= 0) return $key;
+        }
+        return array_key_last($weights);
     }
 
     private function maybeRedeem(User $user, int $balance, Carbon $at, Carbon $until): void

@@ -114,10 +114,6 @@
             <li v-for="c in acceptedChips" :key="c" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t(c) }}</li>
           </ul>
           <p class="card-text">{{ $t('landing.goesInText') }}</p>
-          <div class="not-accepted">
-            <span>{{ $t('landing.notAccepted') }}</span>
-            <span class="chip-no">{{ $t('landing.foodWaste') }}</span>
-          </div>
         </div>
 
         <div class="card info-card">
@@ -206,7 +202,7 @@ const steps = [
   { icon: PhTrayArrowDown, tone: 'tile-teal', title: 'landing.step2Title', text: 'landing.step2Text' },
   { icon: PhCoins, tone: 'tile-green', title: 'landing.step3Title', text: 'landing.step3Text' },
 ]
-const acceptedChips = ['landing.chipPlastic', 'landing.chipCans', 'landing.chipGlass', 'landing.chipPaper']
+const acceptedChips = ['landing.chipPlastic', 'landing.chipCans', 'landing.chipPaper']
 
 // ── Live numbers (GET /api/stats/public) ──
 const stats = ref({
@@ -239,12 +235,14 @@ const MONTH_MATERIALS = [
   { key: 'plastic', label: 'landing.matPlastic' },
   { key: 'aluminum', label: 'landing.matAluminium' },
   { key: 'paper', label: 'landing.matPaper' },
-  { key: 'glass', label: 'landing.matGlass' },
+  // Glass is not accepted; old rows from machines that once took it only
+  // show up here when they exist, so the legend still adds up.
+  { key: 'glass', label: 'landing.matGlass', optional: true },
 ]
 const monthMaterials = computed(() => {
   const by = stats.value.month.carbon_by_material_kg || {}
   const total = MONTH_MATERIALS.reduce((sum, m) => sum + (Number(by[m.key]) || 0), 0)
-  return MONTH_MATERIALS.map(m => {
+  return MONTH_MATERIALS.filter(m => !m.optional || (Number(by[m.key]) || 0) > 0).map(m => {
     const v = Number(by[m.key]) || 0
     return { key: m.key, label: t(m.label), kg: stats.value.month.carbon_by_material_kg ? v : null, share: total ? (v / total) * 100 : 0 }
   })

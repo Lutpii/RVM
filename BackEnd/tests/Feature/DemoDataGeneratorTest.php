@@ -101,6 +101,23 @@ class DemoDataGeneratorTest extends TestCase
         $this->assertFalse(PointsHistory::whereIn('user_id', $this->demoUserIds())->where('type', 'deducted')->exists());
     }
 
+    public function test_accepted_items_are_plastic_aluminium_and_paper_in_similar_numbers(): void
+    {
+        mt_srand(42);
+        $this->gen();
+        $counts = Transaction::whereIn('user_id', $this->demoUserIds())->where('is_valid', 1)
+            ->selectRaw('material_selected, COUNT(*) AS n')->groupBy('material_selected')
+            ->pluck('n', 'material_selected');
+
+        $this->assertEqualsCanonicalizing(['plastic', 'aluminum', 'paper'], $counts->keys()->all(), 'no glass in demo data');
+        $total = $counts->sum();
+        foreach ($counts as $material => $n) {
+            $share = $n / $total;
+            $this->assertGreaterThan(0.22, $share, "$material share too small");
+            $this->assertLessThan(0.45, $share, "$material share too large");
+        }
+    }
+
     public function test_daily_volume_is_not_lopsided(): void
     {
         $this->gen();
