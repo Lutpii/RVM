@@ -108,8 +108,12 @@ class UserController extends Controller
         // frozen in that language forever otherwise (e.g. a user who
         // recycles today and switches language tomorrow would see old
         // entries stuck in the old language).
-        $history->getCollection()->transform(function (PointsHistory $entry) {
+        $demoSessions = RecyclingSession::whereIn('id', $history->getCollection()->pluck('session_id')->filter()->unique())
+            ->pluck('is_demo', 'id');
+
+        $history->getCollection()->transform(function (PointsHistory $entry) use ($demoSessions) {
             $entry->description = $this->describeHistoryEntry($entry);
+            $entry->setAttribute('is_demo', (bool) ($demoSessions[$entry->session_id] ?? false));
             return $entry;
         });
 
@@ -183,5 +187,59 @@ class UserController extends Controller
             ->paginate(10);
 
         return response()->json(['success' => true, 'sessions' => $sessions]);
+    }
+
+    /**
+     * The user's newest in-progress session with its items, for the phone's
+     * "Session in progress" card (polled). Items are oldest first.
+     */
+    public function activeSession(Request $request): JsonResponse
+    {
+        $session = RecyclingSession::with('machine')
+            ->where('user_id', $request->user()->id)
+            ->where('status', 'active')
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$session) {
+            return response()->json(['success' => true, 'session' => null]);
+        }
+
+        $items = Transaction::where('session_id', $session->id)
+            ->orderBy('created_at')->orderBy('id')->get()
+            ->map(fn (Transaction $t) => [
+                'id'                => $t->id,
+                'material_selected' => $t->material_selected,
+                'ai_detected_type'  => $t->ai_detected_type,
+                'ai_confidence'     => $t->ai_confidence,
+                'is_valid'          => (bool) $t->is_valid,
+                'points_earned'     => (int) $t->points_earned,
+                'carbon_saved'      => $t->is_valid ? CarbonService::forMaterial($t->material_selected) : 0.0,
+                'created_at'        => $t->created_at?->toIso8601String(),
+            ])->values();
+
+        $machine = $session->machine;
+
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'session_code'   => $session->session_code,
+                'status'         => $session->status,
+                'started_at'     => $session->started_at,
+                'points_earned'  => $session->points_earned,
+                'total_items'    => $session->total_items,
+                'carbon_saved'   => $items->sum('carbon_saved'),
+                'current_points' => $request->user()->total_points,
+                'is_demo'        => (bool) $session->is_demo,
+                'machine'        => [
+                    'id'       => $machine?->id,
+                    'name'     => $machine?->name,
+                    'location' => $machine?->location_name,
+                    'is_demo'  => (bool) $machine?->is_demo,
+                ],
+                'items'          => $items,
+            ],
+        ]);
     }
 }

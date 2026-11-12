@@ -100,6 +100,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
     Route::get('/user/points-history', [UserController::class, 'pointsHistory']);
     Route::get('/user/account-summary', [UserController::class, 'accountSummary']);
     Route::get('/user/sessions', [UserController::class, 'sessions']);
+    Route::get('/user/active-session', [UserController::class, 'activeSession']);
     Route::get('/user/reward-items', [RewardController::class, 'index']);
     Route::post('/user/reward-items/{id}/redeem', [RewardController::class, 'redeem']);
     // Named /user/reward-redemptions, not /user/redemptions: that path is already
