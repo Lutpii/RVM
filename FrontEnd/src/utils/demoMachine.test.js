@@ -7,7 +7,7 @@ import { isDemoMachine } from './demoMachine'
 const resp = (machines) => ({ data: { machines } })
 
 describe('isDemoMachine', () => {
-  beforeEach(() => api.get.mockReset())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('true when the machine has is_demo === true', async () => {
     api.get.mockResolvedValue(resp([{ machine_code: 'RVM-DEMO', is_demo: true }]))
@@ -22,7 +22,7 @@ describe('isDemoMachine', () => {
     expect(await isDemoMachine('B')).toBe(false)
   })
   it('false when the request fails', async () => {
-    api.get.mockImplementation(() => Promise.reject(new Error('network')))
+    api.get.mockRejectedValue(new Error('network'))
     expect(await isDemoMachine('RVM-DEMO')).toBe(false)
   })
 })
