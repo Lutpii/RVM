@@ -191,6 +191,8 @@ export const messages = {
     },
     demo: {
       badge: 'Demonstration data (simulated)',
+      kioskBannerTitle: 'DEMO MODE',
+      kioskBannerText: 'simulated data & AI',
     },
     session: {
       totalPoints: 'Total Points',
@@ -762,6 +764,8 @@ export const messages = {
     },
     demo: {
       badge: 'Data demonstrasi (simulasi)',
+      kioskBannerTitle: 'MOD DEMO',
+      kioskBannerText: 'data & AI simulasi',
     },
     session: {
       totalPoints: 'Jumlah Mata',

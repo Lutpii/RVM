@@ -1,6 +1,7 @@
 <template>
   <div :class="['app-root', theme]" :data-theme="theme">
     <AppNav v-if="showAppNav" />
+    <KioskDemoBanner v-if="showKioskDemo" />
     <main :class="['app-content', { 'app-content-with-nav': showAppNav }]">
       <RouterView v-slot="{ Component }">
         <Transition name="page" mode="out-in">
@@ -24,6 +25,7 @@ import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import AppNav from '@/components/AppNav.vue'
+import KioskDemoBanner from '@/components/KioskDemoBanner.vue'
 import { useLenisScroll } from '@/composables/useLenisScroll'
 import { useIdleLogout } from '@/composables/useIdleLogout'
 
@@ -34,6 +36,7 @@ const auth  = useAuthStore()
 const route = useRoute()
 useLenisScroll()
 const showAppNav = computed(() => route.meta.showAppNav === true)
+const showKioskDemo = computed(() => route.path.startsWith('/demo-kiosk/'))
 
 const toastState = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
