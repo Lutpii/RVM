@@ -206,12 +206,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
-import api from '@/services/api'
+import api, { setKioskToken } from '@/services/api'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { retryOnce, newIdempotencyKey } from '@/utils/retryOnce'
 import { kioskBase } from '@/utils/kioskBase'
-import { DEMO_ITEMS, simulatedConfidence, resumeStep } from '@/utils/kioskDemo'
+import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine } from '@/utils/kioskDemo'
 
 const router = useRouter()
 const route  = useRoute()
@@ -284,6 +284,37 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+// ── The session must belong to THIS demo machine ────────────────────────────
+// A session resumed from another (real) machine would get the simulated items
+// saved there as real data. The id comes from /machines for the route's code,
+// never from rvm.machine (the QR page overwrites that one).
+let machineVerified = false
+
+async function demoMachineId() {
+  try {
+    const res = await api.get('/machines')
+    return (res.data.machines || []).find(m => m.machine_code === machineCode.value)?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+// True when the session may be used; otherwise clears it and goes to the QR page.
+async function ensureSessionOnThisMachine() {
+  if (machineVerified) return true
+  const id = await demoMachineId()
+  if (sessionMatchesMachine(rvm.session, id)) {
+    machineVerified = true
+    return true
+  }
+  if (!unmounted) {
+    setKioskToken(null)
+    rvm.resetSession()
+    router.replace(`${kioskBase(route)}/${machineCode.value}/qr`)
+  }
+  return false
+}
+
 // ── K4: simulated bin check, always passes ──────────────────────────────────
 const isAutoFlowRunning = ref(false)
 
@@ -304,6 +335,8 @@ async function chooseItem(item) {
   if (flowBusy.value || rvm.currentStep !== 'choose') return
   flowBusy.value = true
   try {
+    // Checked again here so nothing is ever saved into another machine's session.
+    if (!(await ensureSessionOnThisMachine())) return
     chosenId.value     = item.id
     itemWeight.value   = 0
     itemPoints.value   = 0
@@ -499,6 +532,7 @@ onMounted(() => {
   rvm.setStep(step === 'validate_ok' ? 'choose' : step)
 
   if (rvm.currentStep === 'bin_check') autoStartFlow()
+  ensureSessionOnThisMachine()
 })
 </script>
 

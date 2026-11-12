@@ -102,6 +102,9 @@ class QrController extends Controller
             $recyclingSession = RecyclingSession::with(['user', 'machine'])
                 ->where('user_id', $qrSession->scanned_by)
                 ->where('status', 'active')
+                // A demo kiosk only continues a session on its own machine;
+                // anything else would save simulated items as real data.
+                ->when($qrSession->machine?->is_demo, fn ($q) => $q->where('machine_id', $qrSession->machine_id))
                 ->first();
 
             if ($recyclingSession) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DEMO_ITEMS, simulatedConfidence, resumeStep } from './kioskDemo'
+import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine } from './kioskDemo'
 
 describe('DEMO_ITEMS', () => {
   it('lists plastic, aluminum, paper, glass in that order', () => {
@@ -39,5 +39,22 @@ describe('resumeStep', () => {
     expect(resumeStep('complete')).toBe('complete')
     expect(resumeStep('bin_check')).toBe('bin_check')
     expect(resumeStep('choose')).toBe('choose')
+  })
+})
+
+describe('sessionMatchesMachine', () => {
+  it('true when the session belongs to this machine', () => {
+    expect(sessionMatchesMachine({ machine: { id: 11 } }, 11)).toBe(true)
+    expect(sessionMatchesMachine({ machine: { id: '11' } }, 11)).toBe(true)
+  })
+  it('false when the session is on another machine', () => {
+    expect(sessionMatchesMachine({ machine: { id: 1 } }, 11)).toBe(false)
+  })
+  it('false when either id is unknown', () => {
+    expect(sessionMatchesMachine(null, 11)).toBe(false)
+    expect(sessionMatchesMachine({}, 11)).toBe(false)
+    expect(sessionMatchesMachine({ machine: { id: null } }, 11)).toBe(false)
+    expect(sessionMatchesMachine({ machine: { id: 11 } }, null)).toBe(false)
+    expect(sessionMatchesMachine({ machine: { id: 11 } }, undefined)).toBe(false)
   })
 })

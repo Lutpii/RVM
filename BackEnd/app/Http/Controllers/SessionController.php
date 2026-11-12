@@ -31,6 +31,14 @@ class SessionController extends Controller
         $existing = RecyclingSession::where('user_id', $user->id)
             ->where('status', 'active')->first();
 
+        // A demo machine never continues a session on another machine: its
+        // simulated items would be saved there as real data. End that session
+        // and start a fresh one here. Real machines keep the rule below.
+        if ($existing && $machine->is_demo && $existing->machine_id !== $machine->id) {
+            $this->closeSession($existing, $user->fresh());
+            $existing = null;
+        }
+
         if ($existing) {
             return response()->json(['success' => false, 'message' => __('messages.active_session_exists'), 'session_code' => $existing->session_code], 400);
         }
@@ -75,6 +83,26 @@ class SessionController extends Controller
         ]);
     }
 
+    // Close an active session: totals recalculated from its saved transactions.
+    private function closeSession(RecyclingSession $session, User $user): void
+    {
+        $session->loadMissing('transactions');
+        $earned     = $session->transactions->where('is_valid', true)->sum('points_earned');
+        $deducted   = $session->transactions->where('is_valid', false)->sum('points_deducted');
+        $totalItems = $session->transactions->where('is_valid', true)->count();
+        // Balance is already maintained per item by complete()/reject();
+        // never overwrite users.total_points here (it may include redemptions).
+        $endPoints  = (int) $user->total_points;
+
+        $session->update([
+            'status'        => 'completed',
+            'end_points'    => $endPoints,
+            'points_earned' => $earned - $deducted,
+            'total_items'   => $totalItems,
+            'ended_at'      => Carbon::now(),
+        ]);
+    }
+
     // End session
     public function end(Request $request, string $sessionCode): JsonResponse
     {
@@ -90,21 +118,7 @@ class SessionController extends Controller
 
         $user = $request->user()->fresh();
 
-        // Recalculate from transactions saved in DB for this session
-        $earned     = $session->transactions->where('is_valid', true)->sum('points_earned');
-        $deducted   = $session->transactions->where('is_valid', false)->sum('points_deducted');
-        $totalItems = $session->transactions->where('is_valid', true)->count();
-        // Balance is already maintained per item by complete()/reject();
-        // never overwrite users.total_points here (it may include redemptions).
-        $endPoints  = (int) $user->total_points;
-
-        $session->update([
-            'status'        => 'completed',
-            'end_points'    => $endPoints,
-            'points_earned' => $earned - $deducted,
-            'total_items'   => $totalItems,
-            'ended_at'      => Carbon::now(),
-        ]);
+        $this->closeSession($session, $user);
 
         return response()->json([
             'success' => true,

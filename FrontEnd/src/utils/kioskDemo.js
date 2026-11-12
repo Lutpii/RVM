@@ -22,3 +22,11 @@ const RESUME_TO_CHOOSE = ['camera', 'classify', 'result', 'weigh']
 export function resumeStep(step) {
   return RESUME_TO_CHOOSE.includes(step) ? 'choose' : step
 }
+
+// The demo kiosk only saves into a session that belongs to its own machine.
+// Anything else (unknown ids, a session resumed on a real machine) is refused.
+export function sessionMatchesMachine(session, machineId) {
+  const sessionMachineId = session?.machine?.id
+  if (sessionMachineId == null || machineId == null) return false
+  return String(sessionMachineId) === String(machineId)
+}
