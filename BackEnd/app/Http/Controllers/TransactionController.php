@@ -346,7 +346,7 @@ class TransactionController extends Controller
     {
         $request->validate([
             'session_code'      => 'required|string',
-            'material_selected' => 'required|in:aluminum,plastic,glass,paper',
+            'material_selected' => 'required|in:aluminum,plastic,glass,paper,reject',
             'ai_detected_type'  => 'required|string',
             'ai_confidence'     => 'nullable|numeric',
             'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
@@ -554,6 +554,7 @@ class TransactionController extends Controller
         $request->validate([
             'session_code'     => 'required|string',
             'ai_detected_type' => 'required|string',
+            'material_selected' => 'nullable|in:reject',
             'ai_confidence'    => 'nullable|numeric',
             'image_path'       => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
@@ -568,7 +569,9 @@ class TransactionController extends Controller
         }
 
         $material = $request->ai_detected_type;
-        $isValid  = $material !== 'unknown' && $material !== 'reject';
+        // A named reject (demo kiosk): the item is recognised but the machine does not take it.
+        $named    = $request->material_selected === 'reject';
+        $isValid  = !$named && $material !== 'unknown' && $material !== 'reject';
 
         $weightGrams = match($material) {
             'aluminum', 'plastic' => rand(9, 49),
@@ -581,7 +584,7 @@ class TransactionController extends Controller
             'session_id'        => $session->id,
             'user_id'           => $guest->id,
             'machine_id'        => $session->machine_id,
-            'material_selected' => $material,
+            'material_selected' => $named ? 'reject' : $material,
             'ai_detected_type'  => $material,
             'ai_confidence'     => $request->ai_confidence,
             'is_valid'          => $isValid,
@@ -617,7 +620,7 @@ class TransactionController extends Controller
             'points_earned' => $pointsEarned,
             'weight_grams'  => $weightGrams,
             'material'      => $material,
-            'carbon_saved'  => \App\Services\CarbonService::forMaterial($material),
+            'carbon_saved'  => $named ? 0 : \App\Services\CarbonService::forMaterial($material),
         ]);
     }
 

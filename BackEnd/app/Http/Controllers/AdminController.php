@@ -273,6 +273,7 @@ class AdminController extends Controller
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
             'status'        => 'nullable|in:active,inactive,maintenance',
+            'is_demo'       => 'sometimes|boolean',
         ]);
 
         $machine = RvmMachine::create([
@@ -282,6 +283,7 @@ class AdminController extends Controller
             'latitude'      => isset($validated['latitude']) && $validated['latitude'] !== '' ? $validated['latitude'] : null,
             'longitude'     => isset($validated['longitude']) && $validated['longitude'] !== '' ? $validated['longitude'] : null,
             'status'        => $validated['status'] ?? 'active',
+            'is_demo'       => $validated['is_demo'] ?? false,
             'aluminum_level'=> 0,
             'plastic_level' => 0,
             'glass_level'   => 0,
@@ -303,6 +305,7 @@ class AdminController extends Controller
             'latitude'      => 'nullable|numeric',
             'longitude'     => 'nullable|numeric',
             'status'        => 'nullable|in:active,inactive,maintenance',
+            'is_demo'       => 'sometimes|boolean',
         ]);
 
         $machine->update([
@@ -311,6 +314,7 @@ class AdminController extends Controller
             'latitude'      => array_key_exists('latitude',  $validated) && $validated['latitude']  !== '' ? $validated['latitude']  : $machine->latitude,
             'longitude'     => array_key_exists('longitude', $validated) && $validated['longitude'] !== '' ? $validated['longitude'] : $machine->longitude,
             'status'        => $validated['status'] ?? $machine->status,
+            'is_demo'       => $validated['is_demo'] ?? $machine->is_demo,
         ]);
 
         $this->log($request->user(), 'update_machine', 'machine', $id, "Updated machine: {$machine->name}");

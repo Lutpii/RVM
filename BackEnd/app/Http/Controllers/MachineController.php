@@ -14,7 +14,7 @@ class MachineController extends Controller
             ->select(['id','machine_code','name','location_name','latitude','longitude','status',
                       'aluminum_level','plastic_level','glass_level','paper_level',
                       // heartbeat state for the recycler view (U06); the key hash stays hidden
-                      'last_seen_at','fault_active'])
+                      'last_seen_at','fault_active','is_demo'])
             ->get();
 
         return response()->json(['success' => true, 'machines' => $machines]);
