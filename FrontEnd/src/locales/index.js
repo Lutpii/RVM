@@ -537,6 +537,18 @@ export const messages = {
     },
     demoKiosk: {
       notDemoMachine: 'This machine is not a demo machine. Ask an administrator to mark it as Demo.',
+      chooseTitle: 'What are you recycling?',
+      chooseHint: 'Demo only: pick the item you are inserting',
+      items: {
+        plastic: 'Plastic bottle',
+        aluminum: 'Aluminium can',
+        paper: 'Paper',
+        glass: 'Glass bottle',
+      },
+      simCapture: 'SIMULATED CAPTURE · no camera used',
+      simAi: 'SIMULATED AI',
+      simulated: 'SIMULATED',
+      glassRejected: 'This machine does not take glass. 0 points.',
     },
     kioskLanding: {
       subtitle: 'Smart Recycling System',
@@ -1113,6 +1125,18 @@ export const messages = {
     },
     demoKiosk: {
       notDemoMachine: 'Mesin ini bukan mesin demo. Minta pentadbir menandakannya sebagai Demo.',
+      chooseTitle: 'Apakah yang anda kitar semula?',
+      chooseHint: 'Demo sahaja: pilih item yang anda masukkan',
+      items: {
+        plastic: 'Botol plastik',
+        aluminum: 'Tin aluminium',
+        paper: 'Kertas',
+        glass: 'Botol kaca',
+      },
+      simCapture: 'TANGKAPAN SIMULASI · tiada kamera digunakan',
+      simAi: 'AI SIMULASI',
+      simulated: 'SIMULASI',
+      glassRejected: 'Mesin ini tidak menerima kaca. 0 mata.',
     },
     kioskLanding: {
       subtitle: 'Sistem Kitar Semula Pintar',
