@@ -83,14 +83,14 @@
           <component :is="entry.kind === 'session' ? 'button' : 'div'" v-for="entry in group.entries" :key="entry.id"
                      :type="entry.kind === 'session' ? 'button' : undefined"
                      :class="['activity-item', { clickable: entry.kind === 'session' }]"
-                     @click="entry.kind === 'session' && openSession(entry.sessionCode)">
+                     @click="entry.kind === 'session' && openSession(entry)">
             <div :class="['activity-icon', 'icon-' + entry.kind]" aria-hidden="true">
               <PhRecycle v-if="entry.kind === 'session' || entry.kind === 'item'" weight="regular" />
               <PhGift v-else-if="entry.kind === 'redemption'" weight="regular" />
               <PhPlusMinus v-else weight="regular" />
             </div>
             <div class="activity-info">
-              <span class="activity-title">{{ titleOf(entry) }}</span>
+              <span class="activity-title">{{ titleOf(entry) }} <span v-if="entry.isDemo" class="demo-chip">{{ $t('activity.demoChip') }}</span></span>
               <span class="activity-sub">{{ subtitleOf(entry) }}</span>
             </div>
             <span :class="['activity-pts', pointsClass(entry.pointsChange)]">{{ formatPoints(entry.pointsChange) }}</span>
@@ -101,7 +101,7 @@
       </section>
     </template>
 
-    <SessionDetailModal v-if="openSessionCode" :session-code="openSessionCode" @close="openSessionCode = null" />
+    <SessionDetailModal v-if="openSessionCode" :session-code="openSessionCode" :is-demo="openSessionDemo" @close="openSessionCode = null" />
   </div>
 </template>
 
@@ -131,6 +131,7 @@ const loading   = ref(true)
 const panelOpen = ref(false)
 const filters   = reactive({ tab: 'all', range: 'all', material: 'all' })
 const openSessionCode = ref(null)
+const openSessionDemo = ref(false)
 
 const pointsHistoryFailed = ref(false)
 const sessionsFailed      = ref(false)
@@ -142,7 +143,11 @@ const groups = computed(() => groupByDay(filterTimeline(timeline.value, filters,
 const rangeLabel = computed(() => t(RANGES.find((r) => r.value === filters.range)?.label || 'activity.filter.allTime'))
 
 function clearFilters() { filters.range = 'all'; filters.material = 'all' }
-function openSession(code) { if (code) openSessionCode.value = code }
+function openSession(entry) {
+  if (!entry.sessionCode) return
+  openSessionDemo.value = entry.isDemo === true
+  openSessionCode.value = entry.sessionCode
+}
 
 const dateLocale = computed(() => (locale.value === 'my' ? 'ms-MY' : 'en-GB'))
 function dayLabel(group) {
@@ -298,6 +303,7 @@ button.activity-item:last-child { border-bottom: none; }
 .icon-redemption { color: var(--accent-blue); }
 .icon-adjustment { color: var(--text-secondary); }
 .activity-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.demo-chip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-size: 10px; font-weight: 700; line-height: 1.5; vertical-align: middle; }
 .activity-title { font-size: 14px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
 .activity-sub { font-size: 12px; color: var(--text-muted); }
 .activity-pts { font-size: 15px; font-weight: 700; flex-shrink: 0; }

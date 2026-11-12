@@ -38,6 +38,7 @@ export function buildActivityTimeline(pointsHistory = [], sessions = [], redempt
       materials,
       pointsChange: items.length ? items.reduce((sum, i) => sum + (i.points_change || 0), 0) : (s.points_earned || 0),
       timestamp: s.started_at,
+      isDemo: s.is_demo === true,
     }
   })
 
@@ -51,6 +52,7 @@ export function buildActivityTimeline(pointsHistory = [], sessions = [], redempt
       material,
       pointsChange: h.points_change,
       timestamp: h.created_at,
+      isDemo: h.is_demo === true,
     }
   })
 
@@ -60,6 +62,7 @@ export function buildActivityTimeline(pointsHistory = [], sessions = [], redempt
     title: r.reward_name,
     pointsChange: -r.points_spent,
     timestamp: r.created_at,
+    isDemo: false,
   }))
 
   return [...sessionEntries, ...looseEntries, ...redemptionEntries]

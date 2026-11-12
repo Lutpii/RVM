@@ -4,7 +4,8 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="detail-modal" role="dialog" aria-modal="true" :aria-label="$t('activity.detail.title')">
       <h3 class="detail-title">{{ $t('activity.detail.title') }}</h3>
-      <p class="detail-code">{{ sessionCode }}</p>
+      <p class="detail-code">{{ sessionCode }}<span v-if="isDemo" class="demo-chip">{{ $t('activity.demoChip') }}</span></p>
+      <p v-if="isDemo" class="demo-note">{{ $t('activity.demoNote') }}</p>
 
       <div v-if="loading" class="detail-loading"><div class="spinner-sm"></div></div>
       <p v-else-if="loadError" class="detail-error">{{ $t('activity.detail.loadError') }}</p>
@@ -46,6 +47,7 @@ import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
 const props = defineProps({
   sessionCode: { type: String, required: true },
+  isDemo: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close'])
 const closeBtn = ref(null)
@@ -99,6 +101,8 @@ onMounted(async () => {
 }
 .detail-title { font-size: 17px; color: var(--text-primary); margin: 0; }
 .detail-code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--text-muted); margin: 0; word-break: break-all; }
+.demo-chip { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-family: inherit; font-size: 10px; font-weight: 700; }
+.demo-note { margin: 0; padding: 6px 10px; border-radius: 8px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-size: 12px; }
 .detail-loading { display: flex; justify-content: center; padding: 16px; }
 .detail-error { color: var(--accent-red); font-size: 13px; font-weight: 600; margin: 4px 0; }
 .detail-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 8px 0 0; }

@@ -102,3 +102,23 @@ describe('groupByDay', () => {
     expect(groups[2].date.getDate()).toBe(1)
   })
 })
+
+describe('isDemo', () => {
+  it('carries is_demo from sessions and history rows, false otherwise', () => {
+    const t = buildActivityTimeline(
+      [{ id: 1, session_id: null, points_change: 2, created_at: '2026-11-10T01:00:00Z', is_demo: true, transaction: { material_selected: 'PET' } },
+       { id: 2, session_id: null, points_change: 1, created_at: '2026-11-10T02:00:00Z', description: 'x' }],
+      [{ id: 1, session_code: 'D1', started_at: '2026-11-10T03:00:00Z', is_demo: true },
+       { id: 2, session_code: 'R1', started_at: '2026-11-10T04:00:00Z', is_demo: false },
+       { id: 3, session_code: 'O1', started_at: '2026-11-10T05:00:00Z' }],
+      [{ id: 9, reward_name: 'R', points_spent: 5, created_at: '2026-11-10T06:00:00Z' }],
+    )
+    const by = (id) => t.find((e) => e.id === id)
+    expect(by('session-1').isDemo).toBe(true)
+    expect(by('session-2').isDemo).toBe(false)
+    expect(by('session-3').isDemo).toBe(false)
+    expect(by('points-1').isDemo).toBe(true)
+    expect(by('adjustment-2').isDemo).toBe(false)
+    expect(by('redemption-9').isDemo).toBe(false)
+  })
+})
