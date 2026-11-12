@@ -96,12 +96,35 @@ class AdminDataScopeTest extends TestCase
         foreach ($sheet->toArray(null, false, false, false) as $row) {
             if (in_array('Demo', $row, true)) $glass++;
         }
-        $this->assertSame(1, $glass, 'only the per-machine summary row, no detail row');
+        $this->assertSame(0, $glass, 'no demo machine summary or detail row');
         $all = (new FormalReportService())->build(null, null)->getActiveSheet();
         $count = 0;
         foreach ($all->toArray(null, false, false, false) as $row) {
             if (in_array('Demo', $row, true)) $count++;
         }
         $this->assertSame(2, $count, 'summary row + the demo detail row');
+    }
+
+    private function reportText(string $scope): string
+    {
+        $rows = (new FormalReportService())->build(null, null, $scope)->getActiveSheet()->toArray(null, false, false, false);
+        return collect($rows)->map(fn ($r) => implode('|', array_map('strval', $r)))->implode("
+");
+    }
+
+    public function test_formal_report_states_and_scopes_machines_and_labels_redeemed(): void
+    {
+        $this->seedData();
+        $real = $this->reportText('real');
+        $this->assertStringContainsString('Data: Real only', $real);
+        $this->assertStringNotContainsString('Demo', $real);
+        $this->assertStringContainsString('Total Points Redeemed (all data)', $real);
+        $demo = $this->reportText('demo');
+        $this->assertStringContainsString('Data: Demo only', $demo);
+        $this->assertStringContainsString('Machines: Demo', $demo);
+        $all = $this->reportText('all');
+        $this->assertStringContainsString('Data: All', $all);
+        $this->assertStringContainsString('Total Points Redeemed (all machines)', $all);
+        $this->assertStringNotContainsString('(all data)', $all);
     }
 }

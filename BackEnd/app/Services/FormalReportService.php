@@ -40,19 +40,22 @@ class FormalReportService
         if ($dateTo) $query->whereDate('created_at', '<=', $dateTo);
         $transactions = $query->get();
 
-        $machines = RvmMachine::orderBy('name')->get();
+        $machines = RvmMachine::orderBy('name')
+            ->when($scope === 'real', fn ($q) => $q->where('is_demo', false))
+            ->when($scope === 'demo', fn ($q) => $q->where('is_demo', true))
+            ->get();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $row = 1;
 
-        $row = $this->writeHeader($sheet, $row, $dateFrom, $dateTo, $machines);
+        $row = $this->writeHeader($sheet, $row, $dateFrom, $dateTo, $machines, $scope);
         $row++; // spacer
 
         $row = $this->writeSummary($sheet, $row, $machines, $transactions);
         $row++; // spacer
 
-        $row = $this->writePointsRedeemedLine($sheet, $row, $dateFrom, $dateTo);
+        $row = $this->writePointsRedeemedLine($sheet, $row, $dateFrom, $dateTo, $scope);
         $row++; // spacer
 
         $this->writeDetails($sheet, $row, $transactions);
@@ -60,7 +63,7 @@ class FormalReportService
         return $spreadsheet;
     }
 
-    private function writeHeader(Worksheet $sheet, int $row, ?string $dateFrom, ?string $dateTo, $machines): int
+    private function writeHeader(Worksheet $sheet, int $row, ?string $dateFrom, ?string $dateTo, $machines, string $scope = 'all'): int
     {
         $sheet->setCellValue("A{$row}", 'RVM Recycling Report');
         $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(14);
@@ -75,6 +78,10 @@ class FormalReportService
 
         $machineNames = $machines->pluck('name')->implode(', ') ?: 'None';
         $sheet->setCellValue("A{$row}", "Machines: {$machineNames}");
+        $row++;
+
+        $dataLabel = ['real' => 'Real only', 'demo' => 'Demo only'][$scope] ?? 'All';
+        $sheet->setCellValue("A{$row}", "Data: {$dataLabel}");
         $row++;
 
         return $row;
@@ -142,14 +149,14 @@ class FormalReportService
         return $row;
     }
 
-    private function writePointsRedeemedLine(Worksheet $sheet, int $row, ?string $dateFrom, ?string $dateTo): int
+    private function writePointsRedeemedLine(Worksheet $sheet, int $row, ?string $dateFrom, ?string $dateTo, string $scope = 'all'): int
     {
         $query = RewardRedemption::query();
         if ($dateFrom) $query->whereDate('created_at', '>=', $dateFrom);
         if ($dateTo) $query->whereDate('created_at', '<=', $dateTo);
         $pointsRedeemed = (int) $query->sum('points_spent');
 
-        $sheet->setCellValue("A{$row}", "Total Points Redeemed (all machines): {$pointsRedeemed}");
+        $sheet->setCellValue("A{$row}", "Total Points Redeemed (" . ($scope === 'all' ? 'all machines' : 'all data') . "): {$pointsRedeemed}");
         $row++;
 
         return $row;
