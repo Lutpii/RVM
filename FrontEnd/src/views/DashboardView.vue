@@ -1,5 +1,7 @@
 <template>
   <div class="dashboard-page">
+    <ActiveSessionCard />
+
     <!-- Start hero: the first thing a recycler sees is what to do next -->
     <div class="points-hero" v-reveal>
       <div class="points-bg"></div>
@@ -50,6 +52,7 @@
               </em>
               <span><PhMapPin class="points-sub-icon" weight="regular" /> {{ machine.location_name }}</span>
             </div>
+            <span v-if="machine.is_demo" class="demo-chip">{{ $t('phoneSession.demoMachine') }}</span>
             <span class="machine-code">{{ machine.machine_code }}</span>
           </div>
 
@@ -103,6 +106,7 @@ import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import { RouterLink } from 'vue-router'
 import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold, PhCamera } from '@phosphor-icons/vue'
+import ActiveSessionCard from '@/components/ActiveSessionCard.vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
 import { demoDataLabel } from '@/utils/featureFlags'
 import { materialIconSvg } from '@/utils/materialIcons'
@@ -290,6 +294,7 @@ onMounted(async () => {
 .machine-info { flex: 1; }
 .machine-info strong { display: block; color: var(--text-primary); font-size: 14px; font-weight: 600; }
 .machine-info span   { color: var(--text-muted); font-size: 12px; }
+.demo-chip { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; white-space: nowrap; margin-right: 6px; align-self: flex-start; }
 .machine-code { background: var(--bg-hover); color: var(--text-muted); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-family: monospace; }
 
 /* Bin levels */

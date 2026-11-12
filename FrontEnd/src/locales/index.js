@@ -189,6 +189,15 @@ export const messages = {
       readyTitle: 'Ready to recycle?',
       readyHint: 'Scan the QR code shown on the RVM screen to start your recycling session.',
     },
+    phoneSession: {
+      happy: 'Happy recycling, {name}!',
+      connectedTo: 'You are connected to',
+      demoMachine: 'DEMO MACHINE',
+      inProgress: 'Session in progress',
+      summary: '{items} items · +{points} pts · {carbon} kg CO2',
+      view: 'View session',
+      simNote: 'Simulated AI confidence (demo machine)',
+    },
     demo: {
       badge: 'Demonstration data (simulated)',
       kioskBannerTitle: 'DEMO MODE',
@@ -776,6 +785,15 @@ export const messages = {
       getDirections: 'Dapatkan Arah',
       readyTitle: 'Sedia untuk kitar semula?',
       readyHint: 'Imbas kod QR yang dipaparkan pada skrin RVM untuk memulakan sesi kitar semula anda.',
+    },
+    phoneSession: {
+      happy: 'Selamat mengitar semula, {name}!',
+      connectedTo: 'Anda disambungkan ke',
+      demoMachine: 'MESIN DEMO',
+      inProgress: 'Sesi sedang berjalan',
+      summary: '{items} item · +{points} mata · {carbon} kg CO2',
+      view: 'Lihat sesi',
+      simNote: 'Keyakinan AI simulasi (mesin demo)',
     },
     demo: {
       badge: 'Data demonstrasi (simulasi)',

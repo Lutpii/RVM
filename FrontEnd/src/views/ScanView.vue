@@ -291,12 +291,12 @@ async function handleScan() {
           qr_token:   token.value.trim(),
         })
         if (sessionRes.data.success) {
-          setTimeout(() => router.push('/dashboard'), 800)
+          setTimeout(() => router.push({ name: 'session-connected' }), 800)
         }
       } catch (sessionErr) {
         const errData = sessionErr.response?.data
         if (errData?.session_code) {
-          setTimeout(() => router.push('/dashboard'), 800)
+          setTimeout(() => router.push({ name: 'session-connected' }), 800)
           return
         }
         success.value = ''

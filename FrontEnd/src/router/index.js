@@ -20,6 +20,7 @@ const SessionSummaryView = () => import('@/views/SessionSummaryView.vue')
 const AdminView          = () => import('@/views/AdminView.vue')
 const UserSettingsView   = () => import('@/views/UserSettingsView.vue')
 const ActivityView       = () => import('@/views/ActivityView.vue')
+const SessionConnectedView = () => import('@/views/SessionConnectedView.vue')
 const RewardsView        = () => import('@/views/RewardsView.vue')
 const NotFoundView       = () => import('@/views/NotFoundView.vue')
 const KioskLandingView      = () => import('@/views/KioskLandingView.vue')
@@ -138,6 +139,12 @@ const routes = [
     name: 'activity',
     component: ActivityView,
     meta: { title: 'Activity - RVM', requiresAuth: true, showAppNav: true },
+  },
+  {
+    path: '/connected',
+    name: 'session-connected',
+    component: SessionConnectedView,
+    meta: { title: 'Connected - RVM', requiresAuth: true },
   },
   {
     path: '/scan',
