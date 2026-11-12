@@ -27,8 +27,10 @@ class DemoData extends Command
 
         $this->table(['key', 'value'], collect($summary)->map(fn ($v, $k) => [$k, is_bool($v) ? ($v ? 'yes' : 'no') : $v])->values()->all());
 
-        Cache::forget('admin:dashboard:stats');
-        Cache::forget('admin:dashboard:chart-data');
+        foreach (['all', 'real', 'demo'] as $scope) {
+            Cache::forget("admin:dashboard:stats:{$scope}");
+            Cache::forget("admin:dashboard:chart-data:{$scope}");
+        }
 
         return self::SUCCESS;
     }

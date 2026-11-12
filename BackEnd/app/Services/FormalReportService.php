@@ -33,9 +33,9 @@ class FormalReportService
     // total row), a standalone points-redeemed line, then the transaction
     // detail table — as a single Spreadsheet. Shared by the download and
     // email-delivery endpoints so both always produce identical reports.
-    public function build(?string $dateFrom, ?string $dateTo): Spreadsheet
+    public function build(?string $dateFrom, ?string $dateTo, string $scope = 'all'): Spreadsheet
     {
-        $query = Transaction::with(['user', 'machine'])->latest();
+        $query = Transaction::dataScope($scope)->with(['user', 'machine'])->latest();
         if ($dateFrom) $query->whereDate('created_at', '>=', $dateFrom);
         if ($dateTo) $query->whereDate('created_at', '<=', $dateTo);
         $transactions = $query->get();

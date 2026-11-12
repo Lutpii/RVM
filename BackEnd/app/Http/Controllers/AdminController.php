@@ -53,22 +53,35 @@ class AdminController extends Controller
     // Dashboard stats
     public function dashboard(Request $request): JsonResponse
     {
-        $stats = Cache::remember('admin:dashboard:stats', self::CACHE_TTL_SECONDS, fn () => $this->computeDashboardStats());
+        $scope = $this->dataScope($request);
+        $stats = Cache::remember("admin:dashboard:stats:{$scope}", self::CACHE_TTL_SECONDS, fn () => $this->computeDashboardStats($scope));
 
         return response()->json(['success' => true, 'stats' => $stats]);
     }
 
-    private function computeDashboardStats(): array
+    // 'data' query param: all | real | demo (anything else = all).
+    private function dataScopeLabel(Request $request): string
+    {
+        return ['all' => 'All', 'real' => 'Real only', 'demo' => 'Demo only'][$this->dataScope($request)];
+    }
+
+    private function dataScope(Request $request): string
+    {
+        $value = $request->input('data');
+        return in_array($value, ['all', 'real', 'demo'], true) ? $value : 'all';
+    }
+
+    private function computeDashboardStats(string $scope = 'all'): array
     {
         $totalUsers        = User::count();
         $totalMachines     = RvmMachine::count();
-        $activeSessions    = RecyclingSession::where('status', 'active')->count();
-        $totalTransactions = Transaction::count();
-        $totalPointsGiven  = Transaction::where('is_valid', 1)->sum('points_earned');
+        $activeSessions    = RecyclingSession::dataScope($scope)->where('status', 'active')->count();
+        $totalTransactions = Transaction::dataScope($scope)->count();
+        $totalPointsGiven  = Transaction::dataScope($scope)->where('is_valid', 1)->sum('points_earned');
         $activeUsers       = User::where('role', 'user')->whereHas('recyclingSessions')->count();
-        $redemptionsToday  = Transaction::where('is_valid', 1)->whereDate('created_at', today())->count();
+        $redemptionsToday  = Transaction::dataScope($scope)->where('is_valid', 1)->whereDate('created_at', today())->count();
 
-        $materialCounts = Transaction::where('is_valid', 1)
+        $materialCounts = Transaction::dataScope($scope)->where('is_valid', 1)
             ->selectRaw('material_selected, COUNT(*) as count')
             ->groupBy('material_selected')
             ->pluck('count', 'material_selected');
@@ -78,7 +91,7 @@ class AdminController extends Controller
             $totalCarbonSaved += $count * \App\Services\CarbonService::forMaterial($material);
         }
 
-        $materialStats = Transaction::where('is_valid', 1)
+        $materialStats = Transaction::dataScope($scope)->where('is_valid', 1)
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())
             ->selectRaw('material_selected, COUNT(*) as count, SUM(points_earned) as total_points')
             ->groupBy('material_selected')
@@ -88,7 +101,7 @@ class AdminController extends Controller
                 return $row;
             });
 
-        $recentSessions = RecyclingSession::with(['user', 'machine'])
+        $recentSessions = RecyclingSession::dataScope($scope)->with(['user', 'machine'])
             ->latest()
             ->take(10)
             ->get()
@@ -464,6 +477,7 @@ class AdminController extends Controller
 
         return $export->download('Sessions', 'rvm_sessions', [
             'Search' => trim((string) $request->query('search', '')),
+            'Data' => $this->dataScopeLabel($request),
         ], ['Session code', 'User', 'User ID', 'Machine', 'Status', 'Items accepted', 'Points earned', 'Started', 'Ended'],
         $sessions->map(fn ($s) => [
             $s->session_code, $s->user?->name ?? 'Guest', $this->displayUserId($s->user),
@@ -477,7 +491,7 @@ class AdminController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
 
-        $query = RecyclingSession::with(['user', 'machine'])->latest();
+        $query = RecyclingSession::dataScope($this->dataScope($request))->with(['user', 'machine'])->latest();
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('status', 'like', "%{$search}%")
@@ -523,6 +537,7 @@ class AdminController extends Controller
             'Machine' => $machineName,
             'From' => $request->query('date_from'),
             'To' => $request->query('date_to'),
+            'Data' => $this->dataScopeLabel($request),
         ], ['Date', 'Time', 'User', 'User ID', 'Machine', 'Location', 'Item', 'Result', 'Reason', 'AI confidence %', 'Points'],
         $transactions->map(function ($tx) {
             $selected = strtolower((string) $tx->material_selected);
@@ -587,7 +602,7 @@ class AdminController extends Controller
             'date_to'    => 'nullable|date|after_or_equal:date_from',
         ]);
 
-        $query = Transaction::with(['user', 'machine', 'session'])->latest();
+        $query = Transaction::dataScope($this->dataScope($request))->with(['user', 'machine', 'session'])->latest();
 
         if (!empty($filters['machine_id'])) $query->where('machine_id', $filters['machine_id']);
         if (!empty($filters['date_from']))  $query->whereDate('created_at', '>=', $filters['date_from']);
@@ -1152,21 +1167,22 @@ class AdminController extends Controller
     }
 
     // 7-day daily collection trend + category breakdown + today overview
-    public function chartData(): JsonResponse
+    public function chartData(Request $request): JsonResponse
     {
-        $data = Cache::remember('admin:dashboard:chart-data', self::CACHE_TTL_SECONDS, fn () => $this->computeChartData());
+        $scope = $this->dataScope($request);
+        $data = Cache::remember("admin:dashboard:chart-data:{$scope}", self::CACHE_TTL_SECONDS, fn () => $this->computeChartData($scope));
 
         return response()->json(array_merge(['success' => true], $data));
     }
 
-    private function computeChartData(): array
+    private function computeChartData(string $scope = 'all'): array
     {
         $days   = collect(range(6, 0))->map(fn($i) => now()->subDays($i)->format('Y-m-d'));
         $labels = $days->map(fn($d) => \Carbon\Carbon::parse($d)->format('D'))->values();
 
         $materials = ['plastic', 'aluminum', 'paper', 'glass'];
 
-        $raw = \App\Models\Transaction::where('is_valid', 1)
+        $raw = \App\Models\Transaction::dataScope($scope)->where('is_valid', 1)
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())
             ->selectRaw('DATE(created_at) as day, material_selected, COUNT(*) as count')
             ->groupBy('day', 'material_selected')
@@ -1181,7 +1197,7 @@ class AdminController extends Controller
         }
 
         // Category breakdown totals (kg CO2e saved, all-time, per material)
-        $breakdownCounts = \App\Models\Transaction::where('is_valid', 1)
+        $breakdownCounts = \App\Models\Transaction::dataScope($scope)->where('is_valid', 1)
             ->selectRaw('material_selected, COUNT(*) as count')
             ->groupBy('material_selected')
             ->pluck('count', 'material_selected');
@@ -1190,13 +1206,13 @@ class AdminController extends Controller
         $today     = now()->toDateString();
         $yesterday = now()->subDay()->toDateString();
 
-        $todayCounts = \App\Models\Transaction::where('is_valid', 1)
+        $todayCounts = \App\Models\Transaction::dataScope($scope)->where('is_valid', 1)
             ->whereDate('created_at', $today)
             ->selectRaw('material_selected, COUNT(*) as cnt')
             ->groupBy('material_selected')
             ->pluck('cnt', 'material_selected');
 
-        $yesterdayCounts = \App\Models\Transaction::where('is_valid', 1)
+        $yesterdayCounts = \App\Models\Transaction::dataScope($scope)->where('is_valid', 1)
             ->whereDate('created_at', $yesterday)
             ->selectRaw('material_selected, COUNT(*) as cnt')
             ->groupBy('material_selected')
@@ -1232,7 +1248,7 @@ class AdminController extends Controller
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
-        $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo);
+        $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo, $this->dataScope($request));
         $filename = 'rvm_report_' . now()->format('Y-m-d') . '.xlsx';
         $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported formal report ({$dateFrom} to {$dateTo})");
 
@@ -1256,12 +1272,13 @@ class AdminController extends Controller
             'email' => 'required|email',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
+            'data' => 'nullable|in:all,real,demo',
         ]);
 
         $dateFrom = $validated['date_from'] ?? null;
         $dateTo = $validated['date_to'] ?? null;
 
-        $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo);
+        $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo, $validated['data'] ?? 'all');
         $writer = new Xlsx($spreadsheet);
 
         ob_start();
