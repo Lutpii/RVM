@@ -1,5 +1,13 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import { isDemoMachine } from '@/utils/demoMachine'
+
+// The demo kiosk may only run for machines marked is_demo (fails closed).
+async function demoMachineGuard(to) {
+  const machineCode = to.params.machineCode
+  if (await isDemoMachine(machineCode)) return true
+  return { name: 'demo-kiosk-landing', params: { machineCode } }
+}
 
 // Views (lazy-loaded — each becomes its own chunk, fetched only when visited)
 const LandingView        = () => import('@/views/LandingView.vue')
@@ -59,12 +67,14 @@ const routes = [
   {
     path: '/demo-kiosk/:machineCode/qr',
     name: 'demo-kiosk-qr',
+    beforeEnter: demoMachineGuard,
     component: KioskQrView,
     meta: { title: 'Scan QR - Demo Kiosk' },
   },
   {
     path: '/demo-kiosk/:machineCode/session',
     name: 'demo-kiosk-session',
+    beforeEnter: demoMachineGuard,
     component: DemoKioskSessionView,
     meta: { title: 'Demo Session - Demo Kiosk' },
   },

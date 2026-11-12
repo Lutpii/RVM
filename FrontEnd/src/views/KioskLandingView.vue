@@ -14,8 +14,8 @@
         <span>{{ machineName }} &nbsp;·&nbsp; {{ machineLocation || $t('kioskLanding.loading') }}</span>
       </div>
 
-      <p v-if="notDemo" class="not-demo-msg">{{ $t('demoKiosk.notDemoMachine') }}</p>
-      <button v-else class="start-btn min-h-kiosk-touch" @click="goToQr">
+      <p v-if="notDemo && checked" class="not-demo-msg">{{ $t('demoKiosk.notDemoMachine') }}</p>
+      <button v-else-if="!notDemo" class="start-btn min-h-kiosk-touch" @click="goToQr">
         <PhPlay class="start-icon" weight="fill" />
         {{ $t('dashboard.startRecycling') }}
       </button>
@@ -47,7 +47,9 @@ const machineLocation = ref('')
 const base            = kioskBase(route)
 const isDemoRoute      = isDemoKioskPath(route)
 // Only demo routes care about is_demo; real /kiosk/ routes ignore it.
-const notDemo          = ref(false)
+// Fail closed on demo routes: blocked until is_demo === true is confirmed.
+const notDemo          = ref(isDemoRoute)
+const checked          = ref(!isDemoRoute)
 
 onMounted(async () => {
   try {
@@ -57,13 +59,12 @@ onMounted(async () => {
     if (machine) {
       machineName.value     = machine.name
       machineLocation.value = machine.location_name
-      if (isDemoRoute && machine.is_demo !== true) notDemo.value = true
-    } else if (isDemoRoute) {
-      notDemo.value = true
+      if (isDemoRoute && machine.is_demo === true) notDemo.value = false
     }
   } catch {
     machineLocation.value = ''
   }
+  checked.value = true
 })
 
 function goToQr() {
