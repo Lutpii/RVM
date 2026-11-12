@@ -14,7 +14,8 @@
         <span>{{ machineName }} &nbsp;·&nbsp; {{ machineLocation || $t('kioskLanding.loading') }}</span>
       </div>
 
-      <button class="start-btn min-h-kiosk-touch" @click="goToQr">
+      <p v-if="notDemo" class="not-demo-msg">{{ $t('demoKiosk.notDemoMachine') }}</p>
+      <button v-else class="start-btn min-h-kiosk-touch" @click="goToQr">
         <PhPlay class="start-icon" weight="fill" />
         {{ $t('dashboard.startRecycling') }}
       </button>
@@ -35,6 +36,7 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
 import { PhRecycle, PhPlay } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
+import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 
 const router = useRouter()
 const route  = useRoute()
@@ -42,6 +44,10 @@ const route  = useRoute()
 const machineCode     = route.params.machineCode || 'RVM-001'
 const machineName     = ref('RVM Machine')
 const machineLocation = ref('')
+const base            = kioskBase(route)
+const isDemoRoute      = isDemoKioskPath(route)
+// Only demo routes care about is_demo; real /kiosk/ routes ignore it.
+const notDemo          = ref(false)
 
 onMounted(async () => {
   try {
@@ -51,6 +57,9 @@ onMounted(async () => {
     if (machine) {
       machineName.value     = machine.name
       machineLocation.value = machine.location_name
+      if (isDemoRoute && machine.is_demo !== true) notDemo.value = true
+    } else if (isDemoRoute) {
+      notDemo.value = true
     }
   } catch {
     machineLocation.value = ''
@@ -58,11 +67,12 @@ onMounted(async () => {
 })
 
 function goToQr() {
-  router.push(`/kiosk/${machineCode}/qr`)
+  router.push(`${base}/${machineCode}/qr`)
 }
 </script>
 
 <style scoped>
+.not-demo-msg { max-width: 560px; text-align: center; font-weight: 600; color: #b45309; margin: 16px 0; }
 .kiosk-landing {
   min-height: 100vh;
   min-height: 100dvh;

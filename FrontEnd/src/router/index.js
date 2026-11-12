@@ -15,6 +15,7 @@ const ActivityView       = () => import('@/views/ActivityView.vue')
 const RewardsView        = () => import('@/views/RewardsView.vue')
 const NotFoundView       = () => import('@/views/NotFoundView.vue')
 const KioskLandingView      = () => import('@/views/KioskLandingView.vue')
+const DemoKioskSessionView  = () => import('@/views/DemoKioskSessionView.vue')
 const KioskQrView           = () => import('@/views/KioskQrView.vue')
 const GoogleCallbackView    = () => import('@/views/GoogleCallbackView.vue')
 const WelcomeView           = () => import('@/views/WelcomeView.vue')
@@ -47,6 +48,31 @@ const routes = [
     name: 'kiosk-summary',
     component: SessionSummaryView,
     meta: { title: 'Session Summary - RVM Kiosk' },
+  },
+
+  {
+    path: '/demo-kiosk/:machineCode',
+    name: 'demo-kiosk-landing',
+    component: KioskLandingView,
+    meta: { title: 'Demo Kiosk' },
+  },
+  {
+    path: '/demo-kiosk/:machineCode/qr',
+    name: 'demo-kiosk-qr',
+    component: KioskQrView,
+    meta: { title: 'Scan QR - Demo Kiosk' },
+  },
+  {
+    path: '/demo-kiosk/:machineCode/session',
+    name: 'demo-kiosk-session',
+    component: DemoKioskSessionView,
+    meta: { title: 'Demo Session - Demo Kiosk' },
+  },
+  {
+    path: '/demo-kiosk/:machineCode/summary',
+    name: 'demo-kiosk-summary',
+    component: SessionSummaryView,
+    meta: { title: 'Session Summary - Demo Kiosk' },
   },
 
   // ── User (phone) routes ──────────────────────────────────────────────────
@@ -177,8 +203,11 @@ router.beforeEach(async (to, from, next) => {
   // storage (e.g. from testing both the phone and kiosk flows on one
   // machine). Only the pre-scan entry points need this; kiosk-session and
   // kiosk-summary are reached solely via the legitimate scan flow afterward.
-  const kioskRouteNames = ['kiosk-landing', 'kiosk-qr', 'kiosk-session', 'kiosk-summary']
-  if (to.name === 'kiosk-landing' || to.name === 'kiosk-qr') {
+  const kioskRouteNames = [
+    'kiosk-landing', 'kiosk-qr', 'kiosk-session', 'kiosk-summary',
+    'demo-kiosk-landing', 'demo-kiosk-qr', 'demo-kiosk-session', 'demo-kiosk-summary',
+  ]
+  if (['kiosk-landing', 'kiosk-qr', 'demo-kiosk-landing', 'demo-kiosk-qr'].includes(to.name)) {
     authStore.suspendForKiosk()
   } else if (kioskRouteNames.includes(from.name) && !kioskRouteNames.includes(to.name)) {
     // Leaving the kiosk flow for a normal page — restore this browser's own

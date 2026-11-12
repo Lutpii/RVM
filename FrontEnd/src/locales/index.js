@@ -535,6 +535,9 @@ export const messages = {
       subtitle: 'Every item you recycle makes a difference.',
       guestName: 'Guest',
     },
+    demoKiosk: {
+      notDemoMachine: 'This machine is not a demo machine. Ask an administrator to mark it as Demo.',
+    },
     kioskLanding: {
       subtitle: 'Smart Recycling System',
       hint: 'Scan the QR code with your phone to begin',
@@ -1107,6 +1110,9 @@ export const messages = {
       greeting: 'Terima Kasih',
       subtitle: 'Setiap item yang anda kitar semula memberi perbezaan.',
       guestName: 'Tetamu',
+    },
+    demoKiosk: {
+      notDemoMachine: 'Mesin ini bukan mesin demo. Minta pentadbir menandakannya sebagai Demo.',
     },
     kioskLanding: {
       subtitle: 'Sistem Kitar Semula Pintar',

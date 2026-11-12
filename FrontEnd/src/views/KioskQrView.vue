@@ -4,7 +4,7 @@
 
     <!-- Header -->
     <div class="qr-header">
-      <button class="back-btn" @click="$router.push(`/kiosk/${machineCode}`)">← {{ $t('kioskQr.back') }}</button>
+      <button class="back-btn" @click="$router.push(`${base}/${machineCode}`)">← {{ $t('kioskQr.back') }}</button>
       <span class="machine-label">{{ machineCode }}</span>
     </div>
 
@@ -93,6 +93,7 @@ import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
 import { PhHourglass } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
+import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 import { QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, afterQrExpiry } from '@/utils/qrToken'
 
 const router      = useRouter()
@@ -101,6 +102,7 @@ const rvm         = useRvmStore()
 const setTheme    = inject('setTheme')
 const { t }       = useI18n()
 const machineCode = route.params.machineCode || 'RVM-001'
+const base        = kioskBase(route)
 
 const state          = ref('waiting') // waiting | scanned | expired
 const loadingQr      = ref(true)
@@ -212,7 +214,7 @@ function startPoll() {
           // Real logged-in user — show the welcome splash before the session starts.
           router.push({
             path: '/welcome',
-            query: { redirect: `/kiosk/${machineCode}/session`, name: scannedUser.value, theme: scannedTheme },
+            query: { redirect: `${base}/${machineCode}/session`, name: scannedUser.value, theme: scannedTheme },
           })
           return
         }
@@ -232,7 +234,7 @@ function startPoll() {
         // scannedTheme already defaulted to 'light' above (guests have no saved preference).
         router.push({
           path: '/welcome',
-          query: { redirect: `/kiosk/${machineCode}/session`, name: t('kioskQr.guestName'), theme: scannedTheme },
+          query: { redirect: `${base}/${machineCode}/session`, name: t('kioskQr.guestName'), theme: scannedTheme },
         })
       } else if (res.data.status === 'expired') {
         handleExpiry()
@@ -272,7 +274,7 @@ function returnToKiosk() {
   clearIntervals()
   clearTimeout(screenTimeout)
   isActive = false
-  router.replace(`/kiosk/${machineCode}`)
+  router.replace(`${base}/${machineCode}`)
 }
 
 function clearIntervals() {
@@ -298,7 +300,7 @@ function startAsGuest() {
   setTheme('light')
   router.push({
     path: '/welcome',
-    query: { redirect: `/kiosk/${machineCode}/session`, name: t('kioskQr.guestName'), theme: 'light' },
+    query: { redirect: `${base}/${machineCode}/session`, name: t('kioskQr.guestName'), theme: 'light' },
   })
 }
 

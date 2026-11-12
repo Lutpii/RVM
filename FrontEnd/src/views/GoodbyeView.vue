@@ -51,7 +51,7 @@ onMounted(() => {
   setTimeout(() => {
     // Back to the kiosk's default look for whoever arrives next — regular
     // web navigation (non-kiosk) keeps whatever the browser had instead.
-    if (target.startsWith('/kiosk/')) {
+    if (target.startsWith('/kiosk/') || target.startsWith('/demo-kiosk/')) {
       setTheme('light')
     }
     router.replace(target)

@@ -120,6 +120,7 @@ import { useRvmStore } from '@/store/rvm'
 import { setKioskToken } from '@/services/api'
 import { PhRecycle, PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
+import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 
 const router = useRouter()
 const route  = useRoute()
@@ -166,7 +167,7 @@ function confettiStyle(i) {
 
 async function goHome() {
   const machineCode  = rvm.guestMachineCode || route.params.machineCode
-  const isKiosk      = route.path.startsWith('/kiosk/')
+  const isKiosk      = (route.path.startsWith('/kiosk/') || isDemoKioskPath(route))
   const displayName  = summary.value?.user_name || auth.user?.name || t('summary.guestName')
   // Carry the theme this session was actually shown in through to the
   // goodbye splash — GoodbyeView.vue resets to light afterward for whoever
@@ -180,7 +181,7 @@ async function goHome() {
     // auth.logout() here would delete this BROWSER's own real login, if it
     // happens to have one — e.g. a phone used to view the kiosk QR screen
     // once and to scan+log in another time, sharing this one localStorage.
-    router.push({ path: '/thank-you', query: { redirect: `/kiosk/${machineCode}`, name: displayName, theme: currentTheme } })
+    router.push({ path: '/thank-you', query: { redirect: `${kioskBase(route)}/${machineCode}`, name: displayName, theme: currentTheme } })
   } else {
     await auth.logout()
     router.push({ path: '/thank-you', query: { redirect: '/', name: displayName, theme: currentTheme } })
@@ -197,13 +198,13 @@ function computeFromTransactions(txns) {
 }
 
 onMounted(async () => {
-  const isKiosk = route.path.startsWith('/kiosk/')
+  const isKiosk = (route.path.startsWith('/kiosk/') || isDemoKioskPath(route))
   if (isKiosk && !rvm.session) {
     rvm.restoreKioskSession(route.params.machineCode)
   }
 
   if (isKiosk && !rvm.session) {
-    router.replace({ name: 'kiosk-qr', params: { machineCode: route.params.machineCode } })
+    router.replace({ name: isDemoKioskPath(route) ? 'demo-kiosk-qr' : 'kiosk-qr', params: { machineCode: route.params.machineCode } })
     return
   }
 
