@@ -1,12 +1,30 @@
 <template>
   <div class="dashboard-page">
-    <!-- Points hero card -->
+    <!-- Start hero: the first thing a recycler sees is what to do next -->
     <div class="points-hero" v-reveal>
       <div class="points-bg"></div>
-      <p class="points-label">{{ $t('dashboard.totalPoints') }}</p>
-      <div class="points-number">{{ auth.user?.total_points || 0 }}</div>
-      <p class="points-sub"><PhRecycle class="points-sub-icon" weight="regular" /> {{ $t('dashboard.keepRecycling') }}</p>
-      <p class="carbon-sub"><PhGlobe class="points-sub-icon" weight="regular" /> {{ $t('dashboard.carbonSaved', { value: (auth.user?.total_carbon_saved || 0).toFixed(2) }) }}</p>
+      <h1 class="ready-title">{{ $t('dashboard.readyTitle') }}</h1>
+      <p class="ready-hint">{{ $t('dashboard.readyHint') }}</p>
+      <RouterLink to="/scan" class="start-btn">
+        <PhCamera class="start-btn-icon" weight="bold" aria-hidden="true" />
+        {{ $t('dashboard.startRecycling') }}
+      </RouterLink>
+    </div>
+
+    <!-- Points and CO2: still visible, but secondary to the action above -->
+    <div class="section-pad">
+      <div v-if="demoDataLabel" class="demo-row"><DemoDataBadge /></div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-label">{{ $t('dashboard.totalPoints') }}</span>
+          <strong class="stat-value">{{ auth.user?.total_points || 0 }}</strong>
+          <span class="stat-sub"><PhRecycle class="points-sub-icon" weight="regular" /> {{ $t('dashboard.keepRecycling') }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label"><PhGlobe class="points-sub-icon" weight="regular" /> CO2</span>
+          <strong class="stat-value stat-value-sm">{{ $t('dashboard.carbonSaved', { value: (auth.user?.total_carbon_saved || 0).toFixed(2) }) }}</strong>
+        </div>
+      </div>
     </div>
 
     <!-- Nearby machines map -->
@@ -83,7 +101,10 @@ import 'leaflet/dist/leaflet.css'
 import markerIconUrl from 'leaflet/dist/images/marker-icon.png'
 import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
-import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold } from '@phosphor-icons/vue'
+import { RouterLink } from 'vue-router'
+import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold, PhCamera } from '@phosphor-icons/vue'
+import DemoDataBadge from '@/components/DemoDataBadge.vue'
+import { demoDataLabel } from '@/utils/featureFlags'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { machineAvailability } from '@/utils/machineConnectivity'
 
@@ -213,10 +234,33 @@ onMounted(async () => {
   position: absolute; inset: 0;
   background: radial-gradient(circle at 70% 50%, rgba(255,255,255,0.1) 0%, transparent 60%);
 }
-.points-label { color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 8px; }
-.points-number { color: white; font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
-.points-sub { color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 8px; }
-.carbon-sub { color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px; }
+.ready-title { position: relative; color: white; font-size: 24px; font-weight: 800; line-height: 1.2; margin: 0 0 8px; }
+.ready-hint { position: relative; color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.45; margin: 0 auto 18px; max-width: 420px; }
+.start-btn {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 28px; border-radius: 999px;
+  background: white; color: var(--accent-blue);
+  font-size: 16px; font-weight: 800; text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.start-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.22); }
+.start-btn:focus-visible { outline: 3px solid rgba(255,255,255,0.8); outline-offset: 3px; }
+.start-btn-icon { width: 20px; height: 20px; }
+
+/* Points + CO2 (secondary) */
+.demo-row { margin-bottom: 10px; }
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat-card {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.stat-label { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.stat-value { color: var(--text-primary); font-size: 24px; font-weight: 800; line-height: 1.1; }
+.stat-value-sm { font-size: 15px; font-weight: 700; }
+.stat-sub { color: var(--text-muted); font-size: 11px; }
 
 .section-pad { padding: 20px 16px 0; }
 .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; }
@@ -284,8 +328,11 @@ onMounted(async () => {
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  .points-hero { padding: 20px 16px 24px; }
-  .points-number { font-size: 40px; letter-spacing: -1px; }
+  .points-hero { padding: 22px 16px 24px; }
+  .ready-title { font-size: 21px; }
+  .ready-hint { font-size: 13px; }
+  .stat-value { font-size: 20px; }
+  .stat-value-sm { font-size: 14px; }
 
   .section-pad { padding: 14px 12px 0; }
   .section-title { font-size: 14px; }
@@ -295,6 +342,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 360px) {
-  .points-number { font-size: 34px; }
+  .stats-row { gap: 8px; }
+  .stat-card { padding: 10px; }
 }
 </style>

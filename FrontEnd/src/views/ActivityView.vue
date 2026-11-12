@@ -3,7 +3,10 @@
      entries grouped by day, a session's items folded into the session row. -->
 <template>
   <div class="activity-page">
-    <h1 class="page-title">{{ $t('activity.title') }}</h1>
+    <div class="title-row">
+      <h1 class="page-title">{{ $t('activity.title') }}</h1>
+      <DemoDataBadge />
+    </div>
 
     <p v-if="!loading && hasLoadError" class="load-error-notice">{{ $t('activity.loadError') }}</p>
 
@@ -11,7 +14,10 @@
       <div class="spinner-sm"></div>
     </div>
     <div v-else-if="timeline.length === 0" class="empty-state">
-      <p>{{ $t('activity.empty') }}</p>
+      <PhRecycle class="empty-icon" weight="regular" aria-hidden="true" />
+      <p class="empty-title">{{ $t('activity.empty') }}</p>
+      <p>{{ $t('activity.emptyHint') }}</p>
+      <RouterLink to="/scan" class="done-btn start-link">{{ $t('dashboard.startRecycling') }}</RouterLink>
     </div>
     <template v-else>
       <!-- Tabs + Filter button -->
@@ -102,7 +108,9 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 import { PhCaretRight, PhFunnelSimple, PhGift, PhPlusMinus, PhRecycle, PhX } from '@phosphor-icons/vue'
+import DemoDataBadge from '@/components/DemoDataBadge.vue'
 import api from '@/services/api'
 import { buildActivityTimeline, filterTimeline, groupByDay, activeFilterCount } from '@/utils/activityTimeline'
 import SessionDetailModal from '@/components/SessionDetailModal.vue'
@@ -218,6 +226,11 @@ onMounted(async () => {
   background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);
 }
 .empty-state p { margin: 0; }
+.empty-icon { width: 36px; height: 36px; color: var(--accent-blue); }
+.empty-title { color: var(--text-primary); font-size: 15px; font-weight: 700; }
+.start-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 24px; font-size: 14px; text-decoration: none; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.title-row .page-title { margin-bottom: 0; }
 
 /* toolbar */
 .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }

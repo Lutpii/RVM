@@ -63,8 +63,20 @@
             {{ cameraError }}
           </div>
 
+          <!-- Every camera error offers a way forward: try again, or type the code -->
+          <div v-if="cameraError && !cameraActive" class="recovery-row">
+            <button v-if="cameraSupported" type="button" class="camera-btn" @click="startCamera" :disabled="loading">
+              <PhArrowClockwise class="button-icon" weight="regular" aria-hidden="true" />
+              {{ $t('scan.tryAgain') }}
+            </button>
+            <button type="button" class="camera-btn" @click="focusCodeInput">
+              <PhKeyboard class="button-icon" weight="regular" aria-hidden="true" />
+              {{ $t('scan.useCodeInstead') }}
+            </button>
+          </div>
+
           <button
-            v-if="cameraSupported"
+            v-else-if="cameraSupported"
             class="camera-btn"
             @click="toggleCamera"
             :disabled="loading"
@@ -73,20 +85,21 @@
             <PhX v-else class="button-icon" weight="regular" aria-hidden="true" />
             {{ cameraActive ? $t('scan.closeCamera') : $t('scan.openCamera') }}
           </button>
-          <p v-else class="insecure-note">
+          <p v-else-if="!cameraError" class="insecure-note">
             <PhCamera class="note-icon" weight="regular" aria-hidden="true" />
             {{ $t('scan.cameraUnavailable') }}
           </p>
         </div>
 
-        <div class="divider-text">{{ $t('scan.orManual') }}</div>
-
-        <!-- <p class="scan-hint">Enter the session token shown on the machine screen:</p> -->
+        <div class="divider-text manual-title">{{ $t('scan.orManual') }}</div>
+        <p class="scan-hint">{{ $t('scan.manualHint') }}</p>
 
         <div class="token-input-wrap">
           <input
+            ref="tokenInputRef"
             v-model="token"
             type="text"
+            :aria-label="$t('scan.tokenPlaceholder')"
             :placeholder="$t('scan.tokenPlaceholder')"
             class="token-input"
             @keyup.enter="handleScan"
@@ -136,7 +149,7 @@ import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore }  from '@/store/rvm'
-import { PhArrowLeft, PhCamera, PhLink, PhWarning, PhX } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhArrowClockwise, PhCamera, PhKeyboard, PhLink, PhWarning, PhX } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import jsQR from 'jsqr'
 import { extractQrToken } from '@/utils/qrToken'
@@ -154,6 +167,12 @@ const success         = ref('')
 const machines        = ref([])
 const loadingMachines = ref(true)
 const machinesLoadError = ref(false)
+
+const tokenInputRef = ref(null)
+function focusCodeInput() {
+  tokenInputRef.value?.focus()
+  tokenInputRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
 
 // Camera state
 const videoRef     = ref(null)
@@ -501,6 +520,9 @@ onUnmounted(() => {
 }
 .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .divider-text { text-align: center; color: var(--text-muted); font-size: 12px; margin: 20px 0 16px; }
+.divider-text.manual-title { color: var(--text-primary); font-size: 14px; font-weight: 700; margin: 24px 0 4px; }
+.recovery-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.recovery-row .camera-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 16px; }
 .shortcut-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; text-align: center; }
 .loading-row { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 13px; justify-content: center; padding: 12px; }
 .machine-shortcuts { display: flex; flex-direction: column; gap: 10px; }

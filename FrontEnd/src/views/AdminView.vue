@@ -55,6 +55,7 @@
             <PhList weight="regular" aria-hidden="true" />
           </button>
           <h2 class="page-title">{{ currentNavItem?.id === 'detection' ? $t('admin.detectionReview.title') : currentNavItem?.label }}</h2>
+          <DemoDataBadge />
         </div>
         <div class="topbar-right">
           <span class="live-dot" v-if="isLive"></span>
@@ -1327,6 +1328,7 @@ import { extractQrToken } from '@/utils/qrToken'
 import { materialIconSvg } from '@/utils/materialIcons'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import DemoDataBadge from '@/components/DemoDataBadge.vue'
 import ImageCropper from '@/components/admin/ImageCropper.vue'
 import MaintenanceHistoryModal from '@/components/admin/MaintenanceHistoryModal.vue'
 import {
