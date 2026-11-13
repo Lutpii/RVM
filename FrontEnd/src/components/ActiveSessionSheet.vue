@@ -33,15 +33,15 @@
 
       <p v-if="summary.isDemo" class="sim-note">{{ $t('phoneSession.simNote') }}</p>
       <p v-if="endError" class="end-error" role="alert">{{ $t('phoneSession.endFailed') }}</p>
-      <button v-if="session?.session_code" type="button" class="end-btn" @click="confirming = true">{{ $t('phoneSession.endSession') }}</button>
+      <button v-if="session?.session_code" ref="endBtn" type="button" class="end-btn" @click="openConfirm">{{ $t('phoneSession.endSession') }}</button>
       <button ref="closeBtn" type="button" class="close-btn" @click="$emit('close')">{{ $t('activity.detail.close') }}</button>
 
-      <div v-if="confirming" class="confirm-overlay" @click.self="confirming = false">
-        <div class="confirm" role="alertdialog" aria-modal="true" :aria-label="$t('phoneSession.endSession')">
+      <div v-if="confirming" class="confirm-overlay" @click.self="!ending && closeConfirm()">
+        <div ref="dialogEl" class="confirm" role="alertdialog" aria-modal="true" @keydown.tab="trapTab" :aria-label="$t('phoneSession.endSession')">
           <h4>{{ $t('phoneSession.endConfirmTitle', { machine: summary.machineName }) }}</h4>
           <p>{{ $t('phoneSession.endConfirmText') }}</p>
           <div class="confirm-actions">
-            <button type="button" class="close-btn" :disabled="ending" @click="confirming = false">{{ $t('phoneSession.endConfirmCancel') }}</button>
+            <button ref="cancelBtn" type="button" class="close-btn" :disabled="ending" @click="closeConfirm">{{ $t('phoneSession.endConfirmCancel') }}</button>
             <button type="button" class="end-btn confirm-end" :disabled="ending" @click="endSession">{{ $t('phoneSession.endSession') }}</button>
           </div>
         </div>
@@ -51,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { summarizeSession } from '@/utils/activeSession'
@@ -62,13 +62,38 @@ import { useEscapeToClose } from '@/composables/useEscapeToClose'
 const props = defineProps({ session: { type: Object, default: null } })
 const emit = defineEmits(['close'])
 const closeBtn = ref(null)
-useEscapeToClose(() => emit('close'), closeBtn)
+useEscapeToClose(() => {
+  if (ending.value) return
+  if (confirming.value) { closeConfirm(); return }
+  emit('close')
+}, closeBtn)
 
 const { t, te } = useI18n()
 const showToast = inject('showToast', () => {})
 const store = useActiveSessionStore()
 const confirming = ref(false)
 const ending = ref(false)
+const endBtn = ref(null)
+const cancelBtn = ref(null)
+const dialogEl = ref(null)
+
+async function openConfirm() {
+  confirming.value = true
+  await nextTick()
+  cancelBtn.value?.focus()
+}
+async function closeConfirm() {
+  confirming.value = false
+  await nextTick()
+  endBtn.value?.focus()
+}
+function trapTab(e) {
+  const els = [...(dialogEl.value?.querySelectorAll('button:not([disabled])') || [])]
+  if (!els.length) { e.preventDefault(); return }
+  const first = els[0], last = els[els.length - 1]
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+}
 const endError = ref(false)
 
 async function endSession() {
@@ -83,7 +108,9 @@ async function endSession() {
     showToast(t('phoneSession.ended'), 'success')
   } catch {
     confirming.value = false
-    endError.value = true
+    await store.refresh()
+    if (store.session?.session_code === props.session?.session_code && store.session) endError.value = true
+    else emit('close')
   } finally {
     ending.value = false
   }
