@@ -11,12 +11,18 @@ const KEYS = [
   'scan.subtitle', 'scan.orManual', 'scan.manualHint', 'scan.tokenPlaceholder', 'scan.connectBtn',
   'scan.permissionDenied', 'scan.tryAgain', 'scan.useCodeInstead',
   'kioskQr.tokenLabel',
-  'demo.badge',
+  'demo.badge', 'demo.kioskBannerTitle', 'demo.kioskBannerText',
+  'activity.demoChip', 'activity.demoNote',
+  'phoneSession.happy', 'phoneSession.connectedTo', 'phoneSession.demoMachine',
+  'phoneSession.inProgress', 'phoneSession.summary', 'phoneSession.view', 'phoneSession.simNote',
+  'demoKiosk.notDemoMachine', 'demoKiosk.chooseTitle', 'demoKiosk.chooseHint',
+  'demoKiosk.items.plastic', 'demoKiosk.items.aluminum', 'demoKiosk.items.paper', 'demoKiosk.items.glass',
+  'demoKiosk.simCapture', 'demoKiosk.simAi', 'demoKiosk.simulated', 'demoKiosk.glassRejected',
 ]
 
 const get = (obj, path) => path.split('.').reduce((o, k) => o?.[k], obj)
 
-describe('usability review keys', () => {
+describe('usability + demo kiosk keys', () => {
   for (const locale of Object.keys(messages)) {
     it(`are all defined in "${locale}"`, () => {
       const missing = KEYS.filter((k) => typeof get(messages[locale], k) !== 'string' || !get(messages[locale], k))
