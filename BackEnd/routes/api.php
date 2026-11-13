@@ -131,6 +131,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
 
     // Admin only routes
     Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::put('/machines/order', [AdminController::class, 'updateMachineOrder']);
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         // Excel exports of the admin tables (same filters as the list endpoints).
         // Registered before /users/{id} so 'export' is never read as an id.

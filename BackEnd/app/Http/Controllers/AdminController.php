@@ -274,7 +274,31 @@ class AdminController extends Controller
     // Machine management
     public function machines(): JsonResponse
     {
-        return response()->json(['success' => true, 'machines' => RvmMachine::all()]);
+        return response()->json(['success' => true, 'machines' => RvmMachine::orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('id')->get()]);
+    }
+
+    public function updateMachineOrder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'order' => ['required', 'array', 'min:1'],
+            'order.*' => ['required', 'integer', 'distinct'],
+        ]);
+        $order = array_map('intval', array_values($validated['order']));
+
+        return DB::transaction(function () use ($order) {
+            $current = RvmMachine::orderBy('id')->lockForUpdate()->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $submitted = $order;
+            sort($submitted);
+            if ($current !== $submitted) {
+                return response()->json(['message' => 'Machine list changed. Reload and try again.'], 409);
+            }
+
+            foreach ($order as $position => $id) {
+                RvmMachine::whereKey($id)->update(['display_order' => $position]);
+            }
+
+            return response()->json(['order' => $order]);
+        }, 3);
     }
 
     public function createMachine(Request $request): JsonResponse

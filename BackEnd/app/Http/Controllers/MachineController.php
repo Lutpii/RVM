@@ -15,6 +15,7 @@ class MachineController extends Controller
                       'aluminum_level','plastic_level','glass_level','paper_level',
                       // heartbeat state for the recycler view (U06); the key hash stays hidden
                       'last_seen_at','fault_active','is_demo'])
+            ->orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('id')
             ->get();
 
         return response()->json(['success' => true, 'machines' => $machines]);
