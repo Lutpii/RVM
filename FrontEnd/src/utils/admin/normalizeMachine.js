@@ -5,5 +5,6 @@ export function normalizeMachine(machine) {
   for (const key of BIN_LEVEL_KEYS) {
     if (normalized[key] == null) normalized[key] = 0
   }
+  normalized.is_demo = Boolean(normalized.is_demo)
   return normalized
 }

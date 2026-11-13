@@ -18,6 +18,8 @@ const KEYS = [
   'demoKiosk.notDemoMachine', 'demoKiosk.chooseTitle', 'demoKiosk.chooseHint',
   'demoKiosk.items.plastic', 'demoKiosk.items.aluminum', 'demoKiosk.items.paper', 'demoKiosk.items.glass',
   'demoKiosk.simCapture', 'demoKiosk.simAi', 'demoKiosk.simulated', 'demoKiosk.glassRejected',
+  'admin.dataScope.label', 'admin.dataScope.all', 'admin.dataScope.real', 'admin.dataScope.demo',
+  'admin.demoChip', 'admin.machine.isDemo', 'admin.machine.isDemoHint',
 ]
 
 const get = (obj, path) => path.split('.').reduce((o, k) => o?.[k], obj)

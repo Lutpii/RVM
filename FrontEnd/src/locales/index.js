@@ -328,6 +328,12 @@ export const messages = {
     },
     admin: {
       title: 'Admin Panel',
+      dataScope: { label: 'Data', all: 'All', real: 'Real only', demo: 'Demo only' },
+      demoChip: 'DEMO',
+      machine: {
+        isDemo: 'Demo machine',
+        isDemoHint: 'Runs the demo kiosk (simulated capture and AI). Its transactions are marked DEMO.',
+      },
       dashboard: 'Dashboard',
       users: 'Users',
       machines: 'Machines',
@@ -926,6 +932,12 @@ export const messages = {
     },
     admin: {
       title: 'Panel Pentadbir',
+      dataScope: { label: 'Data', all: 'Semua', real: 'Sebenar sahaja', demo: 'Demo sahaja' },
+      demoChip: 'DEMO',
+      machine: {
+        isDemo: 'Mesin demo',
+        isDemoHint: 'Menjalankan kiosk demo (tangkapan dan AI simulasi). Transaksinya ditandakan DEMO.',
+      },
       dashboard: 'Papan Pemuka',
       users: 'Pengguna',
       machines: 'Mesin',

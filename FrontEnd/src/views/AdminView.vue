@@ -58,6 +58,12 @@
           <DemoDataBadge />
         </div>
         <div class="topbar-right">
+          <div class="scope-switch" role="group" :aria-label="$t('admin.dataScope.label')">
+            <span class="scope-label">{{ $t('admin.dataScope.label') }}</span>
+            <button v-for="scope in DATA_SCOPES" :key="scope" type="button"
+              :class="['scope-btn', { active: dataScope === scope }]" :aria-pressed="dataScope === scope"
+              @click="setDataScope(scope)">{{ $t('admin.dataScope.' + scope) }}</button>
+          </div>
           <span class="live-dot" v-if="isLive"></span>
           <span class="last-updated">Updated: {{ lastUpdated }}</span>
           <button class="refresh-btn" @click="fetchTabData(activeTab, true)"><PhArrowsClockwise weight="regular" aria-hidden="true" /> Refresh</button>
@@ -156,6 +162,7 @@
                 <PhWarningOctagon v-if="alert.type === 'fault'" class="alert-icon" weight="regular" aria-hidden="true" />
                 <PhWifiSlash v-else class="alert-icon" weight="regular" aria-hidden="true" />
                 <strong>{{ alert.name }}</strong>
+                <span v-if="alert.isDemo" class="demo-chip">{{ $t('admin.demoChip') }}</span>
                 <div class="alert-bins">
                   <span class="bin-tag">{{ alert.type === 'fault' ? 'Hardware fault' : 'Offline' }}</span>
                   <span v-if="alert.detail" class="alert-detail">{{ alert.detail }}</span>
@@ -382,7 +389,7 @@
                     <div v-if="tx.user" class="tx-sub mono">{{ formatUserId(tx.user) }}</div>
                   </td>
                   <td>
-                    <div class="tx-main">{{ tx.machine?.name || '—' }}</div>
+                    <div class="tx-main">{{ tx.machine?.name || '—' }} <span v-if="tx.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span></div>
                     <div v-if="tx.machine?.location_name" class="tx-sub">{{ tx.machine.location_name }}</div>
                   </td>
                   <td>
@@ -556,6 +563,7 @@
                 <div>
                   <strong>{{ machine.name }}</strong>
                   <span class="machine-code-badge">{{ machine.machine_code }}</span>
+                  <span v-if="machine.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span>
                 </div>
                 <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
               </div>
@@ -633,7 +641,7 @@
                 <tr v-for="s in sessions" :key="s.id">
                   <td class="mono small">{{ s.session_code }}</td>
                   <td>{{ s.user?.name || 'Guest' }}</td>
-                  <td>{{ s.machine?.name || '—' }}</td>
+                  <td>{{ s.machine?.name || '—' }} <span v-if="s.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span></td>
                   <td><span :class="['status-badge', 'status-' + s.status]">{{ s.status }}</span></td>
                   <td>{{ s.total_items }}</td>
                   <td class="pts-green">+{{ s.points_earned }}</td>
@@ -1041,6 +1049,10 @@
             <input v-model="newMachine.longitude" type="number" step="any" placeholder="103.1234" />
           </div>
         </div>
+        <div class="form-group demo-check">
+          <label class="check-row"><input v-model="newMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
+          <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
+        </div>
         <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
           <button class="action-btn edit-btn" @click="addMachine" :disabled="savingMachine">
@@ -1202,6 +1214,10 @@
             <input v-model="editingMachine.longitude" type="number" step="any" />
           </div>
         </div>
+        <div class="form-group demo-check">
+          <label class="check-row"><input v-model="editingMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
+          <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
+        </div>
         <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
           <button class="action-btn edit-btn" @click="saveMachine" :disabled="savingMachine">
@@ -1351,6 +1367,7 @@ import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
 import { itemLabel, resultReason, confidenceLevel, percentOf } from '@/utils/admin/transactionDisplay.js'
+import { DATA_SCOPES, readDataScope, writeDataScope } from '@/utils/admin/dataScope.js'
 import { downloadExcel } from '@/utils/admin/excelExport.js'
 import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
 import {
@@ -1369,6 +1386,7 @@ const toggleTheme = inject('toggleTheme')
 
 // ── State ──
 const activeTab = ref('dashboard')
+const dataScope = ref(readDataScope())
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
 
@@ -1661,7 +1679,7 @@ const donutChartOptions = {
 }
 
 const newMachine = ref({
-  machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '',
+  machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '', is_demo: false,
 })
 
 let refreshTimer = null
@@ -1846,7 +1864,7 @@ async function fetchTabData(tab, showSpinner = false) {
   try {
     if (tab === 'dashboard') {
       if (showSpinner) loadingStats.value = true
-      const res = await api.get('/admin/stats')
+      const res = await api.get('/admin/stats', { params: { data: dataScope.value } })
       statsData.value      = res.data.stats                   || {}
       materialStats.value  = (res.data.stats?.material_stats || []).filter(m => m.material_selected !== 'glass')
       recentSessions.value = res.data.stats?.recent_sessions  || []
@@ -1871,6 +1889,7 @@ async function fetchTabData(tab, showSpinner = false) {
         search: txSearch.value || undefined, status: txFilter.value || undefined,
         machine_id: txMachine.value || undefined,
         date_from: txDateFrom.value || undefined, date_to: txDateTo.value || undefined,
+        data: dataScope.value,
       } })
       transactions.value = res.data.transactions?.data || []
       txTotal.value     = res.data.transactions?.total ?? 0
@@ -1893,6 +1912,7 @@ async function fetchTabData(tab, showSpinner = false) {
       if (showSpinner) loadingSessions.value = true
       const res = await api.get('/admin/sessions', { params: {
         page: sessionsPage.value, per_page: sessionsPerPage.value, search: sessionsSearch.value || undefined,
+        data: dataScope.value,
       } })
       sessions.value = res.data.sessions?.data || []
       sessionsTotal.value    = res.data.sessions?.total ?? 0
@@ -2198,12 +2218,12 @@ async function exportDetectionLogsExcel() {
 const TABLE_EXPORTS = {
   transactions: () => ['/admin/transactions/export', {
     search: txSearch.value, status: txFilter.value, machine_id: txMachine.value,
-    date_from: txDateFrom.value, date_to: txDateTo.value,
+    date_from: txDateFrom.value, date_to: txDateTo.value, data: dataScope.value,
   }, 'rvm_transactions'],
   users: () => ['/admin/users/export', {
     search: userSearch.value, sort: usersSortColumn.value, direction: usersSortDirection.value,
   }, 'rvm_users'],
-  sessions: () => ['/admin/sessions/export', { search: sessionsSearch.value }, 'rvm_sessions'],
+  sessions: () => ['/admin/sessions/export', { search: sessionsSearch.value, data: dataScope.value }, 'rvm_sessions'],
   audit: () => ['/admin/logs/export', {
     search: auditSearch.value, action: auditAction.value,
     date_from: auditDateFrom.value, date_to: auditDateTo.value,
@@ -2279,7 +2299,7 @@ async function fetchRewardConfig() {
 
 async function fetchChartData() {
   try {
-    const res = await api.get('/admin/chart-data')
+    const res = await api.get('/admin/chart-data', { params: { data: dataScope.value } })
     const { labels, datasets, breakdown, overview } = res.data
     overviewData.value = overview || {}
 
@@ -2338,6 +2358,19 @@ watch(() => [route.query.tab, route.query.view], () => {
   if (wanted.detectionView !== detectionView.value) detectionView.value = wanted.detectionView
   if (wanted.tab !== activeTab.value) switchTab(wanted.tab)
 })
+
+// Admin data switch: All / Real only / Demo only. Every tab's data depends on
+// it, so mark all tabs stale and reload the open one (plus the dashboard charts).
+function setDataScope(scope) {
+  if (!DATA_SCOPES.includes(scope) || scope === dataScope.value) return
+  dataScope.value = scope
+  writeDataScope(scope)
+  for (const key of Object.keys(tabFetchedAt)) tabFetchedAt[key] = 0
+  txPage.value = 1
+  sessionsPage.value = 1
+  fetchTabData(activeTab.value, true)
+  if (activeTab.value === 'dashboard') fetchChartData()
+}
 
 function switchTab(tab) {
   activeTab.value = tab
@@ -2516,7 +2549,7 @@ async function exportExcel() {
   try {
     const res = await api.get('/admin/export-excel', {
       responseType: 'blob',
-      params: { date_from: reportDateFrom.value || undefined, date_to: reportDateTo.value || undefined },
+      params: { date_from: reportDateFrom.value || undefined, date_to: reportDateTo.value || undefined, data: dataScope.value },
     })
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')
@@ -2549,6 +2582,7 @@ async function sendReportEmail() {
       email: emailReportAddress.value.trim(),
       date_from: reportDateFrom.value || undefined,
       date_to: reportDateTo.value || undefined,
+      data: dataScope.value,
     })
     showEmailReportModal.value = false
     showToast(res.data.message || 'Report emailed.')
@@ -2660,7 +2694,7 @@ async function deleteUser(id) {
 
 // ── Machine management ──
 function openAddMachine() {
-  newMachine.value = { machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '' }
+  newMachine.value = { machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '', is_demo: false }
   machineError.value = ''
   showAddMachine.value = true
 }
@@ -2685,6 +2719,7 @@ async function addMachine() {
       status:        newMachine.value.status || 'active',
       latitude:      newMachine.value.latitude !== '' ? newMachine.value.latitude : null,
       longitude:     newMachine.value.longitude !== '' ? newMachine.value.longitude : null,
+      is_demo:       Boolean(newMachine.value.is_demo),
     }
     const res = await api.post('/admin/machines', payload)
     adminMachines.value.push(normalizeMachine(res.data.machine))
@@ -2717,6 +2752,7 @@ async function saveMachine() {
       status:        editingMachine.value.status,
       latitude:      editingMachine.value.latitude !== '' ? editingMachine.value.latitude : null,
       longitude:     editingMachine.value.longitude !== '' ? editingMachine.value.longitude : null,
+      is_demo:       Boolean(editingMachine.value.is_demo),
     }
     const res = await api.put(`/admin/machines/${editingMachine.value.id}`, payload)
     const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
@@ -3221,6 +3257,14 @@ onUnmounted(() => {
   top: 0;
   z-index: 50;
 }
+.demo-chip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-size: 10px; font-weight: 700; line-height: 1.5; vertical-align: middle; }
+.scope-switch { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+.scope-label { font-size: 11px; color: var(--text-muted); padding: 0 6px; }
+.scope-btn { border: 0; background: transparent; color: var(--text-secondary); font-size: 12px; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+.scope-btn.active { background: var(--accent-blue); color: #fff; }
+.check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.check-row input { width: auto; }
+.field-hint { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .last-updated { font-size: 12px; color: var(--text-muted); }

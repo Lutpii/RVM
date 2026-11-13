@@ -13,6 +13,7 @@ describe('normalizeMachine', () => {
       plastic_level: 0,
       glass_level: 0,
       paper_level: 0,
+      is_demo: false,
     })
   })
 
@@ -33,5 +34,13 @@ describe('normalizeMachine', () => {
     normalizeMachine(machine)
 
     expect(machine).toEqual({ id: 3 })
+  })
+})
+
+describe('normalizeMachine is_demo', () => {
+  it('keeps is_demo as a boolean', () => {
+    expect(normalizeMachine({ is_demo: 1 }).is_demo).toBe(true)
+    expect(normalizeMachine({ is_demo: 0 }).is_demo).toBe(false)
+    expect(normalizeMachine({}).is_demo).toBe(false)
   })
 })

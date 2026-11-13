@@ -24,13 +24,13 @@ describe('buildMachineAlerts', () => {
   })
   it('raises an offline alert for a machine that stopped reporting', () => {
     const alerts = buildMachineAlerts([m(1, { last_seen_at: '2026-11-12T09:30:00Z' })], now)
-    expect(alerts).toEqual([{ machineId: 1, name: 'M1', type: 'offline', since: '2026-11-12T09:30:00Z', detail: null }])
+    expect(alerts).toEqual([{ machineId: 1, name: 'M1', type: 'offline', since: '2026-11-12T09:30:00Z', detail: null, isDemo: false }])
   })
   it('raises a fault alert with its reason, even while online', () => {
     const alerts = buildMachineAlerts([m(1, {
       last_seen_at: '2026-11-12T09:59:30Z', fault_active: true, fault_reason: 'flap_jam', fault_since: '2026-11-12T09:50:00Z',
     })], now)
-    expect(alerts).toEqual([{ machineId: 1, name: 'M1', type: 'fault', since: '2026-11-12T09:50:00Z', detail: 'flap_jam' }])
+    expect(alerts).toEqual([{ machineId: 1, name: 'M1', type: 'fault', since: '2026-11-12T09:50:00Z', detail: 'flap_jam', isDemo: false }])
   })
   it('orders faults before offline machines', () => {
     const alerts = buildMachineAlerts([
@@ -42,6 +42,10 @@ describe('buildMachineAlerts', () => {
   it('a faulted machine that is also offline shows both', () => {
     const alerts = buildMachineAlerts([m(1, { last_seen_at: '2026-11-12T09:00:00Z', fault_active: true, fault_reason: 'x' })], now)
     expect(alerts.map((a) => a.type)).toEqual(['fault', 'offline'])
+  })
+  it('flags alerts of demo machines so they stay visible with a DEMO chip', () => {
+    const alerts = buildMachineAlerts([m(1, { is_demo: true, fault_active: true })], now)
+    expect(alerts[0].isDemo).toBe(true)
   })
 })
 

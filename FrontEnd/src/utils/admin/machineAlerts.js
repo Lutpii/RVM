@@ -13,10 +13,10 @@ export function buildMachineAlerts(machines = [], now = new Date()) {
   const offline = []
   for (const machine of machines) {
     if (machine.fault_active) {
-      faults.push({ machineId: machine.id, name: machine.name, type: 'fault', since: machine.fault_since ?? null, detail: machine.fault_reason ?? null })
+      faults.push({ machineId: machine.id, name: machine.name, type: 'fault', since: machine.fault_since ?? null, detail: machine.fault_reason ?? null, isDemo: Boolean(machine.is_demo) })
     }
     if (machineConnectivity(machine, now) === 'offline') {
-      offline.push({ machineId: machine.id, name: machine.name, type: 'offline', since: machine.last_seen_at, detail: null })
+      offline.push({ machineId: machine.id, name: machine.name, type: 'offline', since: machine.last_seen_at, detail: null, isDemo: Boolean(machine.is_demo) })
     }
   }
   return [...faults, ...offline]
