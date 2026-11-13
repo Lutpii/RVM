@@ -97,8 +97,8 @@
             <div class="txn-info">
               <span class="txn-mat">{{ t.material }}</span>
             </div>
-            <span :class="['txn-pts', transactionPointsClass(t)]">
-              {{ transactionPointsLabel(t) }}
+            <span :class="['txn-pts', 'pts-' + transactionPoints(t).tone]">
+              {{ transactionPoints(t).label }}
             </span>
           </div>
         </div>
@@ -128,6 +128,7 @@ import { useRvmStore } from '@/store/rvm'
 import { setKioskToken } from '@/services/api'
 import { PhRecycle, PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
+import { transactionPoints } from '@/utils/transactionPoints'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 import { shouldAutoReturn, startCountdown } from '@/composables/useAutoReturn'
 import { itemCounts } from '@/utils/kioskDemo'
@@ -144,24 +145,6 @@ const demoCounts = computed(() => itemCounts(summary.value?.transactions))
 const finalPoints = computed(() => summary.value?.end_points ?? 0)
 const earnedPoints = computed(() => summary.value?.points_earned ?? 0)
 
-// Both 'unknown' (AI couldn't recognize anything) and 'reject' (AI recognized
-// the item but it has no accept slot on this machine) are no-fault outcomes:
-// no weight, no points, no deduction — see RvmSessionView's simulateInsert().
-function isUnknownTransaction(transaction) {
-  const material = String(transaction?.material || '').trim().toLowerCase()
-  return material === 'unknown' || material === 'reject'
-}
-
-function transactionPointsClass(transaction) {
-  return transaction.is_valid || isUnknownTransaction(transaction) ? 'pts-green' : 'pts-red'
-}
-
-function transactionPointsLabel(transaction) {
-  if (isUnknownTransaction(transaction)) return '+0'
-  return transaction.is_valid
-    ? `+${transaction.points_earned ?? 0}`
-    : `-${transaction.points_deducted ?? 0}`
-}
 
 watch(summary, (val) => {
   if (val?.end_points != null) auth.updatePoints(val.end_points)
@@ -588,6 +571,10 @@ onMounted(async () => {
 
 .pts-red {
   color: var(--accent-red);
+}
+
+.pts-zero {
+  color: var(--text-muted);
 }
 
 .end-btn {
