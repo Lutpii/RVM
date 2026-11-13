@@ -20,6 +20,7 @@ const KEYS = [
   'demoKiosk.simCapture', 'demoKiosk.simAi', 'demoKiosk.simulated', 'demoKiosk.glassRejected',
   'admin.dataScope.label', 'admin.dataScope.all', 'admin.dataScope.real', 'admin.dataScope.demo',
   'admin.demoChip', 'admin.machine.isDemo', 'admin.machine.isDemoHint',
+  'summary.backToStart',
 ]
 
 const get = (obj, path) => path.split('.').reduce((o, k) => o?.[k], obj)

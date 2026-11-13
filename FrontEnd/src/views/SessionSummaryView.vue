@@ -103,6 +103,7 @@
       <button class="end-btn min-h-kiosk-touch" @click="goHome">
         {{ $t('summary.endSessionBtn') }}
       </button>
+      <p v-if="countdown !== null" class="auto-return">{{ $t('summary.backToStart', { n: countdown }) }}</p>
     </div>
 
     <div class="rvm-footer">
@@ -112,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
@@ -121,6 +122,7 @@ import { setKioskToken } from '@/services/api'
 import { PhRecycle, PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
+import { shouldAutoReturn, startCountdown } from '@/composables/useAutoReturn'
 
 const router = useRouter()
 const route  = useRoute()
@@ -155,6 +157,18 @@ watch(summary, (val) => {
   if (val?.end_points != null) auth.updatePoints(val.end_points)
 })
 
+// Demo kiosk only (K10): return to start after 10 s, same as pressing the button.
+const countdown = ref(null)
+let stopCountdown = null
+function clearCountdown() {
+  if (stopCountdown) { stopCountdown(); stopCountdown = null }
+}
+watch(summary, (val) => {
+  if (!val || stopCountdown || !shouldAutoReturn(route)) return
+  stopCountdown = startCountdown(10, (n) => { countdown.value = n }, () => { stopCountdown = null; goHome() })
+})
+onUnmounted(clearCountdown)
+
 function confettiStyle(i) {
   const colors = ['#4e6ef2', '#a855f7', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4']
   return {
@@ -166,6 +180,7 @@ function confettiStyle(i) {
 }
 
 async function goHome() {
+  clearCountdown()
   const machineCode  = rvm.guestMachineCode || route.params.machineCode
   const isKiosk      = (route.path.startsWith('/kiosk/') || isDemoKioskPath(route))
   const displayName  = summary.value?.user_name || auth.user?.name || t('summary.guestName')
@@ -576,6 +591,13 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 20px;
+}
+
+.auto-return {
+  margin: -8px 0 16px;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .end-btn:hover {
