@@ -222,6 +222,11 @@
     <div class="rvm-footer">
       {{ $t('session.currentStep') }}: <strong class="step-label">{{ currentStepLabel }}</strong>
     </div>
+
+    <IdleOverlay v-if="showIdleOverlay && !leavingSession" :ms-left="idleMsLeft" :total-ms="IDLE_COUNTDOWN_MS" @still-here="pokeIdle" />
+    <div v-if="sessionEndedScreen" class="session-ended-screen" role="status">
+      <h2>{{ $t('kiosk.sessionEnded') }}</h2>
+    </div>
   </div>
 </template>
 
@@ -236,6 +241,10 @@ import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { retryOnce, newIdempotencyKey } from '@/utils/retryOnce'
 import { kioskBase } from '@/utils/kioskBase'
+import { useIdleTimer, IDLE_COUNTDOWN_MS } from '@/composables/useIdleTimer'
+import { useSessionWatch } from '@/composables/useSessionWatch'
+import IdleOverlay from '@/components/IdleOverlay.vue'
+import { isIdleStep } from '@/utils/kioskIdleSteps'
 import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine, itemSaveOutcome } from '@/utils/kioskDemo'
 
 const router = useRouter()
@@ -518,7 +527,39 @@ function recycleAgain() {
   rvm.setStep('choose')
 }
 
+// End an idle session, and notice a session that ended elsewhere (phone, another tab).
+const endingSession      = ref(false)
+const leavingSession     = ref(false)
+const sessionEndedScreen = ref(false)
+const onIdleStep         = computed(() => isIdleStep('demo', rvm.currentStep))
+
+const { showOverlay: showIdleOverlay, msLeft: idleMsLeft, poke: pokeIdle } = useIdleTimer({
+  isActive: onIdleStep,
+  onExpire: () => { if (!leavingSession.value && !endingSession.value) confirmEndSession() },
+})
+
+function onSessionEndedElsewhere() {
+  if (leavingSession.value || unmounted) return
+  leavingSession.value = true
+  sessionEndedScreen.value = true
+  const base = kioskBase(route)
+  const code = machineCode.value
+  setTimeout(() => {
+    if (unmounted) return
+    setKioskToken(null)
+    rvm.resetSession()
+    router.replace(`${base}/${code}`)
+  }, 3000)
+}
+
+useSessionWatch({
+  sessionCode: computed(() => rvm.session?.session_code),
+  enabled: computed(() => onIdleStep.value && !rvm.isGuest && !endingSession.value && !leavingSession.value),
+  onEnded: onSessionEndedElsewhere,
+})
+
 async function confirmEndSession() {
+  endingSession.value = true
   const code = rvm.guestMachineCode || machineCode.value
   if (rvm.isGuest) {
     await rvm.endSession()
@@ -575,6 +616,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.session-ended-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.session-ended-screen h2 { font-size: 2.5rem; margin: 0; }
 .session-page {
   min-height: 100vh;
   display: flex;

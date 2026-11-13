@@ -370,6 +370,11 @@
     <div class="rvm-footer">
       {{ $t('session.currentStep') }}: <strong class="step-label">{{ currentStepLabel }}</strong>
     </div>
+
+    <IdleOverlay v-if="showIdleOverlay && !leavingSession" :ms-left="idleMsLeft" :total-ms="IDLE_COUNTDOWN_MS" @still-here="pokeIdle" />
+    <div v-if="sessionEndedScreen" class="session-ended-screen" role="status">
+      <h2>{{ $t('kiosk.sessionEnded') }}</h2>
+    </div>
   </div>
 </template>
 
@@ -379,7 +384,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import { useRvmStore } from '@/store/rvm'
-import api from '@/services/api'
+import api, { setKioskToken } from '@/services/api'
+import { useIdleTimer, IDLE_COUNTDOWN_MS } from '@/composables/useIdleTimer'
+import { useSessionWatch } from '@/composables/useSessionWatch'
+import IdleOverlay from '@/components/IdleOverlay.vue'
+import { isIdleStep } from '@/utils/kioskIdleSteps'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { getHardwareState, depositItem, flushChamber, isFlapEmpty } from '@/services/compactor'
@@ -955,7 +964,39 @@ function startLimitEnd() {
   }, 1000)
 }
 
+// Kiosk only (the phone /session route behaves as before): end an idle
+// session, and notice a session that ended elsewhere (phone, another tab).
+const endingSession      = ref(false)
+const leavingSession     = ref(false)
+const sessionEndedScreen = ref(false)
+const onKioskIdleStep    = computed(() => isKioskRoute.value && isIdleStep('real', rvm.currentStep))
+
+const { showOverlay: showIdleOverlay, msLeft: idleMsLeft, poke: pokeIdle } = useIdleTimer({
+  isActive: onKioskIdleStep,
+  onExpire: () => { if (!leavingSession.value && !endingSession.value) confirmEndSession() },
+})
+
+function onSessionEndedElsewhere() {
+  if (leavingSession.value || unmounted) return
+  leavingSession.value = true
+  sessionEndedScreen.value = true
+  const code = kioskMachineCode.value
+  setTimeout(() => {
+    if (unmounted) return
+    setKioskToken(null)
+    rvm.resetSession()
+    router.replace(`/kiosk/${code}`)
+  }, 3000)
+}
+
+useSessionWatch({
+  sessionCode: computed(() => rvm.session?.session_code),
+  enabled: computed(() => onKioskIdleStep.value && !rvm.isGuest && !endingSession.value && !leavingSession.value),
+  onEnded: onSessionEndedElsewhere,
+})
+
 async function confirmEndSession() {
+  endingSession.value = true
   // Fire-and-forget: the machine compacts and tilts the last batch on its
   // own while the user is already looking at the summary.
   if (is2Bin.value) flushChamber()
@@ -1034,6 +1075,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.session-ended-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.session-ended-screen h2 { font-size: 2.5rem; margin: 0; }
 .session-page {
   min-height: 100vh;
   display: flex;
