@@ -603,7 +603,7 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
-.auto-return {
+.demo-action-bar .auto-return {
   margin: 0 0 8px;
   font-size: 14px;
   color: var(--text-muted);

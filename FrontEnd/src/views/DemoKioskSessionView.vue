@@ -480,15 +480,17 @@ async function rejectItem(id) {
   try {
     if (rvm.isGuest) {
       if (rvm.guestSessionIsReal && rvm.session?.session_code) {
-        await api.post('/hardware/session/complete', {
+        const res = await api.post('/hardware/session/complete', {
           session_code:      rvm.session.session_code,
           ai_detected_type:  id,
           ai_confidence:     aiConfidence.value,
           material_selected: 'reject',
         })
-        saved = true
+        saved = res.data?.success === true
       }
     } else {
+      // This endpoint answers 200 with success:false when it saved the rejection
+      // (by design), so only a request error counts as a failed save here.
       await api.post('/transactions/reject', {
         session_code:      rvm.session?.session_code,
         material_selected: 'reject',
