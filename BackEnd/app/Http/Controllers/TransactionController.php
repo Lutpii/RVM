@@ -341,7 +341,9 @@ class TransactionController extends Controller
 
         // Drop the item into the physical bin only after the records are safely
         // committed, so the hardware never moves for a rolled-back write.
-        $this->ai->sort($materialUsed);
+        if (!$session->is_demo) {
+            $this->ai->sort($materialUsed);
+        }
 
         return response()->json($this->completedBody($transaction, $user->fresh()->total_points));
     }
@@ -385,7 +387,9 @@ class TransactionController extends Controller
         }
 
         // Drop the rejected item into the reject bin, after the commit.
-        $this->ai->sort('reject');
+        if (!$session->is_demo) {
+            $this->ai->sort('reject');
+        }
 
         return response()->json([
             'success'          => false,

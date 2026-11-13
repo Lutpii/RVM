@@ -108,7 +108,7 @@ class DemoFlagTest extends TestCase
 
     public function test_logged_in_reject_stores_named_reject(): void
     {
-        $this->mock(AiService::class, fn ($m) => $m->shouldReceive('sort')->andReturnNull());
+        $this->mock(AiService::class, fn ($m) => $m->shouldNotReceive('sort'));
         $u = $this->makeUser('U');
         $s = $this->makeSession($this->makeMachine(true), $u);
         Sanctum::actingAs($u, ['*']);
