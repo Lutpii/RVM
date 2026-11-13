@@ -2,6 +2,7 @@ import { onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import { isKioskFlowRoute } from '@/utils/kioskFlow'
 import { IDLE_ACTIVITY_STORAGE_KEY, readIdleActivity, clearIdleActivity } from '@/utils/idleActivity'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
@@ -98,14 +99,10 @@ export function useIdleLogout(showToast) {
   // and phone-scanned users differently and must never be idle-logged-out
   // out from under the hardware — see router/index.js's suspendForKiosk/
   // rehydrate handling for the same distinction.
-  function isKioskPath(path) {
-    return path.startsWith('/kiosk/')
-  }
-
   watch(
-    [() => auth.isLoggedIn, () => route.path],
-    ([loggedIn, path]) => {
-      if (loggedIn && !isKioskPath(path)) arm()
+    [() => auth.isLoggedIn, () => route.path, () => route.name, () => route.query?.redirect],
+    ([loggedIn]) => {
+      if (loggedIn && !isKioskFlowRoute(route)) arm()
       else disarm()
     },
     { immediate: true }

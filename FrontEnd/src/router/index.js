@@ -1,3 +1,4 @@
+import { isKioskFlowRoute, KIOSK_ENTRY_ROUTE_NAMES } from '@/utils/kioskFlow'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { isDemoMachine } from '@/utils/demoMachine'
@@ -220,16 +221,13 @@ router.beforeEach(async (to, from, next) => {
   // storage (e.g. from testing both the phone and kiosk flows on one
   // machine). Only the pre-scan entry points need this; kiosk-session and
   // kiosk-summary are reached solely via the legitimate scan flow afterward.
-  const kioskRouteNames = [
-    'kiosk-landing', 'kiosk-qr', 'kiosk-session', 'kiosk-summary',
-    'demo-kiosk-landing', 'demo-kiosk-qr', 'demo-kiosk-session', 'demo-kiosk-summary',
-  ]
-  if (['kiosk-landing', 'kiosk-qr', 'demo-kiosk-landing', 'demo-kiosk-qr'].includes(to.name)) {
+  if (KIOSK_ENTRY_ROUTE_NAMES.includes(to.name)) {
     authStore.suspendForKiosk()
-  } else if (kioskRouteNames.includes(from.name) && !kioskRouteNames.includes(to.name)) {
-    // Leaving the kiosk flow for a normal page — restore this browser's own
-    // login (if any) from storage, since suspendForKiosk() only cleared the
-    // in-memory state, never localStorage itself.
+  } else if (isKioskFlowRoute(from) && !isKioskFlowRoute(to)) {
+    // Leaving the kiosk flow entirely (the /welcome and /thank-you transition
+    // pages count as part of it) — restore this browser's own login (if any)
+    // from storage, since suspendForKiosk() only cleared the in-memory state,
+    // never localStorage itself.
     authStore.rehydrate()
   }
 
