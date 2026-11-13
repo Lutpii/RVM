@@ -3275,8 +3275,8 @@ onUnmounted(() => {
 .scope-label { font-size: 11px; color: var(--text-muted); padding: 0 6px; }
 .scope-btn { border: 0; background: transparent; color: var(--text-secondary); font-size: 12px; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
 .scope-btn.active { background: var(--accent-blue); color: #fff; }
-.check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.check-row input { width: auto; }
+.form-group .check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 0; font-size: 14px; color: var(--text-primary); }
+.form-group .check-row input { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex-shrink: 0; cursor: pointer; }
 .field-hint { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
