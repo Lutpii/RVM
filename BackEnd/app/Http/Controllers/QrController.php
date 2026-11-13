@@ -102,9 +102,8 @@ class QrController extends Controller
             $recyclingSession = RecyclingSession::with(['user', 'machine'])
                 ->where('user_id', $qrSession->scanned_by)
                 ->where('status', 'active')
-                // A demo kiosk only continues a session on its own machine;
-                // anything else would save simulated items as real data.
-                ->when($qrSession->machine?->is_demo, fn ($q) => $q->where('machine_id', $qrSession->machine_id))
+                // A kiosk only ever picks up a session on its own machine.
+                ->where('machine_id', $qrSession->machine_id)
                 ->first();
 
             if ($recyclingSession) {
@@ -164,6 +163,22 @@ class QrController extends Controller
         }
 
         $user = $request->user();
+
+        // One active session per user across every machine: leave the QR pending.
+        $elsewhere = RecyclingSession::with('machine')
+            ->where('user_id', $user->id)->where('status', 'active')
+            ->where('machine_id', '!=', $qrSession->machine_id)->first();
+        if ($elsewhere) {
+            $name = $elsewhere->machine?->name;
+            return response()->json([
+                'success'      => false,
+                'code'         => 'active_session_elsewhere',
+                'message'      => __('messages.active_session_elsewhere', ['machine' => $name]),
+                'session_code' => $elsewhere->session_code,
+                'machine_name' => $name,
+            ], 409);
+        }
+
         $kioskToken = Str::random(64);
         // Re-purpose expires_at as the kiosk_token's own TTL once scanned — a kiosk
         // session has no business staying authenticatable longer than one visit.

@@ -40,6 +40,7 @@ return [
     // SessionController
     'machine_not_active'       => 'This machine is not currently active.',
     'active_session_exists'    => 'You already have an active session.',
+    'active_session_elsewhere' => 'You already have an active session on :machine. End it there first.',
     'session_started'          => 'Session started successfully.',
     'session_not_found'        => 'Session not found.',
     'active_session_not_found' => 'Active session not found.',

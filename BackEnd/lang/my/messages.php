@@ -40,6 +40,7 @@ return [
     // SessionController
     'machine_not_active'       => 'Mesin ini tidak aktif buat masa ini.',
     'active_session_exists'    => 'Anda sudah mempunyai sesi yang aktif.',
+    'active_session_elsewhere' => 'Anda sudah mempunyai sesi aktif di :machine. Tamatkan sesi itu dahulu.',
     'session_started'          => 'Sesi berjaya dimulakan.',
     'session_not_found'        => 'Sesi tidak dijumpai.',
     'active_session_not_found' => 'Sesi aktif tidak dijumpai.',

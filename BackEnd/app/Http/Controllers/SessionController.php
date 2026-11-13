@@ -31,15 +31,18 @@ class SessionController extends Controller
         $existing = RecyclingSession::where('user_id', $user->id)
             ->where('status', 'active')->first();
 
-        // A demo machine never continues a session on another machine: its
-        // simulated items would be saved there as real data. End that session
-        // and start a fresh one here. Real machines keep the rule below.
-        if ($existing && $machine->is_demo && $existing->machine_id !== $machine->id) {
-            $this->closeSession($existing, $user->fresh());
-            $existing = null;
-        }
-
         if ($existing) {
+            // One active session per user across every machine (real and demo).
+            if ($existing->machine_id !== $machine->id) {
+                $other = RvmMachine::find($existing->machine_id);
+                return response()->json([
+                    'success'      => false,
+                    'code'         => 'active_session_elsewhere',
+                    'message'      => __('messages.active_session_elsewhere', ['machine' => $other?->name]),
+                    'session_code' => $existing->session_code,
+                    'machine_name' => $other?->name,
+                ], 409);
+            }
             return response()->json(['success' => false, 'message' => __('messages.active_session_exists'), 'session_code' => $existing->session_code], 400);
         }
 

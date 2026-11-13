@@ -45,32 +45,6 @@ class DemoSessionMachineTest extends TestCase
         ]);
     }
 
-    public function test_starting_on_a_demo_machine_ends_the_session_on_another_machine(): void
-    {
-        $u    = $this->makeUser();
-        $real = $this->makeMachine(false);
-        $demo = $this->makeMachine(true);
-        $old  = $this->makeActiveSession($real, $u);
-
-        Sanctum::actingAs($u, ['*']);
-        $res = $this->postJson('/api/sessions/start', ['machine_id' => $demo->id, 'qr_token' => 'ABC123']);
-
-        $res->assertOk()->assertJson(['success' => true]);
-        $newCode = $res->json('session_code');
-        $this->assertNotSame($old->session_code, $newCode);
-
-        $old->refresh();
-        $this->assertSame('completed', $old->status);
-        $this->assertNotNull($old->ended_at);
-        $this->assertSame(120, (int) $old->end_points);
-
-        $new = RecyclingSession::where('session_code', $newCode)->firstOrFail();
-        $this->assertSame($demo->id, $new->machine_id);
-        $this->assertSame('active', $new->status);
-        $this->assertTrue($new->is_demo);
-        $this->assertSame(1, RecyclingSession::where('user_id', $u->id)->where('status', 'active')->count());
-    }
-
     public function test_an_active_session_on_the_same_demo_machine_is_kept(): void
     {
         $u    = $this->makeUser();
@@ -82,22 +56,6 @@ class DemoSessionMachineTest extends TestCase
             ->assertStatus(400)
             ->assertJson(['success' => false, 'session_code' => $old->session_code]);
         $this->assertSame('active', $old->fresh()->status);
-    }
-
-    public function test_starting_on_a_real_machine_keeps_todays_behaviour(): void
-    {
-        $u     = $this->makeUser();
-        $realA = $this->makeMachine(false);
-        $realB = $this->makeMachine(false);
-        $old   = $this->makeActiveSession($realA, $u);
-
-        Sanctum::actingAs($u, ['*']);
-        $this->postJson('/api/sessions/start', ['machine_id' => $realB->id, 'qr_token' => 'ABC123'])
-            ->assertStatus(400)
-            ->assertJson(['success' => false, 'session_code' => $old->session_code]);
-
-        $this->assertSame('active', $old->fresh()->status);
-        $this->assertSame(1, RecyclingSession::where('user_id', $u->id)->count());
     }
 
     private function scannedQr(RvmMachine $m, User $u): QrSession
@@ -135,16 +93,4 @@ class DemoSessionMachineTest extends TestCase
             ->assertJsonPath('session.machine.id', $demo->id);
     }
 
-    public function test_status_for_a_real_qr_keeps_todays_behaviour(): void
-    {
-        $u     = $this->makeUser();
-        $realA = $this->makeMachine(false);
-        $realB = $this->makeMachine(false);
-        $other = $this->makeActiveSession($realA, $u);
-        $qr    = $this->scannedQr($realB, $u);
-
-        $this->getJson('/api/qr/status/' . $qr->qr_token)
-            ->assertOk()
-            ->assertJsonPath('session.session_code', $other->session_code);
-    }
 }
