@@ -1367,7 +1367,7 @@ import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
 import { itemLabel, resultReason, confidenceLevel, percentOf } from '@/utils/admin/transactionDisplay.js'
-import { DATA_SCOPES, readDataScope, writeDataScope } from '@/utils/admin/dataScope.js'
+import { DATA_SCOPES, isStaleScope, readDataScope, writeDataScope } from '@/utils/admin/dataScope.js'
 import { downloadExcel } from '@/utils/admin/excelExport.js'
 import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
 import {
@@ -1859,12 +1859,14 @@ function txUserName(user) {
 
 // ── Data fetching ──
 async function fetchTabData(tab, showSpinner = false) {
+  const scope = dataScope.value // responses from an older data scope are dropped below
   lastUpdated.value = fmtTime(new Date(), true)
   tabError.value = ''
   try {
     if (tab === 'dashboard') {
       if (showSpinner) loadingStats.value = true
-      const res = await api.get('/admin/stats', { params: { data: dataScope.value } })
+      const res = await api.get('/admin/stats', { params: { data: scope } })
+      if (isStaleScope(scope, dataScope.value)) return
       statsData.value      = res.data.stats                   || {}
       materialStats.value  = (res.data.stats?.material_stats || []).filter(m => m.material_selected !== 'glass')
       recentSessions.value = res.data.stats?.recent_sessions  || []
@@ -1889,8 +1891,9 @@ async function fetchTabData(tab, showSpinner = false) {
         search: txSearch.value || undefined, status: txFilter.value || undefined,
         machine_id: txMachine.value || undefined,
         date_from: txDateFrom.value || undefined, date_to: txDateTo.value || undefined,
-        data: dataScope.value,
+        data: scope,
       } })
+      if (isStaleScope(scope, dataScope.value)) return
       transactions.value = res.data.transactions?.data || []
       txTotal.value     = res.data.transactions?.total ?? 0
       txSummary.value   = { items: 0, accepted: 0, rejected: 0, points: 0, ...(res.data.summary || {}) }
@@ -1912,8 +1915,9 @@ async function fetchTabData(tab, showSpinner = false) {
       if (showSpinner) loadingSessions.value = true
       const res = await api.get('/admin/sessions', { params: {
         page: sessionsPage.value, per_page: sessionsPerPage.value, search: sessionsSearch.value || undefined,
-        data: dataScope.value,
+        data: scope,
       } })
+      if (isStaleScope(scope, dataScope.value)) return
       sessions.value = res.data.sessions?.data || []
       sessionsTotal.value    = res.data.sessions?.total ?? 0
       sessionsLastPage.value = res.data.sessions?.last_page ?? 1
@@ -2298,8 +2302,10 @@ async function fetchRewardConfig() {
 }
 
 async function fetchChartData() {
+  const scope = dataScope.value
   try {
-    const res = await api.get('/admin/chart-data', { params: { data: dataScope.value } })
+    const res = await api.get('/admin/chart-data', { params: { data: scope } })
+    if (isStaleScope(scope, dataScope.value)) return
     const { labels, datasets, breakdown, overview } = res.data
     overviewData.value = overview || {}
 

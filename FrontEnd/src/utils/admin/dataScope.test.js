@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DATA_SCOPES, DATA_SCOPE_KEY, readDataScope, writeDataScope } from './dataScope.js'
+import { DATA_SCOPES, DATA_SCOPE_KEY, isStaleScope, readDataScope, writeDataScope } from './dataScope.js'
 
 function memoryStorage(initial = {}) {
   const data = { ...initial }
@@ -34,5 +34,12 @@ describe('dataScope', () => {
     const bad = { getItem() { throw new Error('x') }, setItem() { throw new Error('x') } }
     expect(readDataScope(bad)).toBe('all')
     expect(() => writeDataScope('real', bad)).not.toThrow()
+  })
+})
+
+describe('isStaleScope', () => {
+  it('is stale only when the scope changed since the request started', () => {
+    expect(isStaleScope('all', 'demo')).toBe(true)
+    expect(isStaleScope('demo', 'demo')).toBe(false)
   })
 })

@@ -20,3 +20,9 @@ export function writeDataScope(scope, storage = defaultStorage()) {
   if (!DATA_SCOPES.includes(scope)) return
   try { storage?.setItem(DATA_SCOPE_KEY, scope) } catch { /* storage unavailable: keep in memory only */ }
 }
+
+// A response is only usable if the data scope has not changed since the request
+// started; otherwise it belongs to a previous scope and must be dropped.
+export function isStaleScope(requestScope, currentScope) {
+  return requestScope !== currentScope
+}
