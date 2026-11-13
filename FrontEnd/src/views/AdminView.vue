@@ -1976,13 +1976,16 @@ async function fetchTabData(tab, showSpinner = false) {
     }
     tabFetchedAt[tab] = Date.now()
   } catch (err) {
-    const msg = err.response?.data?.message || err.message || 'Failed to load data'
-    tabError.value = msg
-    console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
+    // A request from a previous data scope neither reports its error nor touches the loading state.
+    if (!isStaleScope(scope, dataScope.value)) {
+      const msg = err.response?.data?.message || err.message || 'Failed to load data'
+      tabError.value = msg
+      console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
+    }
   } finally {
     const flags = { loadingStats, loadingUsers, loadingMachines, loadingSessions, loadingAudit, loadingTransactions, loadingDetectionLogs, loadingRewardItems }
     const flagName = resolveLoadingFlag(tab)
-    if (flagName) flags[flagName].value = false
+    if (flagName && !isStaleScope(scope, dataScope.value)) flags[flagName].value = false
   }
 }
 
@@ -2374,8 +2377,12 @@ function setDataScope(scope) {
   for (const key of Object.keys(tabFetchedAt)) tabFetchedAt[key] = 0
   txPage.value = 1
   sessionsPage.value = 1
+  // charts load separately from the stats spinner, so drop the old scope's numbers now
+  overviewData.value = {}
+  barChartData.value = null
+  donutChartData.value = null
   fetchTabData(activeTab.value, true)
-  if (activeTab.value === 'dashboard') fetchChartData()
+  fetchChartData() // cleared above, so reload even when another tab is open
 }
 
 function switchTab(tab) {
