@@ -32,7 +32,7 @@ const seconds = computed(() => Math.ceil(Math.max(0, props.msLeft) / 1000))
 
 <style scoped>
 .idle-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.85); }
-.idle-card { background: var(--card-bg, #fff); color: var(--text-primary, #0f172a); border-radius: 12px; padding: 2.5rem 3rem; text-align: center; max-width: 90vw; }
+.idle-card { background: var(--bg-card); color: var(--text-primary); border-radius: 12px; padding: 2.5rem 3rem; text-align: center; max-width: 90vw; }
 .idle-card h2 { font-size: 2rem; margin: 0 0 0.5rem; }
 .idle-card p { font-size: 1.25rem; margin: 0 0 1.5rem; }
 .ring { position: relative; width: 160px; height: 160px; margin: 0 auto 1.75rem; }
