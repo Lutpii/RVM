@@ -120,8 +120,6 @@
           {{ loading ? $t('scan.connecting') : $t('scan.connectBtn') }}
         </button>
 
-        <ActiveSessionSheet v-if="activeStore.sheetOpen" :session="activeStore.session" @close="activeStore.sheetOpen = false" />
-
         <div v-if="machinesLoadError" class="error-msg">{{ $t('scan.machinesLoadError') }}</div>
 
         <!-- Machine list shortcut
@@ -151,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
@@ -162,7 +160,6 @@ import jsQR from 'jsqr'
 import { extractQrToken } from '@/utils/qrToken'
 import { scanOutcome } from '@/utils/scanResult'
 import { useActiveSessionStore } from '@/store/activeSession'
-import ActiveSessionSheet from '@/components/ActiveSessionSheet.vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -172,6 +169,10 @@ const { t }  = useI18n()
 const activeStore = useActiveSessionStore()
 const elsewhere = ref(null)
 
+// Session ended from the sheet: let the user scan again.
+watch(() => activeStore.session, (v) => { if (!v) elsewhere.value = null })
+
+// The global SessionFloat renders the sheet when sheetOpen is set.
 async function viewElsewhere() {
   await activeStore.refresh()
   activeStore.sheetOpen = true

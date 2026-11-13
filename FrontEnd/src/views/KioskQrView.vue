@@ -123,6 +123,7 @@ let pollInterval  = null
 let timerInterval = null
 let screenTimeout = null
 let isActive      = false
+let elsewhereTimer = null
 let screenDeadline = 0
 let machineData   = null  // cached from generate response
 let refreshesDone = 0     // new QRs shown after the first one expired
@@ -202,13 +203,13 @@ function startPoll() {
                 if (errData?.code === 'active_session_elsewhere') {
                   // Session lives on another machine: do not open it, show a fresh QR.
                   setKioskToken(null)
-                  rvm.isGuest = true
                   setTheme('light')
                   isActive = true
                   screenDeadline = Date.now() + (QR_SCREEN_SECONDS * 1000)
                   screenTimeout = setTimeout(returnToKiosk, QR_SCREEN_SECONDS * 1000)
                   elsewhereMsg.value = true
-                  setTimeout(() => { elsewhereMsg.value = false }, 6000)
+                  clearTimeout(elsewhereTimer)
+                  elsewhereTimer = setTimeout(() => { elsewhereMsg.value = false }, 6000)
                   generateQr()
                   return
                 }
@@ -335,6 +336,7 @@ onBeforeUnmount(() => {
   isActive = false
   clearIntervals()
   clearTimeout(screenTimeout)
+  clearTimeout(elsewhereTimer)
 })
 </script>
 
