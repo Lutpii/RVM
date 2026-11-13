@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794544979.6699355,
-    "seen": 1794546164.3907962,
-    "ast_hash": "9e755bcbca20127efc6399cc23ced4c5",
+    "mtime": 1794547756.64719,
+    "seen": 1794547833.6381934,
+    "ast_hash": "d727ffaa46e92b7ba70c08ce182f953a",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794545236.9858215,
-    "seen": 1794546164.3973541,
-    "ast_hash": "9956dc480cbb813f4754d27e9c735c83",
+    "mtime": 1794547710.8714347,
+    "seen": 1794547833.6542032,
+    "ast_hash": "f79624ee19b4c1a6e4604d507c805669",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/SessionSummaryView.vue": {
-    "mtime": 1794476254.567656,
-    "seen": 1794477822.1412294,
-    "ast_hash": "374fbfda7f32355efd71c851e8a999fe",
+    "mtime": 1794547756.642582,
+    "seen": 1794547833.6542032,
+    "ast_hash": "274b435e25398e521bb7de662a19b166",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/UserSettingsView.vue": {
@@ -2094,9 +2094,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/usabilityLocales.test.js": {
-    "mtime": 1794544979.6699355,
-    "seen": 1794546164.3907962,
-    "ast_hash": "c24f9cac446d6a9c82c0751049e2e322",
+    "mtime": 1794547756.648211,
+    "seen": 1794547833.6381934,
+    "ast_hash": "b8da7de2ed786bf0f5d6ebcb28560be8",
     "semantic_hash": ""
   },
   "FrontEnd/src/utils/demoMachine.js": {
@@ -2154,9 +2154,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/ActiveSessionSheet.vue": {
-    "mtime": 1794478684.857607,
-    "seen": 1794546164.3854706,
-    "ast_hash": "5e1d3d119abd6a26fc17438a5f216c88",
+    "mtime": 1794547642.536342,
+    "seen": 1794547833.6381934,
+    "ast_hash": "6e359ec761c2e257a0f9f24f711f94d4",
     "semantic_hash": ""
   },
   "FrontEnd/src/composables/useActiveSession.js": {
@@ -2199,6 +2199,18 @@
     "mtime": 1794478684.857607,
     "seen": 1794546164.3973541,
     "ast_hash": "b8876e7459327703e24f424dbaa1be74",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/composables/useAutoReturn.js": {
+    "mtime": 1794547745.4952488,
+    "seen": 1794547833.6381934,
+    "ast_hash": "b232e62e738a0c4d96ccaeb84d1d125d",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/composables/useAutoReturn.test.js": {
+    "mtime": 1794547737.686619,
+    "seen": 1794547833.6381934,
+    "ast_hash": "c28d6e7d01b9ef04df41403d2b4e9a9a",
     "semantic_hash": ""
   }
 }
