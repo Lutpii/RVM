@@ -198,6 +198,7 @@ export const messages = {
       inProgress: 'Session in progress',
       summary: '{items} items · +{points} pts · {carbon} kg CO2',
       view: 'View session',
+      openDetails: 'Session in progress at {machine}, open details',
       simNote: 'Simulated AI confidence (demo machine)',
     },
     demo: {
@@ -809,6 +810,7 @@ export const messages = {
       inProgress: 'Sesi sedang berjalan',
       summary: '{items} item · +{points} mata · {carbon} kg CO2',
       view: 'Lihat sesi',
+      openDetails: 'Sesi sedang berjalan di {machine}, buka butiran',
       simNote: 'Keyakinan AI simulasi (mesin demo)',
     },
     demo: {

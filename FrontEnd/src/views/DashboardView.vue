@@ -1,6 +1,5 @@
 <template>
   <div class="dashboard-page">
-    <ActiveSessionCard />
 
     <!-- Start hero: the first thing a recycler sees is what to do next -->
     <div class="points-hero" v-reveal>
@@ -106,7 +105,6 @@ import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import { RouterLink } from 'vue-router'
 import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold, PhCamera } from '@phosphor-icons/vue'
-import ActiveSessionCard from '@/components/ActiveSessionCard.vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
 import { demoDataLabel } from '@/utils/featureFlags'
 import { materialIconSvg } from '@/utils/materialIcons'

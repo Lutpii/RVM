@@ -10,6 +10,8 @@
       </RouterView>
     </main>
 
+    <SessionFloat />
+
     <Transition name="toast-fade">
       <div v-if="toastState.show" :class="['toast', toastState.type]" role="status">
         <span class="toast-icon">{{ toastState.type === 'error' ? '⚠️' : '✅' }}</span>
@@ -26,6 +28,7 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import AppNav from '@/components/AppNav.vue'
 import KioskDemoBanner from '@/components/KioskDemoBanner.vue'
+import SessionFloat from '@/components/SessionFloat.vue'
 import { useLenisScroll } from '@/composables/useLenisScroll'
 import { useIdleLogout } from '@/composables/useIdleLogout'
 
