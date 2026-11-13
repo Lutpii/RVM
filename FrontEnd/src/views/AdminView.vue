@@ -393,10 +393,7 @@
                     <div v-if="tx.machine?.location_name" class="tx-sub">{{ tx.machine.location_name }}</div>
                   </td>
                   <td>
-                    <span class="item-cell">
-                      <svg v-if="materialIconSvg(tx.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="tx.material_selected?.toLowerCase()" v-html="materialIconSvg(tx.material_selected)"></svg>
-                      {{ txItemLabel(tx) }}
-                    </span>
+                    <span class="item-cell">{{ txItemLabel(tx) }}</span>
                   </td>
                   <td>
                     <span :class="['tx-badge', tx.is_valid ? 'tx-badge-ok' : 'tx-badge-rej']">
