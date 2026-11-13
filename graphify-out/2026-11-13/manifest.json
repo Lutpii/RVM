@@ -18,9 +18,9 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794475731.1286254,
-    "seen": 1794477822.0976703,
-    "ast_hash": "a8fbad62c628beb9e6a8f465b429741a",
+    "mtime": 1794565065.2872164,
+    "seen": 1794565925.4948664,
+    "ast_hash": "004b7603506725919de38d140e57039b",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
@@ -36,9 +36,9 @@
     "semantic_hash": "42517d7dc7e3d0d3045b06ed842b565e"
   },
   "BackEnd/app/Http/Controllers/MachineController.php": {
-    "mtime": 1794475363.6539283,
-    "seen": 1794477822.0976703,
-    "ast_hash": "9021eba480f2cfc1e2e2add5170690f9",
+    "mtime": 1794565065.2861853,
+    "seen": 1794565925.4948664,
+    "ast_hash": "53601aa7c8f10ce7102523d9f4689baf",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/QrController.php": {
@@ -546,9 +546,9 @@
     "semantic_hash": "477b725a852c34ce0aaad68e17b7019a"
   },
   "BackEnd/routes/api.php": {
-    "mtime": 1794564712.5435855,
-    "seen": 1794564852.069702,
-    "ast_hash": "13d897f0e350b373f2318937ffabe532",
+    "mtime": 1794565065.2861853,
+    "seen": 1794565925.5186508,
+    "ast_hash": "9b0d2921c003f02de2b969b48b8115b1",
     "semantic_hash": ""
   },
   "BackEnd/routes/channels.php": {
@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794564712.5534084,
-    "seen": 1794564852.085086,
-    "ast_hash": "0ea08606a730d02f52e7949a1ad8087c",
+    "mtime": 1794565334.2184193,
+    "seen": 1794565925.5341494,
+    "ast_hash": "a157ddfc14c97e7042445d1d977aaf0c",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -930,15 +930,15 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794564737.6232421,
-    "seen": 1794564852.1038654,
-    "ast_hash": "6ffe90472e216b6832fdda0e686ef07c",
+    "mtime": 1794565334.2174122,
+    "seen": 1794565925.554438,
+    "ast_hash": "2b96253f45fdf86119c94902110fe9be",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
-    "mtime": 1794564712.5435855,
-    "seen": 1794564852.1038654,
-    "ast_hash": "1fd1b87f3dec8bfbe0893cf549b8c1a2",
+    "mtime": 1794565065.2834797,
+    "seen": 1794565925.554438,
+    "ast_hash": "5b01bb2685b390291c06d135530359ee",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/GoodbyeView.vue": {
@@ -2244,15 +2244,15 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/composables/useIdleTimer.js": {
-    "mtime": 1794561641.8024712,
-    "seen": 1794564852.085086,
-    "ast_hash": "9d3839fa537540303f6f0002c152a761",
+    "mtime": 1794565739.9661043,
+    "seen": 1794565925.5341494,
+    "ast_hash": "73fbcc708bc446d2d17677a990963e70",
     "semantic_hash": ""
   },
   "FrontEnd/src/composables/useIdleTimer.test.js": {
-    "mtime": 1794561641.8024712,
-    "seen": 1794564852.085086,
-    "ast_hash": "32b3efcaaa8897e515468215aa9146e2",
+    "mtime": 1794565740.03435,
+    "seen": 1794565925.5341494,
+    "ast_hash": "e713be35e2094182fd2618ff90201681",
     "semantic_hash": ""
   },
   "FrontEnd/src/composables/useKioskSessionGuard.js": {
@@ -2339,34 +2339,16 @@
     "ast_hash": "209e6d541207ac26c746efc12830f4ef",
     "semantic_hash": ""
   },
-  "BackEnd/app/Http/Controllers/HomeLayoutController.php": {
-    "mtime": 1794564660.5078292,
-    "seen": 1794564852.0483818,
-    "ast_hash": "33300c1aa92eb337ea8802775ef47a15",
+  "BackEnd/database/migrations/2026_11_13_000002_add_display_order_to_rvm_machines.php": {
+    "mtime": 1794565107.4272451,
+    "seen": 1794565925.514187,
+    "ast_hash": "7cf9dadd1fd80b3366940f9b18de9420",
     "semantic_hash": ""
   },
-  "BackEnd/database/migrations/2026_11_13_000001_create_home_layout_table.php": {
-    "mtime": 1794564660.5068219,
-    "seen": 1794564852.068164,
-    "ast_hash": "09aa76ceb2abe15451aac73161fad0b7",
-    "semantic_hash": ""
-  },
-  "BackEnd/tests/Feature/HomeLayoutTest.php": {
-    "mtime": 1794564764.6395838,
-    "seen": 1794564852.0755262,
-    "ast_hash": "7da420f0335da4665a5d77c3568412cf",
-    "semantic_hash": ""
-  },
-  "FrontEnd/src/components/admin/HomeLayoutEditor.vue": {
-    "mtime": 1794564660.509606,
-    "seen": 1794564852.0810654,
-    "ast_hash": "c4fab2c9b2433cb6d3c4865f1499c0e8",
-    "semantic_hash": ""
-  },
-  "FrontEnd/src/utils/homeLayout.js": {
-    "mtime": 1794564660.5088282,
-    "seen": 1794564852.0993414,
-    "ast_hash": "18c7e7c53be2d14eef7aaf6d74a7561e",
+  "BackEnd/tests/Feature/MachineOrderTest.php": {
+    "mtime": 1794565133.0591054,
+    "seen": 1794565925.524818,
+    "ast_hash": "c561d0b777f277d2787a14ee5b501829",
     "semantic_hash": ""
   }
 }
