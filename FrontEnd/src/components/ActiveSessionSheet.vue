@@ -70,12 +70,12 @@ function confidence(c) {
 
 <style scoped>
 .sheet-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 210;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; /* above the fixed bottom nav (1000) */
   display: flex; align-items: flex-end; justify-content: center;
 }
 .sheet {
   background: var(--bg-card); width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto;
-  border-radius: 16px 16px 0 0; padding: 20px 16px 16px;
+  border-radius: 16px 16px 0 0; padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 8px;
 }
 .sheet-title { margin: 0; font-size: 17px; color: var(--text-primary); }
