@@ -80,4 +80,33 @@ describe('active session store', () => {
     expect(store.session.points_earned).toBe(1)
     store.stop()
   })
+
+  it('applies an external refresh() even when not started', async () => {
+    const store = useActiveSessionStore()
+    await store.refresh()
+    expect(store.session.points_earned).toBe(1)
+  })
+
+  it('ignores an older slow response that arrives after a newer one', async () => {
+    const store = useActiveSessionStore()
+    let resolveSlow
+    api.get.mockImplementationOnce(() => new Promise((r) => { resolveSlow = r }))
+    const slow = store.refresh()
+    api.get.mockResolvedValueOnce({ data: { session: { points_earned: 9, items: [] } } })
+    await store.refresh()
+    resolveSlow({ data: { session: { points_earned: 2, items: [] } } })
+    await slow
+    expect(store.session.points_earned).toBe(9)
+  })
+
+  it('drops a response that was in flight when stop() ran', async () => {
+    const store = useActiveSessionStore()
+    let resolveSlow
+    api.get.mockImplementationOnce(() => new Promise((r) => { resolveSlow = r }))
+    const slow = store.refresh()
+    store.stop()
+    resolveSlow({ data: { session: { points_earned: 2, items: [] } } })
+    await slow
+    expect(store.session).toBeNull()
+  })
 })

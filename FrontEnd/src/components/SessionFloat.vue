@@ -6,7 +6,7 @@
     <button
       v-show="mode !== 'hidden'"
       type="button"
-      :class="['session-float', route.name === 'dashboard' ? 'float-pill' : 'float-badge']"
+      :class="['session-float', shape === 'badge' ? 'float-badge' : 'float-pill']"
       :aria-label="$t('phoneSession.openDetails', { machine: summary.machineName })"
       @click="store.sheetOpen = true"
     >
@@ -17,7 +17,7 @@
             {{ $t('phoneSession.inProgress') }}
             <span v-if="summary.isDemo" class="demo-chip">{{ $t('phoneSession.demoMachine') }}</span>
           </span>
-          <small>{{ summary.machineName }} · {{ summary.items }} items · +{{ summary.points }} pts</small>
+          <small>{{ $t('phoneSession.pillLine', { machine: summary.machineName, items: summary.items, points: summary.points }) }}</small>
         </span>
         <span class="pill-chev" aria-hidden="true">›</span>
       </span>
@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { PhRecycle } from '@phosphor-icons/vue'
 import { useAuthStore } from '@/store/auth'
@@ -51,6 +51,10 @@ const mode = computed(() => floatMode({
   hasSession: !!store.session,
   sheetOpen: store.sheetOpen,
 }))
+
+// Keep the last visible shape while hidden so the element does not morph as it appears or goes away.
+const shape = ref(mode.value === 'badge' ? 'badge' : 'pill')
+watch(mode, (m) => { if (m !== 'hidden') shape.value = m })
 
 // Poll only for a logged-in user on a phone (user) route, never on kiosk or admin screens.
 const isUserRoute = computed(() => !/^\/(kiosk|demo-kiosk|admin)(\/|$)/.test(route.path))
@@ -104,6 +108,7 @@ watch(
 
 @media (min-width: 769px) {
   .session-float { bottom: 20px; }
+  .float-pill { left: max(12px, calc(50% - 210px)); right: max(12px, calc(50% - 210px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .session-float, .pill-content, .badge-content { transition: none; }

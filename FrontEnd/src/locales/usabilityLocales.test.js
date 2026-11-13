@@ -14,7 +14,7 @@ const KEYS = [
   'demo.badge', 'demo.kioskBannerTitle', 'demo.kioskBannerText',
   'activity.demoChip', 'activity.demoNote',
   'phoneSession.happy', 'phoneSession.connectedTo', 'phoneSession.demoMachine', 'phoneSession.connecting',
-  'phoneSession.inProgress', 'phoneSession.summary', 'phoneSession.view', 'phoneSession.simNote', 'phoneSession.openDetails',
+  'phoneSession.inProgress', 'phoneSession.summary', 'phoneSession.view', 'phoneSession.simNote', 'phoneSession.openDetails', 'phoneSession.pillLine',
   'demoKiosk.notDemoMachine', 'demoKiosk.chooseTitle', 'demoKiosk.chooseHint',
   'demoKiosk.items.plastic', 'demoKiosk.items.aluminum', 'demoKiosk.items.paper', 'demoKiosk.items.glass',
   'demoKiosk.simCapture', 'demoKiosk.simAi', 'demoKiosk.simulated', 'demoKiosk.glassRejected',

@@ -199,6 +199,7 @@ export const messages = {
       summary: '{items} items · +{points} pts · {carbon} kg CO2',
       view: 'View session',
       openDetails: 'Session in progress at {machine}, open details',
+      pillLine: '{machine} · {items} items · +{points} pts',
       simNote: 'Simulated AI confidence (demo machine)',
     },
     demo: {
@@ -811,6 +812,7 @@ export const messages = {
       summary: '{items} item · +{points} mata · {carbon} kg CO2',
       view: 'Lihat sesi',
       openDetails: 'Sesi sedang berjalan di {machine}, buka butiran',
+      pillLine: '{machine} · {items} item · +{points} mata',
       simNote: 'Keyakinan AI simulasi (mesin demo)',
     },
     demo: {
