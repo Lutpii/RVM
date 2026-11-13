@@ -25,23 +25,38 @@
           </span>
           <span class="item-nums">
             <b :class="item.is_valid ? 'pts-green' : 'pts-zero'">{{ item.is_valid ? '+' : '' }}{{ item.points_earned || 0 }}</b>
-            <small>{{ Number(item.carbon_saved || 0).toFixed(3) }} kg</small>
+            <small>{{ $t('phoneSession.co2Saved', { kg: Number(item.carbon_saved || 0).toFixed(3) }) }}</small>
           </span>
         </li>
       </ul>
       <p v-if="!items.length" class="empty">-</p>
 
       <p v-if="summary.isDemo" class="sim-note">{{ $t('phoneSession.simNote') }}</p>
+      <p v-if="endError" class="end-error" role="alert">{{ $t('phoneSession.endFailed') }}</p>
+      <button v-if="session?.session_code" type="button" class="end-btn" @click="confirming = true">{{ $t('phoneSession.endSession') }}</button>
       <button ref="closeBtn" type="button" class="close-btn" @click="$emit('close')">{{ $t('activity.detail.close') }}</button>
+
+      <div v-if="confirming" class="confirm-overlay" @click.self="confirming = false">
+        <div class="confirm" role="alertdialog" aria-modal="true" :aria-label="$t('phoneSession.endSession')">
+          <h4>{{ $t('phoneSession.endConfirmTitle', { machine: summary.machineName }) }}</h4>
+          <p>{{ $t('phoneSession.endConfirmText') }}</p>
+          <div class="confirm-actions">
+            <button type="button" class="close-btn" :disabled="ending" @click="confirming = false">{{ $t('phoneSession.endConfirmCancel') }}</button>
+            <button type="button" class="end-btn confirm-end" :disabled="ending" @click="endSession">{{ $t('phoneSession.endSession') }}</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { summarizeSession } from '@/utils/activeSession'
+import api from '@/services/api'
+import { useActiveSessionStore } from '@/store/activeSession'
 import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
 const props = defineProps({ session: { type: Object, default: null } })
@@ -50,6 +65,29 @@ const closeBtn = ref(null)
 useEscapeToClose(() => emit('close'), closeBtn)
 
 const { t, te } = useI18n()
+const showToast = inject('showToast', () => {})
+const store = useActiveSessionStore()
+const confirming = ref(false)
+const ending = ref(false)
+const endError = ref(false)
+
+async function endSession() {
+  if (ending.value) return
+  ending.value = true
+  endError.value = false
+  try {
+    await api.post(`/sessions/${encodeURIComponent(props.session.session_code)}/end`)
+    await store.refresh()
+    confirming.value = false
+    emit('close')
+    showToast(t('phoneSession.ended'), 'success')
+  } catch {
+    confirming.value = false
+    endError.value = true
+  } finally {
+    ending.value = false
+  }
+}
 const summary = computed(() => summarizeSession(props.session))
 const showLocation = computed(() => summary.value.location && !summary.value.machineName.includes(summary.value.location))
 const items = computed(() => props.session?.items || [])
@@ -94,6 +132,18 @@ small { font-size: 11px; color: var(--text-muted); }
 .pts-zero { color: var(--text-muted); }
 .empty { margin: 0; text-align: center; color: var(--text-muted); }
 .sim-note { margin: 0; font-size: 12px; color: #92400E; }
+.end-btn {
+  margin-top: 4px; min-height: 44px; border-radius: var(--radius); border: 1px solid var(--border);
+  background: transparent; color: var(--text-primary); font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.end-error { margin: 0; font-size: 13px; color: #B91C1C; }
+.confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1060; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.confirm { background: var(--bg-card); border-radius: var(--radius); padding: 20px 16px; max-width: 360px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.confirm h4 { margin: 0; font-size: 16px; color: var(--text-primary); }
+.confirm p { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.confirm-actions { display: flex; gap: 8px; margin-top: 8px; }
+.confirm-actions button { flex: 1; margin-top: 0; }
+.confirm-end { background: #DC2626; border-color: #DC2626; color: #fff; }
 .close-btn {
   margin-top: 4px; min-height: 44px; border-radius: var(--radius); border: 1px solid var(--border);
   background: transparent; color: var(--text-primary); font-size: 14px; cursor: pointer;

@@ -15,6 +15,8 @@ const KEYS = [
   'activity.demoChip', 'activity.demoNote',
   'phoneSession.happy', 'phoneSession.connectedTo', 'phoneSession.demoMachine', 'phoneSession.connecting',
   'phoneSession.inProgress', 'phoneSession.summary', 'phoneSession.view', 'phoneSession.simNote', 'phoneSession.openDetails', 'phoneSession.pillLine',
+  'phoneSession.co2Saved', 'phoneSession.endSession', 'phoneSession.endConfirmTitle', 'phoneSession.endConfirmText',
+  'phoneSession.endConfirmCancel', 'phoneSession.ended', 'phoneSession.endFailed',
   'demoKiosk.notDemoMachine', 'demoKiosk.chooseTitle', 'demoKiosk.chooseHint',
   'demoKiosk.items.plastic', 'demoKiosk.items.aluminum', 'demoKiosk.items.paper', 'demoKiosk.items.glass',
   'demoKiosk.simCapture', 'demoKiosk.simAi', 'demoKiosk.simulated', 'demoKiosk.glassRejected',
