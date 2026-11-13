@@ -128,7 +128,7 @@
                 </template>
                 <template v-else>
                   <div class="ms-status ms-nodata">NO DATA</div>
-                  <div class="ms-sub">No machine has reported a heartbeat yet ({{ activeMachines }} of {{ adminMachines.length }} registered as active)</div>
+                  <div class="ms-sub">No machine has reported a heartbeat yet ({{ activeMachines }} of {{ scopedMachines.length }} registered as active)</div>
                 </template>
               </div>
             </div>
@@ -1361,6 +1361,7 @@ import { formatAuditLog } from '@/utils/admin/auditLog.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
 import { validateMachineName } from '@/utils/admin/validateMachine.js'
 import { normalizeMachine } from '@/utils/admin/normalizeMachine.js'
+import { machinesInScope, countMachinesInScope } from '@/utils/admin/machineScope.js'
 import { machineConnectivity, buildMachineAlerts, connectivitySummary } from '@/utils/admin/machineAlerts.js'
 import { isFresh } from '@/utils/admin/tabFreshness.js'
 import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
@@ -1728,8 +1729,9 @@ const overviewMaterials = [
 const currentNavItem = computed(() => navItems.find(n => n.id === activeTab.value))
 
 const statsCards = computed(() => [
-  { icon: PhUsers,           label: 'Total Users',    value: statsData.value.total_users    || 0 },
-  { icon: PhFactory,         label: 'Machines',       value: statsData.value.total_machines || 0 },
+  // Users are not demo or real, so Total Users cannot follow the switch: say so.
+  { icon: PhUsers,           label: dataScope.value === 'all' ? 'Total Users' : 'Total Users (all data)', value: statsData.value.total_users || 0 },
+  { icon: PhFactory,         label: 'Machines',       value: countMachinesInScope(adminMachines.value, dataScope.value) },
   { icon: PhArrowsClockwise, label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
   { icon: PhGlobe,           label: 'Carbon Saved (kg)', value: statsData.value.total_carbon_saved_kg || 0 },
   { icon: PhStar,            label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
@@ -1737,7 +1739,7 @@ const statsCards = computed(() => [
 ])
 
 const activeMachines = computed(() =>
-  adminMachines.value.filter(m => m.status === 'active').length
+  scopedMachines.value.filter(m => m.status === 'active').length
 )
 
 // Heartbeat-based machine state (A02/A05). nowTick is bumped by the 1 s clock
@@ -1748,7 +1750,8 @@ function openHistoryFor(machineId) {
   const machine = adminMachines.value.find(m => m.id === machineId)
   if (machine) historyMachine.value = machine
 }
-const machineSummary = computed(() => connectivitySummary(adminMachines.value, nowTick.value))
+const scopedMachines = computed(() => machinesInScope(adminMachines.value, dataScope.value))
+const machineSummary = computed(() => connectivitySummary(scopedMachines.value, nowTick.value))
 const machineAlerts  = computed(() => buildMachineAlerts(adminMachines.value, nowTick.value))
 
 function relativeTime(ts) {
@@ -1778,8 +1781,8 @@ const systemStatusItems = computed(() => {
 
   // Heartbeat-based once any kiosk reports; until then, the registered status.
   const summary        = machineSummary.value
-  const totalMachines  = machines.length
-  const onlineMachines = summary.anyReported ? summary.online : machines.filter(m => m.status === 'active').length
+  const totalMachines  = scopedMachines.value.length
+  const onlineMachines = summary.anyReported ? summary.online : scopedMachines.value.filter(m => m.status === 'active').length
   const machineColor   = summary.anyReported ? (onlineMachines > 0 ? 'green' : 'red') : 'yellow'
   const machineWord    = summary.anyReported ? 'ONLINE' : 'REGISTERED'
 
