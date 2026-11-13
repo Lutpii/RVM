@@ -7,16 +7,18 @@
       <p class="sheet-sub">
         {{ summary.machineName }}<template v-if="showLocation"> · {{ summary.location }}</template>
       </p>
-      <p class="sheet-total">
-        {{ $t('phoneSession.summary', { items: summary.items, points: summary.points, carbon: summary.carbon.toFixed(3) }) }}
-      </p>
+      <i18n-t keypath="phoneSession.summary" tag="p" class="sheet-total">
+        <template #items>{{ summary.items }}</template>
+        <template #points>{{ summary.points }}</template>
+        <template #carbon><span class="session-carbon">{{ summary.carbon.toFixed(3) }}</span></template>
+      </i18n-t>
 
       <ul class="item-list">
         <li v-for="item in items" :key="item.id" class="item-row">
           <svg
             v-if="materialIconSvg(itemType(item))" class="item-icon" aria-hidden="true"
             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-            stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(itemType(item))"
+            stroke-linecap="round" stroke-linejoin="round" :data-material-icon="itemType(item)?.toLowerCase()" v-html="materialIconSvg(itemType(item))"
           ></svg>
           <span v-else class="item-icon"></span>
           <span class="item-main">
@@ -25,7 +27,7 @@
           </span>
           <span class="item-nums">
             <b :class="item.is_valid ? 'pts-green' : 'pts-zero'">{{ item.is_valid ? '+' : '' }}{{ item.points_earned || 0 }}</b>
-            <small>{{ $t('phoneSession.co2Saved', { kg: Number(item.carbon_saved || 0).toFixed(3) }) }}</small>
+            <small class="session-carbon">{{ $t('phoneSession.co2Saved', { kg: Number(item.carbon_saved || 0).toFixed(3) }) }}</small>
           </span>
         </li>
       </ul>
@@ -33,8 +35,10 @@
 
       <p v-if="summary.isDemo" class="sim-note">{{ $t('phoneSession.simNote') }}</p>
       <p v-if="endError" class="end-error" role="alert">{{ $t('phoneSession.endFailed') }}</p>
-      <button v-if="session?.session_code" ref="endBtn" type="button" class="end-btn" @click="openConfirm">{{ $t('phoneSession.endSession') }}</button>
-      <button ref="closeBtn" type="button" class="close-btn" @click="$emit('close')">{{ $t('activity.detail.close') }}</button>
+      <div class="sheet-actions">
+        <button ref="closeBtn" type="button" class="close-btn" @click="$emit('close')">{{ $t('phoneSession.back') }}</button>
+        <button v-if="session?.session_code" ref="endBtn" type="button" class="end-btn" @click="openConfirm">{{ $t('phoneSession.endSession') }}</button>
+      </div>
 
       <div v-if="confirming" class="confirm-overlay" @click.self="!ending && closeConfirm()">
         <div ref="dialogEl" class="confirm" role="alertdialog" aria-modal="true" @keydown.tab="trapTab" :aria-label="$t('phoneSession.endSession')">
@@ -42,7 +46,7 @@
           <p>{{ $t('phoneSession.endConfirmText') }}</p>
           <div class="confirm-actions">
             <button ref="cancelBtn" type="button" class="close-btn" :disabled="ending" @click="closeConfirm">{{ $t('phoneSession.endConfirmCancel') }}</button>
-            <button type="button" class="end-btn confirm-end" :disabled="ending" @click="endSession">{{ $t('phoneSession.endSession') }}</button>
+            <button type="button" class="end-btn" :disabled="ending" @click="endSession">{{ $t('phoneSession.endSession') }}</button>
           </div>
         </div>
       </div>
@@ -139,38 +143,66 @@ function confidence(c) {
   display: flex; align-items: flex-end; justify-content: center;
 }
 .sheet {
-  background: var(--bg-card); width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto;
+  background: var(--bg-card); width: 100%; max-width: 480px; max-height: 85dvh;
   border-radius: 16px 16px 0 0; padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 8px;
+}
+.session-sheet-enter-active, .session-sheet-leave-active {
+  transition: opacity 250ms ease;
+}
+.session-sheet-enter-active .sheet, .session-sheet-leave-active .sheet {
+  transition: transform 250ms ease;
+}
+.session-sheet-enter-from, .session-sheet-leave-to {
+  opacity: 0;
+}
+.session-sheet-enter-from .sheet, .session-sheet-leave-to .sheet {
+  transform: translateY(100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-sheet-enter-active, .session-sheet-leave-active,
+  .session-sheet-enter-active .sheet, .session-sheet-leave-active .sheet {
+    transition: none;
+  }
 }
 .sheet-title { margin: 0; font-size: 17px; color: var(--text-primary); }
 .sheet-sub { margin: 0; font-size: 13px; color: var(--text-secondary); }
 .sheet-total { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); }
-.item-list { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); }
-.item-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.item-list {
+  --item-row-height: 3.5rem;
+  list-style: none; margin: 4px 0 0; padding: 0;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  min-height: 0; max-height: calc(5 * var(--item-row-height) + 2px);
+  overflow-y: auto; overscroll-behavior-y: contain;
+}
+.item-list:empty { display: none; }
+.sheet > :not(.item-list) { flex-shrink: 0; }
+.item-row { display: flex; align-items: center; gap: 10px; min-height: var(--item-row-height); padding: 8px 12px; border-bottom: 1px solid var(--border); }
 .item-row:last-child { border-bottom: none; }
-.item-icon { width: 24px; height: 24px; flex-shrink: 0; color: var(--text-secondary); }
+.item-icon { width: 24px; height: 24px; flex-shrink: 0; }
 .item-main, .item-nums { display: flex; flex-direction: column; min-width: 0; }
 .item-main { flex: 1; }
 .item-nums { align-items: flex-end; }
 .item-main strong { font-size: 14px; color: var(--text-primary); }
 small { font-size: 11px; color: var(--text-muted); }
+.session-carbon { color: var(--carbon-accent); }
 .pts-green { color: var(--accent-green); }
 .pts-zero { color: var(--text-muted); }
 .empty { margin: 0; text-align: center; color: var(--text-muted); }
 .sim-note { margin: 0; font-size: 12px; color: #92400E; }
 .end-btn {
   margin-top: 4px; min-height: 44px; border-radius: var(--radius); border: 1px solid var(--border);
-  background: transparent; color: var(--text-primary); font-size: 14px; font-weight: 600; cursor: pointer;
+  background: var(--danger-button); border-color: var(--danger-button);
+  color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
 }
+.end-btn:not(:disabled):hover { background: var(--danger-button-hover); border-color: var(--danger-button-hover); }
 .end-error { margin: 0; font-size: 13px; color: #B91C1C; }
 .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1060; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .confirm { background: var(--bg-card); border-radius: var(--radius); padding: 20px 16px; max-width: 360px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
 .confirm h4 { margin: 0; font-size: 16px; color: var(--text-primary); }
 .confirm p { margin: 0; font-size: 13px; color: var(--text-secondary); }
-.confirm-actions { display: flex; gap: 8px; margin-top: 8px; }
-.confirm-actions button { flex: 1; margin-top: 0; }
-.confirm-end { background: #DC2626; border-color: #DC2626; color: #fff; }
+.sheet-actions, .confirm-actions { display: flex; gap: 8px; margin-top: 8px; }
+.sheet-actions button, .confirm-actions button { flex: 1; margin-top: 0; }
 .close-btn {
   margin-top: 4px; min-height: 44px; border-radius: var(--radius); border: 1px solid var(--border);
   background: transparent; color: var(--text-primary); font-size: 14px; cursor: pointer;

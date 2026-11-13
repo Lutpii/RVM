@@ -101,7 +101,9 @@
       </section>
     </template>
 
-    <SessionDetailModal v-if="openSessionCode" :session-code="openSessionCode" :is-demo="openSessionDemo" @close="openSessionCode = null" />
+    <Teleport to=".app-root">
+      <SessionDetailModal v-if="openSessionCode" :session-code="openSessionCode" :is-demo="openSessionDemo" @close="openSessionCode = null" />
+    </Teleport>
   </div>
 </template>
 
@@ -315,4 +317,10 @@ button.activity-item:last-child { border-bottom: none; }
 .spinner-sm { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner-sm { animation-duration: 2s; } }
+@media (min-width: 769px) {
+  .activity-page {
+    max-width: var(--recycler-desktop-content-width);
+    padding-inline: var(--recycler-desktop-gutter);
+  }
+}
 </style>

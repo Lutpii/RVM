@@ -20,7 +20,7 @@
         </div>
         <div class="badge status-badge">
           <span class="badge-label">{{ $t('session.carbonSavedLabel') }}</span>
-          <span class="badge-value">{{ sessionCarbon.toFixed(3) }} kg CO2</span>
+          <span class="badge-value badge-carbon">{{ sessionCarbon.toFixed(3) }} kg CO2</span>
         </div>
       </div>
     </div>
@@ -149,7 +149,7 @@
           <p class="step-sub">{{ $t('session.selected') }}: {{ rvm.selectedMaterial }}</p>
           <p class="step-sub">
             {{ $t('session.classified') }}:
-            <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(aiDetected)"></svg>
+            <svg v-if="materialIconSvg(aiDetected)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="aiDetected?.toLowerCase()" v-html="materialIconSvg(aiDetected)"></svg>
             {{ aiDetected }}
           </p>
           <p class="step-sub" v-if="aiConfidence > 0">{{ $t('session.confidence', { percent: (aiConfidence * 100).toFixed(1) }) }}</p>
@@ -179,7 +179,7 @@
           <div class="result-box">
             <p>
               {{ $t('session.material') }}:
-              <svg v-if="materialIconSvg(rvm.selectedMaterial)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(rvm.selectedMaterial)"></svg>
+              <svg v-if="materialIconSvg(rvm.selectedMaterial)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="rvm.selectedMaterial?.toLowerCase()" v-html="materialIconSvg(rvm.selectedMaterial)"></svg>
               {{ rvm.selectedMaterial }}
             </p>
             <p class="earned-text">{{ rvm.isGuest ? $t('session.pointsDonatedLabel') : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
@@ -371,7 +371,9 @@
       {{ $t('session.currentStep') }}: <strong class="step-label">{{ currentStepLabel }}</strong>
     </div>
 
-    <IdleOverlay v-if="showIdleOverlay" :ms-left="idleMsLeft" :total-ms="IDLE_COUNTDOWN_MS" @still-here="pokeIdle" />
+    <Transition name="idle-banner">
+      <IdleOverlay v-if="showIdleOverlay" :ms-left="idleMsLeft" :total-ms="IDLE_COUNTDOWN_MS" @still-here="pokeIdle" />
+    </Transition>
     <SessionEndedScreen v-if="sessionEnded" />
   </div>
 </template>
@@ -1310,7 +1312,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
 }
-.end-session-btn:hover { background: var(--accent-red); color: white; }
+.end-session-btn:hover { background: var(--danger-button); color: white; }
 
 /* Spinner */
 .spinner-lg {
@@ -1491,7 +1493,8 @@ onMounted(() => {
 }
 .result-box p { color: var(--text-secondary); font-size: 14px; margin: 4px 0; }
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
-.carbon-text    { color: var(--accent-blue) !important; font-weight: 700; font-size: 14px !important; }
+.badge-value.badge-carbon { color: var(--carbon-on-gradient); }
+.carbon-text    { color: var(--carbon-accent) !important; font-weight: 700; font-size: 14px !important; }
 .carbon-icon    { vertical-align: -2px; margin-right: 2px; }
 
 .points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }
@@ -1561,7 +1564,7 @@ onMounted(() => {
 
 .end-btn {
   padding: 13px 24px;
-  background: var(--accent-red);
+  background: var(--danger-button);
   color: white;
   border: none;
   border-radius: var(--radius);

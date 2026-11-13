@@ -10,7 +10,7 @@
         </div>
         <div class="badge">
           <span class="badge-label">{{ $t('session.carbonSavedLabel') }}</span>
-          <span class="badge-value">{{ (summary?.carbon_saved || 0).toFixed(3) }} kg CO2</span>
+          <span class="badge-value badge-carbon">{{ (summary?.carbon_saved || 0).toFixed(3) }} kg CO2</span>
         </div>
       </div>
     </div>
@@ -72,7 +72,7 @@
         </div>
         <div class="summary-row highlight">
           <span class="row-label"><PhGlobe class="carbon-icon" weight="regular" /> {{ $t('summary.carbonSaved') }}</span>
-          <span class="row-value earned">{{ (summary.carbon_saved || 0).toFixed(3) }} kg CO2</span>
+          <span class="row-value earned row-carbon">{{ (summary.carbon_saved || 0).toFixed(3) }} kg CO2</span>
         </div>
       </div>
 
@@ -87,7 +87,7 @@
         <h3 class="breakdown-title">{{ $t('summary.itemsRecycled') }}</h3>
         <div class="txn-list">
           <div v-for="(t, i) in summary.transactions" :key="i" class="txn-row">
-            <svg v-if="materialIconSvg(t.material)" class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(t.material)"></svg>
+            <svg v-if="materialIconSvg(t.material)" class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="t.material?.toLowerCase()" v-html="materialIconSvg(t.material)"></svg>
             <svg v-else class="txn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
               <path d="M21 3v5h-5"/>
@@ -488,6 +488,8 @@ onMounted(async () => {
   font-size: 14px;
 }
 
+.badge-value.badge-carbon { color: var(--carbon-on-gradient); }
+.row-value.earned.row-carbon, .carbon-icon { color: var(--carbon-accent); }
 .carbon-icon {
   vertical-align: -2px;
   margin-right: 2px;

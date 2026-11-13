@@ -74,7 +74,7 @@
           </div>
           <div class="impact-tile">
             <span class="tile-icon tile-teal"><PhLeaf :size="24" aria-hidden="true" /></span>
-            <span class="impact-text"><strong>{{ kg(stats.carbon_saved_kg) }}</strong><span>{{ $t('landing.statCo2') }}</span></span>
+            <span class="impact-text"><strong class="co2-total">{{ kg(stats.carbon_saved_kg) }}</strong><span>{{ $t('landing.statCo2') }}</span></span>
           </div>
           <div class="impact-tile">
             <span class="tile-icon tile-orange"><PhDeviceTablet :size="24" aria-hidden="true" /></span>
@@ -305,8 +305,8 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .co2-head-text strong { font-size: 15px; }
 .co2-head-text span { font-size: 13px; color: var(--text-muted); }
 .co2-value-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
-.co2-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; line-height: 1; color: #0f766e; }
-[data-theme="dark"] .co2-value { color: #2dd4bf; }
+.co2-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 48px; font-weight: 800; line-height: 1; color: var(--carbon-accent); }
+.co2-total { color: var(--carbon-accent); }
 .co2-items { font-size: 14px; color: var(--text-muted); }
 .co2-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--border); }
 .seg-plastic { background: #4e6ef2; }

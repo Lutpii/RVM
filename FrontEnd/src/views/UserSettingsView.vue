@@ -16,8 +16,7 @@
               <PhCaretRight :size="16" weight="bold" aria-hidden="true" />
             </button>
             <span class="hero-email">{{ maskEmail(auth.user?.email) }}</span>
-            <!-- Admins don't recycle, so Scan / Points history aren't theirs. -->
-            <div v-if="!auth.isAdmin" class="hero-pills">
+            <div class="hero-pills">
               <RouterLink to="/scan" class="hero-pill"><PhScan :size="15" weight="bold" aria-hidden="true" /> {{ $t('settings.scanShort') }}</RouterLink>
               <RouterLink to="/activity" class="hero-pill"><PhClockCounterClockwise :size="15" weight="bold" aria-hidden="true" /> {{ $t('settings.pointsHistory') }}</RouterLink>
             </div>
@@ -25,19 +24,7 @@
         </div>
       </header>
 
-      <!-- Admin: the summary card (all zeros for them) becomes a shortcut to the panel. -->
-      <section v-if="auth.isAdmin" class="acct-summary admin-card" :aria-label="$t('nav.admin')">
-        <span class="admin-card-icon"><PhGear :size="26" aria-hidden="true" /></span>
-        <div class="admin-card-text">
-          <strong>{{ $t('nav.admin') }}</strong>
-          <span>{{ $t('settings.adminPanelHint') }}</span>
-        </div>
-        <RouterLink to="/admin" class="admin-card-btn">
-          {{ $t('settings.openAdminPanel') }} <PhCaretRight :size="16" weight="bold" aria-hidden="true" />
-        </RouterLink>
-      </section>
-
-      <section v-else class="acct-summary" :aria-label="$t('settings.yourPoints')">
+      <section class="acct-summary" :aria-label="$t('settings.yourPoints')">
         <div class="sum-tiles">
           <div class="sum-tile">
             <span class="sum-icon sum-icon-green"><PhCoins :size="22" aria-hidden="true" /></span>
@@ -52,7 +39,7 @@
           </div>
           <div class="sum-tile">
             <span class="sum-icon sum-icon-teal"><PhLeaf :size="22" aria-hidden="true" /></span>
-            <span class="sum-value">{{ carbonText }}</span>
+            <span class="sum-value carbon-value">{{ carbonText }}</span>
             <span class="sum-label">{{ $t('settings.carbonSaved') }}</span>
           </div>
         </div>
@@ -77,70 +64,80 @@
         </div>
       </section>
 
-      <nav v-if="!auth.isAdmin" class="menu-group" :aria-label="$t('settings.sectionRewards')">
-        <h2 class="menu-title">{{ $t('settings.sectionRewards') }}</h2>
-        <div class="menu-card">
-          <RouterLink to="/rewards" class="menu-row">
-            <PhTicket class="menu-icon icon-purple" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.myVouchers') }}</span>
-            <span v-if="summary.active_vouchers > 0" class="menu-badge">{{ $t('settings.activeVouchers', { n: summary.active_vouchers }) }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </RouterLink>
-          <button type="button" class="menu-row" @click="openView('redeem')">
-            <PhWallet class="menu-icon icon-green" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.redeemEwallet') }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </button>
-          <button type="button" class="menu-row" @click="openView('history')">
-            <PhReceipt class="menu-icon icon-orange" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.redemptionHistory') }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </button>
-        </div>
-      </nav>
+      <div class="acct-menu-layout">
+        <div class="acct-menu-column">
+          <nav class="menu-group" :aria-label="$t('settings.sectionRewards')">
+            <h2 class="menu-title">{{ $t('settings.sectionRewards') }}</h2>
+            <div class="menu-card">
+              <RouterLink to="/rewards" class="menu-row">
+                <PhTicket class="menu-icon icon-purple" :size="22" aria-hidden="true" />
+                <span class="menu-label">{{ $t('settings.myVouchers') }}</span>
+                <span v-if="summary.active_vouchers > 0" class="menu-badge">{{ $t('settings.activeVouchers', { n: summary.active_vouchers }) }}</span>
+                <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+              </RouterLink>
+              <button type="button" class="menu-row" @click="openView('redeem')">
+                <PhWallet class="menu-icon icon-green" :size="22" aria-hidden="true" />
+                <span class="menu-label">{{ $t('settings.redeemEwallet') }}</span>
+                <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+              </button>
+              <button type="button" class="menu-row" @click="openView('history')">
+                <PhReceipt class="menu-icon icon-orange" :size="22" aria-hidden="true" />
+                <span class="menu-label">{{ $t('settings.redemptionHistory') }}</span>
+                <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+              </button>
+            </div>
+          </nav>
 
-      <nav class="menu-group" :aria-label="$t('settings.sectionPreferences')">
-        <h2 class="menu-title">{{ $t('settings.sectionPreferences') }}</h2>
-        <div class="menu-card">
-          <button type="button" class="menu-row" @click="openView('language')">
-            <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.language') }}</span>
-            <span class="menu-value">{{ locale === 'my' ? 'Bahasa Melayu' : 'English' }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </button>
-          <button type="button" class="menu-row" role="switch" :aria-checked="theme === 'dark'" @click="toggleTheme()">
-            <PhMoonStars class="menu-icon icon-purple" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.darkMode') }}</span>
-            <span :class="['switch', { on: theme === 'dark' }]" aria-hidden="true"><span class="switch-knob"></span></span>
-          </button>
+          <nav class="menu-group" :aria-label="$t('settings.sectionPreferences')">
+            <h2 class="menu-title">{{ $t('settings.sectionPreferences') }}</h2>
+            <div class="menu-card">
+              <button type="button" class="menu-row" @click="openView('language')">
+                <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+                <span class="menu-label">{{ $t('settings.language') }}</span>
+                <span class="menu-value">{{ locale === 'my' ? 'Bahasa Melayu' : 'English' }}</span>
+                <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+              </button>
+              <button type="button" class="menu-row" role="switch" :aria-checked="theme === 'dark'" @click="toggleTheme()">
+                <PhMoonStars class="menu-icon icon-purple" :size="22" aria-hidden="true" />
+                <span class="menu-label">{{ $t('settings.darkMode') }}</span>
+                <span :class="['switch', { on: theme === 'dark' }]" aria-hidden="true"><span class="switch-knob"></span></span>
+              </button>
+            </div>
+          </nav>
         </div>
-      </nav>
 
-      <nav class="menu-group" :aria-label="$t('settings.sectionAccount')">
-        <h2 class="menu-title">{{ $t('settings.sectionAccount') }}</h2>
-        <div class="menu-card">
-          <button type="button" class="menu-row" @click="openView('profile')">
-            <PhUserCircle class="menu-icon icon-blue" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.editProfile') }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </button>
-          <button type="button" class="menu-row" @click="openView('info')">
-            <PhInfo class="menu-icon icon-teal" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.accountInfo') }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </button>
-          <RouterLink to="/privacy" class="menu-row">
-            <PhShieldCheck class="menu-icon icon-muted" :size="22" aria-hidden="true" />
-            <span class="menu-label">{{ $t('settings.privacyPolicy') }}</span>
-            <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-          </RouterLink>
-        </div>
-      </nav>
+        <nav class="menu-group" :aria-label="$t('settings.sectionAccount')">
+          <h2 class="menu-title">{{ $t('settings.sectionAccount') }}</h2>
+          <div class="menu-card">
+            <button type="button" class="menu-row" @click="openView('profile')">
+              <PhUserCircle class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+              <span class="menu-label">{{ $t('settings.editProfile') }}</span>
+              <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+            </button>
+            <button type="button" class="menu-row" @click="openView('info')">
+              <PhInfo class="menu-icon icon-teal" :size="22" aria-hidden="true" />
+              <span class="menu-label">{{ $t('settings.accountInfo') }}</span>
+              <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+            </button>
+            <RouterLink v-if="auth.isAdmin" to="/admin" class="menu-row">
+              <PhGear class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+              <span class="menu-label">{{ $t('settings.openAdminPanel') }}</span>
+              <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+            </RouterLink>
+            <RouterLink to="/privacy" class="menu-row">
+              <PhShieldCheck class="menu-icon icon-muted" :size="22" aria-hidden="true" />
+              <span class="menu-label">{{ $t('settings.privacyPolicy') }}</span>
+              <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+            </RouterLink>
+            <button type="button" class="menu-row logout-row" @click="handleLogout">
+              <PhSignOut class="menu-icon" :size="22" aria-hidden="true" />
+              <span class="menu-label">{{ $t('nav.logout') }}</span>
+            </button>
+          </div>
+        </nav>
+      </div>
 
       <div class="acct-footer">
-        <button type="button" class="logout-btn" @click="handleLogout">
-          <PhSignOut :size="19" aria-hidden="true" /> {{ $t('nav.logout') }}
-        </button>
         <span class="app-version">{{ $t('settings.appVersion', { version: appVersion }) }}</span>
       </div>
     </template>
@@ -762,7 +759,7 @@ onMounted(async () => {
   } catch { /* use defaults */ }
 
   // Admins see the Admin Panel card instead of the points summary.
-  if (!auth.isAdmin) await Promise.all([loadSummary(), loadRedemptionHistory()])
+  await Promise.all([loadSummary(), loadRedemptionHistory()])
 })
 </script>
 
@@ -772,7 +769,7 @@ onMounted(async () => {
 .acct-page { background: var(--bg-primary); min-height: 100%; }
 
 /* ── Header ── */
-.acct-hero { background: var(--grad-header); padding: 26px 20px 60px; color: #fff; }
+.acct-hero { background: var(--grad-header); padding: 24px 20px 40px; color: #fff; }
 .hero-row { display: flex; align-items: center; gap: 16px; max-width: 640px; margin: 0 auto; }
 .hero-avatar {
   position: relative; flex-shrink: 0; padding: 0; border: 0; background: none; cursor: pointer;
@@ -808,18 +805,19 @@ onMounted(async () => {
 
 /* ── Summary card ── */
 .acct-summary {
-  position: relative; margin: -40px 16px 0; max-width: 640px;
+  position: relative; margin: -16px 16px 0; max-width: 640px;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.10);
 }
 @media (min-width: 672px) { .acct-summary { margin-left: auto; margin-right: auto; } }
 .sum-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 18px 8px 16px; }
 .sum-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 0 4px; }
+.sum-value.carbon-value { color: var(--carbon-accent); }
 .sum-tile + .sum-tile { border-left: 1px solid var(--border); }
 .sum-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 .sum-icon-green { background: rgba(34,197,94,0.14); color: #16a34a; }
 .sum-icon-blue  { background: rgba(78,110,242,0.14); color: var(--accent-blue); }
-.sum-icon-teal  { background: rgba(20,184,166,0.15); color: #0f9488; }
+.sum-icon-teal  { background: rgba(20,184,166,0.15); color: var(--carbon-accent); }
 .sum-value { font-size: 18px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .sum-label { font-size: 12px; font-weight: 600; color: var(--text-primary); }
 .sum-sub { font-size: 12px; font-weight: 600; }
@@ -836,19 +834,6 @@ onMounted(async () => {
 .flow-text { display: flex; flex-direction: column; }
 .flow-label { font-size: 13px; color: var(--text-muted); }
 .flow-value { font-size: 16px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-
-/* ── Admin shortcut card (in place of the summary for admins) ── */
-.admin-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: center; padding: 16px; }
-.admin-card-icon { width: 48px; height: 48px; border-radius: 10px; background: rgba(78,110,242,0.14); color: var(--accent-blue); display: flex; align-items: center; justify-content: center; }
-.admin-card-text { display: flex; flex-direction: column; gap: 2px; }
-.admin-card-text strong { font-size: 16px; color: var(--text-primary); }
-.admin-card-text span { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
-.admin-card-btn {
-  grid-column: 1 / -1; min-height: 48px; border-radius: 10px; background: var(--accent-blue); color: #fff;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  font-size: 15px; font-weight: 700; text-decoration: none;
-}
-.admin-card-btn:hover { filter: brightness(1.08); }
 
 /* ── Menu lists ── */
 .menu-group { margin: 20px 16px 0; }
@@ -882,22 +867,12 @@ onMounted(async () => {
 .switch.on .switch-knob { left: 21px; }
 
 /* ── Footer ── */
-/* Same 640px column as the menu cards, centred (the margin here used to
-   override the desktop centring and pushed Logout to the left). */
 .acct-footer {
-  margin: 24px auto 0; padding: 0 16px; max-width: 672px; box-sizing: border-box;
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  margin: 24px auto 0; padding: 0 16px; text-align: center;
 }
-.logout-btn {
-  width: 100%; min-height: 48px; border-radius: 10px; border: 1.5px solid var(--accent-red);
-  background: transparent; color: var(--accent-red); font: inherit; font-size: 16px; font-weight: 600;
-  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-}
-.logout-btn:hover { background: rgba(239,68,68,0.08); }
-/* Desktop: a full 640px red bar is too loud, so a compact centred button. */
-@media (min-width: 768px) {
-  .logout-btn { width: auto; min-width: 220px; min-height: 44px; padding: 0 28px; font-size: 15px; }
-}
+.logout-row { color: var(--danger-button); }
+[data-theme="dark"] .logout-row { color: var(--accent-red); }
+.logout-row:hover { background: rgba(239,68,68,0.08); }
 .app-version { font-size: 12px; color: var(--text-muted); }
 .bottom-space { height: 40px; }
 
@@ -920,10 +895,10 @@ onMounted(async () => {
 .danger-title { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-red); }
 .danger-text { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
 .delete-btn {
-  min-height: 48px; border-radius: 10px; border: 0; background: #dc2626; color: #fff;
+  min-height: 48px; border-radius: 10px; border: 0; background: var(--danger-button); color: #fff;
   font: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
 }
-.delete-btn:hover { background: #b91c1c; }
+.delete-btn:hover { background: var(--danger-button-hover); }
 
 /* ── Form cards (sub-pages) ── */
 .form-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
@@ -1054,7 +1029,7 @@ onMounted(async () => {
 .confirm-btns { display: flex; gap: 10px; margin-top: 18px; }
 .cancel-btn-lg, .delete-btn-confirm, .ewallet-confirm-btn { flex: 1; min-height: 44px; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .cancel-btn-lg { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary); }
-.delete-btn-confirm { background: var(--accent-red); border: none; color: #fff; }
+.delete-btn-confirm { background: var(--danger-button); border: none; color: #fff; }
 .ewallet-confirm-btn { background: #16a34a; border: none; color: #fff; }
 .delete-btn-confirm:disabled, .ewallet-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -1065,5 +1040,47 @@ onMounted(async () => {
   .pick-grid { gap: 6px; }
   .pick-icon, .pick-colour { width: 44px; height: 44px; }
   .rate-row { flex-direction: column; }
+}
+@media (min-width: 769px) {
+  .acct-hero, .acct-summary, .acct-menu-layout {
+    max-width: var(--recycler-desktop-card-width);
+    width: calc(100% - 2 * var(--recycler-desktop-gutter));
+    margin-inline: auto;
+  }
+  .acct-hero {
+    padding: 26px var(--recycler-desktop-gutter) 42px;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .hero-row { max-width: none; }
+  .hero-info {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .hero-pills { grid-column: 2; grid-row: 1 / 3; margin-top: 0; }
+  .acct-summary {
+    display: grid;
+    grid-template-columns: 2fr minmax(250px, 1fr);
+  }
+  .sum-tiles { align-items: center; padding-block: 18px; }
+  .sum-month {
+    justify-content: center;
+    border-top: 0;
+    border-inline-start: 1px solid var(--border);
+    padding: 16px;
+  }
+  .acct-menu-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .acct-menu-column { display: grid; gap: 16px; }
+  .acct-menu-layout .menu-group { max-width: none; margin: 0; }
+  .sub-content {
+    max-width: var(--recycler-desktop-content-width);
+    padding-inline: var(--recycler-desktop-gutter);
+  }
 }
 </style>

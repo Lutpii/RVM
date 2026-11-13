@@ -26,7 +26,7 @@
         </div>
         <div class="badge status-badge">
           <span class="badge-label">{{ $t('session.carbonSavedLabel') }}</span>
-          <span class="badge-value">{{ sessionCarbon.toFixed(3) }} kg CO2</span>
+          <span class="badge-value badge-carbon">{{ sessionCarbon.toFixed(3) }} kg CO2</span>
         </div>
       </div>
     </div>
@@ -60,7 +60,7 @@
               :disabled="flowBusy"
               @click="chooseItem(item)"
             >
-              <svg class="demo-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(item.id)"></svg>
+              <svg class="demo-tile-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="item.id?.toLowerCase()" v-html="materialIconSvg(item.id)"></svg>
               <span class="demo-tile-name">{{ itemLabel(item.id) }}</span>
             </button>
           </div>
@@ -70,7 +70,7 @@
         <div v-else-if="rvm.currentStep === 'camera'" key="camera" class="step-content centered">
           <div class="camera-container">
             <div class="camera-sim">
-              <svg class="camera-sim-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(chosenId)"></svg>
+              <svg class="camera-sim-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="chosenId?.toLowerCase()" v-html="materialIconSvg(chosenId)"></svg>
             </div>
             <div class="scan-overlay">
               <div class="scan-corners"></div>
@@ -105,7 +105,7 @@
           <h2 class="step-status green">{{ $t('session.itemValid') }}</h2>
           <p class="step-sub">
             {{ $t('session.classified') }}:
-            <svg v-if="materialIconSvg(chosenId)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(chosenId)"></svg>
+            <svg v-if="materialIconSvg(chosenId)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="chosenId?.toLowerCase()" v-html="materialIconSvg(chosenId)"></svg>
             <strong>{{ itemLabel(chosenId) }}</strong>
           </p>
           <p class="step-sub" v-if="aiConfidence > 0">
@@ -138,7 +138,7 @@
           <div class="result-box">
             <p>
               {{ $t('session.material') }}:
-              <svg v-if="materialIconSvg(chosenId)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(chosenId)"></svg>
+              <svg v-if="materialIconSvg(chosenId)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="chosenId?.toLowerCase()" v-html="materialIconSvg(chosenId)"></svg>
               {{ itemLabel(chosenId) }}
             </p>
             <p class="earned-text">{{ rvm.isGuest ? $t('session.pointsDonatedLabel') : $t('session.pointsEarned') }}: +{{ itemPoints }}</p>
@@ -169,7 +169,7 @@
           <h2 class="step-status red">{{ $t('session.itemRejected') }}</h2>
           <p class="step-sub">
             {{ $t('session.classified') }}:
-            <svg v-if="materialIconSvg(chosenId)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(chosenId)"></svg>
+            <svg v-if="materialIconSvg(chosenId)" class="mat-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="chosenId?.toLowerCase()" v-html="materialIconSvg(chosenId)"></svg>
             <strong>{{ itemLabel(chosenId) }}</strong>
             <template v-if="aiConfidence > 0"> · {{ (aiConfidence * 100).toFixed(1) }}%</template>
             <span class="sim-badge inline">{{ $t('demoKiosk.simulated') }}</span>
@@ -223,7 +223,9 @@
       {{ $t('session.currentStep') }}: <strong class="step-label">{{ currentStepLabel }}</strong>
     </div>
 
-    <IdleOverlay v-if="showIdleOverlay" :ms-left="idleMsLeft" :total-ms="IDLE_COUNTDOWN_MS" @still-here="pokeIdle" />
+    <Transition name="idle-banner">
+      <IdleOverlay v-if="showIdleOverlay" :ms-left="idleMsLeft" :total-ms="IDLE_COUNTDOWN_MS" @still-here="pokeIdle" />
+    </Transition>
     <SessionEndedScreen v-if="sessionEnded" />
   </div>
 </template>
@@ -409,7 +411,10 @@ async function awardPoints(id) {
   if (unmounted) return
   rvm.setStep('weigh')
 
-  const saved = rvm.isGuest ? await saveGuestItem(id) : await saveUserItem(id)
+  const [saved] = await Promise.all([
+    rvm.isGuest ? saveGuestItem(id) : saveUserItem(id),
+    delay(POINTS_SCREEN_MS),
+  ])
   if (unmounted) return
 
   const outcome = itemSaveOutcome(saved, { points: itemPoints.value, carbon: itemCarbon.value, weight: itemWeight.value })
@@ -434,7 +439,6 @@ async function saveUserItem(id) {
   } catch {
     itemPoints.value = 0
   }
-  await delay(POINTS_SCREEN_MS)
   if (unmounted) return false
 
   try {
@@ -473,7 +477,6 @@ async function saveGuestItem(id) {
       saved = true
     }
   } catch { /* saved stays false */ }
-  await delay(POINTS_SCREEN_MS)
   if (saved) displayPoints.value += itemPoints.value
   return saved
 }
@@ -751,7 +754,7 @@ onMounted(() => {
   justify-content: center;
   background: #0b1020;
 }
-.camera-sim-icon { width: 38%; height: 38%; color: rgba(255,255,255,0.85); }
+.camera-sim-icon { width: 38%; height: 38%; }
 /* the item icon fills the centre, so the 3-2-1 sits in the corner (mockup K6) */
 .camera-countdown.camera-countdown-corner { top: auto; left: auto; right: 22px; bottom: 14px; transform: none; font-size: 44px; }
 .camera-flash {
@@ -922,7 +925,8 @@ onMounted(() => {
 }
 .result-box p { color: var(--text-secondary); font-size: 14px; margin: 4px 0; }
 .earned-text    { color: var(--accent-green) !important; font-weight: 700; font-size: 16px !important; }
-.carbon-text    { color: var(--accent-blue) !important; font-weight: 700; font-size: 14px !important; }
+.badge-value.badge-carbon { color: var(--carbon-on-gradient); }
+.carbon-text    { color: var(--carbon-accent) !important; font-weight: 700; font-size: 14px !important; }
 .carbon-icon    { vertical-align: -2px; margin-right: 2px; }
 
 .points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }
@@ -938,7 +942,7 @@ onMounted(() => {
 
 .end-btn {
   padding: 13px 24px;
-  background: var(--accent-red);
+  background: var(--danger-button);
   color: white;
   border: none;
   border-radius: var(--radius);

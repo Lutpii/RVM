@@ -114,15 +114,23 @@ onMounted(() => {
   --accent-blue:   #4e6ef2;
   --accent-purple: #a855f7;
   --accent-green:  #22c55e;
+  --carbon-accent: #5eead4;
+  --carbon-on-gradient: #99f6e4;
   --accent-red:    #ef4444;
+  --danger-button: #dc2626;
+  --danger-button-hover: #b91c1c;
   --accent-yellow: #f59e0b;
   --grad-header:   linear-gradient(135deg, #4e6ef2 0%, #a855f7 100%);
   --border:        #30363d;
   --shadow:        0 4px 24px rgba(0,0,0,0.4);
+  --recycler-desktop-card-width: 960px;
+  --recycler-desktop-gutter: 24px;
+  --recycler-desktop-content-width: calc(var(--recycler-desktop-card-width) + 2 * var(--recycler-desktop-gutter));
   --radius:        12px;
 }
 
 [data-theme="light"] {
+  --carbon-accent: #0f766e;
   --bg-primary:    #f0f4f8;
   --bg-secondary:  #ffffff;
   --bg-card:       #ffffff;
@@ -147,6 +155,7 @@ onMounted(() => {
    theme to 'light' on every session end, which would otherwise leak into
    any --text-* or --bg-* variable this block left unpinned. */
 [data-theme="kiosk"] {
+  --carbon-accent: #5eead4;
   --bg-primary:    #000000;
   --bg-secondary:  #161b22;
   --bg-card:       #1c2333;
@@ -168,6 +177,11 @@ body {
   min-height: 100dvh;
   transition: background 0.3s, color 0.3s;
 }
+
+svg[data-material-icon="plastic"] { color: #3b82f6; }
+svg[data-material-icon="aluminum"] { color: #8b5cf6; }
+svg[data-material-icon="paper"] { color: #a16207; }
+svg[data-material-icon="glass"] { color: #14b8a6; }
 
 .app-root {
   min-height: 100vh;

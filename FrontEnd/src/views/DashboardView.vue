@@ -4,15 +4,16 @@
     <!-- Start hero: the first thing a recycler sees is what to do next -->
     <div class="points-hero" v-reveal>
       <div class="points-bg"></div>
-      <h1 class="ready-title">{{ $t('dashboard.readyTitle') }}</h1>
-      <p class="ready-hint">{{ $t('dashboard.readyHint') }}</p>
+      <div class="ready-copy">
+        <h1 class="ready-title">{{ $t('dashboard.readyTitle') }}</h1>
+        <p class="ready-hint">{{ $t('dashboard.readyHint') }}</p>
+      </div>
       <RouterLink to="/scan" class="start-btn">
         <PhCamera class="start-btn-icon" weight="bold" aria-hidden="true" />
         {{ $t('dashboard.startRecycling') }}
       </RouterLink>
     </div>
 
-    <!-- Points and CO2: still visible, but secondary to the action above -->
     <div class="section-pad">
       <div v-if="demoDataLabel" class="demo-row"><DemoDataBadge /></div>
       <div class="stats-row">
@@ -21,9 +22,9 @@
           <strong class="stat-value">{{ auth.user?.total_points || 0 }}</strong>
           <span class="stat-sub"><PhRecycle class="points-sub-icon" weight="regular" /> {{ $t('dashboard.keepRecycling') }}</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-label"><PhGlobe class="points-sub-icon" weight="regular" /> CO2</span>
-          <strong class="stat-value stat-value-sm">{{ $t('dashboard.carbonSaved', { value: (auth.user?.total_carbon_saved || 0).toFixed(2) }) }}</strong>
+        <div class="stat-card stat-carbon">
+          <span class="stat-label"><PhGlobe class="points-sub-icon carbon-icon" weight="regular" aria-hidden="true" /> {{ $t('settings.carbonSaved') }}</span>
+          <strong class="stat-value carbon-value">{{ (auth.user?.total_carbon_saved || 0).toFixed(2) }} <small class="stat-unit">kg</small></strong>
         </div>
       </div>
     </div>
@@ -58,7 +59,7 @@
           <!-- Bin levels -->
           <div class="bin-levels">
             <div v-for="bin in binTypes" :key="bin.id" class="bin-item">
-              <svg v-if="materialIconSvg(bin.id)" class="bin-icon" role="img" :aria-label="$t('session.' + bin.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(bin.id)"></svg>
+              <svg v-if="materialIconSvg(bin.id)" class="bin-icon" role="img" :aria-label="$t('session.' + bin.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="bin.id?.toLowerCase()" v-html="materialIconSvg(bin.id)"></svg>
               <div class="bin-bar-wrap">
                 <div class="bin-bar">
                   <div :class="['bin-fill', getBinClass(machine[bin.id + '_level'])]"
@@ -89,7 +90,6 @@
         </div>
       </div>
     </div>
-
     <div style="height:32px"></div>
   </div>
 </template>
@@ -253,15 +253,20 @@ onMounted(async () => {
 
 /* Points + CO2 (secondary) */
 .demo-row { margin-bottom: 10px; }
-.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stats-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.stat-card { height: 100%; }
+.stat-paired + .stat-paired { padding-inline-start: 6px; }
+.stat-paired:has(+ .stat-paired) { padding-inline-end: 6px; }
+.home-grid > .points-hero:not(:first-child) { margin-top: 20px; border-radius: var(--radius); }
 .stat-card {
   display: flex; flex-direction: column; gap: 4px; min-width: 0;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 12px 14px;
 }
-.stat-label { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.stat-label { display: flex; align-items: center; gap: 4px; line-height: 16px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
 .stat-value { color: var(--text-primary); font-size: 24px; font-weight: 800; line-height: 1.1; }
-.stat-value-sm { font-size: 15px; font-weight: 700; }
+.carbon-icon, .carbon-value { color: var(--carbon-accent); }
+.stat-unit { font-size: 0.6em; font-weight: 700; }
 .stat-sub { color: var(--text-muted); font-size: 11px; }
 
 .section-pad { padding: 20px 16px 0; }
@@ -298,7 +303,7 @@ onMounted(async () => {
 /* Bin levels */
 .bin-levels { display: flex; flex-direction: column; gap: 6px; }
 .bin-item { display: flex; align-items: center; gap: 8px; }
-.bin-icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-secondary); }
+.bin-icon { width: 16px; height: 16px; flex-shrink: 0; }
 .bin-bar-wrap { flex: 1; display: flex; align-items: center; gap: 6px; }
 .bin-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .bin-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
@@ -335,7 +340,6 @@ onMounted(async () => {
   .ready-title { font-size: 21px; }
   .ready-hint { font-size: 13px; }
   .stat-value { font-size: 20px; }
-  .stat-value-sm { font-size: 14px; }
 
   .section-pad { padding: 14px 12px 0; }
   .section-title { font-size: 14px; }
@@ -347,5 +351,34 @@ onMounted(async () => {
 @media (max-width: 360px) {
   .stats-row { gap: 8px; }
   .stat-card { padding: 10px; }
+}
+@media (min-width: 769px) {
+  .points-hero {
+    max-width: var(--recycler-desktop-card-width);
+    margin-inline: auto;
+    width: calc(100% - 2 * var(--recycler-desktop-gutter));
+    border-radius: 0 0 var(--radius) var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    text-align: start;
+    padding: 28px 24px;
+  }
+  .ready-title { font-size: 30px; }
+  .ready-hint { margin: 0; }
+  .start-btn { flex-shrink: 0; }
+  .machines-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+  }
+  .machine-card { margin-bottom: 0; }
+  .section-pad {
+    max-width: var(--recycler-desktop-content-width);
+    margin-inline: auto;
+    padding-inline: var(--recycler-desktop-gutter);
+  }
 }
 </style>

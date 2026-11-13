@@ -251,4 +251,10 @@ onMounted(() => Promise.all([fetchItems(), fetchVouchers()]))
 .voucher-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
 .voucher-status.valid { color: var(--accent-green); border: 1px solid var(--accent-green); }
 .voucher-status.used { color: var(--text-muted); border: 1px solid var(--border); }
+@media (min-width: 769px) {
+  .rewards-page {
+    max-width: var(--recycler-desktop-content-width);
+    padding-inline: var(--recycler-desktop-gutter);
+  }
+}
 </style>

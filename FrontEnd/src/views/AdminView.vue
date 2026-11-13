@@ -94,7 +94,7 @@
           <!-- Waste overview cards -->
           <div class="overview-cards">
             <div class="overview-card" v-for="mat in overviewMaterials" :key="mat.key">
-              <svg v-if="materialIconSvg(mat.key)" class="ov-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(mat.key)"></svg>
+              <svg v-if="materialIconSvg(mat.key)" class="ov-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="mat.key?.toLowerCase()" v-html="materialIconSvg(mat.key)"></svg>
               <div class="ov-label">{{ mat.label }}</div>
               <div class="ov-count">{{ (overviewData[mat.key]?.today ?? 0).toLocaleString() }}</div>
               <div class="ov-sub">collected today</div>
@@ -212,11 +212,11 @@
                   <tbody>
                     <tr v-for="mat in materialStats" :key="mat.material_selected">
                       <td>
-                        <svg v-if="materialIconSvg(mat.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(mat.material_selected)"></svg>
+                        <svg v-if="materialIconSvg(mat.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="mat.material_selected?.toLowerCase()" v-html="materialIconSvg(mat.material_selected)"></svg>
                         {{ capitalize(mat.material_selected) }}
                       </td>
                       <td>{{ mat.count }}</td>
-                      <td>{{ mat.total_carbon_kg.toFixed(3) }} kg</td>
+                      <td class="carbon-cell">{{ mat.total_carbon_kg.toFixed(3) }} kg</td>
                       <td class="pts-green">{{ mat.total_points }}</td>
                     </tr>
                     <tr v-if="!materialStats.length">
@@ -394,7 +394,7 @@
                   </td>
                   <td>
                     <span class="item-cell">
-                      <svg v-if="materialIconSvg(tx.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(tx.material_selected)"></svg>
+                      <svg v-if="materialIconSvg(tx.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="tx.material_selected?.toLowerCase()" v-html="materialIconSvg(tx.material_selected)"></svg>
                       {{ txItemLabel(tx) }}
                     </span>
                   </td>
@@ -516,7 +516,7 @@
           <div class="reward-materials">
             <div class="reward-mat-card" v-for="mat in rewardMaterials" :key="mat.key">
               <div class="reward-mat-label">
-                <svg v-if="materialIconSvg(mat.key)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(mat.key)"></svg>
+                <svg v-if="materialIconSvg(mat.key)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="mat.key?.toLowerCase()" v-html="materialIconSvg(mat.key)"></svg>
                 {{ mat.label }}
               </div>
               <div class="reward-mat-control">
@@ -557,15 +557,35 @@
             <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
           </div>
           <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
-          <div v-else class="machines-grid">
-            <div v-for="machine in adminMachines" :key="machine.id" class="machine-admin-card">
+          <div v-if="machineOrderDirty" class="machine-order-actions">
+            <button type="button" class="action-btn" :disabled="savingMachineOrder" @click="resetMachineOrder">
+              {{ $t('machineOrder.reset') }}
+            </button>
+            <button type="button" class="add-btn" :disabled="savingMachineOrder" @click="saveMachineOrder">
+              {{ $t(savingMachineOrder ? 'machineOrder.saving' : 'machineOrder.save') }}
+            </button>
+          </div>
+          <p v-if="machineOrderError" class="form-error" role="alert">{{ $t('machineOrder.saveError') }}</p>
+          <p v-if="machineOrderSaved" class="machine-order-saved" role="status">{{ $t('machineOrder.saved') }}</p>
+          <div v-if="!loadingMachines" class="machines-grid">
+            <div v-for="(machine, index) in orderedMachines" :key="machine.id" class="machine-admin-card">
               <div class="machine-admin-header">
                 <div>
                   <strong>{{ machine.name }}</strong>
                   <span class="machine-code-badge">{{ machine.machine_code }}</span>
                   <span v-if="machine.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span>
                 </div>
-                <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
+                <div class="machine-header-actions">
+                  <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
+                  <div v-if="orderedMachines.length > 1" class="machine-order-buttons">
+                    <button type="button" class="action-btn" :disabled="savingMachineOrder || index === 0"
+                            :aria-label="$t('machineOrder.moveUp', { card: machine.name })"
+                            @click="moveMachine(index, -1)">↑</button>
+                    <button type="button" class="action-btn" :disabled="savingMachineOrder || index === orderedMachines.length - 1"
+                            :aria-label="$t('machineOrder.moveDown', { card: machine.name })"
+                            @click="moveMachine(index, 1)">↓</button>
+                  </div>
+                </div>
               </div>
               <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ machine.location_name || 'No location set' }}</p>
               <p class="machine-heartbeat">
@@ -577,7 +597,7 @@
               <div class="bin-admin-grid">
                 <div v-for="bin in binTypes" :key="bin.id" class="bin-admin">
                   <span>
-                    <svg v-if="materialIconSvg(bin.id)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="materialIconSvg(bin.id)"></svg>
+                    <svg v-if="materialIconSvg(bin.id)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="bin.id?.toLowerCase()" v-html="materialIconSvg(bin.id)"></svg>
                     {{ bin.label }}
                   </span>
                   <div class="bin-bar-sm">
@@ -1622,6 +1642,62 @@ const savingReward = ref('')
 const statsData = ref({})
 const users = ref([])
 const adminMachines = ref([])
+
+const draftMachineOrder = ref(null)
+const savingMachineOrder = ref(false)
+const machineOrderSaved = ref(false)
+const machineOrderError = ref(false)
+const orderedMachines = computed(() => {
+  if (!draftMachineOrder.value) return adminMachines.value
+
+  const byId = new Map(adminMachines.value.map(machine => [machine.id, machine]))
+  const ordered = []
+  for (const id of draftMachineOrder.value) {
+    if (byId.has(id)) ordered.push(byId.get(id))
+    byId.delete(id)
+  }
+  return [...ordered, ...byId.values()]
+})
+const machineOrderDirty = computed(() =>
+  orderedMachines.value.some((machine, index) => machine.id !== adminMachines.value[index].id)
+)
+
+function moveMachine(index, direction) {
+  const target = index + direction
+  if (savingMachineOrder.value || target < 0 || target >= orderedMachines.value.length) return
+
+  const ids = orderedMachines.value.map(machine => machine.id)
+  const [id] = ids.splice(index, 1)
+  ids.splice(target, 0, id)
+  draftMachineOrder.value = ids
+  machineOrderSaved.value = false
+  machineOrderError.value = false
+}
+
+function resetMachineOrder() {
+  draftMachineOrder.value = null
+  machineOrderError.value = false
+}
+
+async function saveMachineOrder() {
+  if (savingMachineOrder.value || !machineOrderDirty.value) return
+
+  savingMachineOrder.value = true
+  machineOrderError.value = false
+  try {
+    const { data } = await api.put('/admin/machines/order', {
+      order: orderedMachines.value.map(machine => machine.id),
+    })
+    draftMachineOrder.value = data.order
+    adminMachines.value = [...orderedMachines.value]
+    draftMachineOrder.value = null
+    machineOrderSaved.value = true
+  } catch {
+    machineOrderError.value = true
+  } finally {
+    savingMachineOrder.value = false
+  }
+}
 const sessions = ref([])
 const transactions = ref([])
 const materialStats = ref([])
@@ -1733,7 +1809,7 @@ const statsCards = computed(() => [
   { icon: PhUsers,           label: dataScope.value === 'all' ? 'Total Users' : 'Total Users (all data)', value: statsData.value.total_users || 0 },
   { icon: PhFactory,         label: 'Machines',       value: countMachinesInScope(adminMachines.value, dataScope.value) },
   { icon: PhArrowsClockwise, label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
-  { icon: PhGlobe,           label: 'Carbon Saved (kg)', value: statsData.value.total_carbon_saved_kg || 0 },
+  { icon: PhGlobe,           label: 'Carbon Saved (kg)', color: 'var(--carbon-accent)', value: statsData.value.total_carbon_saved_kg || 0 },
   { icon: PhStar,            label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
   { icon: PhPackage,         label: 'Transactions',  value: statsData.value.total_transactions || 0 },
 ])
@@ -3313,6 +3389,7 @@ onUnmounted(() => {
   display: flex; align-items: center; gap: 12px;
 }
 .stat-icon { font-size: 24px; color: var(--accent-blue); }
+.carbon-cell { color: var(--carbon-accent); }
 .stat-value { font-size: 22px; font-weight: 800; color: var(--text-primary); }
 .stat-label { font-size: 12px; color: var(--text-muted); }
 
@@ -3369,7 +3446,7 @@ onUnmounted(() => {
    property always wins over a presentation attribute) — at 26px the thin
    stroke read as faint/small next to the 36px count below it; bumping size
    alone without thickening the stroke would leave it looking just as frail. */
-.ov-icon { width: 36px; height: 36px; stroke-width: 2; margin-bottom: 10px; color: var(--text-secondary); }
+.ov-icon { width: 36px; height: 36px; stroke-width: 2; margin-bottom: 10px; }
 .ov-label { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .06em; margin-bottom: 8px; }
 .ov-count { font-size: 36px; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
 .ov-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
@@ -3625,6 +3702,15 @@ onUnmounted(() => {
   background: var(--bg-hover); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 14px;
 }
+.machine-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.machine-order-buttons, .machine-order-actions { display: flex; gap: 6px; }
+.machine-order-buttons button {
+  display: grid; place-items: center; min-width: 44px; min-height: 44px;
+  padding: 0; font-size: 18px;
+}
+.machine-order-buttons button:disabled { opacity: 0.35; cursor: default; }
+.machine-order-actions { justify-content: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
+.machine-order-saved { margin: 0 0 12px; color: var(--accent-green); font-size: 13px; }
 .machine-admin-header {
   display: flex; align-items: flex-start;
   justify-content: space-between; margin-bottom: 6px;

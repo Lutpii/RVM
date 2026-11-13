@@ -26,8 +26,10 @@
         <span class="badge-points">+{{ summary.points }}</span>
       </span>
     </button>
-    <ActiveSessionSheet v-if="store.sheetOpen" :session="store.session" @close="store.sheetOpen = false" />
   </template>
+  <Transition name="session-sheet">
+    <ActiveSessionSheet v-if="store.session && store.sheetOpen" :session="store.session" @close="store.sheetOpen = false" />
+  </Transition>
 </template>
 
 <script setup>

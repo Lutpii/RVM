@@ -2,8 +2,8 @@
 // for countdownMs, then calls onExpire once. Runs only while isActive.
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
-export const IDLE_MS = 120000
-export const IDLE_COUNTDOWN_MS = 20000
+export const IDLE_MS = 60000
+export const IDLE_COUNTDOWN_MS = 10000
 const TICK_MS = 100
 
 export function useIdleTimer({ isActive, onExpire, idleMs = IDLE_MS, countdownMs = IDLE_COUNTDOWN_MS }) {

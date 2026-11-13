@@ -12,33 +12,33 @@ describe('useIdleTimer', () => {
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
   it('exports the constants', () => {
-    expect(IDLE_MS).toBe(120000)
-    expect(IDLE_COUNTDOWN_MS).toBe(20000)
+    expect(IDLE_MS).toBe(60000)
+    expect(IDLE_COUNTDOWN_MS).toBe(10000)
   })
 
-  it('shows overlay at 120s and expires once at 140s', () => {
+  it('shows overlay at 60s and expires once at 70s', () => {
     const onExpire = vi.fn()
     const { api } = mount(ref(true), onExpire)
-    vi.advanceTimersByTime(119900)
+    vi.advanceTimersByTime(59900)
     expect(api.showOverlay.value).toBe(false)
     vi.advanceTimersByTime(100)
     expect(api.showOverlay.value).toBe(true)
-    vi.advanceTimersByTime(19800)
+    vi.advanceTimersByTime(9800)
     expect(onExpire).not.toHaveBeenCalled()
     vi.advanceTimersByTime(200)
     expect(onExpire).toHaveBeenCalledTimes(1)
-    vi.advanceTimersByTime(100000)
+    vi.advanceTimersByTime(200000)
     expect(onExpire).toHaveBeenCalledTimes(1)
   })
 
-  it('poke at 130s hides the overlay and resets', () => {
+  it('poke at 65s hides the overlay and resets', () => {
     const onExpire = vi.fn()
     const { api } = mount(ref(true), onExpire)
-    vi.advanceTimersByTime(130000)
+    vi.advanceTimersByTime(65000)
     expect(api.showOverlay.value).toBe(true)
     api.poke()
     expect(api.showOverlay.value).toBe(false)
-    vi.advanceTimersByTime(119000)
+    vi.advanceTimersByTime(59000)
     expect(api.showOverlay.value).toBe(false)
     vi.advanceTimersByTime(1000)
     expect(api.showOverlay.value).toBe(true)
@@ -47,16 +47,16 @@ describe('useIdleTimer', () => {
 
   it('pointerdown on window resets', () => {
     const { api } = mount(ref(true), vi.fn())
-    vi.advanceTimersByTime(125000)
+    vi.advanceTimersByTime(65000)
     globalThis.window.dispatchEvent(new Event('pointerdown'))
     expect(api.showOverlay.value).toBe(false)
   })
 
-  it('isActive=false at 125s hides overlay and never expires', async () => {
+  it('isActive=false at 65s hides overlay and never expires', async () => {
     const onExpire = vi.fn()
     const active = ref(true)
     const { api } = mount(active, onExpire)
-    vi.advanceTimersByTime(125000)
+    vi.advanceTimersByTime(65000)
     expect(api.showOverlay.value).toBe(true)
     active.value = false
     await Promise.resolve()

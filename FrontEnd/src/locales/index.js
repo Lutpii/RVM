@@ -3,6 +3,7 @@ export const messages = {
   en: {
     app: { name: 'Reverse Vending Machine', tagline: 'Smart Recycling' },
     nav: { dashboard: 'Dashboard', logout: 'Logout', login: 'Login', register: 'Register', admin: 'Admin Panel' },
+    machineOrder: { saveError: "Could not save the machine order.", moveUp: "Move {card} up", moveDown: "Move {card} down", reset: "Reset order", save: "Save order", saving: "Saving…", saved: "Machine order saved." },
     appNav: { home: 'Home', activity: 'Activity', scan: 'Scan', rewards: 'Rewards', account: 'Account' },
     activity: {
       title: 'Activity', empty: 'No recycling activity yet.', emptyHint: 'Start your first recycling session to see your transaction history here.', loadError: 'Some activity could not be loaded. Showing what did load.', session: 'Recycling session {code}', redemption: 'Redeemed: {name}',
@@ -199,6 +200,7 @@ export const messages = {
       summary: '{items} items · +{points} pts · CO2 saved {carbon} kg',
       view: 'View session',
       openDetails: 'Session in progress at {machine}, open details',
+      back: 'Back',
       pillLine: '{machine} · {items} items · +{points} pts',
       simNote: 'Simulated AI confidence (demo machine)',
       co2Saved: 'CO2 saved {kg} kg',
@@ -592,7 +594,7 @@ export const messages = {
     },
     kiosk: {
       idleTitle: 'Still there?',
-      idleText: 'Your session will end soon.',
+      idleText: 'Time remaining: {seconds} s',
       stillHere: "I'm still here",
       sessionEnded: 'Session ended',
     },
@@ -633,6 +635,7 @@ export const messages = {
   my: {
     app: { name: 'Reverse Vending Machine', tagline: 'Kitar Semula Pintar' },
     nav: { dashboard: 'Papan Pemuka', logout: 'Log Keluar', login: 'Log Masuk', register: 'Daftar', admin: 'Panel Pentadbir' },
+    machineOrder: { saveError: "Susun atur tidak dapat disimpan.", moveUp: "Naikkan {card}", moveDown: "Turunkan {card}", reset: "Pulihkan susunan", save: "Simpan susunan", saving: "Menyimpan…", saved: "Susunan mesin disimpan." },
     appNav: { home: 'Utama', activity: 'Aktiviti', scan: 'Imbas', rewards: 'Ganjaran', account: 'Akaun' },
     activity: {
       title: 'Aktiviti', empty: 'Belum ada aktiviti kitar semula.', emptyHint: 'Mulakan sesi kitar semula pertama anda untuk melihat sejarah transaksi di sini.', loadError: 'Sebahagian aktiviti tidak dapat dimuatkan. Memaparkan apa yang berjaya dimuatkan.', session: 'Sesi kitar semula {code}', redemption: 'Ditebus: {name}',
@@ -829,6 +832,7 @@ export const messages = {
       summary: '{items} item · +{points} mata · CO2 disimpan {carbon} kg',
       view: 'Lihat sesi',
       openDetails: 'Sesi sedang berjalan di {machine}, buka butiran',
+      back: 'Kembali',
       pillLine: '{machine} · {items} item · +{points} mata',
       simNote: 'Keyakinan AI simulasi (mesin demo)',
       co2Saved: 'CO2 disimpan {kg} kg',
@@ -1222,7 +1226,7 @@ export const messages = {
     },
     kiosk: {
       idleTitle: 'Masih di situ?',
-      idleText: 'Sesi anda akan tamat tidak lama lagi.',
+      idleText: 'Masa berbaki: {seconds} s',
       stillHere: 'Saya masih di sini',
       sessionEnded: 'Sesi tamat',
     },

@@ -23,9 +23,14 @@
         <ul v-else class="detail-items">
           <li v-for="(t, i) in items" :key="i" class="detail-item">
             <span class="item-material">
+              <svg v-if="materialIconSvg(t.material)" class="receipt-material-icon" aria-hidden="true"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" :data-material-icon="t.material?.toLowerCase()"
+                   v-html="materialIconSvg(t.material)"></svg>
               {{ materialLabel(t.material) }}
               <span v-if="!t.is_valid" class="item-rejected">{{ $t('activity.detail.rejected') }}</span>
               <span v-if="t.id" class="item-ref">#{{ t.id }}<template v-if="t.created_at"> · {{ formatClock(t.created_at) }}</template></span>
+              <small v-if="t.carbon_saved != null" class="item-carbon">{{ $t('phoneSession.co2Saved', { kg: Number(t.carbon_saved).toFixed(3) }) }}</small>
             </span>
             <span v-if="t.is_valid" class="pts-green">+{{ t.points_earned }}</span>
             <span v-else-if="t.points_deducted > 0" class="pts-red">-{{ t.points_deducted }}</span>
@@ -43,6 +48,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
+import { materialIconSvg } from '@/utils/materialIcons'
 import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
 const props = defineProps({
@@ -92,7 +98,7 @@ onMounted(async () => {
 <style scoped>
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  display: flex; align-items: center; justify-content: center; z-index: 210; padding: 16px;
+  display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 16px;
 }
 .detail-modal {
   background: var(--bg-card); border-radius: var(--radius); max-width: 400px; width: 100%;
@@ -113,9 +119,11 @@ onMounted(async () => {
 .detail-items { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); }
 .detail-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-primary); }
 .detail-item:last-child { border-bottom: none; }
+.receipt-material-icon { width: 1.1em; height: 1.1em; vertical-align: -0.2em; margin-inline-end: 4px; }
 .item-rejected { margin-left: 6px; font-size: 11px; color: var(--accent-red); }
+.item-carbon { display: block; font-size: 11px; color: var(--carbon-accent); }
 .item-ref { display: block; font-size: 11px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
-.pts-green { color: var(--accent-green); font-weight: 700; }
+.pts-green, .detail-meta dd.pts-green { color: var(--accent-green); font-weight: 700; }
 .pts-red { color: var(--accent-red); font-weight: 700; }
 .pts-zero { color: var(--text-muted); font-weight: 700; }
 .close-btn {
