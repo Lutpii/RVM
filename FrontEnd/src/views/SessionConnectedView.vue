@@ -2,6 +2,10 @@
 <!-- P1: short "Happy recycling" splash after the phone connects to a machine. -->
 <template>
   <div class="splash">
+    <div v-if="loading" class="splash-body" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      <p class="connected-to">{{ $t('phoneSession.connecting') }}</p>
+    </div>
     <div v-if="session" class="splash-body">
       <PhRecycle class="splash-icon" weight="bold" aria-hidden="true" />
       <h1>{{ $t('phoneSession.happy', { name: auth.user?.name || '' }) }}</h1>
@@ -28,6 +32,7 @@ const SPLASH_MS = 3000
 const router = useRouter()
 const auth = useAuthStore()
 const session = ref(null)
+const loading = ref(true)
 const summary = computed(() => summarizeSession(session.value))
 let timer = null
 
@@ -38,6 +43,7 @@ onMounted(async () => {
   } catch {
     session.value = null
   }
+  loading.value = false
   if (!session.value) {
     router.replace('/dashboard')
     return
@@ -66,4 +72,10 @@ h1 { margin: 8px 0 4px; font-size: 26px; font-weight: 800; line-height: 1.2; }
   font-size: 12px; font-weight: 700;
 }
 .demo-chip svg { width: 13px; height: 13px; }
+.spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.35); border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
