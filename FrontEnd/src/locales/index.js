@@ -590,6 +590,12 @@ export const messages = {
       hint: 'Scan the QR code with your phone to begin',
       loading: 'Loading...',
     },
+    kiosk: {
+      idleTitle: 'Still there?',
+      idleText: 'Your session will end soon.',
+      stillHere: "I'm still here",
+      sessionEnded: 'Session ended',
+    },
     kioskQr: {
       elsewhere: 'This account has a session on another machine.',
       back: 'Back',
@@ -1213,6 +1219,12 @@ export const messages = {
       subtitle: 'Sistem Kitar Semula Pintar',
       hint: 'Imbas kod QR dengan telefon anda untuk bermula',
       loading: 'Memuatkan...',
+    },
+    kiosk: {
+      idleTitle: 'Masih di situ?',
+      idleText: 'Sesi anda akan tamat tidak lama lagi.',
+      stillHere: 'Saya masih di sini',
+      sessionEnded: 'Sesi tamat',
     },
     kioskQr: {
       elsewhere: 'Akaun ini mempunyai sesi di mesin lain.',

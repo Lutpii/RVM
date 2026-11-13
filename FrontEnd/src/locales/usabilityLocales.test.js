@@ -25,6 +25,7 @@ const KEYS = [
   'admin.demoChip', 'admin.machine.isDemo', 'admin.machine.isDemoHint',
   'summary.backToStart',
   'scan.elsewhereTitle', 'scan.elsewhereText', 'scan.viewSession', 'kioskQr.elsewhere',
+  'kiosk.idleTitle', 'kiosk.idleText', 'kiosk.stillHere', 'kiosk.sessionEnded',
 ]
 
 const get = (obj, path) => path.split('.').reduce((o, k) => o?.[k], obj)
