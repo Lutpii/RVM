@@ -113,6 +113,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
 
     // Recycling Sessions
     Route::post('/sessions/start', [SessionController::class, 'start']);
+    Route::get('/sessions/{sessionCode}/status', [SessionController::class, 'status']);
     Route::get('/sessions/{sessionCode}', [SessionController::class, 'show']);
     Route::post('/sessions/{sessionCode}/end', [SessionController::class, 'end']);
     Route::get('/sessions/{sessionCode}/summary', [SessionController::class, 'summary']);

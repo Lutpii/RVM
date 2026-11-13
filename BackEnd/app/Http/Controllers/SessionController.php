@@ -89,20 +89,28 @@ class SessionController extends Controller
     // Close an active session: totals recalculated from its saved transactions.
     private function closeSession(RecyclingSession $session, User $user): void
     {
-        $session->loadMissing('transactions');
-        $earned     = $session->transactions->where('is_valid', true)->sum('points_earned');
-        $deducted   = $session->transactions->where('is_valid', false)->sum('points_deducted');
-        $totalItems = $session->transactions->where('is_valid', true)->count();
         // Balance is already maintained per item by complete()/reject();
         // never overwrite users.total_points here (it may include redemptions).
-        $endPoints  = (int) $user->total_points;
+        $session->refreshTotalsFromTransactions((int) $user->total_points);
+        $session->update(['status' => 'completed', 'ended_at' => Carbon::now()]);
+        $session->endKioskToken();
+    }
 
-        $session->update([
-            'status'        => 'completed',
-            'end_points'    => $endPoints,
-            'points_earned' => $earned - $deducted,
-            'total_items'   => $totalItems,
-            'ended_at'      => Carbon::now(),
+    // Lightweight poll: lets the kiosk notice the phone ended the session.
+    public function status(Request $request, string $sessionCode): JsonResponse
+    {
+        $session = RecyclingSession::where('session_code', $sessionCode)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (!$session) {
+            return response()->json(['success' => false, 'message' => __('messages.session_not_found')], 404);
+        }
+
+        return response()->json([
+            'success'  => true,
+            'status'   => $session->status,
+            'ended_at' => $session->ended_at,
         ]);
     }
 

@@ -327,9 +327,14 @@ class TransactionController extends Controller
             $newLevel = min(100, $machine->$binField + (int)($weightGrams / 50));
             $machine->update([$binField => $newLevel]);
 
-            $session->increment('total_items');
-            $session->increment('points_earned', $pointsEarned);
-            $session->update(['end_points' => $user->fresh()->total_points]);
+            if ($session->status === 'active') {
+                $session->increment('total_items');
+                $session->increment('points_earned', $pointsEarned);
+                $session->update(['end_points' => $user->fresh()->total_points]);
+            } else {
+                // Finished within the grace window after the session ended.
+                $session->refreshTotalsFromTransactions((int) $user->fresh()->total_points);
+            }
 
             return $transaction;
         });
@@ -374,6 +379,10 @@ class TransactionController extends Controller
             'image_path'        => $request->image_path,
         ]);
         $deduction = 0;
+
+        if ($session->status !== 'active') {
+            $session->refreshTotalsFromTransactions((int) $user->fresh()->total_points);
+        }
 
         // Drop the rejected item into the reject bin, after the commit.
         $this->ai->sort('reject');
@@ -676,7 +685,13 @@ class TransactionController extends Controller
         return RecyclingSession::with('machine')
             ->where('session_code', $request->session_code)
             ->where('user_id', $request->user()->id)
-            ->where('status', 'active')
+            ->where(function ($q) {
+                $q->where('status', 'active')
+                  ->orWhere(function ($q) {
+                      $q->whereIn('status', ['completed', 'expired'])
+                        ->where('ended_at', '>=', now()->subSeconds(RecyclingSession::IN_FLIGHT_GRACE_SECONDS));
+                  });
+            })
             ->first();
     }
 

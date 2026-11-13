@@ -33,6 +33,7 @@ class ExpireStaleSessions extends Command
                 'status'   => 'expired',
                 'ended_at' => Carbon::now(),
             ]);
+            $session->endKioskToken();
         }
 
         $this->info("Expired {$expired->count()} stale session(s).");
