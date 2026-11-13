@@ -12110,7 +12110,7 @@
       "file_type": "code",
       "norm_label": "confirmendsession()",
       "source_file": "FrontEnd/src/views/DemoKioskSessionView.vue",
-      "source_location": "L519"
+      "source_location": "L521"
     },
     {
       "id": "frontend_src_views_sessionsummaryview_clearcountdown",
@@ -13322,7 +13322,7 @@
       "file_type": "code",
       "norm_label": "recycleagain()",
       "source_file": "FrontEnd/src/views/DemoKioskSessionView.vue",
-      "source_location": "L510"
+      "source_location": "L512"
     },
     {
       "id": "frontend_src_views_demokiosksessionview_rejectitem",
@@ -48003,7 +48003,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "FrontEnd/src/views/DemoKioskSessionView.vue",
-      "source_location": "L523",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -48063,7 +48063,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "FrontEnd/src/views/DemoKioskSessionView.vue",
-      "source_location": "L502",
+      "source_location": "L504",
       "weight": 1.0
     },
     {
@@ -82578,7 +82578,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/DemoKioskSessionView.vue",
-      "source_location": "L510",
+      "source_location": "L512",
       "weight": 1.0
     },
     {
@@ -82589,7 +82589,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "FrontEnd/src/views/DemoKioskSessionView.vue",
-      "source_location": "L519",
+      "source_location": "L521",
       "weight": 1.0
     },
     {
@@ -98923,5 +98923,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "b5b9bd0b9f28db4d6811bb7066b8cf6f292e1f58"
+  "built_at_commit": "17ce55db107aaef9c40938c08dbd1a423c6438f0"
 }

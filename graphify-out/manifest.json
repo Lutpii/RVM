@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/SessionSummaryView.vue": {
-    "mtime": 1794549393.9853332,
-    "seen": 1794549579.2485113,
-    "ast_hash": "e5cf28edd704a247ee159413266eac94",
+    "mtime": 1794549728.771708,
+    "seen": 1794549807.141057,
+    "ast_hash": "f054516df7b6545b9fa7fac8f2a7c317",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/UserSettingsView.vue": {
@@ -2136,9 +2136,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DemoKioskSessionView.vue": {
-    "mtime": 1794549223.9623144,
-    "seen": 1794549579.2485113,
-    "ast_hash": "a7bd751ab2e39112cef9f41c54162b2f",
+    "mtime": 1794549728.771708,
+    "seen": 1794549807.13704,
+    "ast_hash": "8a8375139f37581c8ba6fd7191595b65",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/DemoSessionMachineTest.php": {
