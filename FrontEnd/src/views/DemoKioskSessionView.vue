@@ -185,7 +185,32 @@
             </button>
             <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-              {{ $t('session.retryAnother') }}
+              {{ $t('demoKiosk.tryAnother') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Save failed: nothing was recorded, no points shown -->
+        <div v-else-if="rvm.currentStep === 'save_failed'" key="save_failed" class="step-content centered">
+          <div class="return-anim">
+            <svg class="return-item" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="7" x2="12" y2="13"/>
+              <line x1="12" y1="16.5" x2="12" y2="17"/>
+            </svg>
+          </div>
+          <h2 class="step-status red">{{ $t('demoKiosk.saveFailedTitle') }}</h2>
+          <div class="result-box">
+            <p>{{ $t('demoKiosk.saveFailedText') }}</p>
+          </div>
+          <div class="action-buttons">
+            <button class="end-btn min-h-kiosk-touch" @click="confirmEndSession">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+              {{ $t('session.endSession') }}
+            </button>
+            <button class="recycle-btn min-h-kiosk-touch" @click="recycleAgain">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              {{ $t('demoKiosk.tryAgain') }}
             </button>
           </div>
         </div>
@@ -211,7 +236,7 @@ import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { retryOnce, newIdempotencyKey } from '@/utils/retryOnce'
 import { kioskBase } from '@/utils/kioskBase'
-import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine } from '@/utils/kioskDemo'
+import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine, itemSaveOutcome } from '@/utils/kioskDemo'
 
 const router = useRouter()
 const route  = useRoute()
@@ -271,6 +296,7 @@ const currentStepLabel = computed(() => {
     camera: t('session.stepCamera'), classify: t('session.stepClassify'),
     validate_ok: t('session.stepWeight'), weigh: t('session.stepWeight'),
     complete: t('session.stepComplete'), item_rejected: t('session.stepItemRejected'),
+    save_failed: t('demoKiosk.saveFailedTitle'),
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
@@ -376,31 +402,33 @@ async function awardPoints(id) {
   if (unmounted) return
   rvm.setStep('weigh')
 
-  if (rvm.isGuest) await saveGuestItem(id)
-  else await saveUserItem(id)
+  const saved = rvm.isGuest ? await saveGuestItem(id) : await saveUserItem(id)
   if (unmounted) return
 
-  rvm.recordLocalTransaction({ material: id, weight: itemWeight.value, points: itemPoints.value, isValid: true, carbon: itemCarbon.value })
+  const outcome = itemSaveOutcome(saved, { points: itemPoints.value, carbon: itemCarbon.value, weight: itemWeight.value })
+  if (!outcome.record) {
+    itemPoints.value = 0
+    itemCarbon.value = 0
+    itemWeight.value = 0
+    rvm.setStep('save_failed')
+    return
+  }
+  rvm.recordLocalTransaction({ material: id, weight: outcome.weight, points: outcome.points, isValid: true, carbon: outcome.carbon })
   rvm.setStep('complete')
 }
 
-// Range must match BackEnd/app/Http/Controllers/TransactionController.php's
-// POINTS_MIN/POINTS_MAX — only used if the save call fails.
-function randomPointsFallback() {
-  return Math.floor(Math.random() * (20 - 15 + 1)) + 15
-}
-
 // Logged in: weigh (server decides the points) then complete (saves them).
+// Returns true only when the server saved the item.
 async function saveUserItem(id) {
   try {
     const weighRes = await rvm.processStep('weigh', { material_selected: id, ai_detected_type: id })
     itemWeight.value = weighRes.weight_grams || 0
-    itemPoints.value = weighRes.points_earned || randomPointsFallback()
+    itemPoints.value = weighRes.points_earned || 0
   } catch {
-    itemPoints.value = randomPointsFallback()
+    itemPoints.value = 0
   }
   await delay(POINTS_SCREEN_MS)
-  if (unmounted) return
+  if (unmounted) return false
 
   try {
     // One key per item: a retried complete returns the first result (U04).
@@ -414,58 +442,66 @@ async function saveUserItem(id) {
     itemPoints.value    = completeRes.points_earned || itemPoints.value
     itemCarbon.value    = completeRes.carbon_saved ?? 0
     displayPoints.value = completeRes.total_points || (displayPoints.value + itemPoints.value)
+    return true
   } catch {
-    displayPoints.value += itemPoints.value
+    return false
   }
 }
 
 // Guest: one call saves the item (under the shared guest account) and returns
-// its points and carbon. Without a real backend session it stays local only.
+// its points and carbon. Returns true only when the server saved the item.
 async function saveGuestItem(id) {
+  if (!(rvm.guestSessionIsReal && rvm.session?.session_code)) return false
   let saved = false
-  if (rvm.guestSessionIsReal && rvm.session?.session_code) {
-    try {
-      const res = await api.post('/hardware/session/complete', {
-        session_code:     rvm.session.session_code,
-        ai_detected_type: id,
-        ai_confidence:    aiConfidence.value,
-      })
-      if (res.data?.success) {
-        itemWeight.value = res.data.weight_grams ?? 0
-        itemPoints.value = res.data.points_earned ?? 0
-        itemCarbon.value = res.data.carbon_saved ?? 0
-        saved = true
-      }
-    } catch { /* local fallback below */ }
-  }
-  if (!saved) {
-    itemPoints.value = randomPointsFallback()
-    itemCarbon.value = 0
-  }
+  try {
+    const res = await api.post('/hardware/session/complete', {
+      session_code:     rvm.session.session_code,
+      ai_detected_type: id,
+      ai_confidence:    aiConfidence.value,
+    })
+    if (res.data?.success) {
+      itemWeight.value = res.data.weight_grams ?? 0
+      itemPoints.value = res.data.points_earned ?? 0
+      itemCarbon.value = res.data.carbon_saved ?? 0
+      saved = true
+    }
+  } catch { /* saved stays false */ }
   await delay(POINTS_SCREEN_MS)
-  displayPoints.value += itemPoints.value
+  if (saved) displayPoints.value += itemPoints.value
+  return saved
 }
 
 // K8b: glass is recognised but not taken by this machine. 0 points.
+// If the rejection cannot be saved nothing is recorded and the error screen shows.
 async function rejectItem(id) {
   itemPoints.value = 0
   itemCarbon.value = 0
-  if (rvm.isGuest) {
-    if (rvm.guestSessionIsReal && rvm.session?.session_code) {
-      api.post('/hardware/session/complete', {
-        session_code:      rvm.session.session_code,
+  let saved = false
+  try {
+    if (rvm.isGuest) {
+      if (rvm.guestSessionIsReal && rvm.session?.session_code) {
+        await api.post('/hardware/session/complete', {
+          session_code:      rvm.session.session_code,
+          ai_detected_type:  id,
+          ai_confidence:     aiConfidence.value,
+          material_selected: 'reject',
+        })
+        saved = true
+      }
+    } else {
+      await api.post('/transactions/reject', {
+        session_code:      rvm.session?.session_code,
+        material_selected: 'reject',
         ai_detected_type:  id,
         ai_confidence:     aiConfidence.value,
-        material_selected: 'reject',
-      }).catch(() => {})
+      })
+      saved = true
     }
-  } else {
-    api.post('/transactions/reject', {
-      session_code:      rvm.session?.session_code,
-      material_selected: 'reject',
-      ai_detected_type:  id,
-      ai_confidence:     aiConfidence.value,
-    }).catch(() => {})
+  } catch { /* saved stays false */ }
+  if (unmounted) return
+  if (!itemSaveOutcome(saved).record) {
+    rvm.setStep('save_failed')
+    return
   }
   rvm.recordLocalTransaction({ material: id, weight: 0, points: 0, isValid: false, deducted: 0, carbon: 0 })
   rvm.setStep('item_rejected')

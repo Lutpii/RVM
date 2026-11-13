@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine } from './kioskDemo'
+import { DEMO_ITEMS, simulatedConfidence, resumeStep, sessionMatchesMachine, itemSaveOutcome, itemCounts } from './kioskDemo'
 
 describe('DEMO_ITEMS', () => {
   it('lists plastic, aluminum, paper, glass in that order', () => {
@@ -56,5 +56,30 @@ describe('sessionMatchesMachine', () => {
     expect(sessionMatchesMachine({ machine: { id: null } }, 11)).toBe(false)
     expect(sessionMatchesMachine({ machine: { id: 11 } }, null)).toBe(false)
     expect(sessionMatchesMachine({ machine: { id: 11 } }, undefined)).toBe(false)
+  })
+})
+
+describe('itemSaveOutcome', () => {
+  it('records nothing and gives 0 points when the save failed', () => {
+    expect(itemSaveOutcome(false, { points: 17, carbon: 0.2, weight: 30 }))
+      .toEqual({ record: false, points: 0, carbon: 0, weight: 0 })
+  })
+  it('records the saved values when the save worked', () => {
+    expect(itemSaveOutcome(true, { points: 17, carbon: 0.2, weight: 30 }))
+      .toEqual({ record: true, points: 17, carbon: 0.2, weight: 30 })
+  })
+  it('treats missing values as 0 on success', () => {
+    expect(itemSaveOutcome(true, {})).toEqual({ record: true, points: 0, carbon: 0, weight: 0 })
+  })
+})
+
+describe('itemCounts', () => {
+  it('counts every item in the list and splits accepted / rejected', () => {
+    const txns = [{ is_valid: true }, { is_valid: false }]
+    expect(itemCounts(txns)).toEqual({ total: 2, accepted: 1, rejected: 1 })
+  })
+  it('handles an empty or missing list', () => {
+    expect(itemCounts([])).toEqual({ total: 0, accepted: 0, rejected: 0 })
+    expect(itemCounts(undefined)).toEqual({ total: 0, accepted: 0, rejected: 0 })
   })
 })

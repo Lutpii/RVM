@@ -17,7 +17,7 @@ export function simulatedConfidence(rand = Math.random) {
 }
 
 // A refresh stops the simulated capture/AI chain: go back to the item choice.
-const RESUME_TO_CHOOSE = ['camera', 'classify', 'result', 'weigh']
+const RESUME_TO_CHOOSE = ['camera', 'classify', 'result', 'weigh', 'save_failed']
 
 export function resumeStep(step) {
   return RESUME_TO_CHOOSE.includes(step) ? 'choose' : step
@@ -29,4 +29,18 @@ export function sessionMatchesMachine(session, machineId) {
   const sessionMachineId = session?.machine?.id
   if (sessionMachineId == null || machineId == null) return false
   return String(sessionMachineId) === String(machineId)
+}
+
+// What to keep after trying to save an item. A failed save records nothing
+// and shows no points (no made-up numbers).
+export function itemSaveOutcome(saved, { points = 0, carbon = 0, weight = 0 } = {}) {
+  if (!saved) return { record: false, points: 0, carbon: 0, weight: 0 }
+  return { record: true, points: points || 0, carbon: carbon || 0, weight: weight || 0 }
+}
+
+// K10 summary counts: every item in the list, accepted vs rejected.
+export function itemCounts(transactions) {
+  const list = Array.isArray(transactions) ? transactions : []
+  const accepted = list.filter((t) => t.is_valid).length
+  return { total: list.length, accepted, rejected: list.length - accepted }
 }
