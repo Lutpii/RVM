@@ -7,6 +7,7 @@ use App\Models\RvmMachine;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -20,52 +21,55 @@ class SessionController extends Controller
             'qr_token'   => 'required|string',
         ]);
 
-        $user    = $request->user();
+        $userId  = $request->user()->id;
         $machine = RvmMachine::find($request->machine_id);
 
         if ($machine->status !== 'active') {
             return response()->json(['success' => false, 'message' => __('messages.machine_not_active')], 400);
         }
 
-        // Check for existing active session
-        $existing = RecyclingSession::where('user_id', $user->id)
-            ->where('status', 'active')->first();
+        return DB::transaction(function () use ($userId, $machine): JsonResponse {
+            // Serialize session starts even when the user has no session row yet.
+            $user = User::query()->lockForUpdate()->findOrFail($userId);
+            $existing = RecyclingSession::where('user_id', $user->id)
+                ->where('status', 'active')->lockForUpdate()->first();
 
-        if ($existing) {
-            // One active session per user across every machine (real and demo).
-            if ($existing->machine_id !== $machine->id) {
-                $other = RvmMachine::find($existing->machine_id);
-                return response()->json([
-                    'success'      => false,
-                    'code'         => 'active_session_elsewhere',
-                    'message'      => __('messages.active_session_elsewhere', ['machine' => $other?->name]),
-                    'session_code' => $existing->session_code,
-                    'machine_name' => $other?->name,
-                ], 409);
+            if ($existing) {
+                // One active session per user across every machine (real and demo).
+                if ($existing->machine_id !== $machine->id) {
+                    $other = RvmMachine::find($existing->machine_id);
+                    return response()->json([
+                        'success'      => false,
+                        'code'         => 'active_session_elsewhere',
+                        'message'      => __('messages.active_session_elsewhere', ['machine' => $other?->name]),
+                        'session_code' => $existing->session_code,
+                        'machine_name' => $other?->name,
+                    ], 409);
+                }
+                return response()->json(['success' => false, 'message' => __('messages.active_session_exists'), 'session_code' => $existing->session_code], 400);
             }
-            return response()->json(['success' => false, 'message' => __('messages.active_session_exists'), 'session_code' => $existing->session_code], 400);
-        }
 
-        $sessionCode = 'RVM-' . strtoupper(Str::random(12));
+            $sessionCode = 'RVM-' . strtoupper(Str::random(12));
 
-        $session = RecyclingSession::create([
-            'session_code'  => $sessionCode,
-            'user_id'       => $user->id,
-            'machine_id'    => $machine->id,
-            'status'        => 'active',
-            'start_points'  => $user->total_points,
-            'end_points'    => $user->total_points,
-            'points_earned' => 0,
-            'total_items'   => 0,
-            'started_at'    => Carbon::now(),
-        ]);
+            $session = RecyclingSession::create([
+                'session_code'  => $sessionCode,
+                'user_id'       => $user->id,
+                'machine_id'    => $machine->id,
+                'status'        => 'active',
+                'start_points'  => $user->total_points,
+                'end_points'    => $user->total_points,
+                'points_earned' => 0,
+                'total_items'   => 0,
+                'started_at'    => Carbon::now(),
+            ]);
 
-        return response()->json([
-            'success'      => true,
-            'message'      => __('messages.session_started'),
-            'session_code' => $sessionCode,
-            'session'      => $this->formatSession($session, $user, $machine),
-        ]);
+            return response()->json([
+                'success'      => true,
+                'message'      => __('messages.session_started'),
+                'session_code' => $sessionCode,
+                'session'      => $this->formatSession($session, $user, $machine),
+            ]);
+        }, 3);
     }
 
     // Get session details

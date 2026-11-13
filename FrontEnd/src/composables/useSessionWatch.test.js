@@ -51,6 +51,26 @@ describe('useSessionWatch', () => {
     expect(onEnded).toHaveBeenCalledTimes(1)
   })
 
+  it.each([401, 404])('ignores a delayed %i while the kiosk processes an item', async (status) => {
+    let rejectPending
+    api.get.mockImplementationOnce(() => new Promise((_, reject) => { rejectPending = reject }))
+    api.get.mockRejectedValue({ response: { status } })
+
+    const enabled = ref(true)
+    const onEnded = vi.fn()
+    mount(enabled, onEnded)
+    await vi.advanceTimersByTimeAsync(5000)
+
+    enabled.value = false
+    rejectPending({ response: { status } })
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(onEnded).not.toHaveBeenCalled()
+
+    enabled.value = true
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(onEnded).toHaveBeenCalledTimes(1)
+  })
+
   it('never polls or ends while disabled', async () => {
     api.get.mockResolvedValue({ data: { status: 'completed' } })
     const onEnded = vi.fn()

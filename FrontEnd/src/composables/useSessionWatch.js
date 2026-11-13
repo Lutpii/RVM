@@ -7,6 +7,7 @@ export function useSessionWatch({ sessionCode, enabled, onEnded, intervalMs = 50
   let timer = null
   let ended = false
   let busy = false
+  let generation = 0
 
   const stop = () => { if (timer) { clearInterval(timer); timer = null } }
 
@@ -21,24 +22,30 @@ export function useSessionWatch({ sessionCode, enabled, onEnded, intervalMs = 50
     const code = sessionCode.value
     if (!enabled.value || !code || ended || busy) return
     busy = true
+    const requestGeneration = generation
+    const isCurrent = () => generation === requestGeneration && enabled.value && sessionCode.value === code
     try {
       const { data } = await api.get(`/sessions/${code}/status`)
-      if (enabled.value && sessionCode.value === code && data?.status !== 'active') end()
+      if (isCurrent() && data?.status !== 'active') end()
     } catch (e) {
       const s = e?.response?.status
-      if (s === 401 || s === 404) end()
+      if (isCurrent() && (s === 401 || s === 404)) end()
     } finally {
       busy = false
     }
   }
 
   watch([enabled, sessionCode], () => {
+    generation++
     stop()
     if (enabled.value && sessionCode.value) {
       ended = false
       timer = setInterval(poll, intervalMs)
     }
-  }, { immediate: true })
+  }, { immediate: true, flush: 'sync' })
 
-  onBeforeUnmount(stop)
+  onBeforeUnmount(() => {
+    generation++
+    stop()
+  })
 }
