@@ -1,5 +1,5 @@
 <template>
-  <div class="summary-page">
+  <div :class="['summary-page', { 'demo-summary': isDemo }]">
     <div class="summary-header">
       <h1>{{ $t('app.name') }}</h1>
       <p v-if="auth.user">{{ $t('summary.welcomeLabel') }} {{ auth.user.name }}</p>
@@ -50,7 +50,11 @@
         </div>
         <div class="summary-row">
           <span class="row-label">{{ $t('summary.totalItems') }}</span>
-          <span class="row-value">{{ summary.total_items || 0 }}</span>
+          <span class="row-value">{{ isDemo ? demoCounts.total : (summary.total_items || 0) }}</span>
+        </div>
+        <div v-if="isDemo" class="summary-row">
+          <span class="row-label">{{ $t('summary.acceptedRejected') }}</span>
+          <span class="row-value">{{ demoCounts.accepted }} / {{ demoCounts.rejected }}</span>
         </div>
         <template v-if="!rvm.isGuest">
           <div class="summary-row">
@@ -100,10 +104,13 @@
         </div>
       </div>
 
-      <button class="end-btn min-h-kiosk-touch" @click="goHome">
-        {{ $t('summary.endSessionBtn') }}
-      </button>
-      <p v-if="countdown !== null" class="auto-return">{{ $t('summary.backToStart', { n: countdown }) }}</p>
+      <!-- Demo: sticky bar so End Session and the countdown stay on screen. Real kiosk: no wrapper box. -->
+      <div :class="isDemo ? 'demo-action-bar' : 'plain-actions'">
+        <p v-if="countdown !== null" class="auto-return">{{ $t('summary.backToStart', { n: countdown }) }}</p>
+        <button class="end-btn min-h-kiosk-touch" @click="goHome">
+          {{ $t('summary.endSessionBtn') }}
+        </button>
+      </div>
     </div>
 
     <div class="rvm-footer">
@@ -123,6 +130,7 @@ import { PhRecycle, PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 import { shouldAutoReturn, startCountdown } from '@/composables/useAutoReturn'
+import { itemCounts } from '@/utils/kioskDemo'
 
 const router = useRouter()
 const route  = useRoute()
@@ -131,6 +139,8 @@ const rvm = useRvmStore()
 const { t } = useI18n()
 
 const summary = ref(null)
+const isDemo = computed(() => isDemoKioskPath(route))
+const demoCounts = computed(() => itemCounts(summary.value?.transactions))
 const finalPoints = computed(() => summary.value?.end_points ?? 0)
 const earnedPoints = computed(() => summary.value?.points_earned ?? 0)
 
@@ -594,11 +604,38 @@ onMounted(async () => {
 }
 
 .auto-return {
-  margin: -8px 0 16px;
+  margin: 0 0 8px;
   font-size: 14px;
   color: var(--text-muted);
   text-align: center;
 }
+
+/* Demo: page is exactly one screen; the body scrolls and the bar stays put. */
+.demo-summary { height: 100vh; min-height: 0; }
+.demo-summary .summary-body { min-height: 0; padding-bottom: 0; }
+.demo-summary .trophy-wrap { width: 70px; height: 70px; margin-bottom: 6px; }
+.demo-summary .trophy { font-size: 44px; }
+.demo-summary .summary-title { font-size: 20px; margin-bottom: 10px; }
+.demo-summary .summary-row { padding: 8px 16px; }
+
+/* Real kiosk: the wrapper adds no box, so the button lays out as before. */
+.plain-actions { display: contents; }
+
+/* Demo kiosk: stays at the bottom of the screen while the rest scrolls. */
+.demo-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  width: 100%;
+  margin-top: auto;
+  padding: 10px 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+}
+.demo-action-bar .end-btn { margin-bottom: 0; }
 
 .end-btn:hover {
   opacity: 0.9;
