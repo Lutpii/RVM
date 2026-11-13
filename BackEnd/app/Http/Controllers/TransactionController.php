@@ -151,7 +151,7 @@ class TransactionController extends Controller
             'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
-        $session  = $this->getActiveSession($request);
+        $session  = $this->getSessionForItemInFlight($request);
         if (!$session) return $this->sessionError();
 
         $selected = $request->material_selected; // null when no pre-selection
@@ -209,7 +209,7 @@ class TransactionController extends Controller
             'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
-        $session  = $this->getActiveSession($request);
+        $session  = $this->getSessionForItemInFlight($request);
         if (!$session) return $this->sessionError();
 
         // Use AI detected type as material (since no pre-selection in new flow)
@@ -259,7 +259,7 @@ class TransactionController extends Controller
             'idempotency_key'   => 'nullable|string|max:64',
         ]);
 
-        $session = $this->getActiveSession($request);
+        $session = $this->getSessionForItemInFlight($request);
         if (!$session) return $this->sessionError();
 
         // Retry of an item this session already completed (the kiosk lost the
@@ -357,7 +357,7 @@ class TransactionController extends Controller
             'image_path'        => ['nullable', 'string', 'regex:#^captures/[A-Za-z0-9_-]+\.(jpe?g|png)$#i'],
         ]);
 
-        $session = $this->getActiveSession($request);
+        $session = $this->getSessionForItemInFlight($request);
         if (!$session) return $this->sessionError();
 
         $user    = $request->user();
@@ -680,7 +680,19 @@ class TransactionController extends Controller
         ];
     }
 
+    // Item-start endpoints: the session must be active right now.
     private function getActiveSession(Request $request): ?RecyclingSession
+    {
+        return RecyclingSession::with('machine')
+            ->where('session_code', $request->session_code)
+            ->where('user_id', $request->user()->id)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    // Item-continuation endpoints (classify, weigh, complete, reject): active, or
+    // ended within the grace window so an item already in flight can finish.
+    private function getSessionForItemInFlight(Request $request): ?RecyclingSession
     {
         return RecyclingSession::with('machine')
             ->where('session_code', $request->session_code)

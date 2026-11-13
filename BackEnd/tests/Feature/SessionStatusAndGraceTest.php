@@ -151,4 +151,78 @@ class SessionStatusAndGraceTest extends TestCase
         $this->assertSame('expired', $s->fresh()->status);
         $this->assertTrue($qr->fresh()->expires_at->lte(Carbon::now()->addSeconds(RecyclingSession::IN_FLIGHT_GRACE_SECONDS)));
     }
+
+    public function test_item_start_endpoints_reject_an_ended_session_even_within_grace(): void
+    {
+        $u = $this->makeUser();
+        $s = $this->makeSession($this->makeMachine(), $u);
+        $this->weighAndEnd($u, $s);
+
+        $this->postJson('/api/transactions/capture-image', ['session_code' => $s->session_code])->assertStatus(404);
+        $this->postJson('/api/transactions/open-lid', ['session_code' => $s->session_code])->assertStatus(404);
+        $this->postJson('/api/transactions/process-conveyor', ['session_code' => $s->session_code])->assertStatus(404);
+
+        // the item weighed before the end can still finish
+        $this->postJson('/api/transactions/complete', [
+            'session_code' => $s->session_code, 'ai_detected_type' => 'plastic',
+        ])->assertOk();
+    }
+
+    public function test_reject_within_grace_refreshes_session_totals(): void
+    {
+        $u = $this->makeUser();
+        $s = $this->makeSession($this->makeMachine(), $u);
+        Sanctum::actingAs($u, ['*']);
+        $this->postJson("/api/sessions/{$s->session_code}/end")->assertOk();
+
+        $this->postJson('/api/transactions/reject', [
+            'session_code' => $s->session_code, 'material_selected' => 'reject', 'ai_detected_type' => 'unknown',
+        ])->assertOk();
+
+        $s = $s->fresh();
+        $this->assertSame('completed', $s->status);
+        $this->assertSame(0, (int) $s->points_earned);
+        $this->assertSame(0, (int) $s->total_items);
+        $this->assertSame(50, (int) $s->end_points);
+        $this->assertSame(1, $s->transactions()->count());
+    }
+
+    public function test_replayed_idempotency_key_within_grace_credits_nothing(): void
+    {
+        $u = $this->makeUser();
+        $s = $this->makeSession($this->makeMachine(), $u);
+        $this->weighAndEnd($u, $s);
+        $body = ['session_code' => $s->session_code, 'ai_detected_type' => 'plastic', 'idempotency_key' => 'k-1'];
+
+        $this->postJson('/api/transactions/complete', $body)->assertOk();
+        $after = $u->fresh()->total_points;
+
+        $this->postJson('/api/transactions/complete', $body)->assertOk()->assertJson(['replayed' => true]);
+        $this->assertSame($after, $u->fresh()->total_points);
+        $this->assertSame(1, $s->transactions()->count());
+    }
+
+    public function test_end_kiosk_token_leaves_other_users_and_machines_untouched(): void
+    {
+        $u = $this->makeUser();
+        $other = $this->makeUser();
+        $m = $this->makeMachine();
+        $m2 = $this->makeMachine();
+        $s = $this->makeSession($m, $u);
+        $far = Carbon::now()->addHours(2);
+        $mk = fn ($machine, $user, $tok) => QrSession::create([
+            'machine_id' => $machine->id, 'qr_token' => strtoupper(substr(uniqid(), -6)), 'kiosk_token' => $tok,
+            'status' => 'scanned', 'scanned_by' => $user->id, 'expires_at' => $far,
+        ]);
+        $mine = $mk($m, $u, 'tok-mine');
+        $otherUser = $mk($m, $other, 'tok-other-user');
+        $otherMachine = $mk($m2, $u, 'tok-other-machine');
+
+        Sanctum::actingAs($u, ['*']);
+        $this->postJson("/api/sessions/{$s->session_code}/end")->assertOk();
+
+        $this->assertTrue($mine->fresh()->expires_at->lt(Carbon::now()->addMinutes(5)));
+        $this->assertTrue($otherUser->fresh()->expires_at->gt(Carbon::now()->addHour()));
+        $this->assertTrue($otherMachine->fresh()->expires_at->gt(Carbon::now()->addHour()));
+    }
 }
