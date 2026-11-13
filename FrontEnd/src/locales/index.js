@@ -529,6 +529,9 @@ export const messages = {
       openAdminPanel: 'Open Admin Panel',
     },
     scan: {
+      elsewhereTitle: 'You still have a session at {machine}',
+      elsewhereText: 'Finish it there first, or end it here.',
+      viewSession: 'View session',
       machinesLoadError: 'Could not load machines. Check your connection and try again.',
       title: 'Scan RVM QR Code',
       subtitle: 'Scan the QR code shown on the RVM screen',
@@ -588,6 +591,7 @@ export const messages = {
       loading: 'Loading...',
     },
     kioskQr: {
+      elsewhere: 'This account has a session on another machine.',
       back: 'Back',
       title: 'Scan to Start Recycling',
       subtitle: 'Open your phone camera and scan the QR code below',
@@ -1149,6 +1153,9 @@ export const messages = {
       openAdminPanel: 'Buka Panel Admin',
     },
     scan: {
+      elsewhereTitle: 'Anda masih ada sesi di {machine}',
+      elsewhereText: 'Selesaikan di sana dahulu, atau tamatkannya di sini.',
+      viewSession: 'Lihat sesi',
       machinesLoadError: 'Tidak dapat memuatkan mesin. Semak sambungan anda dan cuba lagi.',
       title: 'Imbas Kod QR RVM',
       subtitle: 'Imbas kod QR yang dipaparkan pada skrin RVM',
@@ -1208,6 +1215,7 @@ export const messages = {
       loading: 'Memuatkan...',
     },
     kioskQr: {
+      elsewhere: 'Akaun ini mempunyai sesi di mesin lain.',
       back: 'Kembali',
       title: 'Imbas untuk Mula Kitar Semula',
       subtitle: 'Buka kamera telefon anda dan imbas kod QR di bawah',

@@ -12,6 +12,7 @@
     <div v-if="state === 'waiting'" class="qr-content">
       <h2 class="qr-title">{{ $t('kioskQr.title') }}</h2>
       <p class="qr-sub">{{ $t('kioskQr.subtitle') }}</p>
+      <p v-if="elsewhereMsg" class="qr-sub" role="alert"><strong>{{ $t('kioskQr.elsewhere') }}</strong></p>
 
       <div class="qr-box">
         <div v-if="loadingQr" class="qr-loading">
@@ -110,6 +111,7 @@ const qrSvgSrc       = ref('')
 const scanUrl        = ref('')
 const currentToken   = ref('')
 const scannedUser    = ref('')
+const elsewhereMsg   = ref(false)
 const QR_REFRESH_SECONDS = QR_LIFETIME_SECONDS
 // Backstop only: the first QR plus QR_MAX_REFRESHES new ones, then landing page.
 const QR_SCREEN_SECONDS  = QR_LIFETIME_SECONDS * (QR_MAX_REFRESHES + 1) + 20
@@ -197,6 +199,19 @@ function startPoll() {
                 }
               } catch (e) {
                 const errData = e.response?.data
+                if (errData?.code === 'active_session_elsewhere') {
+                  // Session lives on another machine: do not open it, show a fresh QR.
+                  setKioskToken(null)
+                  rvm.isGuest = true
+                  setTheme('light')
+                  isActive = true
+                  screenDeadline = Date.now() + (QR_SCREEN_SECONDS * 1000)
+                  screenTimeout = setTimeout(returnToKiosk, QR_SCREEN_SECONDS * 1000)
+                  elsewhereMsg.value = true
+                  setTimeout(() => { elsewhereMsg.value = false }, 6000)
+                  generateQr()
+                  return
+                }
                 if (errData?.session_code) {
                   try {
                     const showRes = await api.get(`/sessions/${errData.session_code}`)

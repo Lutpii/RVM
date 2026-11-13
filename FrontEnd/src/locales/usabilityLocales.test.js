@@ -24,6 +24,7 @@ const KEYS = [
   'admin.dataScope.label', 'admin.dataScope.all', 'admin.dataScope.real', 'admin.dataScope.demo',
   'admin.demoChip', 'admin.machine.isDemo', 'admin.machine.isDemoHint',
   'summary.backToStart',
+  'scan.elsewhereTitle', 'scan.elsewhereText', 'scan.viewSession', 'kioskQr.elsewhere',
 ]
 
 const get = (obj, path) => path.split('.').reduce((o, k) => o?.[k], obj)

@@ -106,6 +106,11 @@
           />
         </div>
 
+        <div v-if="elsewhere" class="elsewhere-panel" role="alert">
+          <strong>{{ $t('scan.elsewhereTitle', { machine: elsewhere.machineName }) }}</strong>
+          <p>{{ $t('scan.elsewhereText') }}</p>
+          <button type="button" class="camera-btn" @click="viewElsewhere">{{ $t('scan.viewSession') }}</button>
+        </div>
         <div v-if="error" class="error-msg">{{ error }}</div>
         <div v-if="success" class="success-msg">{{ success }}</div>
 
@@ -114,6 +119,8 @@
           <PhLink v-else class="button-icon" weight="regular" aria-hidden="true" />
           {{ loading ? $t('scan.connecting') : $t('scan.connectBtn') }}
         </button>
+
+        <ActiveSessionSheet v-if="activeStore.sheetOpen" :session="activeStore.session" @close="activeStore.sheetOpen = false" />
 
         <div v-if="machinesLoadError" class="error-msg">{{ $t('scan.machinesLoadError') }}</div>
 
@@ -153,12 +160,22 @@ import { PhArrowLeft, PhArrowClockwise, PhCamera, PhKeyboard, PhLink, PhWarning,
 import api from '@/services/api'
 import jsQR from 'jsqr'
 import { extractQrToken } from '@/utils/qrToken'
+import { scanOutcome } from '@/utils/scanResult'
+import { useActiveSessionStore } from '@/store/activeSession'
+import ActiveSessionSheet from '@/components/ActiveSessionSheet.vue'
 
 const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 const rvm    = useRvmStore()
 const { t }  = useI18n()
+const activeStore = useActiveSessionStore()
+const elsewhere = ref(null)
+
+async function viewElsewhere() {
+  await activeStore.refresh()
+  activeStore.sheetOpen = true
+}
 
 const token           = ref('')
 const loading         = ref(false)
@@ -279,6 +296,7 @@ async function handleScan() {
   loading.value = true
   error.value   = ''
   success.value = ''
+  elsewhere.value = null
   try {
     const res = await api.post('/qr/scan', { token: token.value.trim() })
     if (res.data.success) {
@@ -295,6 +313,12 @@ async function handleScan() {
         }
       } catch (sessionErr) {
         const errData = sessionErr.response?.data
+        const out = scanOutcome(errData)
+        if (out.kind === 'elsewhere') {
+          success.value = ''
+          elsewhere.value = out
+          return
+        }
         if (errData?.session_code) {
           setTimeout(() => router.push({ name: 'session-connected' }), 800)
           return
@@ -306,7 +330,9 @@ async function handleScan() {
       error.value = res.data.message || t('scan.invalidQr')
     }
   } catch (e) {
-    error.value = e.response?.data?.message || t('scan.failedConnect')
+    const out = scanOutcome(e.response?.data)
+    if (out.kind === 'elsewhere') elsewhere.value = out
+    else error.value = out.message || t('scan.failedConnect')
   } finally {
     loading.value = false
   }
@@ -315,6 +341,7 @@ async function handleScan() {
 async function connectDemo(machine) {
   loading.value = true
   error.value   = ''
+  elsewhere.value = null
   try {
     const sessionRes = await api.post('/sessions/start', {
       machine_id: machine.id,
@@ -331,6 +358,11 @@ async function connectDemo(machine) {
     }
   } catch (e) {
     const errData = e.response?.data
+    const out = scanOutcome(errData)
+    if (out.kind === 'elsewhere') {
+      elsewhere.value = out
+      return
+    }
     if (errData?.session_code) {
       try {
         const showRes = await api.get(`/sessions/${errData.session_code}`)
@@ -508,6 +540,8 @@ onUnmounted(() => {
   transition: border-color 0.2s;
 }
 .token-input:focus { border-color: var(--accent-blue); }
+.elsewhere-panel { background: var(--bg-card); border-left: 4px solid var(--accent-red); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; color: var(--text-primary); }
+.elsewhere-panel p { margin: 4px 0 10px; color: var(--text-secondary); font-size: 13px; }
 .error-msg   { background: rgba(239,68,68,0.1); color: var(--accent-red); padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; }
 .success-msg { background: rgba(34,197,94,0.1); color: var(--accent-green); padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; }
 .scan-btn {
