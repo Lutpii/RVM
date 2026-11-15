@@ -10,7 +10,7 @@
         v-for="cat in categories" :key="cat"
         :class="['chip', { active: activeCategory === cat }]"
         @click="activeCategory = cat"
-      >{{ cat === '__all__' ? $t('rewards.allCategory') : cat }}</button>
+      >{{ cat === '__all__' ? $t('rewards.allCategory') : rewardCategoryLabel(cat, t) }}</button>
     </div>
 
     <div v-if="loading" class="loading-placeholder"><div class="spinner-sm"></div></div>
@@ -26,7 +26,7 @@
           <PhGift weight="regular" aria-hidden="true" />
         </div>
         <div class="reward-body">
-          <span v-if="item.category" class="reward-category">{{ item.category }}</span>
+          <span v-if="item.category" class="reward-category">{{ rewardCategoryLabel(item.category, t) }}</span>
           <strong class="reward-name">{{ item.name }}</strong>
           <p v-if="item.description" class="reward-desc">{{ item.description }}</p>
           <div class="reward-meta">
@@ -45,7 +45,7 @@
           <PhGift weight="regular" aria-hidden="true" />
         </div>
         <div class="detail-body">
-          <span v-if="detailItem.category" class="reward-category">{{ detailItem.category }}</span>
+          <span v-if="detailItem.category" class="reward-category">{{ rewardCategoryLabel(detailItem.category, t) }}</span>
           <h3 class="detail-name">{{ detailItem.name }}</h3>
           <p v-if="detailItem.description" class="detail-desc">{{ detailItem.description }}</p>
           <div class="reward-meta">
@@ -96,6 +96,7 @@ import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import VoucherModal from '@/components/VoucherModal.vue'
+import { rewardCategoryLabel } from '@/utils/rewardCategory'
 
 const { t } = useI18n()
 const auth = useAuthStore()
