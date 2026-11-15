@@ -47,6 +47,13 @@ describe('Ultra RVM brand', () => {
     expect(src).not.toMatch(/'(Scan QR - |Guest Recycling - |Session Summary - )?RVM Kiosk'/)
   })
 
+  it('page tab titles like "Login - ..." end with Ultra RVM, never a bare RVM', () => {
+    const src = read('../router/index.js')
+    expect(src).toContain("'Login - Ultra RVM'")
+    expect(src).toContain("'Admin Panel - Ultra RVM'")
+    expect(src).not.toMatch(/(?<!Ultra )RVM'/)
+  })
+
   it('index.html title and description name Ultra RVM', () => {
     const html = read('../../index.html')
     expect(html).toContain('<title>Ultra RVM - Smart Recycling</title>')
