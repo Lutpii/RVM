@@ -3,7 +3,7 @@
 export const content = {
   en: {
     title: 'Privacy Policy',
-    updated: 'Last updated: 28 October 2026',
+    updated: 'Last updated: 15 November 2026',
     intro: 'This policy explains what the RVM (Reverse Vending Machine) smart recycling web app and machines collect about you, why, and how you can delete it.',
     sections: [
       {
@@ -15,6 +15,7 @@ export const content = {
           'Item photos: the machine camera photographs each deposited item so the AI can identify its material. The photos are of the item, and are kept to check and improve detection accuracy.',
           'Rewards: the rewards you redeem, their voucher codes and when a voucher was used. For a cash redemption, also the e-wallet provider and account number you enter.',
           'Preferences: your language and light/dark theme.',
+          'Sign-in time: when you last signed in, so administrators can see inactive accounts. We do not record your IP address or device.',
         ],
       },
       {
@@ -53,7 +54,7 @@ export const content = {
   },
   my: {
     title: 'Dasar Privasi',
-    updated: 'Kemas kini terakhir: 28 Oktober 2026',
+    updated: 'Kemas kini terakhir: 15 November 2026',
     intro: 'Dasar ini menerangkan maklumat yang dikumpul oleh aplikasi web dan mesin kitar semula pintar RVM (Reverse Vending Machine) tentang anda, sebabnya, dan cara anda boleh memadamkannya.',
     sections: [
       {
@@ -65,6 +66,7 @@ export const content = {
           'Foto item: kamera mesin mengambil foto setiap item yang dimasukkan supaya AI dapat mengenal pasti bahannya. Foto ini ialah foto item, dan disimpan untuk menyemak serta meningkatkan ketepatan pengesanan.',
           'Ganjaran: ganjaran yang anda tebus, kod baucarnya dan bila baucar itu digunakan. Bagi penebusan tunai, juga penyedia e-dompet dan nombor akaun yang anda masukkan.',
           'Pilihan: bahasa dan tema terang/gelap anda.',
+          'Masa log masuk: bila kali terakhir anda log masuk, supaya pentadbir dapat melihat akaun yang tidak aktif. Kami tidak merekod alamat IP atau peranti anda.',
         ],
       },
       {
@@ -103,7 +105,7 @@ export const content = {
   },
   id: {
     title: 'Kebijakan Privasi',
-    updated: 'Terakhir diperbarui: 28 Oktober 2026',
+    updated: 'Terakhir diperbarui: 15 November 2026',
     intro: 'Kebijakan ini menjelaskan data apa saja yang dikumpulkan oleh aplikasi web dan mesin daur ulang pintar RVM (Reverse Vending Machine) tentang Anda, untuk apa, dan bagaimana Anda dapat menghapusnya.',
     sections: [
       {
@@ -115,6 +117,7 @@ export const content = {
           'Foto barang: kamera mesin memotret setiap barang yang dimasukkan agar AI dapat mengenali materialnya. Foto tersebut adalah foto barang, dan disimpan untuk memeriksa serta meningkatkan akurasi deteksi.',
           'Hadiah: hadiah yang Anda tukarkan, kode vouchernya, dan kapan voucher dipakai. Untuk penukaran tunai, juga penyedia dompet digital dan nomor akun yang Anda masukkan.',
           'Preferensi: bahasa dan tema terang/gelap Anda.',
+          'Waktu masuk: kapan terakhir kali Anda masuk, agar administrator dapat melihat akun yang tidak aktif. Kami tidak mencatat alamat IP atau perangkat Anda.',
         ],
       },
       {

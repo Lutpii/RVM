@@ -10,7 +10,7 @@ class User extends Authenticatable {
     use HasApiTokens, Notifiable;
     protected $fillable = ['name','email','phone','password_hash','google_id','avatar_url','avatar_icon','total_points','role','is_verified','otp_code','otp_expires_at','preferred_language','theme_preference','account_status'];
     protected $hidden   = ['password_hash','otp_code'];
-    protected $casts    = ['display_no' => 'integer'];
+    protected $casts    = ['display_no' => 'integer', 'last_login_at' => 'datetime'];
 
     protected static function booted(): void
     {

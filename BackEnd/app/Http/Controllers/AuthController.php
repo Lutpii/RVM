@@ -96,7 +96,7 @@ class AuthController extends Controller
         // still applies.
         if (!$otpSent) {
             $user->update(['is_verified' => 1, 'otp_code' => null, 'otp_expires_at' => null]);
-            $token = $user->createToken('rvm_token')->plainTextToken;
+            $token = $this->issueLoginToken($user);
 
             return response()->json([
                 'success' => true,
@@ -182,7 +182,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('rvm_token')->plainTextToken;
+        $token = $this->issueLoginToken($user);
         SecurityLog::auth('login_success', $user, null, $request);
 
         return response()->json([
@@ -272,7 +272,7 @@ class AuthController extends Controller
             return $this->suspendedResponse();
         }
 
-        $token = $user->createToken('rvm_token')->plainTextToken;
+        $token = $this->issueLoginToken($user);
 
         return response()->json([
             'success' => true,
@@ -466,7 +466,7 @@ class AuthController extends Controller
                 return redirect("{$frontendUrl}/#/login?error=account_suspended")->withoutCookie('oauth_nonce');
             }
 
-            $token = $user->createToken('rvm_token')->plainTextToken;
+            $token = $this->issueLoginToken($user);
             SecurityLog::auth('google_login', $user, null, $request);
 
             $code = Str::random(40);
@@ -561,6 +561,14 @@ class AuthController extends Controller
             Log::warning('OTP send failed, registration will skip verification', ['user_id' => $user->id, 'error' => $e->getMessage()]);
             return false;
         }
+    }
+
+    // A successful sign-in (password, OTP or Google): remember when, then hand
+    // out the API token. Token refreshes do not count as a new sign-in.
+    private function issueLoginToken(User $user): string
+    {
+        $user->forceFill(['last_login_at' => now()])->save();
+        return $user->createToken('rvm_token')->plainTextToken;
     }
 
     private function formatUser(User $user): array

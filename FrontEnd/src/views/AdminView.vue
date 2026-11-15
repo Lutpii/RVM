@@ -452,6 +452,7 @@
                   <th class="sortable" @click="sortUsersBy('role')">{{ $t('adminUi.colRole') }}{{ usersSortIndicator('role') }}</th>
                   <th class="sortable" @click="sortUsersBy('is_verified')">{{ $t('adminUi.colVerified') }}{{ usersSortIndicator('is_verified') }}</th>
                   <th class="sortable" @click="sortUsersBy('created_at')">{{ $t('adminUi.colCreated') }}{{ usersSortIndicator('created_at') }}</th>
+                  <th class="sortable" @click="sortUsersBy('last_login_at')">{{ $t('adminUi.colLastLogin') }}{{ usersSortIndicator('last_login_at') }}</th>
                   <th>{{ $t('adminUi.colActions') }}</th>
                 </tr>
               </thead>
@@ -475,6 +476,7 @@
                     <PhXCircle v-else class="verified-icon verified-no" weight="regular" aria-hidden="true" />
                   </td>
                   <td class="muted small">{{ formatDate(user.created_at) }}</td>
+                  <td class="muted small">{{ user.last_login_at ? formatDate(user.last_login_at) : $t('adminUi.neverLoggedIn') }}</td>
                   <td class="user-actions-cell">
                     <div class="user-actions">
                       <button class="action-btn edit-btn" @click="editUser(user)">
@@ -494,7 +496,7 @@
                   </td>
                 </tr>
                 <tr v-if="!users.length">
-                  <td colspan="8" class="empty-cell">{{ $t('adminUi.noUsers') }}</td>
+                  <td colspan="9" class="empty-cell">{{ $t('adminUi.noUsers') }}</td>
                 </tr>
               </tbody>
             </table>

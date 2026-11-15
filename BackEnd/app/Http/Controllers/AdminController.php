@@ -137,7 +137,7 @@ class AdminController extends Controller
 
     // Users management
     private const USER_SORTABLE_COLUMNS = [
-        'id', 'display_no', 'name', 'email', 'total_points', 'role', 'is_verified', 'created_at',
+        'id', 'display_no', 'name', 'email', 'total_points', 'role', 'is_verified', 'created_at', 'last_login_at',
     ];
 
     public function users(Request $request): JsonResponse
@@ -155,12 +155,13 @@ class AdminController extends Controller
         return $export->download('Users', 'rvm_users', [
             'Search' => trim((string) $request->query('search', '')),
             'Sorted by' => $request->query('sort') ? $request->query('sort') . ' ' . ($request->query('direction') === 'asc' ? 'ascending' : 'descending') : null,
-        ], ['User ID', 'Name', 'Email', 'Phone', 'Points', 'Role', 'Account status', 'Verified', 'Registered'],
+        ], ['User ID', 'Name', 'Email', 'Phone', 'Points', 'Role', 'Account status', 'Verified', 'Registered', 'Last login'],
         $users->map(fn ($u) => [
             $this->displayUserId($u),
             $u->name, $u->email, $u->phone, (int) $u->total_points, $u->role,
             $u->account_status ?? 'active', $u->is_verified ? 'Yes' : 'No',
             $u->created_at?->format('Y-m-d H:i'),
+            $u->last_login_at?->format('Y-m-d H:i'),
         ]));
     }
 
