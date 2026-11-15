@@ -260,11 +260,11 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .topnav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: #fff; text-decoration: none; }
 .brand-mark { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.brand-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; }
+.brand-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; white-space: nowrap; }
 .nav-actions { display: flex; align-items: center; gap: 8px; }
 .nav-round { min-width: 44px; height: 44px; padding: 0; border-radius: 999px; border: 0; background: rgba(255,255,255,0.18); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font: inherit; }
 .nav-round:hover { background: rgba(255,255,255,0.28); }
-.nav-login { height: 44px; padding: 0 18px; box-sizing: border-box; display: inline-flex; align-items: center; border: 1.5px solid rgba(255,255,255,0.85); border-radius: 999px; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
+.nav-login { height: 44px; padding: 0 18px; box-sizing: border-box; white-space: nowrap; display: inline-flex; align-items: center; border: 1.5px solid rgba(255,255,255,0.85); border-radius: 999px; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
 .nav-login:hover { background: rgba(255,255,255,0.12); }
 
 .hero-grid { display: flex; flex-wrap: wrap; align-items: center; gap: 48px; }
@@ -395,5 +395,22 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
   .cta { padding: 24px; }
   .cta-title { font-size: 22px; }
   .btn-cta { width: 100%; justify-content: center; }
+}
+
+/* "Ultra RVM" is longer than the old "RVM": keep the logo on one line
+   next to the language and Login buttons on narrow phones. */
+@media (max-width: 400px) {
+  .brand-name { font-size: 16px; }
+  .brand { gap: 6px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .nav-actions { gap: 6px; }
+  .nav-login { padding: 0 12px; font-size: 13px; }
+}
+@media (max-width: 340px) {
+  .brand-name { font-size: 15px; }
+  .brand-mark { display: none; }
+  .nav-actions { gap: 4px; }
+  .nav-round { min-width: 40px; height: 40px; }
+  .nav-login { height: 40px; padding: 0 10px; }
 }
 </style>

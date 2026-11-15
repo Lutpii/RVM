@@ -66,6 +66,23 @@ describe('Ultra RVM brand', () => {
     expect(vue).toContain('aria-label="Ultra RVM, Reverse Vending Machine"')
   })
 
+  it('login subtitle, landing step 1 and kiosk QR step 2 name Ultra RVM', () => {
+    for (const l of LANGS) {
+      expect(messages[l].auth.loginTitle).toContain('Ultra RVM')
+      expect(messages[l].landing.step1Text).toContain('Ultra RVM')
+      expect(messages[l].kioskQr.step2).toContain('Ultra RVM')
+    }
+  })
+
+  it('landing logo text never wraps onto two lines on a phone', () => {
+    const vue = read('../views/LandingView.vue')
+    const rule = vue.match(/\.brand-name \{[^}]*\}/)[0]
+    expect(rule).toContain('white-space: nowrap')
+    expect(vue.match(/\.nav-login \{[^}]*\}/)[0]).toContain('white-space: nowrap')
+    expect(vue).toMatch(/@media \(max-width: 400px\) \{[^}]*\.brand-name \{ font-size: 16px; \}/)
+    expect(vue).toMatch(/@media \(max-width: 340px\) \{[^}]*\.brand-name \{ font-size: 15px; \}/)
+  })
+
   it('privacy policy names Ultra RVM in every language', () => {
     for (const l of LANGS) {
       const text = JSON.stringify(privacy[l])
