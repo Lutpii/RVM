@@ -94,7 +94,7 @@
               <button type="button" class="menu-row" @click="openView('language')">
                 <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
                 <span class="menu-label">{{ $t('settings.language') }}</span>
-                <span class="menu-value">{{ locale === 'my' ? 'Bahasa Melayu' : 'English' }}</span>
+                <span class="menu-value">{{ currentLanguage.label }}</span>
                 <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
               </button>
               <button type="button" class="menu-row" role="switch" :aria-checked="theme === 'dark'" @click="toggleTheme()">
@@ -295,7 +295,7 @@
         <template v-else-if="view === 'language'">
           <div class="menu-card" role="radiogroup" :aria-label="$t('settings.language')">
             <button v-for="opt in languages" :key="opt.code" type="button" class="menu-row"
-              role="radio" :aria-checked="locale === opt.code" @click="setLang(opt.code)">
+              role="radio" :aria-checked="locale === opt.code" @click="setLanguage(opt.code)">
               <span class="menu-label">{{ opt.label }}</span>
               <PhCheck v-if="locale === opt.code" class="menu-check" :size="20" weight="bold" aria-hidden="true" />
             </button>
@@ -431,6 +431,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useLanguage } from '@/composables/useLanguage'
 import { AVATAR_ICONS, AVATAR_COLOURS, DEFAULT_AVATAR, parseAvatar, formatAvatar, maskEmail } from '@/utils/avatarIcons.js'
 import { version as appVersion } from '../../package.json'
 import {
@@ -691,14 +692,7 @@ async function loadRedemptionHistory() {
 }
 
 // ── Preferences ───────────────────────────────────────────────────────────────
-const languages = [
-  { code: 'en', label: 'English' },
-  { code: 'my', label: 'Bahasa Melayu' },
-]
-function setLang(lang) {
-  locale.value = lang
-  localStorage.setItem('rvm_lang', lang)
-}
+const { languages, currentLanguage, setLanguage } = useLanguage()
 
 // ── Account ───────────────────────────────────────────────────────────────────
 const confirmDelete     = ref(false)

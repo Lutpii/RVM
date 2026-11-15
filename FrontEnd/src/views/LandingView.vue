@@ -14,10 +14,7 @@
               <PhSun v-if="theme === 'dark'" :size="19" aria-hidden="true" />
               <PhMoon v-else :size="19" aria-hidden="true" />
             </button>
-            <button type="button" class="nav-round nav-lang" @click="toggleLang"
-              :aria-label="locale === 'en' ? 'MY – Switch to Bahasa Melayu' : 'EN – Switch to English'">
-              {{ locale === 'en' ? 'MY' : 'EN' }}
-            </button>
+            <LanguageSwitch variant="menu" />
             <RouterLink to="/login" class="nav-login">{{ $t('nav.login') }}</RouterLink>
           </div>
         </nav>
@@ -171,6 +168,7 @@
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import api from '@/services/api'
 import {
   PhSun, PhMoon, PhRecycle, PhLeaf, PhScan, PhCheck, PhGift, PhCaretRight,
@@ -187,11 +185,6 @@ const router = useRouter()
 const theme = inject('theme')
 const toggleTheme = inject('toggleTheme')
 const { locale, t } = useI18n()
-
-function toggleLang() {
-  locale.value = locale.value === 'en' ? 'my' : 'en'
-  localStorage.setItem('rvm_lang', locale.value)
-}
 
 function goToScan() {
   router.push(localStorage.getItem('rvm_token') ? '/scan' : '/login')
@@ -272,7 +265,6 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .brand-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; }
 .nav-actions { display: flex; align-items: center; gap: 8px; }
 .nav-round { min-width: 44px; height: 44px; padding: 0; border-radius: 999px; border: 0; background: rgba(255,255,255,0.18); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font: inherit; }
-.nav-lang { padding: 0 12px; font-size: 14px; font-weight: 700; }
 .nav-round:hover { background: rgba(255,255,255,0.28); }
 .nav-login { height: 44px; padding: 0 18px; box-sizing: border-box; display: inline-flex; align-items: center; border: 1.5px solid rgba(255,255,255,0.85); border-radius: 999px; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
 .nav-login:hover { background: rgba(255,255,255,0.12); }

@@ -7,7 +7,7 @@
           <svg v-if="theme === 'dark'" class="ctrl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
           <svg v-else class="ctrl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
         </button>
-        <button class="ctrl-btn" @click="toggleLang">{{ locale === 'en' ? 'MY' : 'EN' }}</button>
+        <LanguageSwitch variant="segmented" />
       </div>
       <h1 class="rvm-title">{{ $t('app.name') }}</h1>
       <p class="welcome-text" v-if="auth.user">{{ $t('session.welcomeLabel') }} {{ auth.user.name }}</p>
@@ -388,6 +388,7 @@ import api from '@/services/api'
 import { IDLE_COUNTDOWN_MS } from '@/composables/useIdleTimer'
 import { useKioskSessionGuard } from '@/composables/useKioskSessionGuard'
 import SessionEndedScreen from '@/components/SessionEndedScreen.vue'
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import IdleOverlay from '@/components/IdleOverlay.vue'
 import { PhGlobe } from '@phosphor-icons/vue'
 import { materialIconSvg } from '@/utils/materialIcons'
@@ -404,7 +405,7 @@ const isKioskRoute    = computed(() => route.path.startsWith('/kiosk/'))
 const kioskMachineCode = computed(() => route.params.machineCode)
 const theme    = inject('theme')
 const toggleTheme = inject('toggleTheme')
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 
 const displayPoints  = ref(auth.user?.total_points ?? rvm.session?.current_points ?? 0)
@@ -736,11 +737,6 @@ const currentStepLabel = computed(() => {
   }
   return map[rvm.currentStep] || rvm.currentStep
 })
-
-function toggleLang() {
-  locale.value = locale.value === 'en' ? 'my' : 'en'
-  localStorage.setItem('rvm_lang', locale.value)
-}
 
 const isAutoFlowRunning = ref(false)
 
