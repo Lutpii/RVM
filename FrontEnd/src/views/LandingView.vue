@@ -169,6 +169,7 @@ import { computed, inject, onMounted, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
+import { intlLocale as toIntlLocale } from '@/composables/useLanguage'
 import api from '@/services/api'
 import {
   PhSun, PhMoon, PhRecycle, PhLeaf, PhScan, PhCheck, PhGift, PhCaretRight,
@@ -210,7 +211,7 @@ onMounted(async () => {
   } catch { /* numbers stay as "—" */ }
 })
 
-const intlLocale = computed(() => (locale.value === 'my' ? 'ms-MY' : 'en-MY'))
+const intlLocale = computed(() => toIntlLocale(locale.value))
 function num(n) { return n == null ? '—' : Number(n).toLocaleString('en-MY') }
 function kg(n) {
   if (n == null) return '—'

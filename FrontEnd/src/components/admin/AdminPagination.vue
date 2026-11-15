@@ -41,6 +41,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PhCaretLeft, PhCaretRight } from '@phosphor-icons/vue'
 import { paginationBounds, paginationItems } from '@/utils/admin/paginationLabel.js'
+import { intlLocale } from '@/composables/useLanguage'
 
 const props = defineProps({
   currentPage: { type: Number, required: true },
@@ -54,7 +55,7 @@ const { t, locale } = useI18n()
 
 const bounds = computed(() => paginationBounds(props))
 const pageItems = computed(() => paginationItems(props.currentPage, props.lastPage))
-const numberFormatter = computed(() => new Intl.NumberFormat(locale.value === 'my' ? 'ms-MY' : 'en-MY'))
+const numberFormatter = computed(() => new Intl.NumberFormat(intlLocale(locale.value)))
 
 function formatNumber(value) {
   return numberFormatter.value.format(value)

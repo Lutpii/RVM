@@ -113,6 +113,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { PhCaretRight, PhFunnelSimple, PhGift, PhPlusMinus, PhRecycle, PhX } from '@phosphor-icons/vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
+import { intlLocale } from '@/composables/useLanguage'
 import api from '@/services/api'
 import { buildActivityTimeline, filterTimeline, groupByDay, activeFilterCount } from '@/utils/activityTimeline'
 import SessionDetailModal from '@/components/SessionDetailModal.vue'
@@ -151,7 +152,7 @@ function openSession(entry) {
   openSessionCode.value = entry.sessionCode
 }
 
-const dateLocale = computed(() => (locale.value === 'my' ? 'ms-MY' : 'en-GB'))
+const dateLocale = computed(() => intlLocale(locale.value))
 function dayLabel(group) {
   if (group.kind === 'today') return t('activity.today')
   if (group.kind === 'yesterday') return t('activity.yesterday')
