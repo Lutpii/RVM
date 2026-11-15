@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 import App from './App.vue'
 import router from './router'
 import { messages } from './locales'
+import { resolveStoredLanguage, htmlLang } from './composables/useLanguage'
 import scrollReveal from './directives/scrollReveal'
 import swipe from './directives/swipe'
 import tap from './directives/tap'
@@ -14,9 +15,14 @@ import { getHardwareState } from './services/compactor'
 
 const pinia = createPinia()
 
+// An old or unknown stored value (e.g. 'ms') starts in English instead of
+// showing raw message keys.
+const startLanguage = resolveStoredLanguage((() => { try { return localStorage } catch { return undefined } })())
+document.documentElement.lang = htmlLang(startLanguage)
+
 const i18n = createI18n({
   legacy: false,
-  locale: localStorage.getItem('rvm_lang') || 'en',
+  locale: startLanguage,
   fallbackLocale: 'en',
   messages,
 })
