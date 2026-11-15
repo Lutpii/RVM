@@ -4,7 +4,7 @@ import { adminUi } from './adminUi.js'
 
 export const messages = {
   en: {
-    app: { name: 'Reverse Vending Machine', tagline: 'Smart Recycling' },
+    app: { name: 'Ultra RVM', tagline: 'Smart Recycling' },
     nav: { dashboard: 'Dashboard', logout: 'Logout', login: 'Login', register: 'Register', admin: 'Admin Panel' },
     machineOrder: { saveError: "Could not save the machine order.", moveUp: "Move {card} up", moveDown: "Move {card} down", reset: "Reset order", save: "Save order", saving: "Saving…", saved: "Machine order saved." },
     appNav: { home: 'Home', activity: 'Activity', scan: 'Scan', rewards: 'Rewards', account: 'Account' },
@@ -46,7 +46,7 @@ export const messages = {
       saveImage: 'Save image',
       saveImageFailed: 'Could not save the image. Take a screenshot instead.',
       close: 'Close',
-      voucherImageTitle: 'RVM Reward Voucher',
+      voucherImageTitle: 'Ultra RVM Reward Voucher',
       voucherImageFooter: 'Scan the QR code to check this voucher',
     },
     voucher: {
@@ -532,7 +532,7 @@ export const messages = {
       accountType: 'Account type',
       recycler: 'Recycler',
       admin: 'Admin',
-      appVersion: 'RVM · v{version}',
+      appVersion: 'Ultra RVM · v{version}',
       editNameHint: 'To change your name or password, go back and open Edit profile & password.',
       openAdminPanel: 'Open Admin Panel',
     },
@@ -641,7 +641,7 @@ export const messages = {
     },
   },
   my: {
-    app: { name: 'Reverse Vending Machine', tagline: 'Kitar Semula Pintar' },
+    app: { name: 'Ultra RVM', tagline: 'Kitar Semula Pintar' },
     nav: { dashboard: 'Papan Pemuka', logout: 'Log Keluar', login: 'Log Masuk', register: 'Daftar', admin: 'Panel Pentadbir' },
     machineOrder: { saveError: "Susun atur tidak dapat disimpan.", moveUp: "Naikkan {card}", moveDown: "Turunkan {card}", reset: "Pulihkan susunan", save: "Simpan susunan", saving: "Menyimpan…", saved: "Susunan mesin disimpan." },
     appNav: { home: 'Utama', activity: 'Aktiviti', scan: 'Imbas', rewards: 'Ganjaran', account: 'Akaun' },
@@ -683,7 +683,7 @@ export const messages = {
       saveImage: 'Simpan gambar',
       saveImageFailed: 'Gambar tidak dapat disimpan. Sila ambil tangkapan skrin.',
       close: 'Tutup',
-      voucherImageTitle: 'Baucar Ganjaran RVM',
+      voucherImageTitle: 'Baucar Ganjaran Ultra RVM',
       voucherImageFooter: 'Imbas kod QR untuk menyemak baucar ini',
     },
     voucher: {
@@ -1169,7 +1169,7 @@ export const messages = {
       accountType: 'Jenis akaun',
       recycler: 'Pengitar semula',
       admin: 'Admin',
-      appVersion: 'RVM · v{version}',
+      appVersion: 'Ultra RVM · v{version}',
       editNameHint: 'Untuk menukar nama atau kata laluan, kembali dan buka Edit profil & kata laluan.',
       openAdminPanel: 'Buka Panel Admin',
     },

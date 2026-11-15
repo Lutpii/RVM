@@ -4,7 +4,7 @@ export const content = {
   en: {
     title: 'Privacy Policy',
     updated: 'Last updated: 15 November 2026',
-    intro: 'This policy explains what the RVM (Reverse Vending Machine) smart recycling web app and machines collect about you, why, and how you can delete it.',
+    intro: 'This policy explains what the Ultra RVM (Reverse Vending Machine) smart recycling web app and machines collect about you, why, and how you can delete it.',
     sections: [
       {
         title: '1. What we collect',
@@ -32,7 +32,7 @@ export const content = {
         title: '3. Who can see it',
         items: [
           'We do not sell your data or use it for advertising.',
-          'RVM administrators can see account and activity data in order to run the service.',
+          'Ultra RVM administrators can see account and activity data in order to run the service.',
           'Anyone holding a voucher code or its QR code can open the voucher check page, which shows only the reward, the redemption date, whether it has been used, and a shortened form of your name (for example "Adi L***").',
           'The service runs on these providers, who store or process the data on our behalf: Vercel (website), Render (server), TiDB Cloud (database) and, if you use it, Google (sign-in).',
         ],
@@ -55,7 +55,7 @@ export const content = {
   my: {
     title: 'Dasar Privasi',
     updated: 'Kemas kini terakhir: 15 November 2026',
-    intro: 'Dasar ini menerangkan maklumat yang dikumpul oleh aplikasi web dan mesin kitar semula pintar RVM (Reverse Vending Machine) tentang anda, sebabnya, dan cara anda boleh memadamkannya.',
+    intro: 'Dasar ini menerangkan maklumat yang dikumpul oleh aplikasi web dan mesin kitar semula pintar Ultra RVM (Reverse Vending Machine) tentang anda, sebabnya, dan cara anda boleh memadamkannya.',
     sections: [
       {
         title: '1. Maklumat yang kami kumpul',
@@ -83,7 +83,7 @@ export const content = {
         title: '3. Siapa yang boleh melihatnya',
         items: [
           'Kami tidak menjual data anda atau menggunakannya untuk pengiklanan.',
-          'Pentadbir RVM boleh melihat data akaun dan aktiviti untuk mengendalikan perkhidmatan.',
+          'Pentadbir Ultra RVM boleh melihat data akaun dan aktiviti untuk mengendalikan perkhidmatan.',
           'Sesiapa yang memegang kod baucar atau kod QR-nya boleh membuka halaman semakan baucar, yang hanya menunjukkan ganjaran, tarikh penebusan, sama ada ia telah digunakan, dan nama anda dalam bentuk ringkas (contohnya "Adi L***").',
           'Perkhidmatan ini berjalan di atas penyedia berikut, yang menyimpan atau memproses data bagi pihak kami: Vercel (laman web), Render (pelayan), TiDB Cloud (pangkalan data) dan, jika anda menggunakannya, Google (log masuk).',
         ],
@@ -106,7 +106,7 @@ export const content = {
   id: {
     title: 'Kebijakan Privasi',
     updated: 'Terakhir diperbarui: 15 November 2026',
-    intro: 'Kebijakan ini menjelaskan data apa saja yang dikumpulkan oleh aplikasi web dan mesin daur ulang pintar RVM (Reverse Vending Machine) tentang Anda, untuk apa, dan bagaimana Anda dapat menghapusnya.',
+    intro: 'Kebijakan ini menjelaskan data apa saja yang dikumpulkan oleh aplikasi web dan mesin daur ulang pintar Ultra RVM (Reverse Vending Machine) tentang Anda, untuk apa, dan bagaimana Anda dapat menghapusnya.',
     sections: [
       {
         title: '1. Data yang kami kumpulkan',
@@ -134,7 +134,7 @@ export const content = {
         title: '3. Siapa yang dapat melihatnya',
         items: [
           'Kami tidak menjual data Anda atau menggunakannya untuk iklan.',
-          'Administrator RVM dapat melihat data akun dan aktivitas untuk menjalankan layanan.',
+          'Administrator Ultra RVM dapat melihat data akun dan aktivitas untuk menjalankan layanan.',
           'Siapa pun yang memegang kode voucher atau kode QR-nya dapat membuka halaman pemeriksaan voucher, yang hanya menampilkan hadiah, tanggal penukaran, apakah sudah dipakai, dan nama Anda dalam bentuk singkat (misalnya "Adi L***").',
           'Layanan ini berjalan di penyedia berikut, yang menyimpan atau memproses data atas nama kami: Vercel (situs web), Render (server), TiDB Cloud (basis data) dan, jika Anda menggunakannya, Google (masuk).',
         ],

@@ -1428,7 +1428,7 @@ const mobileSidebarOpen = ref(false)
 //   `v-if="!sidebarCollapsed || mobileSidebarOpen"` render full content
 //   into a `.sidebar.collapsed` 60px rail — it overflows/wraps instead of
 //   collapsing.
-// - sidebarCollapsed left true at ≤768px width hides the "RVM Admin"
+// - sidebarCollapsed left true at ≤768px width hides the "Ultra RVM Admin"
 //   header title (its own plain `v-if="!sidebarCollapsed"`) with the
 //   collapse button now hidden on mobile (collapse-to-icon-rail is a
 //   desktop-only affordance) — nothing on mobile could ever un-hide it.

@@ -39,25 +39,25 @@ const routes = [
     path: '/kiosk/:machineCode',
     name: 'kiosk-landing',
     component: KioskLandingView,
-    meta: { title: 'RVM Kiosk' },
+    meta: { title: 'Ultra RVM Kiosk' },
   },
   {
     path: '/kiosk/:machineCode/qr',
     name: 'kiosk-qr',
     component: KioskQrView,
-    meta: { title: 'Scan QR - RVM Kiosk' },
+    meta: { title: 'Scan QR - Ultra RVM Kiosk' },
   },
   {
     path: '/kiosk/:machineCode/session',
     name: 'kiosk-session',
     component: RvmSessionView,
-    meta: { title: 'Guest Recycling - RVM Kiosk' },
+    meta: { title: 'Guest Recycling - Ultra RVM Kiosk' },
   },
   {
     path: '/kiosk/:machineCode/summary',
     name: 'kiosk-summary',
     component: SessionSummaryView,
-    meta: { title: 'Session Summary - RVM Kiosk' },
+    meta: { title: 'Session Summary - Ultra RVM Kiosk' },
   },
 
   {
@@ -92,7 +92,7 @@ const routes = [
     path: '/',
     name: 'landing',
     component: LandingView,
-    meta: { title: 'RVM - Smart Recycling', guestOnly: true },
+    meta: { title: 'Ultra RVM - Smart Recycling', guestOnly: true },
   },
   {
     path: '/login',
@@ -212,7 +212,7 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach(async (to, from, next) => {
-  document.title = to.meta.title || 'RVM'
+  document.title = to.meta.title || 'Ultra RVM'
 
   const authStore = useAuthStore()
 

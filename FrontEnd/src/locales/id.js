@@ -2,7 +2,7 @@
 // Bahasa Indonesia. Mirrors messages.en key for key (locales/idParity.test.js).
 // Terms: poin, sesi, daur ulang, barang, mesin, hadiah, kode koneksi, wadah, pemadat.
 export default {
-  app: { name: 'Reverse Vending Machine', tagline: 'Daur Ulang Pintar' },
+  app: { name: 'Ultra RVM', tagline: 'Daur Ulang Pintar' },
   nav: { dashboard: 'Dasbor', logout: 'Keluar', login: 'Masuk', register: 'Daftar', admin: 'Panel Admin' },
   machineOrder: { saveError: 'Urutan mesin tidak dapat disimpan.', moveUp: 'Pindahkan {card} ke atas', moveDown: 'Pindahkan {card} ke bawah', reset: 'Atur ulang urutan', save: 'Simpan urutan', saving: 'Menyimpan…', saved: 'Urutan mesin disimpan.' },
   appNav: { home: 'Beranda', activity: 'Aktivitas', scan: 'Pindai', rewards: 'Hadiah', account: 'Akun' },
@@ -44,7 +44,7 @@ export default {
     saveImage: 'Simpan gambar',
     saveImageFailed: 'Gambar tidak dapat disimpan. Silakan ambil tangkapan layar.',
     close: 'Tutup',
-    voucherImageTitle: 'Voucher Hadiah RVM',
+    voucherImageTitle: 'Voucher Hadiah Ultra RVM',
     voucherImageFooter: 'Pindai kode QR untuk memeriksa voucher ini',
   },
   voucher: {
@@ -528,7 +528,7 @@ export default {
     accountType: 'Jenis akun',
     recycler: 'Pendaur ulang',
     admin: 'Admin',
-    appVersion: 'RVM · v{version}',
+    appVersion: 'Ultra RVM · v{version}',
     editNameHint: 'Untuk mengubah nama atau kata sandi, kembali lalu buka Ubah profil & kata sandi.',
     openAdminPanel: 'Buka Panel Admin',
   },

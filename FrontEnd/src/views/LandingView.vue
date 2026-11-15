@@ -4,9 +4,9 @@
     <header class="hero">
       <div class="wrap hero-inner">
         <nav class="topnav" :aria-label="$t('landing.navLabel')">
-          <RouterLink to="/" class="brand" aria-label="RVM, Reverse Vending Machine">
+          <RouterLink to="/" class="brand" aria-label="Ultra RVM, Reverse Vending Machine">
             <span class="brand-mark"><PhRecycle :size="22" aria-hidden="true" /></span>
-            <span class="brand-name">RVM</span>
+            <span class="brand-name">Ultra RVM</span>
           </RouterLink>
           <div class="nav-actions">
             <button type="button" class="nav-round" @click="toggleTheme()"
