@@ -229,9 +229,6 @@ const MONTH_MATERIALS = [
   { key: 'plastic', label: 'landing.matPlastic' },
   { key: 'aluminum', label: 'landing.matAluminium' },
   { key: 'paper', label: 'landing.matPaper' },
-  // Glass is not accepted; old rows from machines that once took it only
-  // show up here when they exist, so the legend still adds up.
-  { key: 'glass', label: 'landing.matGlass', optional: true },
 ]
 // The bar splits this month's ITEMS by material. A CO2 split would always be
 // mostly aluminium (a can saves ~6x the CO2 of a bottle or paper), which
@@ -240,7 +237,7 @@ const monthMaterials = computed(() => {
   const loaded = !!stats.value.month.items_by_material
   const by = stats.value.month.items_by_material || {}
   const total = MONTH_MATERIALS.reduce((sum, m) => sum + (Number(by[m.key]) || 0), 0)
-  return MONTH_MATERIALS.filter(m => !m.optional || (Number(by[m.key]) || 0) > 0).map(m => {
+  return MONTH_MATERIALS.map(m => {
     const n = Number(by[m.key]) || 0
     return { key: m.key, label: t(m.label), items: loaded ? n : null, share: total ? (n / total) * 100 : 0 }
   })
@@ -305,7 +302,6 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .seg-plastic { background: #4e6ef2; }
 .seg-aluminum { background: #d97706; }
 .seg-paper { background: #0f9488; }
-.seg-glass { background: #9333ea; }
 .co2-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; }
 .legend-item { display: flex; flex-direction: column; gap: 2px; }
 .legend-name { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }

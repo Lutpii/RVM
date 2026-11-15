@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Cache;
  */
 class PublicStatsController extends Controller
 {
-    private const MATERIALS = ['plastic', 'aluminum', 'paper', 'glass'];
+    // Glass is no longer accepted; old accepted glass rows are left out too,
+    // so the landing page only ever talks about these three.
+    private const MATERIALS = ['plastic', 'aluminum', 'paper'];
 
     public function show(): JsonResponse
     {
@@ -54,7 +56,7 @@ class PublicStatsController extends Controller
     /** @return array<string, int> accepted items per material */
     private function countsByMaterial($since): array
     {
-        $q = Transaction::where('is_valid', 1);
+        $q = Transaction::where('is_valid', 1)->whereIn('material_selected', self::MATERIALS);
         if ($since) $q->where('created_at', '>=', $since);
 
         return $q->selectRaw('material_selected, COUNT(*) AS n')

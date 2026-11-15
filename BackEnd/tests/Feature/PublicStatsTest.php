@@ -36,6 +36,7 @@ class PublicStatsTest extends TestCase
         $this->tx('aluminum');
         $this->tx('paper');
         $this->tx('unknown', false);
+        $this->tx('glass'); // old accepted glass row from before glass was dropped
         $this->tx('plastic', true, now()->subMonthNoOverflow()->startOfMonth()); // last month
 
         $res = $this->getJson('/api/stats/public')->assertOk();
@@ -47,7 +48,9 @@ class PublicStatsTest extends TestCase
         $this->assertEqualsWithDelta(0.30, $res->json('stats.month.carbon_saved_kg'), 0.01);
         $this->assertEqualsWithDelta(0.23, $res->json('stats.month.carbon_by_material_kg.aluminum'), 0.01);
         $this->assertSame((int) now()->month, $res->json('stats.month.month'));
-        $this->assertSame(['plastic' => 1, 'aluminum' => 1, 'paper' => 1, 'glass' => 0], $res->json('stats.month.items_by_material'));
+        // Glass is not a recyclable here any more: never counted, never listed.
+        $this->assertSame(['plastic' => 1, 'aluminum' => 1, 'paper' => 1], $res->json('stats.month.items_by_material'));
+        $this->assertArrayNotHasKey('glass', $res->json('stats.month.carbon_by_material_kg'));
         $this->assertArrayNotHasKey('users', $res->json('stats'));
     }
 }
