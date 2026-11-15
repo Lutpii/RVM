@@ -102,4 +102,5 @@ return [
     'user_not_found' => 'Pengguna tidak ditemukan.',
     'voucher_already_used' => 'Voucher ini sudah dipakai.',
     'voucher_not_found' => 'Voucher tidak ditemukan.',
+    'machine_has_history' => 'Mesin ini punya riwayat daur ulang, jadi tidak bisa dihapus. Ubah statusnya menjadi Tidak Aktif.',
 ];

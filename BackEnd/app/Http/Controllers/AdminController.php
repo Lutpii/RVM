@@ -372,6 +372,14 @@ class AdminController extends Controller
     {
         $machine = RvmMachine::find($id);
         if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
+        // Sessions and transactions cascade with the machine, so deleting one
+        // with history erases recycling records (RVM-DSME, 13 Nov 2026).
+        // Such a machine is set to Inactive instead.
+        $hasHistory = RecyclingSession::where('machine_id', $machine->id)->exists()
+            || Transaction::where('machine_id', $machine->id)->exists();
+        if ($hasHistory) {
+            return response()->json(['success' => false, 'message' => __('messages.machine_has_history')], 409);
+        }
         $this->log($request->user(), 'delete_machine', 'machine', $id, "Deleted machine: {$machine->name}", [], ['deleteMachine', ['name' => $machine->name]]);
         $machine->delete();
         return response()->json(['success' => true, 'message' => __('messages.machine_deleted')]);

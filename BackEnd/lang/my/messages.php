@@ -102,4 +102,5 @@ return [
     'user_not_found' => 'Pengguna tidak ditemui.',
     'voucher_already_used' => 'Baucar ini sudah digunakan.',
     'voucher_not_found' => 'Baucar tidak ditemui.',
+    'machine_has_history' => 'Mesin ini mempunyai sejarah kitar semula, jadi tidak boleh dipadam. Tukar statusnya kepada Tidak Aktif.',
 ];

@@ -102,4 +102,5 @@ return [
     'user_not_found' => 'User not found.',
     'voucher_already_used' => 'This voucher has already been used.',
     'voucher_not_found' => 'Voucher not found.',
+    'machine_has_history' => 'This machine has recycling history, so it cannot be deleted. Set its status to Inactive instead.',
 ];

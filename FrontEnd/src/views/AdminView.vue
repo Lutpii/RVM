@@ -2908,7 +2908,10 @@ async function deleteMachine(id) {
   try {
     await api.delete(`/admin/machines/${id}`)
     adminMachines.value = adminMachines.value.filter(m => m.id !== id)
-  } catch { showToast(t('adminUi.deleteMachineFailed'), 'error') }
+  } catch (e) {
+    // 409 = the machine has recycling history: the server explains to set it Inactive.
+    showToast(e.response?.data?.message || t('adminUi.deleteMachineFailed'), 'error')
+  }
 }
 
 // ── Kiosk maintenance (scan the machine's live QR to prove presence, then
