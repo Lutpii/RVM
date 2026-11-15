@@ -350,6 +350,7 @@ export const messages = {
       machine: {
         isDemo: 'Demo machine',
         isDemoHint: 'Runs the demo kiosk (simulated capture and AI). Its transactions are marked DEMO.',
+        kioskLink: 'Kiosk link', copyLink: 'Copy', linkCopied: 'Kiosk link copied', copyFailed: 'Could not copy. Select the link and copy it by hand.',
       },
       dashboard: 'Dashboard',
       users: 'Users',
@@ -983,6 +984,7 @@ export const messages = {
       machine: {
         isDemo: 'Mesin demo',
         isDemoHint: 'Menjalankan kiosk demo (tangkapan dan AI simulasi). Transaksinya ditandakan DEMO.',
+        kioskLink: 'Pautan kiosk', copyLink: 'Salin', linkCopied: 'Pautan kiosk disalin', copyFailed: 'Tidak dapat menyalin. Pilih pautan dan salin secara manual.',
       },
       dashboard: 'Papan Pemuka',
       users: 'Pengguna',

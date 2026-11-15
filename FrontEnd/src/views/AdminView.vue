@@ -591,6 +591,14 @@
                 <template v-else>{{ machineConnectivity(machine, nowTick) === 'online' ? 'Online' : 'Offline' }} · last seen {{ relativeTime(machine.last_seen_at) }}</template>
                 <span v-if="machine.fault_active" class="fault-badge">FAULT{{ machine.fault_reason ? ': ' + machine.fault_reason : '' }}</span>
               </p>
+              <div class="kiosk-link-row">
+                <PhLink weight="regular" aria-hidden="true" />
+                <span class="kiosk-link-label">{{ $t('admin.machine.kioskLink') }}</span>
+                <a :href="kioskLink(machine, siteOrigin)" target="_blank" rel="noopener" class="kiosk-link-url">{{ kioskLink(machine, siteOrigin) }}</a>
+                <button type="button" class="action-btn kiosk-copy-btn" @click="copyKioskLink(machine)">
+                  <PhCopy weight="regular" aria-hidden="true" /> {{ $t('admin.machine.copyLink') }}
+                </button>
+              </div>
               <div class="bin-admin-grid">
                 <div v-for="bin in binTypes" :key="bin.id" class="bin-admin">
                   <span>
@@ -1371,8 +1379,9 @@ import {
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear, PhWifiSlash,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
   PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple, PhCrop,
-  PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise,
+  PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise, PhLink, PhCopy,
 } from '@phosphor-icons/vue'
+import { kioskLink } from '@/utils/admin/kioskLink.js'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { formatAuditLog } from '@/utils/admin/auditLog.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
@@ -1629,6 +1638,17 @@ function settleConfirm(result) {
 
 const toastState = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
+// Kiosk links follow the site the admin is on (live Vercel or local tunnel).
+const siteOrigin = window.location.origin
+async function copyKioskLink(machine) {
+  try {
+    await navigator.clipboard.writeText(kioskLink(machine, siteOrigin))
+    showToast(t('admin.machine.linkCopied'))
+  } catch {
+    showToast(t('admin.machine.copyFailed'), 'error')
+  }
+}
+
 function showToast(message, type = 'success') {
   toastState.value = { show: true, message, type }
   clearTimeout(toastTimer)
@@ -3714,6 +3734,10 @@ onUnmounted(() => {
   color: var(--text-muted); margin-left: 8px;
 }
 .machine-loc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.kiosk-link-row { display: flex; align-items: center; gap: 6px; margin: -4px 0 12px; font-size: 12px; color: var(--text-muted); min-width: 0; }
+.kiosk-link-label { flex-shrink: 0; }
+.kiosk-link-url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent-blue); }
+.kiosk-copy-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; }
 .bin-admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .bin-admin { display: flex; flex-direction: column; gap: 3px; }
 .bin-admin span { font-size: 11px; color: var(--text-secondary); }

@@ -348,6 +348,7 @@ export default {
     machine: {
       isDemo: 'Mesin demo',
       isDemoHint: 'Menjalankan kiosk demo (pengambilan gambar dan AI disimulasikan). Transaksinya ditandai DEMO.',
+      kioskLink: 'Link kiosk', copyLink: 'Salin', linkCopied: 'Link kiosk disalin', copyFailed: 'Tidak dapat menyalin. Pilih link lalu salin secara manual.',
     },
     dashboard: 'Dasbor',
     users: 'Pengguna',
