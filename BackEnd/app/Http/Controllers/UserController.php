@@ -41,7 +41,7 @@ class UserController extends Controller
         $request->validate([
             'name'     => 'sometimes|string|max:100',
             'password' => 'sometimes|string|min:8|confirmed',
-            'preferred_language' => 'sometimes|in:en,id',
+            'preferred_language' => 'sometimes|in:en,my,id',
             'theme_preference'   => 'sometimes|in:dark,light',
             // null = back to the initial-letter avatar
             'avatar_icon'        => ['sometimes', 'nullable', 'string', 'regex:' . AvatarIcon::pattern()],

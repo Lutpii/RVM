@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 
 class SetLocaleFromHeader {
-    private const SUPPORTED = ['en', 'my'];
+    private const SUPPORTED = ['en', 'my', 'id'];
 
     public function handle(Request $request, Closure $next) {
         $locale = $request->header('X-App-Locale', 'en');
