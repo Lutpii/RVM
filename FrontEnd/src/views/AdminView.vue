@@ -595,7 +595,7 @@
               <div class="kiosk-link-row">
                 <PhLink weight="regular" aria-hidden="true" />
                 <span class="kiosk-link-label">{{ $t('admin.machine.kioskLink') }}</span>
-                <a :href="kioskLink(machine, siteOrigin)" target="_blank" rel="noopener" class="kiosk-link-url">{{ kioskLink(machine, siteOrigin) }}</a>
+                <a :href="kioskLink(machine, siteOrigin)" :title="kioskLink(machine, siteOrigin)" target="_blank" rel="noopener" class="kiosk-link-url">{{ kioskLink(machine, siteOrigin) }}</a>
                 <button type="button" class="action-btn kiosk-copy-btn" @click="copyKioskLink(machine)">
                   <PhCopy weight="regular" aria-hidden="true" /> {{ $t('admin.machine.copyLink') }}
                 </button>
@@ -1381,6 +1381,7 @@ import {
   PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise, PhLink, PhCopy,
 } from '@phosphor-icons/vue'
 import { kioskLink } from '@/utils/admin/kioskLink.js'
+import { weekdayLabel } from '@/utils/admin/weekdayLabel.js'
 import { intlLocale } from '@/composables/useLanguage'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { formatAuditLog } from '@/utils/admin/auditLog.js'
@@ -1736,10 +1737,12 @@ const barChartData = ref(null)
 const donutChartData = ref(null)
 // Chart series names follow a language switch without refetching the data.
 const CHART_MATERIALS = ['plastic', 'aluminum', 'paper']
+let chartDayLabels = [] // raw Mon..Sun from the backend, relabelled per language
 watch(locale, () => {
   if (barChartData.value) {
     barChartData.value = {
       ...barChartData.value,
+      labels: chartDayLabels.map((d) => weekdayLabel(d, intl())),
       datasets: barChartData.value.datasets.map((d, i) => ({ ...d, label: t('session.' + CHART_MATERIALS[i]) })),
     }
   }
@@ -2428,8 +2431,9 @@ async function fetchChartData() {
     const { labels, datasets, breakdown, overview } = res.data
     overviewData.value = overview || {}
 
+    chartDayLabels = labels
     barChartData.value = {
-      labels,
+      labels: labels.map((d) => weekdayLabel(d, intl())),
       datasets: [
         { label: t('session.plastic'),  data: datasets.plastic,  backgroundColor: CHART_COLORS.plastic  },
         { label: t('session.aluminum'), data: datasets.aluminum, backgroundColor: CHART_COLORS.aluminum },
