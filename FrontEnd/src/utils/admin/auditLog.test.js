@@ -47,3 +47,11 @@ describe('formatAuditLog', () => {
     expect(formatAuditLog({ ...base, target_type: 'transactions', target_id: undefined, details: null }).target).toBe('transactions')
   })
 })
+
+describe('formatAuditLog with a translator', () => {
+  it('uses the translated action label when one exists, else the built-in one', () => {
+    const label = (a) => (a === 'update_user' ? 'Pengguna dikemas kini' : undefined)
+    expect(formatAuditLog({ id: 1, action: 'update_user' }, { label }).actionLabel).toBe('Pengguna dikemas kini')
+    expect(formatAuditLog({ id: 2, action: 'export_csv' }, { label }).actionLabel).toBe('Report exported')
+  })
+})

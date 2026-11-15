@@ -1,5 +1,6 @@
 // src/locales/index.js
 import id from './id.js'
+import { adminUi } from './adminUi.js'
 
 export const messages = {
   en: {
@@ -168,6 +169,7 @@ export const messages = {
       switchToDark: 'Switch to dark mode',
       showPassword: 'Show password',
       hidePassword: 'Hide password',
+      phonePlaceholder: 'e.g. 0123456789',
     },
     dashboard: {
       title: 'My Dashboard',
@@ -539,6 +541,8 @@ export const messages = {
       elsewhereText: 'Finish it there first, or end it here.',
       viewSession: 'View session',
       machinesLoadError: 'Could not load machines. Check your connection and try again.',
+      shortcutLabel: 'Select a machine directly (demo mode):',
+      loadingMachines: 'Loading machines...',
       title: 'Scan RVM QR Code',
       subtitle: 'Scan the QR code shown on the RVM screen',
       cameraActiveStatus: 'Camera active, point it at the QR code on the RVM screen',
@@ -802,6 +806,7 @@ export const messages = {
       switchToDark: 'Tukar ke mod gelap',
       showPassword: 'Tunjukkan kata laluan',
       hidePassword: 'Sembunyikan kata laluan',
+      phonePlaceholder: 'cth. 0123456789',
     },
     dashboard: {
       title: 'Papan Pemuka Saya',
@@ -1173,6 +1178,8 @@ export const messages = {
       elsewhereText: 'Selesaikan di sana dahulu, atau tamatkannya di sini.',
       viewSession: 'Lihat sesi',
       machinesLoadError: 'Tidak dapat memuatkan mesin. Semak sambungan anda dan cuba lagi.',
+      shortcutLabel: 'Pilih mesin secara terus (mod demo):',
+      loadingMachines: 'Memuatkan mesin...',
       title: 'Imbas Kod QR RVM',
       subtitle: 'Imbas kod QR yang dipaparkan pada skrin RVM',
       cameraActiveStatus: 'Kamera aktif, halakan ke kod QR pada skrin RVM',
@@ -1272,3 +1279,6 @@ export const messages = {
   },
   id,
 }
+
+// Admin panel text lives in adminUi.js (one file, three languages).
+for (const lang of ['en', 'my', 'id']) messages[lang].adminUi = adminUi[lang]

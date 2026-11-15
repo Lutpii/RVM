@@ -7,7 +7,7 @@
     <aside :class="['sidebar', { collapsed: sidebarCollapsed, 'mobile-open': mobileSidebarOpen }]">
       <div class="sidebar-header">
         <PhRecycle class="sidebar-logo" weight="regular" aria-hidden="true" />
-        <span class="sidebar-title">RVM Admin</span>
+        <span class="sidebar-title">{{ $t('adminUi.sidebarTitle') }}</span>
       </div>
       <nav class="sidebar-nav">
         <button v-for="item in navItems" :key="item.id"
@@ -22,16 +22,16 @@
           <UserAvatar :user="auth.user" :size="32" fallback="var(--grad-header)" class="admin-avatar" />
           <div>
             <div class="admin-name">{{ auth.user?.name }}</div>
-            <div class="admin-role">Administrator</div>
+            <div class="admin-role">{{ $t('adminUi.administrator') }}</div>
           </div>
         </div>
         <div class="sidebar-actions">
-          <button class="ctrl-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+          <button class="ctrl-btn" @click="toggleTheme()" :aria-label="theme === 'dark' ? $t('landing.switchToLight') : $t('landing.switchToDark')">
             <PhSun v-if="theme === 'dark'" weight="regular" aria-hidden="true" />
             <PhMoon v-else weight="regular" aria-hidden="true" />
           </button>
-          <RouterLink to="/dashboard" class="ctrl-btn"><PhUser weight="regular" aria-hidden="true" /> User View</RouterLink>
-          <button class="logout-btn-sm" @click="handleLogout">Logout</button>
+          <RouterLink to="/dashboard" class="ctrl-btn"><PhUser weight="regular" aria-hidden="true" /> {{ $t('adminUi.userView') }}</RouterLink>
+          <button class="logout-btn-sm" @click="handleLogout">{{ $t('nav.logout') }}</button>
         </div>
       </div>
 
@@ -41,7 +41,7 @@
            icon-only nav once collapsed. Desktop only (hidden on mobile below;
            the mobile drawer is a full-width overlay, not a collapsible rail). -->
       <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed"
-        :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+        :aria-label="sidebarCollapsed ? $t('adminUi.expandSidebar') : $t('adminUi.collapseSidebar')">
         <PhCaretLeft v-if="!sidebarCollapsed" weight="bold" aria-hidden="true" />
         <PhCaretRight v-else weight="bold" aria-hidden="true" />
       </button>
@@ -51,7 +51,7 @@
     <main class="admin-main">
       <div class="admin-topbar">
         <div style="display:flex;align-items:center;gap:10px">
-          <button class="mobile-menu-btn" @click="mobileSidebarOpen = !mobileSidebarOpen; sidebarCollapsed = false" aria-label="Toggle sidebar menu">
+          <button class="mobile-menu-btn" @click="mobileSidebarOpen = !mobileSidebarOpen; sidebarCollapsed = false" :aria-label="$t('adminUi.toggleSidebar')">
             <PhList weight="regular" aria-hidden="true" />
           </button>
           <h2 class="page-title">{{ currentNavItem?.id === 'detection' ? $t('admin.detectionReview.title') : currentNavItem?.label }}</h2>
@@ -65,8 +65,8 @@
               @click="setDataScope(scope)">{{ $t('admin.dataScope.' + scope) }}</button>
           </div>
           <span class="live-dot" v-if="isLive"></span>
-          <span class="last-updated">Updated: {{ lastUpdated }}</span>
-          <button class="refresh-btn" @click="fetchTabData(activeTab, true)"><PhArrowsClockwise weight="regular" aria-hidden="true" /> Refresh</button>
+          <span class="last-updated">{{ $t('adminUi.updatedAt', { time: lastUpdated }) }}</span>
+          <button class="refresh-btn" @click="fetchTabData(activeTab, true)"><PhArrowsClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.refresh') }}</button>
         </div>
       </div>
 
@@ -76,7 +76,7 @@
       <!-- Global error banner -->
       <div v-if="tabError" class="error-banner">
         <PhWarning weight="regular" aria-hidden="true" /> {{ tabError }}
-        <button class="error-close" @click="tabError = ''" aria-label="Dismiss error">
+        <button class="error-close" @click="tabError = ''" :aria-label="$t('adminUi.dismissError')">
           <PhX weight="regular" aria-hidden="true" />
         </button>
       </div>
@@ -97,10 +97,10 @@
               <svg v-if="materialIconSvg(mat.key)" class="ov-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="mat.key?.toLowerCase()" v-html="materialIconSvg(mat.key)"></svg>
               <div class="ov-label">{{ mat.label }}</div>
               <div class="ov-count">{{ (overviewData[mat.key]?.today ?? 0).toLocaleString() }}</div>
-              <div class="ov-sub">collected today</div>
+              <div class="ov-sub">{{ $t('adminUi.collectedToday') }}</div>
               <div :class="['ov-pct', overviewData[mat.key]?.pct >= 0 ? 'pct-up' : 'pct-down']">
                 {{ overviewData[mat.key]?.pct >= 0 ? '↑' : '↓' }}
-                {{ Math.abs(overviewData[mat.key]?.pct ?? 0) }}% vs yesterday
+                {{ $t('adminUi.vsYesterday', { pct: Math.abs(overviewData[mat.key]?.pct ?? 0) }) }}
               </div>
             </div>
           </div>
@@ -118,17 +118,17 @@
             <div class="stat-card machine-status-card">
               <div>
                 <PhRobot class="ms-icon" weight="regular" aria-hidden="true" />
-                <div class="ms-label">MACHINE STATUS</div>
+                <div class="ms-label">{{ $t('adminUi.machineStatus') }}</div>
                 <!-- From kiosk heartbeats; "NO DATA" when no machine has ever reported (A02). -->
                 <template v-if="machineSummary.anyReported">
                   <div :class="['ms-status', machineSummary.online > 0 ? 'ms-online' : 'ms-offline']">
-                    {{ machineSummary.online > 0 ? 'ONLINE' : 'OFFLINE' }}
+                    {{ machineSummary.online > 0 ? $t('adminUi.statusOnline') : $t('adminUi.statusOffline') }}
                   </div>
-                  <div class="ms-sub">{{ machineSummary.online }} of {{ machineSummary.total }} machines online</div>
+                  <div class="ms-sub">{{ $t('adminUi.machinesOnline', { online: machineSummary.online, total: machineSummary.total }) }}</div>
                 </template>
                 <template v-else>
-                  <div class="ms-status ms-nodata">NO DATA</div>
-                  <div class="ms-sub">No machine has reported a heartbeat yet ({{ activeMachines }} of {{ scopedMachines.length }} registered as active)</div>
+                  <div class="ms-status ms-nodata">{{ $t('adminUi.noData') }}</div>
+                  <div class="ms-sub">{{ $t('adminUi.noHeartbeat', { active: activeMachines, total: scopedMachines.length }) }}</div>
                 </template>
               </div>
             </div>
@@ -137,26 +137,26 @@
           <!-- Charts Row -->
           <div class="charts-row">
             <div class="section-card chart-card-main">
-              <h3 class="card-title-bar chart-title"><span class="title-sq"></span> DAILY COLLECTION TREND (LAST 7 DAYS)</h3>
-              <p class="chart-sub">CO₂ saved each day by material, in kg (accepted items only)</p>
+              <h3 class="card-title-bar chart-title"><span class="title-sq"></span> {{ $t('adminUi.dailyTrend') }}</h3>
+              <p class="chart-sub">{{ $t('adminUi.dailyTrendSub') }}</p>
               <div class="chart-wrap">
                 <Bar v-if="barChartData" :data="barChartData" :options="barChartOptions" />
-                <div v-else class="chart-empty">No data yet</div>
+                <div v-else class="chart-empty">{{ $t('adminUi.noDataYet') }}</div>
               </div>
             </div>
             <div class="section-card chart-card-side">
-              <h3 class="card-title-bar chart-title"><span class="title-sq title-sq-yellow"></span> CATEGORY BREAKDOWN (ALL TIME)</h3>
-              <p class="chart-sub">CO₂ saved per material since the first item, in kg</p>
+              <h3 class="card-title-bar chart-title"><span class="title-sq title-sq-yellow"></span> {{ $t('adminUi.categoryBreakdown') }}</h3>
+              <p class="chart-sub">{{ $t('adminUi.categorySub') }}</p>
               <div class="chart-wrap donut-wrap">
                 <Doughnut v-if="donutChartData" :data="donutChartData" :options="donutChartOptions" />
-                <div v-else class="chart-empty">No data yet</div>
+                <div v-else class="chart-empty">{{ $t('adminUi.noDataYet') }}</div>
               </div>
             </div>
           </div>
 
           <!-- Machine alerts: hardware faults and machines that stopped sending heartbeats (A05) -->
           <div class="section-card" v-if="machineAlerts.length">
-            <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> MACHINE ALERTS</h3>
+            <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> {{ $t('adminUi.machineAlerts') }}</h3>
             <div class="alert-list">
               <div v-for="alert in machineAlerts" :key="alert.type + '-' + alert.machineId" class="alert-item">
                 <PhWarningOctagon v-if="alert.type === 'fault'" class="alert-icon" weight="regular" aria-hidden="true" />
@@ -164,16 +164,16 @@
                 <strong>{{ alert.name }}</strong>
                 <span v-if="alert.isDemo" class="demo-chip">{{ $t('admin.demoChip') }}</span>
                 <div class="alert-bins">
-                  <span class="bin-tag">{{ alert.type === 'fault' ? 'Hardware fault' : 'Offline' }}</span>
+                  <span class="bin-tag">{{ alert.type === 'fault' ? $t('adminUi.hardwareFault') : $t('adminUi.offline') }}</span>
                   <span v-if="alert.detail" class="alert-detail">{{ alert.detail }}</span>
                   <span v-if="alert.since" class="alert-detail">
-                    {{ alert.type === 'fault' ? 'since' : 'last seen' }} {{ relativeTime(alert.since) }}
+                    {{ $t(alert.type === 'fault' ? 'adminUi.sinceTime' : 'adminUi.lastSeenTime', { time: relativeTime(alert.since) }) }}
                   </span>
                 </div>
                 <!-- actionable alert (A05): log the repair or jump to the machine -->
                 <div class="alert-actions">
-                  <button type="button" class="action-btn" @click="openHistoryFor(alert.machineId)">Service history</button>
-                  <button type="button" class="action-btn" @click="switchTab('machines')">View machine</button>
+                  <button type="button" class="action-btn" @click="openHistoryFor(alert.machineId)">{{ $t('adminUi.serviceHistory') }}</button>
+                  <button type="button" class="action-btn" @click="switchTab('machines')">{{ $t('adminUi.viewMachine') }}</button>
                 </div>
               </div>
             </div>
@@ -181,15 +181,15 @@
 
           <!-- Bin alerts -->
           <div class="section-card" v-if="fullBins.length">
-            <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> BIN ALERTS (≥ 90%)</h3>
+            <h3 class="card-title-bar"><span class="title-sq title-sq-red"></span> {{ $t('adminUi.binAlerts') }}</h3>
             <div class="alert-list">
               <div v-for="machine in fullBins" :key="machine.id" class="alert-item">
                 <PhWarningOctagon class="alert-icon" weight="regular" aria-hidden="true" />
                 <strong>{{ machine.name }}</strong>
                 <div class="alert-bins">
-                  <span v-if="machine.aluminum_level >= 90" class="bin-tag">Aluminum {{ machine.aluminum_level }}%</span>
-                  <span v-if="machine.plastic_level >= 90" class="bin-tag">Plastic {{ machine.plastic_level }}%</span>
-                  <span v-if="machine.paper_level >= 90" class="bin-tag">Paper {{ machine.paper_level }}%</span>
+                  <span v-if="machine.aluminum_level >= 90" class="bin-tag">{{ $t('session.aluminum') }} {{ machine.aluminum_level }}%</span>
+                  <span v-if="machine.plastic_level >= 90" class="bin-tag">{{ $t('session.plastic') }} {{ machine.plastic_level }}%</span>
+                  <span v-if="machine.paper_level >= 90" class="bin-tag">{{ $t('session.paper') }} {{ machine.paper_level }}%</span>
                 </div>
               </div>
             </div>
@@ -199,28 +199,28 @@
           <div class="breakdown-status-row">
             <div class="section-card" style="margin-bottom:0">
               <div class="card-header">
-                <h3 class="card-title-bar"><span class="title-sq"></span> MATERIAL BREAKDOWN</h3>
-                <span class="table-period-badge">Last 7 Days</span>
+                <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.materialBreakdown') }}</h3>
+                <span class="table-period-badge">{{ $t('adminUi.last7Days') }}</span>
               </div>
               <div class="table-wrap">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Material</th><th>Items</th><th>Carbon Saved</th><th>Points</th>
+                      <th>{{ $t('adminUi.colMaterial') }}</th><th>{{ $t('adminUi.colItems') }}</th><th>{{ $t('adminUi.colCarbon') }}</th><th>{{ $t('adminUi.colPoints') }}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="mat in materialStats" :key="mat.material_selected">
                       <td>
                         <svg v-if="materialIconSvg(mat.material_selected)" class="material-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :data-material-icon="mat.material_selected?.toLowerCase()" v-html="materialIconSvg(mat.material_selected)"></svg>
-                        {{ capitalize(mat.material_selected) }}
+                        {{ materialName(mat.material_selected) }}
                       </td>
                       <td>{{ mat.count }}</td>
                       <td class="carbon-cell">{{ mat.total_carbon_kg.toFixed(3) }} kg</td>
                       <td class="pts-green">{{ mat.total_points }}</td>
                     </tr>
                     <tr v-if="!materialStats.length">
-                      <td colspan="4" class="empty-cell">No data for last 7 days</td>
+                      <td colspan="4" class="empty-cell">{{ $t('adminUi.noDataLast7') }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -229,7 +229,7 @@
 
             <!-- System Status -->
             <div class="section-card" style="margin-bottom:0">
-              <h3 class="card-title-bar"><span class="title-sq"></span> <PhGear weight="regular" aria-hidden="true" /> SYSTEM STATUS</h3>
+              <h3 class="card-title-bar"><span class="title-sq"></span> <PhGear weight="regular" aria-hidden="true" /> {{ $t('adminUi.systemStatus') }}</h3>
               <div class="sys-grid">
                 <div v-for="item in systemStatusItems" :key="item.label" class="sys-item">
                   <span :class="['sys-dot', 'sys-dot-' + item.color]"></span>
@@ -242,51 +242,51 @@
 
           <!-- Formal Report -->
           <div class="section-card">
-            <h3 class="card-title-bar"><span class="title-sq"></span> FORMAL REPORT</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.formalReport') }}</h3>
             <div class="filter-toolbar formal-report-toolbar">
               <div class="date-range">
                 <label class="date-field picker-field" @click="openDatePicker">
-                  <span>From</span>
+                  <span>{{ $t('adminUi.from') }}</span>
                 <input v-model="reportDateFrom" type="date" />
                 </label>
                 <label class="date-field picker-field" @click="openDatePicker">
-                  <span>To</span>
+                  <span>{{ $t('adminUi.to') }}</span>
                 <input v-model="reportDateTo" type="date" />
                 </label>
               </div>
               <div class="filter-actions formal-report-actions">
-                <button class="action-btn filter-action" @click="exportExcel"><PhDownloadSimple weight="regular" aria-hidden="true" /> Download Report</button>
+                <button class="action-btn filter-action" @click="exportExcel"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ $t('adminUi.downloadReport') }}</button>
                 <!-- Email sending disabled for now -->
-                <button class="action-btn edit-btn filter-action" disabled><PhEnvelopeSimple weight="regular" aria-hidden="true" /> Send via Email</button>
+                <button class="action-btn edit-btn filter-action" disabled><PhEnvelopeSimple weight="regular" aria-hidden="true" /> {{ $t('adminUi.sendEmail') }}</button>
               </div>
             </div>
           </div>
 
           <!-- Admin Controls -->
           <div class="section-card">
-            <h3 class="card-title-bar"><span class="title-sq"></span> ADMIN CONTROLS</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.adminControls') }}</h3>
             <div class="controls-grid">
               <button class="ctrl-card" @click="resetAllAlerts">
                 <PhBellSlash class="ctrl-card-icon ctrl-yellow" weight="regular" aria-hidden="true" />
-                <span class="ctrl-card-label">Dismiss Alerts</span>
+                <span class="ctrl-card-label">{{ $t('adminUi.dismissAlerts') }}</span>
               </button>
               <button class="ctrl-card" @click="switchTab('machines')">
                 <PhFactory class="ctrl-card-icon ctrl-purple" weight="regular" aria-hidden="true" />
-                <span class="ctrl-card-label">View Machine Report</span>
+                <span class="ctrl-card-label">{{ $t('adminUi.viewMachineReport') }}</span>
               </button>
               <button
                 class="ctrl-card"
                 :disabled="!collectionCandidates.length || requestingCollection"
-                :title="collectionCandidates.length ? 'Request collection for bins at or above 90%' : 'No bins are at or above 90%'"
+                :title="collectionCandidates.length ? $t('adminUi.requestCollectionTitle') : $t('adminUi.noBinsTitle')"
                 @click="requestBinCollection"
               >
                 <PhTrash class="ctrl-card-icon ctrl-gray" weight="regular" aria-hidden="true" />
                 <span class="ctrl-card-label">
                   {{ requestingCollection
-                    ? 'Sending Request...'
+                    ? $t('adminUi.sendingRequest')
                     : collectionCandidates.length
-                      ? `Request Bin Collection (${collectionCandidates.length})`
-                      : 'No Bins Need Collection' }}
+                      ? $t('adminUi.requestCollection', { n: collectionCandidates.length })
+                      : $t('adminUi.noBinsNeed') }}
                 </span>
               </button>
             </div>
@@ -299,11 +299,11 @@
       <div v-if="activeTab === 'transactions'" class="tab-content">
         <div class="section-card">
           <div class="tx-intro">
-            <h3 class="card-title-bar"><span class="title-sq"></span> TRANSACTION LOG</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.transactionLog') }}</h3>
             <p class="tx-help">
-              One row for every item put into a machine.
-              <strong class="tx-help-ok">Accepted</strong> items go into a bin and earn points.
-              <strong class="tx-help-rej">Rejected</strong> items are given back to the user with 0 points, nothing is taken away.
+              {{ $t('adminUi.txHelp1') }}
+              <strong class="tx-help-ok">{{ $t('adminUi.accepted') }}</strong> {{ $t('adminUi.txHelp2') }}
+              <strong class="tx-help-rej">{{ $t('adminUi.rejected') }}</strong> {{ $t('adminUi.txHelp3') }}
             </p>
           </div>
 
@@ -311,55 +311,55 @@
           <div class="tx-summary" aria-live="polite">
             <div class="tx-sum-card">
               <span class="tx-sum-value">{{ txNum(txSummary.items) }}</span>
-              <span class="tx-sum-label">Items</span>
+              <span class="tx-sum-label">{{ $t('adminUi.items') }}</span>
             </div>
             <div class="tx-sum-card tx-sum-ok">
               <span class="tx-sum-value">{{ txNum(txSummary.accepted) }}</span>
-              <span class="tx-sum-label">Accepted<template v-if="txSummary.items"> ({{ txPct(txSummary.accepted) }}%)</template></span>
+              <span class="tx-sum-label">{{ $t('adminUi.accepted') }}<template v-if="txSummary.items"> ({{ txPct(txSummary.accepted) }}%)</template></span>
             </div>
             <div class="tx-sum-card tx-sum-rej">
               <span class="tx-sum-value">{{ txNum(txSummary.rejected) }}</span>
-              <span class="tx-sum-label">Rejected<template v-if="txSummary.items"> ({{ txPct(txSummary.rejected) }}%)</template></span>
+              <span class="tx-sum-label">{{ $t('adminUi.rejected') }}<template v-if="txSummary.items"> ({{ txPct(txSummary.rejected) }}%)</template></span>
             </div>
             <div class="tx-sum-card">
               <span class="tx-sum-value">{{ txNum(txSummary.points) }}</span>
-              <span class="tx-sum-label">Points given</span>
+              <span class="tx-sum-label">{{ $t('adminUi.pointsGiven') }}</span>
             </div>
           </div>
-          <p class="tx-sum-note">{{ txFiltersActive ? 'Totals for the filters below.' : 'Totals for all transactions.' }}</p>
+          <p class="tx-sum-note">{{ txFiltersActive ? $t('adminUi.totalsFiltered') : $t('adminUi.totalsAll') }}</p>
 
           <!-- Filters, each with a visible label -->
           <div class="tx-filters">
             <div class="tx-field">
-              <span>Show</span>
-              <div class="tx-segment" role="group" aria-label="Show">
+              <span>{{ $t('adminUi.show') }}</span>
+              <div class="tx-segment" role="group" :aria-label="$t('adminUi.show')">
                 <button v-for="opt in TX_RESULT_OPTIONS" :key="opt.value" type="button"
                   :class="['tx-seg-btn', { active: txFilter === opt.value }]" :aria-pressed="txFilter === opt.value"
                   @click="setTxResult(opt.value)">{{ opt.label }}</button>
               </div>
             </div>
             <label class="tx-field tx-field-search">
-              <span>Search</span>
+              <span>{{ $t('adminUi.search') }}</span>
               <input v-model="txSearch" @input="debouncedTxSearch" @keyup.enter="searchTransactions"
-                type="search" placeholder="Name, email, user ID or material" class="search-input" />
+                type="search" :placeholder="$t('adminUi.txSearchPlaceholder')" class="search-input" />
             </label>
             <label class="tx-field">
-              <span>Machine</span>
+              <span>{{ $t('adminUi.machine') }}</span>
               <select v-model="txMachine" @change="filterTransactions" class="filter-select">
-                <option value="">All machines</option>
+                <option value="">{{ $t('adminUi.allMachines') }}</option>
                 <option v-for="m in adminMachines" :key="m.id" :value="m.id">{{ m.name }}</option>
               </select>
             </label>
             <label class="tx-field date-field picker-field" @click="openDatePicker">
-              <span>From</span>
+              <span>{{ $t('adminUi.from') }}</span>
               <input v-model="txDateFrom" type="date" @change="filterTransactions" />
             </label>
             <label class="tx-field date-field picker-field" @click="openDatePicker">
-              <span>To</span>
+              <span>{{ $t('adminUi.to') }}</span>
               <input v-model="txDateTo" type="date" @change="filterTransactions" />
             </label>
-            <button v-if="txFiltersActive" class="action-btn tx-clear" @click="clearTransactionFilters">Clear filters</button>
-            <button class="action-btn filter-action export-btn tx-export" :disabled="exportingTable === 'transactions'" @click="exportTable('transactions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'transactions' ? 'Exporting…' : 'Export Excel' }}</button>
+            <button v-if="txFiltersActive" class="action-btn tx-clear" @click="clearTransactionFilters">{{ $t('adminUi.clearFilters') }}</button>
+            <button class="action-btn filter-action export-btn tx-export" :disabled="exportingTable === 'transactions'" @click="exportTable('transactions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'transactions' ? $t('adminUi.exporting') : $t('adminUi.exportExcel') }}</button>
           </div>
 
           <div v-if="loadingTransactions" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -367,15 +367,15 @@
             <table class="data-table tx-table">
               <thead>
                 <tr>
-                  <th>When</th>
-                  <th>User</th>
-                  <th>Machine</th>
-                  <th>Item</th>
-                  <th>Result</th>
-                  <th title="How sure the AI was about the material. Below 60% the item is rejected.">
-                    AI confidence <span class="tx-th-hint" aria-hidden="true">?</span>
+                  <th>{{ $t('adminUi.colWhen') }}</th>
+                  <th>{{ $t('adminUi.colUser') }}</th>
+                  <th>{{ $t('adminUi.machine') }}</th>
+                  <th>{{ $t('adminUi.colItem') }}</th>
+                  <th>{{ $t('adminUi.colResult') }}</th>
+                  <th :title="$t('adminUi.aiConfidenceHint')">
+                    {{ $t('adminUi.aiConfidence') }} <span class="tx-th-hint" aria-hidden="true">?</span>
                   </th>
-                  <th class="num">Points</th>
+                  <th class="num">{{ $t('adminUi.colPoints') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,7 +399,7 @@
                     <span :class="['tx-badge', tx.is_valid ? 'tx-badge-ok' : 'tx-badge-rej']">
                       <PhCheckCircle v-if="tx.is_valid" weight="fill" aria-hidden="true" />
                       <PhXCircle v-else weight="fill" aria-hidden="true" />
-                      {{ tx.is_valid ? 'Accepted' : 'Rejected' }}
+                      {{ tx.is_valid ? $t('adminUi.accepted') : $t('adminUi.rejected') }}
                     </span>
                     <div class="tx-sub tx-reason">{{ txReason(tx) }}</div>
                   </td>
@@ -417,8 +417,8 @@
                 </tr>
                 <tr v-if="!transactions.length">
                   <td colspan="7" class="empty-cell">
-                    No items match these filters.
-                    <button v-if="txFiltersActive" class="tx-link-btn" @click="clearTransactionFilters">Clear filters</button>
+                    {{ $t('adminUi.noTxMatch') }}
+                    <button v-if="txFiltersActive" class="tx-link-btn" @click="clearTransactionFilters">{{ $t('adminUi.clearFilters') }}</button>
                   </td>
                 </tr>
               </tbody>
@@ -435,24 +435,24 @@
         <div v-if="loadingUsers" class="loading-overlay"><div class="spinner-lg"></div></div>
         <div v-else class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> ALL USERS</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.allUsers') }}</h3>
             <div class="topbar-right">
-              <input v-model="userSearch" @keyup.enter="searchUsers" placeholder="Search users... (press Enter)" class="search-input" />
-              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'users'" @click="exportTable('users')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'users' ? 'Exporting…' : 'Export Excel' }}</button>
+              <input v-model="userSearch" @keyup.enter="searchUsers" :placeholder="$t('adminUi.searchUsers')" class="search-input" />
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'users'" @click="exportTable('users')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'users' ? $t('adminUi.exporting') : $t('adminUi.exportExcel') }}</button>
             </div>
           </div>
           <div class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th class="sortable" @click="sortUsersBy('display_no')">ID{{ usersSortIndicator('display_no') }}</th>
-                  <th class="sortable" @click="sortUsersBy('name')">Name{{ usersSortIndicator('name') }}</th>
-                  <th class="sortable" @click="sortUsersBy('email')">Email{{ usersSortIndicator('email') }}</th>
-                  <th class="sortable" @click="sortUsersBy('total_points')">Points{{ usersSortIndicator('total_points') }}</th>
-                  <th class="sortable" @click="sortUsersBy('role')">Role{{ usersSortIndicator('role') }}</th>
-                  <th class="sortable" @click="sortUsersBy('is_verified')">Verified{{ usersSortIndicator('is_verified') }}</th>
-                  <th class="sortable" @click="sortUsersBy('created_at')">Created{{ usersSortIndicator('created_at') }}</th>
-                  <th>Actions</th>
+                  <th class="sortable" @click="sortUsersBy('display_no')">{{ $t('adminUi.colId') }}{{ usersSortIndicator('display_no') }}</th>
+                  <th class="sortable" @click="sortUsersBy('name')">{{ $t('adminUi.colName') }}{{ usersSortIndicator('name') }}</th>
+                  <th class="sortable" @click="sortUsersBy('email')">{{ $t('adminUi.colEmail') }}{{ usersSortIndicator('email') }}</th>
+                  <th class="sortable" @click="sortUsersBy('total_points')">{{ $t('adminUi.colPoints') }}{{ usersSortIndicator('total_points') }}</th>
+                  <th class="sortable" @click="sortUsersBy('role')">{{ $t('adminUi.colRole') }}{{ usersSortIndicator('role') }}</th>
+                  <th class="sortable" @click="sortUsersBy('is_verified')">{{ $t('adminUi.colVerified') }}{{ usersSortIndicator('is_verified') }}</th>
+                  <th class="sortable" @click="sortUsersBy('created_at')">{{ $t('adminUi.colCreated') }}{{ usersSortIndicator('created_at') }}</th>
+                  <th>{{ $t('adminUi.colActions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -467,8 +467,8 @@
                   <td class="muted">{{ user.email || user.phone }}</td>
                   <td class="pts-green">{{ user.total_points?.toLocaleString() }}</td>
                   <td>
-                    <span :class="['role-badge', 'role-' + user.role]">{{ user.role }}</span>
-                    <span v-if="user.account_status === 'suspended'" class="suspended-badge">suspended</span>
+                    <span :class="['role-badge', 'role-' + user.role]">{{ user.role === 'admin' ? $t('adminUi.roleAdmin') : $t('adminUi.roleUser') }}</span>
+                    <span v-if="user.account_status === 'suspended'" class="suspended-badge">{{ $t('adminUi.suspended') }}</span>
                   </td>
                   <td>
                     <PhCheckCircle v-if="user.is_verified" class="verified-icon verified-yes" weight="regular" aria-hidden="true" />
@@ -479,22 +479,22 @@
                     <div class="user-actions">
                       <button class="action-btn edit-btn" @click="editUser(user)">
                         <PhPencilSimple class="user-action-icon" weight="regular" aria-hidden="true" />
-                        Edit
+                        {{ $t('adminUi.edit') }}
                       </button>
                       <button v-if="user.id !== auth.user?.id"
                               :class="['action-btn', user.account_status === 'suspended' ? 'reactivate-btn' : 'suspend-btn']"
                               @click="toggleSuspend(user)">
-                        {{ user.account_status === 'suspended' ? 'Reactivate' : 'Suspend' }}
+                        {{ user.account_status === 'suspended' ? $t('adminUi.reactivate') : $t('adminUi.suspend') }}
                       </button>
                       <button class="action-btn del-btn" @click="deleteUser(user.id)">
                         <PhTrash class="user-action-icon" weight="regular" aria-hidden="true" />
-                        Delete
+                        {{ $t('adminUi.delete') }}
                       </button>
                     </div>
                   </td>
                 </tr>
                 <tr v-if="!users.length">
-                  <td colspan="8" class="empty-cell">No users found</td>
+                  <td colspan="8" class="empty-cell">{{ $t('adminUi.noUsers') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -509,7 +509,7 @@
       <div v-if="activeTab === 'machines'" class="tab-content">
         <!-- Reward Points Configuration -->
         <div class="section-card">
-          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> REWARD POINTS CONFIGURATION</h3>
+          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> {{ $t('adminUi.rewardPointsConfig') }}</h3>
           <div class="reward-materials">
             <div class="reward-mat-card" v-for="mat in rewardMaterials" :key="mat.key">
               <div class="reward-mat-label">
@@ -519,7 +519,7 @@
               <div class="reward-mat-control">
                 <input class="reward-input" type="number" v-model.number="rewardEditValues[mat.key]" min="0" max="9999" />
                 <button class="update-btn" @click="updateReward(mat.key)" :disabled="savingReward === mat.key">
-                  {{ savingReward === mat.key ? '...' : 'Update' }}
+                  {{ savingReward === mat.key ? '...' : $t('adminUi.update') }}
                 </button>
               </div>
             </div>
@@ -528,30 +528,29 @@
 
         <!-- 2-bin compactor: max items per material per session (= one compactor batch) -->
         <div class="section-card">
-          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> COMPACTOR SETTINGS</h3>
+          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> {{ $t('adminUi.compactorSettings') }}</h3>
           <p class="compactor-hint">
-            How many items of each material one session may put in. The compactor presses a batch
-            at this number, and the kiosk ends the session by itself once a material reaches it.
+            {{ $t('adminUi.compactorHint') }}
           </p>
           <div class="form-row">
             <div class="form-group">
-              <label>Max plastic per session <span class="label-hint">1–10</span></label>
+              <label>{{ $t('adminUi.maxPlastic') }} <span class="label-hint">1–10</span></label>
               <input v-model.number="compactorSettings.plastic" type="number" min="1" max="10" step="1" />
             </div>
             <div class="form-group">
-              <label>Max aluminum per session <span class="label-hint">1–10</span></label>
+              <label>{{ $t('adminUi.maxAluminum') }} <span class="label-hint">1–10</span></label>
               <input v-model.number="compactorSettings.aluminum" type="number" min="1" max="10" step="1" />
             </div>
           </div>
           <button class="add-btn" :disabled="savingCompactorSettings" @click="saveCompactorSettings">
-            {{ savingCompactorSettings ? 'Saving...' : 'Save' }}
+            {{ savingCompactorSettings ? $t('adminUi.saving') : $t('adminUi.save') }}
           </button>
         </div>
 
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> RVM MACHINES</h3>
-            <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.rvmMachines') }}</h3>
+            <button class="add-btn" @click="openAddMachine">{{ $t('adminUi.addMachine') }}</button>
           </div>
           <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-if="machineOrderDirty" class="machine-order-actions">
@@ -573,7 +572,7 @@
                   <span v-if="machine.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span>
                 </div>
                 <div class="machine-header-actions">
-                  <span :class="['status-badge', 'status-' + machine.status]">{{ machine.status }}</span>
+                  <span :class="['status-badge', 'status-' + machine.status]">{{ statusLabel(machine.status) }}</span>
                   <div v-if="orderedMachines.length > 1" class="machine-order-buttons">
                     <button type="button" class="action-btn" :disabled="savingMachineOrder || index === 0"
                             :aria-label="$t('machineOrder.moveUp', { card: machine.name })"
@@ -584,12 +583,12 @@
                   </div>
                 </div>
               </div>
-              <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ machine.location_name || 'No location set' }}</p>
+              <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ machine.location_name || $t('adminUi.noLocation') }}</p>
               <p class="machine-heartbeat">
                 <span :class="['hb-dot', 'hb-' + machineConnectivity(machine, nowTick)]"></span>
-                <template v-if="machineConnectivity(machine, nowTick) === 'never'">Never reported</template>
-                <template v-else>{{ machineConnectivity(machine, nowTick) === 'online' ? 'Online' : 'Offline' }} · last seen {{ relativeTime(machine.last_seen_at) }}</template>
-                <span v-if="machine.fault_active" class="fault-badge">FAULT{{ machine.fault_reason ? ': ' + machine.fault_reason : '' }}</span>
+                <template v-if="machineConnectivity(machine, nowTick) === 'never'">{{ $t('adminUi.neverReported') }}</template>
+                <template v-else>{{ machineConnectivity(machine, nowTick) === 'online' ? $t('adminUi.onlineWord') : $t('adminUi.offline') }} · {{ $t('adminUi.lastSeenSuffix', { time: relativeTime(machine.last_seen_at) }) }}</template>
+                <span v-if="machine.fault_active" class="fault-badge">{{ $t('adminUi.fault') }}{{ machine.fault_reason ? ': ' + machine.fault_reason : '' }}</span>
               </p>
               <div class="kiosk-link-row">
                 <PhLink weight="regular" aria-hidden="true" />
@@ -619,26 +618,26 @@
               <div class="machine-actions">
                 <div class="machine-actions-grid">
                   <button class="action-btn machine-btn edit-btn" @click="openEditMachine(machine)">
-                    <PhPencilSimple weight="regular" aria-hidden="true" /> Edit
+                    <PhPencilSimple weight="regular" aria-hidden="true" /> {{ $t('adminUi.edit') }}
                   </button>
                   <button class="action-btn machine-btn maint-btn" @click="openMaintenance(machine)">
-                    <PhWrench weight="regular" aria-hidden="true" /> Maintenance
+                    <PhWrench weight="regular" aria-hidden="true" /> {{ $t('adminUi.maintenance') }}
                   </button>
                   <button class="action-btn machine-btn" @click="resetBins(machine)">
-                    <PhArrowCounterClockwise weight="regular" aria-hidden="true" /> Reset Bins
+                    <PhArrowCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.resetBins') }}
                   </button>
                   <button class="action-btn machine-btn" @click="historyMachine = machine">
-                    <PhClockCounterClockwise weight="regular" aria-hidden="true" /> Service History
+                    <PhClockCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.serviceHistoryBtn') }}
                   </button>
                 </div>
                 <button class="action-btn machine-btn machine-delete" @click="deleteMachine(machine.id)">
-                  <PhTrash weight="regular" aria-hidden="true" /> Delete machine
+                  <PhTrash weight="regular" aria-hidden="true" /> {{ $t('adminUi.deleteMachine') }}
                 </button>
               </div>
             </div>
             <div v-if="!adminMachines.length" class="empty-machines">
-              <p>No machines registered. Add your first RVM machine.</p>
-              <button class="add-btn" @click="openAddMachine">+ Add Machine</button>
+              <p>{{ $t('adminUi.noMachines') }}</p>
+              <button class="add-btn" @click="openAddMachine">{{ $t('adminUi.addMachine') }}</button>
             </div>
           </div>
         </div>
@@ -648,10 +647,10 @@
       <div v-if="activeTab === 'sessions'" class="tab-content">
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> ALL SESSIONS</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.allSessions') }}</h3>
             <div class="topbar-right">
-              <input v-model="sessionsSearch" @keyup.enter="searchSessions" placeholder="Search user / machine / status... (press Enter)" class="search-input" />
-              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'sessions'" @click="exportTable('sessions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'sessions' ? 'Exporting…' : 'Export Excel' }}</button>
+              <input v-model="sessionsSearch" @keyup.enter="searchSessions" :placeholder="$t('adminUi.searchSessions')" class="search-input" />
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'sessions'" @click="exportTable('sessions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'sessions' ? $t('adminUi.exporting') : $t('adminUi.exportExcel') }}</button>
             </div>
           </div>
           <div v-if="loadingSessions" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -659,21 +658,21 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Code</th><th>User</th><th>Machine</th><th>Status</th><th>Items</th><th>Points</th><th>Started</th>
+                  <th>{{ $t('adminUi.colCode') }}</th><th>{{ $t('adminUi.colUser') }}</th><th>{{ $t('adminUi.machine') }}</th><th>{{ $t('adminUi.colStatus') }}</th><th>{{ $t('adminUi.colItems') }}</th><th>{{ $t('adminUi.colPoints') }}</th><th>{{ $t('adminUi.colStarted') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="s in sessions" :key="s.id">
                   <td class="mono small">{{ s.session_code }}</td>
-                  <td>{{ s.user?.name || 'Guest' }}</td>
+                  <td>{{ s.user?.name || $t('adminUi.guest') }}</td>
                   <td>{{ s.machine?.name || '—' }} <span v-if="s.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span></td>
-                  <td><span :class="['status-badge', 'status-' + s.status]">{{ s.status }}</span></td>
+                  <td><span :class="['status-badge', 'status-' + s.status]">{{ statusLabel(s.status) }}</span></td>
                   <td>{{ s.total_items }}</td>
                   <td class="pts-green">+{{ s.points_earned }}</td>
                   <td class="muted small">{{ formatDate(s.started_at) }}</td>
                 </tr>
                 <tr v-if="!sessions.length">
-                  <td colspan="7" class="empty-cell">No sessions found</td>
+                  <td colspan="7" class="empty-cell">{{ $t('adminUi.noSessions') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -688,11 +687,11 @@
       <div v-if="activeTab === 'audit'" class="tab-content">
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> AUDIT LOG</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.auditLog') }}</h3>
             <div class="topbar-right">
-              <input v-model="auditSearch" @keyup.enter="searchAudit" placeholder="Search admin / action / details... (press Enter)" class="search-input" />
+              <input v-model="auditSearch" @keyup.enter="searchAudit" :placeholder="$t('adminUi.searchAudit')" class="search-input" />
               <select v-model="auditAction" @change="searchAudit" class="filter-select">
-                <option value="">All actions</option>
+                <option value="">{{ $t('adminUi.allActions') }}</option>
                 <option v-for="a in auditActions" :key="a" :value="a">{{ auditActionLabel(a) }}</option>
               </select>
             </div>
@@ -700,17 +699,17 @@
           <div class="filter-toolbar">
             <div class="date-range">
               <label class="date-field picker-field" @click="openDatePicker">
-                <span>From</span>
+                <span>{{ $t('adminUi.from') }}</span>
                 <input v-model="auditDateFrom" type="date" @change="searchAudit" />
               </label>
               <label class="date-field picker-field" @click="openDatePicker">
-                <span>To</span>
+                <span>{{ $t('adminUi.to') }}</span>
                 <input v-model="auditDateTo" type="date" @change="searchAudit" />
               </label>
             </div>
             <!-- After the filters, so the order reads "filter, then export" on a phone too. -->
             <div class="filter-actions">
-              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'audit'" @click="exportTable('audit')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'audit' ? 'Exporting…' : 'Export Excel' }}</button>
+              <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'audit'" @click="exportTable('audit')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'audit' ? $t('adminUi.exporting') : $t('adminUi.exportExcel') }}</button>
             </div>
           </div>
           <div v-if="loadingAudit" class="loading-overlay"><div class="spinner-lg"></div></div>
@@ -718,7 +717,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>Details</th>
+                  <th>{{ $t('adminUi.colTime') }}</th><th>{{ $t('adminUi.colAdmin') }}</th><th>{{ $t('adminUi.colAction') }}</th><th>{{ $t('adminUi.colTarget') }}</th><th>{{ $t('adminUi.colDetails') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -730,7 +729,7 @@
                   <td>{{ row.message || '—' }}</td>
                 </tr>
                 <tr v-if="!auditRows.length">
-                  <td colspan="5" class="empty-cell">No admin activity found</td>
+                  <td colspan="5" class="empty-cell">{{ $t('adminUi.noAudit') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -828,7 +827,7 @@
                     {{ log.ground_truth_correct ? $t('admin.detectionReview.correct') : $t('admin.detectionReview.incorrect') }}
                   </span>
                 </div>
-                <p class="detection-result">{{ log.ai_detected_type || 'unknown' }} — {{ Math.round((log.ai_confidence || 0) * 100) }}%</p>
+                <p class="detection-result">{{ log.ai_detected_type ? materialName(log.ai_detected_type) : $t('adminUi.unknownMaterial') }} — {{ Math.round((log.ai_confidence || 0) * 100) }}%</p>
                 <p class="detection-time">{{ formatDate(log.created_at) }}</p>
                 <div v-if="detectionView === 'history'" class="review-history-meta">
                   <p><span>{{ $t('admin.detectionReview.actualMaterial') }}:</span> {{ materialLabel(log.ground_truth_label) }}</p>
@@ -861,19 +860,19 @@
       <!-- ── REWARDS ── -->
       <div v-if="activeTab === 'rewards'" class="tab-content">
         <div class="section-card">
-          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> CASH REDEEM SETTINGS</h3>
-          <div class="form-group"><label>Points per Unit</label><input v-model.number="cashRedeemSettings.points_per_unit" type="number" min="1" /></div>
-          <div class="form-group"><label>RM per Unit</label><input v-model.number="cashRedeemSettings.rm_per_unit" type="number" min="0.01" step="0.01" /></div>
-          <div class="form-group"><label>Minimum Points</label><input v-model.number="cashRedeemSettings.min_points" type="number" min="1" /></div>
+          <h3 class="card-title-bar"><span class="title-sq title-sq-yellow"></span> {{ $t('adminUi.cashRedeemSettings') }}</h3>
+          <div class="form-group"><label>{{ $t('adminUi.pointsPerUnit') }}</label><input v-model.number="cashRedeemSettings.points_per_unit" type="number" min="1" /></div>
+          <div class="form-group"><label>{{ $t('adminUi.rmPerUnit') }}</label><input v-model.number="cashRedeemSettings.rm_per_unit" type="number" min="0.01" step="0.01" /></div>
+          <div class="form-group"><label>{{ $t('adminUi.minimumPoints') }}</label><input v-model.number="cashRedeemSettings.min_points" type="number" min="1" /></div>
           <button class="add-btn" :disabled="savingCashRedeemSettings" @click="saveCashRedeemSettings">
-            {{ savingCashRedeemSettings ? 'Saving...' : 'Save' }}
+            {{ savingCashRedeemSettings ? $t('adminUi.saving') : $t('adminUi.save') }}
           </button>
         </div>
 
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> REWARD CATALOG</h3>
-            <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.rewardCatalog') }}</h3>
+            <button class="add-btn" @click="openAddRewardItem">{{ $t('adminUi.addReward') }}</button>
           </div>
           <div v-if="loadingRewardItems" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-else class="reward-admin-grid">
@@ -885,19 +884,19 @@
                   <span v-if="item.category" class="reward-admin-badge">{{ item.category }}</span>
                 </div>
                 <span :class="['status-badge', item.is_active ? 'status-active' : 'status-inactive']">
-                  {{ item.is_active ? 'active' : 'inactive' }}
+                  {{ item.is_active ? $t('adminUi.statusActiveWord') : $t('adminUi.statusInactiveWord') }}
                 </span>
               </div>
               <p class="reward-admin-sub" v-if="item.description">{{ item.description }}</p>
-              <p class="reward-admin-sub"><PhStar weight="regular" aria-hidden="true" /> {{ item.points_cost }} pts · {{ item.stock === null ? 'Unlimited stock' : `${item.stock} in stock` }}</p>
+              <p class="reward-admin-sub"><PhStar weight="regular" aria-hidden="true" /> {{ item.points_cost }} {{ $t('adminUi.pts') }} · {{ item.stock === null ? $t('adminUi.unlimitedStock') : $t('adminUi.inStock', { n: item.stock }) }}</p>
               <div class="reward-admin-actions">
-                <button class="action-btn edit-btn" @click="openEditRewardItem(item)">Edit</button>
-                <button class="action-btn del-btn" @click="deleteRewardItem(item.id)">Delete</button>
+                <button class="action-btn edit-btn" @click="openEditRewardItem(item)">{{ $t('adminUi.edit') }}</button>
+                <button class="action-btn del-btn" @click="deleteRewardItem(item.id)">{{ $t('adminUi.delete') }}</button>
               </div>
             </div>
             <div v-if="!rewardItems.length" class="empty-rewards">
-              <p>No reward items yet. Add your first one.</p>
-              <button class="add-btn" @click="openAddRewardItem">+ Add Reward</button>
+              <p>{{ $t('adminUi.noRewardItems') }}</p>
+              <button class="add-btn" @click="openAddRewardItem">{{ $t('adminUi.addReward') }}</button>
             </div>
           </div>
           <AdminPagination :current-page="rewardItemsPage" :last-page="rewardItemsLastPage"
@@ -907,13 +906,13 @@
 
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> REDEMPTION HISTORY</h3>
-            <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'redemptions'" @click="exportTable('redemptions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'redemptions' ? 'Exporting…' : 'Export Excel' }}</button>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.redemptionHistory') }}</h3>
+            <button class="action-btn filter-action export-btn" :disabled="exportingTable === 'redemptions'" @click="exportTable('redemptions')"><PhDownloadSimple weight="regular" aria-hidden="true" /> {{ exportingTable === 'redemptions' ? $t('adminUi.exporting') : $t('adminUi.exportExcel') }}</button>
           </div>
           <div class="table-wrap">
             <table class="data-table">
               <thead>
-                <tr><th>User</th><th>Reward</th><th>Points Spent</th><th>E-Wallet</th><th>Date</th></tr>
+                <tr><th>{{ $t('adminUi.colUser') }}</th><th>{{ $t('adminUi.colReward') }}</th><th>{{ $t('adminUi.colPointsSpent') }}</th><th>{{ $t('adminUi.colEwallet') }}</th><th>{{ $t('adminUi.colDate') }}</th></tr>
               </thead>
               <tbody>
                 <tr v-for="r in adminRedemptions" :key="r.id">
@@ -924,7 +923,7 @@
                   <td class="muted small">{{ formatDate(r.created_at) }}</td>
                 </tr>
                 <tr v-if="!adminRedemptions.length">
-                  <td colspan="5" class="empty-cell">No redemptions yet</td>
+                  <td colspan="5" class="empty-cell">{{ $t('adminUi.noRedemptions') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -941,34 +940,34 @@
     <!-- ── Edit User Modal ── -->
     <div v-if="editingUser" class="modal-overlay" @click.self="editingUser = null">
       <div class="modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="editingUser = null">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="editingUser = null">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Edit User</h3>
+        <h3>{{ $t('adminUi.editUser') }}</h3>
         <div class="form-group">
-          <label>Name</label>
+          <label>{{ $t('adminUi.colName') }}</label>
           <input v-model="editingUser.name" type="text" />
         </div>
         <div class="form-group">
-          <label>Total Points</label>
+          <label>{{ $t('adminUi.totalPoints') }}</label>
           <input v-model.number="editingUser.total_points" type="number" />
         </div>
         <div class="form-group">
-          <label>Role</label>
+          <label>{{ $t('adminUi.colRole') }}</label>
           <select v-model="editingUser.role">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="user">{{ $t('adminUi.optUser') }}</option>
+            <option value="admin">{{ $t('adminUi.optAdmin') }}</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Verified</label>
+          <label>{{ $t('adminUi.colVerified') }}</label>
           <select v-model="editingUser.is_verified">
-            <option :value="1">Yes</option>
-            <option :value="0">No</option>
+            <option :value="1">{{ $t('adminUi.yes') }}</option>
+            <option :value="0">{{ $t('adminUi.no') }}</option>
           </select>
         </div>
         <div class="modal-actions">
-          <button class="action-btn edit-btn" @click="saveUser">Save</button>
+          <button class="action-btn edit-btn" @click="saveUser">{{ $t('adminUi.save') }}</button>
         </div>
       </div>
     </div>
@@ -990,7 +989,7 @@
           <PhCamera v-else class="review-modal-image placeholder" weight="regular" aria-hidden="true" />
           <div class="review-modal-prediction">
             <span>{{ $t('admin.detectionReview.aiPrediction') }}</span>
-            <strong>{{ reviewingDetection.ai_detected_type || 'unknown' }} — {{ Math.round((reviewingDetection.ai_confidence || 0) * 100) }}%</strong>
+            <strong>{{ reviewingDetection.ai_detected_type ? materialName(reviewingDetection.ai_detected_type) : $t('adminUi.unknownMaterial') }} — {{ Math.round((reviewingDetection.ai_confidence || 0) * 100) }}%</strong>
           </div>
         </div>
         <p class="actual-material-prompt">{{ $t('admin.detectionReview.selectActual') }}</p>
@@ -1018,7 +1017,7 @@
           class="detection-viewer-image" :alt="$t('admin.detectionReview.captureAlt')" />
         <div class="detection-viewer-caption">
           <span>{{ $t('admin.detectionReview.aiPrediction') }}</span>
-          <strong>{{ viewingDetection.ai_detected_type || 'unknown' }} — {{ Math.round((viewingDetection.ai_confidence || 0) * 100) }}%</strong>
+          <strong>{{ viewingDetection.ai_detected_type ? materialName(viewingDetection.ai_detected_type) : $t('adminUi.unknownMaterial') }} — {{ Math.round((viewingDetection.ai_confidence || 0) * 100) }}%</strong>
           <small>{{ formatDate(viewingDetection.created_at) }}</small>
         </div>
         <div v-if="detectionView === 'pending'" class="detection-actions detection-viewer-actions">
@@ -1040,37 +1039,37 @@
 
     <div v-if="showAddMachine" class="modal-overlay" @click.self="showAddMachine = false">
       <div class="modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="showAddMachine = false">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="showAddMachine = false">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Add New Machine</h3>
+        <h3>{{ $t('adminUi.addNewMachine') }}</h3>
         <div class="form-group">
-          <label>Machine Code *</label>
-          <input v-model="newMachine.machine_code" type="text" placeholder="e.g. RVM-001" />
+          <label>{{ $t('adminUi.machineCodeReq') }}</label>
+          <input v-model="newMachine.machine_code" type="text" :placeholder="$t('adminUi.egMachineCode')" />
         </div>
         <div class="form-group">
-          <label>Machine Name *</label>
-          <input v-model="newMachine.name" type="text" placeholder="e.g. RVM Lobby A" />
+          <label>{{ $t('adminUi.machineNameReq') }}</label>
+          <input v-model="newMachine.name" type="text" :placeholder="$t('adminUi.egMachineName')" />
         </div>
         <div class="form-group">
-          <label>Location</label>
-          <input v-model="newMachine.location_name" type="text" placeholder="e.g. Block A, Ground Floor" />
+          <label>{{ $t('adminUi.location') }}</label>
+          <input v-model="newMachine.location_name" type="text" :placeholder="$t('adminUi.egLocation')" />
         </div>
         <div class="form-group">
-          <label>Status</label>
+          <label>{{ $t('adminUi.colStatus') }}</label>
           <select v-model="newMachine.status">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="maintenance">Maintenance</option>
+            <option value="active">{{ $t('adminUi.optActive') }}</option>
+            <option value="inactive">{{ $t('adminUi.optInactive') }}</option>
+            <option value="maintenance">{{ $t('adminUi.optMaintenance') }}</option>
           </select>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Latitude</label>
+            <label>{{ $t('adminUi.latitude') }}</label>
             <input v-model="newMachine.latitude" type="number" step="any" placeholder="3.1234" />
           </div>
           <div class="form-group">
-            <label>Longitude</label>
+            <label>{{ $t('adminUi.longitude') }}</label>
             <input v-model="newMachine.longitude" type="number" step="any" placeholder="103.1234" />
           </div>
         </div>
@@ -1081,7 +1080,7 @@
         <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
           <button class="action-btn edit-btn" @click="addMachine" :disabled="savingMachine">
-            {{ savingMachine ? 'Adding...' : 'Add Machine' }}
+            {{ savingMachine ? $t('adminUi.adding') : $t('adminUi.addMachineBtn') }}
           </button>
         </div>
       </div>
@@ -1090,30 +1089,30 @@
     <!-- ── Add Reward Modal ── -->
     <div v-if="showAddRewardItem" class="modal-overlay" @click.self="showAddRewardItem = false">
       <div class="modal reward-modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="showAddRewardItem = false">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="showAddRewardItem = false">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Add Reward</h3>
-        <div class="form-group"><label>Name *</label><input v-model="newRewardItem.name" type="text" /></div>
-        <div class="form-group"><label>Description</label><input v-model="newRewardItem.description" type="text" /></div>
-        <div class="form-group"><label>Category</label><input v-model="newRewardItem.category" type="text" placeholder="e.g. Food Voucher" /></div>
+        <h3>{{ $t('adminUi.addRewardTitle') }}</h3>
+        <div class="form-group"><label>{{ $t('adminUi.nameReq') }}</label><input v-model="newRewardItem.name" type="text" /></div>
+        <div class="form-group"><label>{{ $t('adminUi.description') }}</label><input v-model="newRewardItem.description" type="text" /></div>
+        <div class="form-group"><label>{{ $t('adminUi.category') }}</label><input v-model="newRewardItem.category" type="text" :placeholder="$t('adminUi.egCategory')" /></div>
         <div class="form-row">
-          <div class="form-group"><label>Points Cost *</label><input v-model.number="newRewardItem.points_cost" type="number" min="1" /></div>
-          <div class="form-group"><label>Stock <span class="label-hint">Optional</span></label><input v-model="newRewardItem.stock" type="number" min="0" placeholder="Unlimited" /></div>
+          <div class="form-group"><label>{{ $t('adminUi.pointsCostReq') }}</label><input v-model.number="newRewardItem.points_cost" type="number" min="1" /></div>
+          <div class="form-group"><label>{{ $t('adminUi.stock') }} <span class="label-hint">{{ $t('adminUi.optional') }}</span></label><input v-model="newRewardItem.stock" type="number" min="0" :placeholder="$t('adminUi.unlimited')" /></div>
         </div>
         <div class="form-row">
-          <div class="form-group picker-field" @click="openDatePicker"><label>Available From</label><input v-model="newRewardItem.valid_from" type="datetime-local" /></div>
-          <div class="form-group picker-field" @click="openDatePicker"><label>Available Until</label><input v-model="newRewardItem.valid_until" type="datetime-local" /></div>
+          <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableFrom') }}</label><input v-model="newRewardItem.valid_from" type="datetime-local" /></div>
+          <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableUntil') }}</label><input v-model="newRewardItem.valid_until" type="datetime-local" /></div>
         </div>
-        <div class="form-group"><label>Active</label><select v-model="newRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
+        <div class="form-group"><label>{{ $t('adminUi.activeLabel') }}</label><select v-model="newRewardItem.is_active"><option :value="true">{{ $t('adminUi.yes') }}</option><option :value="false">{{ $t('adminUi.no') }}</option></select></div>
         <div class="form-group">
-          <label>Image</label>
+          <label>{{ $t('adminUi.image') }}</label>
           <!-- Reward images are cropped to 4:3 so every card in the Rewards menu looks the same. -->
           <div v-if="rewardImagePreviewUrl" class="reward-image-preview">
             <img :src="rewardImagePreviewUrl" alt="" />
             <button type="button" class="action-btn edit-btn" @click="adjustRewardImage">
               <PhCrop weight="regular" aria-hidden="true" />
-              {{ rewardItemImageFile ? 'Adjust crop' : 'Adjust current image' }}
+              {{ rewardItemImageFile ? $t('adminUi.adjustCrop') : $t('adminUi.adjustCurrentImage') }}
             </button>
           </div>
           <label
@@ -1124,14 +1123,14 @@
             @drop.prevent="handleRewardImageDrop"
           >
             <PhUploadSimple class="upload-icon" weight="regular" aria-hidden="true" />
-            <strong>{{ rewardItemImageFile?.name || 'Drop image here or click to browse' }}</strong>
-            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG · cropped to 4:3 next' }}</span>
+            <strong>{{ rewardItemImageFile?.name || $t('adminUi.dropImage') }}</strong>
+            <span>{{ rewardItemImageFile ? $t('adminUi.dropAnother') : $t('adminUi.imageHint') }}</span>
             <input class="file-input-hidden" type="file" accept="image/jpeg,image/png" @change="handleRewardImageChange" />
           </label>
         </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
-          <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="addRewardItem">{{ savingRewardItem ? '...' : 'Add' }}</button>
+          <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="addRewardItem">{{ savingRewardItem ? '...' : $t('adminUi.add') }}</button>
         </div>
       </div>
     </div>
@@ -1139,30 +1138,30 @@
     <!-- ── Edit Reward Modal ── -->
     <div v-if="editingRewardItem" class="modal-overlay" @click.self="editingRewardItem = null">
       <div class="modal reward-modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="editingRewardItem = null">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="editingRewardItem = null">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Edit Reward</h3>
-        <div class="form-group"><label>Name *</label><input v-model="editingRewardItem.name" type="text" /></div>
-        <div class="form-group"><label>Description</label><input v-model="editingRewardItem.description" type="text" /></div>
-        <div class="form-group"><label>Category</label><input v-model="editingRewardItem.category" type="text" /></div>
+        <h3>{{ $t('adminUi.editRewardTitle') }}</h3>
+        <div class="form-group"><label>{{ $t('adminUi.nameReq') }}</label><input v-model="editingRewardItem.name" type="text" /></div>
+        <div class="form-group"><label>{{ $t('adminUi.description') }}</label><input v-model="editingRewardItem.description" type="text" /></div>
+        <div class="form-group"><label>{{ $t('adminUi.category') }}</label><input v-model="editingRewardItem.category" type="text" /></div>
         <div class="form-row">
-          <div class="form-group"><label>Points Cost *</label><input v-model.number="editingRewardItem.points_cost" type="number" min="1" /></div>
-          <div class="form-group"><label>Stock <span class="label-hint">Optional</span></label><input v-model="editingRewardItem.stock" type="number" min="0" placeholder="Unlimited" /></div>
+          <div class="form-group"><label>{{ $t('adminUi.pointsCostReq') }}</label><input v-model.number="editingRewardItem.points_cost" type="number" min="1" /></div>
+          <div class="form-group"><label>{{ $t('adminUi.stock') }} <span class="label-hint">{{ $t('adminUi.optional') }}</span></label><input v-model="editingRewardItem.stock" type="number" min="0" :placeholder="$t('adminUi.unlimited')" /></div>
         </div>
         <div class="form-row">
-          <div class="form-group picker-field" @click="openDatePicker"><label>Available From</label><input v-model="editingRewardItem.valid_from" type="datetime-local" /></div>
-          <div class="form-group picker-field" @click="openDatePicker"><label>Available Until</label><input v-model="editingRewardItem.valid_until" type="datetime-local" /></div>
+          <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableFrom') }}</label><input v-model="editingRewardItem.valid_from" type="datetime-local" /></div>
+          <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableUntil') }}</label><input v-model="editingRewardItem.valid_until" type="datetime-local" /></div>
         </div>
-        <div class="form-group"><label>Active</label><select v-model="editingRewardItem.is_active"><option :value="true">Yes</option><option :value="false">No</option></select></div>
+        <div class="form-group"><label>{{ $t('adminUi.activeLabel') }}</label><select v-model="editingRewardItem.is_active"><option :value="true">{{ $t('adminUi.yes') }}</option><option :value="false">{{ $t('adminUi.no') }}</option></select></div>
         <div class="form-group">
-          <label>Replace Image</label>
+          <label>{{ $t('adminUi.replaceImage') }}</label>
           <!-- Reward images are cropped to 4:3 so every card in the Rewards menu looks the same. -->
           <div v-if="rewardImagePreviewUrl" class="reward-image-preview">
             <img :src="rewardImagePreviewUrl" alt="" />
             <button type="button" class="action-btn edit-btn" @click="adjustRewardImage">
               <PhCrop weight="regular" aria-hidden="true" />
-              {{ rewardItemImageFile ? 'Adjust crop' : 'Adjust current image' }}
+              {{ rewardItemImageFile ? $t('adminUi.adjustCrop') : $t('adminUi.adjustCurrentImage') }}
             </button>
           </div>
           <label
@@ -1173,14 +1172,14 @@
             @drop.prevent="handleRewardImageDrop"
           >
             <PhUploadSimple class="upload-icon" weight="regular" aria-hidden="true" />
-            <strong>{{ rewardItemImageFile?.name || 'Drop replacement image here or click to browse' }}</strong>
-            <span>{{ rewardItemImageFile ? 'Click or drop another image to replace it' : 'PNG or JPG · cropped to 4:3 next · leave empty to keep current image' }}</span>
+            <strong>{{ rewardItemImageFile?.name || $t('adminUi.dropReplacement') }}</strong>
+            <span>{{ rewardItemImageFile ? $t('adminUi.dropAnother') : $t('adminUi.imageHintKeep') }}</span>
             <input class="file-input-hidden" type="file" accept="image/jpeg,image/png" @change="handleRewardImageChange" />
           </label>
         </div>
         <p v-if="rewardItemError" class="msg msg-err">{{ rewardItemError }}</p>
         <div class="modal-actions">
-          <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="saveRewardItem">{{ savingRewardItem ? '...' : 'Save' }}</button>
+          <button class="action-btn edit-btn" :disabled="savingRewardItem" @click="saveRewardItem">{{ savingRewardItem ? '...' : $t('adminUi.save') }}</button>
         </div>
       </div>
     </div>
@@ -1205,37 +1204,37 @@
     <!-- ── Edit Machine Modal ── -->
     <div v-if="editingMachine" class="modal-overlay" @click.self="editingMachine = null">
       <div class="modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="editingMachine = null">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="editingMachine = null">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Edit Machine</h3>
+        <h3>{{ $t('adminUi.editMachine') }}</h3>
         <div class="form-group">
-          <label>Machine Code</label>
+          <label>{{ $t('adminUi.machineCode') }}</label>
           <input v-model="editingMachine.machine_code" type="text" disabled class="input-disabled" />
         </div>
         <div class="form-group">
-          <label>Machine Name *</label>
+          <label>{{ $t('adminUi.machineNameReq') }}</label>
           <input v-model="editingMachine.name" type="text" />
         </div>
         <div class="form-group">
-          <label>Location</label>
+          <label>{{ $t('adminUi.location') }}</label>
           <input v-model="editingMachine.location_name" type="text" />
         </div>
         <div class="form-group">
-          <label>Status</label>
+          <label>{{ $t('adminUi.colStatus') }}</label>
           <select v-model="editingMachine.status">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="maintenance">Maintenance</option>
+            <option value="active">{{ $t('adminUi.optActive') }}</option>
+            <option value="inactive">{{ $t('adminUi.optInactive') }}</option>
+            <option value="maintenance">{{ $t('adminUi.optMaintenance') }}</option>
           </select>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Latitude</label>
+            <label>{{ $t('adminUi.latitude') }}</label>
             <input v-model="editingMachine.latitude" type="number" step="any" />
           </div>
           <div class="form-group">
-            <label>Longitude</label>
+            <label>{{ $t('adminUi.longitude') }}</label>
             <input v-model="editingMachine.longitude" type="number" step="any" />
           </div>
         </div>
@@ -1246,7 +1245,7 @@
         <p v-if="machineError" class="form-error">{{ machineError }}</p>
         <div class="modal-actions">
           <button class="action-btn edit-btn" @click="saveMachine" :disabled="savingMachine">
-            {{ savingMachine ? 'Saving...' : 'Save Changes' }}
+            {{ savingMachine ? $t('adminUi.saving') : $t('adminUi.saveChanges') }}
           </button>
         </div>
       </div>
@@ -1255,14 +1254,12 @@
     <!-- ── Kiosk Maintenance Modal ── -->
     <div v-if="maintainingMachine" class="modal-overlay" @click.self="closeMaintenance">
       <div class="modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="closeMaintenance">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="closeMaintenance">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Kiosk Maintenance — {{ maintainingMachine.name }}</h3>
+        <h3>{{ $t('adminUi.kioskMaintenance', { name: maintainingMachine.name }) }}</h3>
         <p class="maint-hint">
-          Scan the QR code currently shown on this kiosk's own screen to confirm
-          you're physically at the machine. Its Chromium will close immediately
-          and stay closed until the machine is rebooted or logged in again.
+          {{ $t('adminUi.maintHint') }}
         </p>
 
         <div class="qr-frame" :class="{ 'camera-active': maintCameraActive }">
@@ -1275,15 +1272,15 @@
         </div>
 
         <button class="camera-btn" @click="toggleMaintCamera" :disabled="maintLoading">
-          {{ maintCameraActive ? 'Close Camera' : 'Open Camera' }}
+          {{ maintCameraActive ? $t('adminUi.closeCamera') : $t('adminUi.openCamera') }}
         </button>
 
         <div class="form-group" style="margin-top: 14px">
-          <label>Or paste the QR token manually</label>
+          <label>{{ $t('adminUi.pasteToken') }}</label>
           <input
             v-model="maintTokenInput"
             type="text"
-            placeholder="e.g. AB12CD"
+            :placeholder="$t('adminUi.egToken')"
             @keyup.enter="submitMaintenance"
           />
         </div>
@@ -1292,7 +1289,7 @@
 
         <div class="modal-actions">
           <button class="action-btn del-btn" @click="submitMaintenance" :disabled="maintLoading || !maintTokenInput.trim()">
-            {{ maintLoading ? 'Closing...' : 'Confirm & Close Kiosk' }}
+            {{ maintLoading ? $t('adminUi.closing') : $t('adminUi.confirmCloseKiosk') }}
           </button>
         </div>
       </div>
@@ -1301,18 +1298,18 @@
     <!-- ── Email Report Modal ── -->
     <div v-if="showEmailReportModal" class="modal-overlay" @click.self="showEmailReportModal = false">
       <div class="modal">
-        <button class="modal-close-btn" aria-label="Close modal" :disabled="sendingReportEmail" @click="showEmailReportModal = false">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" :disabled="sendingReportEmail" @click="showEmailReportModal = false">
           <PhX weight="bold" aria-hidden="true" />
         </button>
-        <h3>Send Report via Email</h3>
+        <h3>{{ $t('adminUi.sendReportEmail') }}</h3>
         <div class="form-group">
-          <label>Recipient Email *</label>
-          <input v-model="emailReportAddress" type="email" placeholder="e.g. swcorp@example.com" />
+          <label>{{ $t('adminUi.recipientEmail') }}</label>
+          <input v-model="emailReportAddress" type="email" :placeholder="$t('adminUi.egEmail')" />
         </div>
         <p v-if="emailReportError" class="form-error">{{ emailReportError }}</p>
         <div class="modal-actions">
           <button class="action-btn edit-btn" :disabled="sendingReportEmail" @click="sendReportEmail">
-            {{ sendingReportEmail ? 'Sending...' : 'Send' }}
+            {{ sendingReportEmail ? $t('adminUi.sending') : $t('adminUi.send') }}
           </button>
         </div>
       </div>
@@ -1321,7 +1318,7 @@
     <!-- ── Confirm modal (replaces native confirm()) ── -->
     <div v-if="confirmState.show" class="modal-overlay" @click.self="settleConfirm(false)">
       <div class="modal confirm-modal">
-        <button class="modal-close-btn" aria-label="Close modal" @click="settleConfirm(false)">
+        <button class="modal-close-btn" :aria-label="$t('adminUi.closeModal')" @click="settleConfirm(false)">
           <PhX weight="bold" aria-hidden="true" />
         </button>
         <p class="confirm-message">{{ confirmState.message }}</p>
@@ -1329,7 +1326,7 @@
           <button
             :class="['action-btn', confirmState.variant === 'danger' ? 'del-btn' : 'edit-btn']"
             @click="settleConfirm(true)"
-          >OK</button>
+          >{{ $t('adminUi.ok') }}</button>
         </div>
       </div>
     </div>
@@ -1382,6 +1379,7 @@ import {
   PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise, PhLink, PhCopy,
 } from '@phosphor-icons/vue'
 import { kioskLink } from '@/utils/admin/kioskLink.js'
+import { intlLocale } from '@/composables/useLanguage'
 import { resolveLoadingFlag } from '@/utils/admin/tabLoading.js'
 import { formatAuditLog } from '@/utils/admin/auditLog.js'
 import { buildRewardUpdatePayload } from '@/utils/admin/rewardConfig.js'
@@ -1408,7 +1406,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const { t } = useI18n()
+const { t, te, locale } = useI18n()
+const intl = () => intlLocale(locale.value)
+// Material name in the chosen language (falls back to the raw value).
+const materialName = (m) => (te('session.' + m) ? t('session.' + m) : capitalize(m))
 const theme = inject('theme')
 const toggleTheme = inject('toggleTheme')
 
@@ -1487,10 +1488,11 @@ const txMachine = ref('')
 const txDateFrom = ref('')
 const txDateTo = ref('')
 const txSummary = ref({ items: 0, accepted: 0, rejected: 0, points: 0 })
+// Getters so the labels follow the chosen language at render time.
 const TX_RESULT_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'valid', label: 'Accepted' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: '', get label() { return t('adminUi.all') } },
+  { value: 'valid', get label() { return t('adminUi.accepted') } },
+  { value: 'rejected', get label() { return t('adminUi.rejected') } },
 ]
 const txFiltersActive = computed(() =>
   !!(txSearch.value || txFilter.value || txMachine.value || txDateFrom.value || txDateTo.value))
@@ -1523,9 +1525,10 @@ const auditPage = ref(1)
 const auditPerPage = ref(20)
 const auditTotal = ref(0)
 const auditLastPage = ref(1)
-const auditRows = computed(() => auditLogs.value.map(formatAuditLog))
+const auditLabel = (a) => (te('adminUi.audit_' + a) ? t('adminUi.audit_' + a) : undefined)
+const auditRows = computed(() => auditLogs.value.map((log) => formatAuditLog(log, { label: auditLabel, locale: intl() })))
 function auditActionLabel(a) {
-  return formatAuditLog({ action: a }).actionLabel
+  return formatAuditLog({ action: a }, { label: auditLabel }).actionLabel
 }
 
 const loadingDetectionLogs = ref(false)
@@ -1729,6 +1732,19 @@ const savedRewardValues = ref({ plastic: 5, aluminum: 8, glass: 5, paper: 3 })
 
 const barChartData = ref(null)
 const donutChartData = ref(null)
+// Chart series names follow a language switch without refetching the data.
+const CHART_MATERIALS = ['plastic', 'aluminum', 'paper']
+watch(locale, () => {
+  if (barChartData.value) {
+    barChartData.value = {
+      ...barChartData.value,
+      datasets: barChartData.value.datasets.map((d, i) => ({ ...d, label: t('session.' + CHART_MATERIALS[i]) })),
+    }
+  }
+  if (donutChartData.value) {
+    donutChartData.value = { ...donutChartData.value, labels: CHART_MATERIALS.map((m) => t('session.' + m)) }
+  }
+})
 const overviewData = ref({})
 const liveTime = ref('')
 let clockTimer = null
@@ -1740,7 +1756,7 @@ const CHART_COLORS = {
   glass:    '#A78BFA',
 }
 
-const barChartOptions = {
+const barChartOptions = computed(() => ({
   responsive: true, maintainAspectRatio: false,
   plugins: { legend: { labels: { color: '#9ca3af' } } },
   scales: {
@@ -1748,10 +1764,10 @@ const barChartOptions = {
     y: {
       ticks: { color: '#9ca3af' },
       grid: { color: 'rgba(255,255,255,0.05)' },
-      title: { display: true, text: 'Carbon Saved (kg)', color: '#6b7280', font: { size: 11 } },
+      title: { display: true, text: t('adminUi.carbonSavedKg'), color: '#6b7280', font: { size: 11 } },
     },
   },
-}
+}))
 
 const donutChartOptions = {
   responsive: true, maintainAspectRatio: false,
@@ -1781,14 +1797,14 @@ let refreshTimer = null
 
 // ── Config ──
 const navItems = [
-  { id: 'dashboard',    icon: PhChartBar,        label: 'Dashboard' },
-  { id: 'machines',     icon: PhFactory,         label: 'Machines' },
-  { id: 'rewards',      icon: PhGift,            label: 'Rewards' },
-  { id: 'users',        icon: PhUsers,           label: 'Users' },
-  { id: 'transactions', icon: PhReceipt,         label: 'Transactions' },
-  { id: 'sessions',     icon: PhClipboardText,   label: 'Sessions' },
-  { id: 'audit',        icon: PhListChecks,      label: 'Audit Log' },
-  { id: 'detection',    icon: PhMagnifyingGlass, label: 'Detection Review' },
+  { id: 'dashboard',    icon: PhChartBar,        get label() { return t('adminUi.navDashboard') } },
+  { id: 'machines',     icon: PhFactory,         get label() { return t('adminUi.navMachines') } },
+  { id: 'rewards',      icon: PhGift,            get label() { return t('adminUi.navRewards') } },
+  { id: 'users',        icon: PhUsers,           get label() { return t('adminUi.navUsers') } },
+  { id: 'transactions', icon: PhReceipt,         get label() { return t('adminUi.navTransactions') } },
+  { id: 'sessions',     icon: PhClipboardText,   get label() { return t('adminUi.navSessions') } },
+  { id: 'audit',        icon: PhListChecks,      get label() { return t('adminUi.navAudit') } },
+  { id: 'detection',    icon: PhMagnifyingGlass, get label() { return t('admin.detectionReview.title') } },
 ]
 
 // Reopen the menu (and Detection Review sub-view) named in the URL, so a
@@ -1801,21 +1817,21 @@ const navItems = [
 
 // Glass is not accepted, so it is left out of every material list shown here.
 const binTypes = [
-  { id: 'aluminum', label: 'Aluminum' },
-  { id: 'plastic',  label: 'Plastic'  },
-  { id: 'paper',    label: 'Paper'    },
+  { id: 'aluminum', get label() { return t('session.aluminum') } },
+  { id: 'plastic',  get label() { return t('session.plastic') } },
+  { id: 'paper',    get label() { return t('session.paper') } },
 ]
 
 const rewardMaterials = [
-  { key: 'plastic',  label: 'Plastic Bottle (pts)' },
-  { key: 'aluminum', label: 'Aluminium Can (pts)'  },
-  { key: 'paper',    label: 'Paper / Card (pts)'   },
+  { key: 'plastic',  get label() { return t('adminUi.rewardPlastic') } },
+  { key: 'aluminum', get label() { return t('adminUi.rewardAluminium') } },
+  { key: 'paper',    get label() { return t('adminUi.rewardPaper') } },
 ]
 
 const overviewMaterials = [
-  { key: 'plastic',  label: 'PLASTIC BOTTLES'   },
-  { key: 'aluminum', label: 'ALUMINIUM CANS'    },
-  { key: 'paper',    label: 'PAPER / RECYCLABLES'},
+  { key: 'plastic',  get label() { return t('adminUi.ovPlastic') } },
+  { key: 'aluminum', get label() { return t('adminUi.ovAluminium') } },
+  { key: 'paper',    get label() { return t('adminUi.ovPaper') } },
 ]
 
 
@@ -1824,12 +1840,12 @@ const currentNavItem = computed(() => navItems.find(n => n.id === activeTab.valu
 
 const statsCards = computed(() => [
   // Users are not demo or real, so Total Users cannot follow the switch: say so.
-  { icon: PhUsers,           label: dataScope.value === 'all' ? 'Total Users' : 'Total Users (all data)', value: statsData.value.total_users || 0 },
-  { icon: PhFactory,         label: 'Machines',       value: countMachinesInScope(adminMachines.value, dataScope.value) },
-  { icon: PhArrowsClockwise, label: 'Active Sessions',value: statsData.value.active_sessions || 0 },
-  { icon: PhGlobe,           label: 'Carbon Saved (kg)', color: 'var(--carbon-accent)', value: statsData.value.total_carbon_saved_kg || 0 },
-  { icon: PhStar,            label: 'Points Issued',  value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
-  { icon: PhPackage,         label: 'Transactions',  value: statsData.value.total_transactions || 0 },
+  { icon: PhUsers,           label: dataScope.value === 'all' ? t('adminUi.totalUsers') : t('adminUi.totalUsersAll'), value: statsData.value.total_users || 0 },
+  { icon: PhFactory,         label: t('adminUi.navMachines'), value: countMachinesInScope(adminMachines.value, dataScope.value) },
+  { icon: PhArrowsClockwise, label: t('adminUi.activeSessions'), value: statsData.value.active_sessions || 0 },
+  { icon: PhGlobe,           label: t('adminUi.carbonSavedKg'), color: 'var(--carbon-accent)', value: statsData.value.total_carbon_saved_kg || 0 },
+  { icon: PhStar,            label: t('adminUi.pointsIssued'), value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
+  { icon: PhPackage,         label: t('adminUi.navTransactions'), value: statsData.value.total_transactions || 0 },
 ])
 
 const activeMachines = computed(() =>
@@ -1852,12 +1868,12 @@ function relativeTime(ts) {
   const t = ts ? new Date(ts).getTime() : NaN
   if (!Number.isFinite(t)) return '—'
   const s = Math.max(0, Math.round((nowTick.value.getTime() - t) / 1000))
-  if (s < 60) return `${s}s ago`
+  if (s < 60) return t('adminUi.secondsAgo', { n: s })
   const m = Math.round(s / 60)
-  if (m < 60) return `${m} min ago`
+  if (m < 60) return t('adminUi.minutesAgo', { n: m })
   const h = Math.round(m / 60)
-  if (h < 48) return `${h} h ago`
-  return `${Math.round(h / 24)} days ago`
+  if (h < 48) return t('adminUi.hoursAgo', { n: h })
+  return t('adminUi.daysAgo', { n: Math.round(h / 24) })
 }
 
 const systemStatusItems = computed(() => {
@@ -1867,7 +1883,7 @@ const systemStatusItems = computed(() => {
   const binLevel = (key) => machines.length
     ? Math.max(...machines.map(m => m[key] ?? 0)) : 0
   const binColor = (pct) => pct >= 90 ? 'red' : pct >= 70 ? 'yellow' : 'green'
-  const binLabel = (pct, color) => `${pct}% ${color === 'green' ? 'OK' : 'WARN'}`
+  const binLabel = (pct, color) => `${pct}% ${color === 'green' ? t('adminUi.statusOk') : t('adminUi.statusWarn')}`
 
   const plastic  = binLevel('plastic_level')
   const aluminum = binLevel('aluminum_level')
@@ -1878,21 +1894,21 @@ const systemStatusItems = computed(() => {
   const totalMachines  = scopedMachines.value.length
   const onlineMachines = summary.anyReported ? summary.online : scopedMachines.value.filter(m => m.status === 'active').length
   const machineColor   = summary.anyReported ? (onlineMachines > 0 ? 'green' : 'red') : 'yellow'
-  const machineWord    = summary.anyReported ? 'ONLINE' : 'REGISTERED'
+  const machineWord    = summary.anyReported ? t('adminUi.statusOnline') : t('adminUi.statusRegistered')
 
   const cameraColor = activeSessions > 0 ? 'green' : 'yellow'
-  const cameraValue = activeSessions > 0 ? `LIVE (${activeSessions})` : 'STANDBY'
+  const cameraValue = activeSessions > 0 ? t('adminUi.statusLive', { n: activeSessions }) : t('adminUi.statusStandby')
 
   const rewardOk    = Object.values(savedRewardValues.value).every(v => v > 0)
   const rewardColor = rewardOk ? 'green' : 'yellow'
 
   return [
-    { label: 'Camera',       value: cameraValue,                           color: cameraColor  },
-    { label: 'Machines',  value: `${onlineMachines}/${totalMachines} ${machineWord}`, color: machineColor },
-    { label: 'Reward Engine',value: rewardOk ? 'OK' : 'CHECK CONFIG',      color: rewardColor  },
-    { label: 'Plastic Bin',  value: binLabel(plastic,  binColor(plastic)),  color: binColor(plastic)  },
-    { label: 'Aluminum Bin', value: binLabel(aluminum, binColor(aluminum)), color: binColor(aluminum) },
-    { label: 'Paper Bin',    value: binLabel(paper,    binColor(paper)),    color: binColor(paper)    },
+    { label: t('adminUi.sysCamera'), value: cameraValue,                           color: cameraColor  },
+    { label: t('adminUi.navMachines'), value: `${onlineMachines}/${totalMachines} ${machineWord}`, color: machineColor },
+    { label: t('adminUi.sysRewardEngine'), value: rewardOk ? t('adminUi.statusOk') : t('adminUi.checkConfig'),      color: rewardColor  },
+    { label: t('adminUi.sysPlasticBin'), value: binLabel(plastic,  binColor(plastic)),  color: binColor(plastic)  },
+    { label: t('adminUi.sysAluminumBin'), value: binLabel(aluminum, binColor(aluminum)), color: binColor(aluminum) },
+    { label: t('adminUi.sysPaperBin'), value: binLabel(paper,    binColor(paper)),    color: binColor(paper)    },
   ]
 })
 
@@ -1917,7 +1933,7 @@ function fmtTime(d, withSeconds = false) {
 function formatDate(ts) {
   if (!ts) return '—'
   const d = new Date(ts)
-  return d.toLocaleDateString() + ' ' + fmtTime(d)
+  return d.toLocaleDateString(intl()) + ' ' + fmtTime(d)
 }
 
 function timeOnly(ts) {
@@ -1925,26 +1941,33 @@ function timeOnly(ts) {
   return fmtTime(new Date(ts), true)
 }
 
+// Badge text for machine / session statuses; unknown values show as stored.
+function statusLabel(status) {
+  return te('adminUi.status_' + status) ? t('adminUi.status_' + status) : status
+}
+
 function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 }
 
 // ── Transactions table display ──
-const txItemLabel = itemLabel
-const txReason = resultReason
+// Transactions table text in the chosen language (keys adminUi.tx_*).
+const txTr = (key, params) => t('adminUi.tx_' + key, params || {})
+const txItemLabel = (tx) => itemLabel(tx, txTr)
+const txReason = (tx) => resultReason(tx, txTr)
 function txConfClass(conf) { return 'tx-conf-' + confidenceLevel(conf) }
 function txPct(part) { return percentOf(part, txSummary.value.items) }
 function txDate(ts) {
   if (!ts) return '—'
-  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(ts).toLocaleDateString(intl(), { day: '2-digit', month: 'short', year: 'numeric' })
 }
 function txTime(ts) {
   if (!ts) return ''
-  return new Date(ts).toLocaleTimeString('en-MY', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return new Date(ts).toLocaleTimeString(intl(), { hour: 'numeric', minute: '2-digit' })
 }
-function txNum(n) { return Number(n || 0).toLocaleString('en-MY') }
+function txNum(n) { return Number(n || 0).toLocaleString(intl()) }
 function txUserName(user) {
-  if (!user) return 'Guest'
+  if (!user) return t('adminUi.guest')
   return user.name || formatUserId(user)
 }
 
@@ -2069,7 +2092,7 @@ async function fetchTabData(tab, showSpinner = false) {
   } catch (err) {
     // A request from a previous data scope neither reports its error nor touches the loading state.
     if (!isStaleScope(scope, dataScope.value)) {
-      const msg = err.response?.data?.message || err.message || 'Failed to load data'
+      const msg = err.response?.data?.message || err.message || t('adminUi.loadFailed')
       tabError.value = msg
       console.error(`fetchTabData(${tab}):`, err.response?.data || err.message)
     }
@@ -2336,7 +2359,7 @@ async function exportTable(key) {
     const [path, params, prefix] = TABLE_EXPORTS[key]()
     await downloadExcel(api, path, params, prefix)
   } catch {
-    showToast('Export failed. Please try again.', 'error')
+    showToast(t('adminUi.exportFailed'), 'error')
   } finally {
     exportingTable.value = ''
   }
@@ -2354,9 +2377,9 @@ async function saveCashRedeemSettings() {
   try {
     const res = await api.put('/admin/cash-redeem-settings', cashRedeemSettings.value)
     cashRedeemSettings.value = res.data.settings
-    showToast('Cash redeem settings updated.')
+    showToast(t('adminUi.cashSaved'))
   } catch (e) {
-    showToast(e.response?.data?.message || 'Failed to update cash redeem settings.', 'error')
+    showToast(e.response?.data?.message || t('adminUi.cashFailed'), 'error')
   } finally {
     savingCashRedeemSettings.value = false
   }
@@ -2372,16 +2395,16 @@ async function fetchCompactorSettings() {
 async function saveCompactorSettings() {
   const { plastic, aluminum } = compactorSettings.value
   if (![plastic, aluminum].every((v) => Number.isInteger(v) && v >= 1 && v <= 10)) {
-    showToast('Max per session must be a whole number from 1 to 10.', 'error')
+    showToast(t('adminUi.maxPerSessionInvalid'), 'error')
     return
   }
   savingCompactorSettings.value = true
   try {
     const res = await api.put('/admin/compactor-settings', { plastic, aluminum })
     compactorSettings.value = res.data.settings
-    showToast('Compactor settings updated.')
+    showToast(t('adminUi.compactorSaved'))
   } catch (e) {
-    showToast(e.response?.data?.message || 'Failed to update compactor settings.', 'error')
+    showToast(e.response?.data?.message || t('adminUi.compactorFailed'), 'error')
   } finally {
     savingCompactorSettings.value = false
   }
@@ -2406,14 +2429,14 @@ async function fetchChartData() {
     barChartData.value = {
       labels,
       datasets: [
-        { label: 'Plastic',  data: datasets.plastic,  backgroundColor: CHART_COLORS.plastic  },
-        { label: 'Aluminum', data: datasets.aluminum, backgroundColor: CHART_COLORS.aluminum },
-        { label: 'Paper',    data: datasets.paper,    backgroundColor: CHART_COLORS.paper    },
+        { label: t('session.plastic'),  data: datasets.plastic,  backgroundColor: CHART_COLORS.plastic  },
+        { label: t('session.aluminum'), data: datasets.aluminum, backgroundColor: CHART_COLORS.aluminum },
+        { label: t('session.paper'),    data: datasets.paper,    backgroundColor: CHART_COLORS.paper    },
       ],
     }
 
     donutChartData.value = {
-      labels: ['Plastic', 'Aluminum', 'Paper'],
+      labels: [t('session.plastic'), t('session.aluminum'), t('session.paper')],
       datasets: [{
         data: [breakdown.plastic, breakdown.aluminum, breakdown.paper],
         backgroundColor: [CHART_COLORS.plastic, CHART_COLORS.aluminum, CHART_COLORS.paper],
@@ -2664,7 +2687,7 @@ async function exportExcel() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   } catch {
-    showToast('Export failed. Please try again.', 'error')
+    showToast(t('adminUi.exportFailed'), 'error')
   }
 }
 
@@ -2676,7 +2699,7 @@ function openEmailReportModal() {
 
 async function sendReportEmail() {
   if (!emailReportAddress.value.trim()) {
-    emailReportError.value = 'Email address is required.'
+    emailReportError.value = t('adminUi.emailRequired')
     return
   }
   sendingReportEmail.value = true
@@ -2689,10 +2712,10 @@ async function sendReportEmail() {
       data: dataScope.value,
     })
     showEmailReportModal.value = false
-    showToast(res.data.message || 'Report emailed.')
+    showToast(res.data.message || t('adminUi.reportEmailed'))
   } catch (e) {
     const errors = e.response?.data?.errors
-    emailReportError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to send report.')
+    emailReportError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || t('adminUi.reportEmailFailed'))
   } finally {
     sendingReportEmail.value = false
   }
@@ -2708,24 +2731,24 @@ async function sendReportEmail() {
 // forever while the disk is still full.
 function resetAllAlerts() {
   fullBins.value = []
-  showToast('Alerts dismissed. Bin levels are unchanged — empty a bin from the Machines tab to clear it for good.')
+  showToast(t('adminUi.alertsDismissed'))
 }
 
 async function requestBinCollection() {
   if (!collectionCandidates.value.length || requestingCollection.value) {
-    showToast('No bins are at or above 90%.', 'error')
+    showToast(t('adminUi.noBinsToast'), 'error')
     return
   }
 
   const details = collectionCandidates.value.map((machine) => {
     const bins = ['aluminum', 'plastic', 'paper']
       .filter(type => Number(machine[`${type}_level`]) >= 90)
-      .map(type => `${capitalize(type)} ${machine[`${type}_level`]}%`)
+      .map(type => `${materialName(type)} ${machine[`${type}_level`]}%`)
       .join(', ')
     return `${machine.name}: ${bins}`
   }).join('; ')
 
-  if (!(await askConfirm(`Send a collection request for ${collectionCandidates.value.length} machine(s)? ${details}`, 'warning'))) return
+  if (!(await askConfirm(t('adminUi.confirmCollection', { n: collectionCandidates.value.length, details }), 'warning'))) return
 
   requestingCollection.value = true
   try {
@@ -2733,9 +2756,9 @@ async function requestBinCollection() {
     // the request, it must not zero out bin levels (the bin isn't actually
     // empty yet, someone just needs to go collect it).
     const res = await api.post('/admin/request-bin-collection')
-    showToast(`Bin collection request sent for ${res.data.affected} machine(s).`)
+    showToast(t('adminUi.collectionSent', { n: res.data.affected }))
   } catch (error) {
-    showToast(error.response?.data?.message || 'Failed to send collection request.', 'error')
+    showToast(error.response?.data?.message || t('adminUi.collectionFailed'), 'error')
   } finally {
     requestingCollection.value = false
   }
@@ -2751,7 +2774,7 @@ async function updateReward(material) {
     const label = material.charAt(0).toUpperCase() + material.slice(1)
     showToast(`${label} reward updated to ${config[material]} pts/item.`)
   } catch (e) {
-    showToast(e.message?.startsWith('Invalid value') ? e.message : 'Failed to update reward config.', 'error')
+    showToast(e.message?.startsWith('Invalid value') ? e.message : t('adminUi.rewardConfigFailed'), 'error')
   } finally {
     savingReward.value = ''
   }
@@ -2767,16 +2790,16 @@ async function saveUser() {
     if (idx > -1) users.value[idx] = { ...editingUser.value }
     const name = editingUser.value.name
     editingUser.value = null
-    showToast(`User "${name}" saved.`)
-  } catch { showToast('Failed to save user.', 'error') }
+    showToast(t('adminUi.userSaved', { name }))
+  } catch { showToast(t('adminUi.userSaveFailed'), 'error') }
 }
 
 // Suspend / reactivate (A08). Suspending signs the user out everywhere.
 async function toggleSuspend(user) {
   const suspending = user.account_status !== 'suspended'
   const question = suspending
-    ? `Suspend "${user.name}"? They will be signed out and cannot log in until reactivated.`
-    : `Reactivate "${user.name}"?`
+    ? t('adminUi.confirmSuspend', { name: user.name })
+    : t('adminUi.confirmReactivate', { name: user.name })
   if (!(await askConfirm(question))) return
   try {
     const res = await api.put(`/admin/users/${user.id}`, { account_status: suspending ? 'suspended' : 'active' })
@@ -2784,16 +2807,16 @@ async function toggleSuspend(user) {
     if (idx > -1) users.value[idx] = { ...users.value[idx], account_status: res.data.user?.account_status ?? (suspending ? 'suspended' : 'active') }
     showToast(suspending ? `"${user.name}" suspended.` : `"${user.name}" reactivated.`)
   } catch (err) {
-    showToast(err?.response?.data?.message || 'Failed to update the account status.', 'error')
+    showToast(err?.response?.data?.message || t('adminUi.statusUpdateFailed'), 'error')
   }
 }
 
 async function deleteUser(id) {
-  if (!(await askConfirm('Delete this user? This cannot be undone.'))) return
+  if (!(await askConfirm(t('adminUi.confirmDeleteUser')))) return
   try {
     await api.delete(`/admin/users/${id}`)
     users.value = users.value.filter(u => u.id !== id)
-  } catch { showToast('Failed to delete user.', 'error') }
+  } catch { showToast(t('adminUi.deleteUserFailed'), 'error') }
 }
 
 // ── Machine management ──
@@ -2810,7 +2833,7 @@ function openEditMachine(machine) {
 
 async function addMachine() {
   if (!newMachine.value.machine_code?.trim() || validateMachineName(newMachine.value.name)) {
-    machineError.value = 'Machine code and name are required.'
+    machineError.value = t('adminUi.machineRequired')
     return
   }
   savingMachine.value = true
@@ -2828,13 +2851,13 @@ async function addMachine() {
     const res = await api.post('/admin/machines', payload)
     adminMachines.value.push(normalizeMachine(res.data.machine))
     showAddMachine.value = false
-    showToast(`Machine "${payload.name}" added.`)
+    showToast(t('adminUi.machineAdded', { name: payload.name }))
   } catch (e) {
     const errors = e.response?.data?.errors
     if (errors) {
       machineError.value = Object.values(errors).flat().join(' ')
     } else {
-      machineError.value = e.response?.data?.message || 'Failed to add machine.'
+      machineError.value = e.response?.data?.message || t('adminUi.machineAddFailed')
     }
   } finally {
     savingMachine.value = false
@@ -2862,21 +2885,21 @@ async function saveMachine() {
     const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
     if (idx > -1) adminMachines.value[idx] = normalizeMachine(res.data.machine)
     editingMachine.value = null
-    showToast(`Machine "${payload.name}" saved.`)
+    showToast(t('adminUi.machineSaved', { name: payload.name }))
   } catch (e) {
     const errors = e.response?.data?.errors
-    machineError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to save machine.')
+    machineError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || t('adminUi.machineSaveFailed'))
   } finally {
     savingMachine.value = false
   }
 }
 
 async function deleteMachine(id) {
-  if (!(await askConfirm('Delete this machine? This cannot be undone.'))) return
+  if (!(await askConfirm(t('adminUi.confirmDeleteMachine')))) return
   try {
     await api.delete(`/admin/machines/${id}`)
     adminMachines.value = adminMachines.value.filter(m => m.id !== id)
-  } catch { showToast('Failed to delete machine.', 'error') }
+  } catch { showToast(t('adminUi.deleteMachineFailed'), 'error') }
 }
 
 // ── Kiosk maintenance (scan the machine's live QR to prove presence, then
@@ -2910,7 +2933,7 @@ async function toggleMaintCamera() {
 async function startMaintCamera() {
   maintError.value = ''
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-    maintError.value = 'Camera access requires HTTPS.'
+    maintError.value = t('adminUi.cameraHttps')
     return
   }
   try {
@@ -2921,7 +2944,7 @@ async function startMaintCamera() {
     maintCameraActive.value = true
     maintScanInterval = setInterval(scanMaintFrame, 200)
   } catch (e) {
-    maintError.value = 'Could not access the camera: ' + e.message
+    maintError.value = t('adminUi.cameraError', { message: e.message })
   }
 }
 
@@ -2966,13 +2989,13 @@ async function submitMaintenance() {
   try {
     const res = await api.post(`/admin/machines/${maintainingMachine.value.id}/maintenance`, { qr_token: token })
     if (res.data.success) {
-      showToast(`Kiosk for "${maintainingMachine.value.name}" closed for maintenance.`)
+      showToast(t('adminUi.kioskClosed', { name: maintainingMachine.value.name }))
       closeMaintenance()
     } else {
-      maintError.value = res.data.message || 'Failed to trigger maintenance.'
+      maintError.value = res.data.message || t('adminUi.maintFailed')
     }
   } catch (e) {
-    maintError.value = e.response?.data?.message || 'Failed to trigger maintenance.'
+    maintError.value = e.response?.data?.message || t('adminUi.maintFailed')
   } finally {
     maintLoading.value = false
   }
@@ -2998,7 +3021,7 @@ function setRewardImageFile(file) {
   }
   if (!['image/jpeg', 'image/png'].includes(file.type)) {
     rewardItemImageFile.value = null
-    rewardItemError.value = 'Please choose a PNG or JPG image.'
+    rewardItemError.value = t('adminUi.chooseImage')
     return
   }
   // Not uploaded as-is: it goes through the crop dialog first.
@@ -3038,7 +3061,7 @@ async function applyRewardCrop() {
   try {
     const file = await rewardCropper.value?.exportFile()
     if (!file) {
-      rewardItemError.value = 'This image could not be cropped. Please choose another one.'
+      rewardItemError.value = t('adminUi.cropFailed')
       rewardCropSource.value = null
       return
     }
@@ -3094,7 +3117,7 @@ function buildRewardItemFormData(source) {
 
 async function addRewardItem() {
   if (!newRewardItem.value.name?.trim()) {
-    rewardItemError.value = 'Name is required.'
+    rewardItemError.value = t('adminUi.nameRequired')
     return
   }
   savingRewardItem.value = true
@@ -3104,14 +3127,14 @@ async function addRewardItem() {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     showAddRewardItem.value = false
-    showToast(`Reward "${res.data.reward_item.name}" added.`)
+    showToast(t('adminUi.rewardAdded', { name: res.data.reward_item.name }))
     // Refetch rather than unshift locally: the list is now paginated, so a
     // local splice would leave rewardItemsTotal/rewardItemsLastPage stale.
     rewardItemsPage.value = 1
     await fetchTabData('rewards')
   } catch (e) {
     const errors = e.response?.data?.errors
-    rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to add reward.')
+    rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || t('adminUi.rewardAddFailed'))
   } finally {
     savingRewardItem.value = false
   }
@@ -3119,7 +3142,7 @@ async function addRewardItem() {
 
 async function saveRewardItem() {
   if (!editingRewardItem.value.name?.trim()) {
-    rewardItemError.value = 'Name is required.'
+    rewardItemError.value = t('adminUi.nameRequired')
     return
   }
   savingRewardItem.value = true
@@ -3133,35 +3156,35 @@ async function saveRewardItem() {
     const idx = rewardItems.value.findIndex(r => r.id === editingRewardItem.value.id)
     if (idx > -1) rewardItems.value[idx] = res.data.reward_item
     editingRewardItem.value = null
-    showToast(`Reward "${res.data.reward_item.name}" saved.`)
+    showToast(t('adminUi.rewardSaved', { name: res.data.reward_item.name }))
   } catch (e) {
     const errors = e.response?.data?.errors
-    rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || 'Failed to save reward.')
+    rewardItemError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message || t('adminUi.rewardSaveFailed'))
   } finally {
     savingRewardItem.value = false
   }
 }
 
 async function deleteRewardItem(id) {
-  if (!(await askConfirm('Delete this reward? This cannot be undone.'))) return
+  if (!(await askConfirm(t('adminUi.confirmDeleteReward')))) return
   try {
     await api.delete(`/admin/reward-items/${id}`)
     // Deleting the last item on a page beyond page 1 would otherwise leave an
     // empty grid with no obvious way back — step back a page in that case.
     if (rewardItems.value.length === 1 && rewardItemsPage.value > 1) rewardItemsPage.value -= 1
     await fetchTabData('rewards')
-  } catch { showToast('Failed to delete reward.', 'error') }
+  } catch { showToast(t('adminUi.deleteRewardFailed'), 'error') }
 }
 
 async function resetBins(machine) {
-  if (!(await askConfirm(`Reset all bin levels for ${machine.name}?`, 'warning'))) return
+  if (!(await askConfirm(t('adminUi.confirmResetBins', { name: machine.name }), 'warning'))) return
   try {
     await api.put(`/admin/machines/${machine.id}/bin-levels`, {
       aluminum_level: 0, plastic_level: 0, glass_level: 0, paper_level: 0,
     })
     machine.aluminum_level = machine.plastic_level = machine.glass_level = machine.paper_level = 0
-    showToast(`Bin levels reset for ${machine.name}.`)
-  } catch { showToast('Failed to reset bins.', 'error') }
+    showToast(t('adminUi.binsReset', { name: machine.name }))
+  } catch { showToast(t('adminUi.resetBinsFailed'), 'error') }
 }
 
 async function handleLogout() {
@@ -3176,7 +3199,7 @@ async function handleLogout() {
 function updateClock() {
   const now = new Date()
   nowTick.value = now
-  liveTime.value = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  liveTime.value = now.toLocaleDateString(intl(), { day: 'numeric', month: 'short', year: 'numeric' })
     + ', ' + fmtTime(now, true)
 }
 

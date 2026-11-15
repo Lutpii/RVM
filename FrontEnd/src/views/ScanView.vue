@@ -125,8 +125,8 @@
         <!-- Machine list shortcut
         <div class="divider-text">— OR —</div>
 
-        <p class="shortcut-label">Select a machine directly (demo mode):</p>
-        <div v-if="loadingMachines" class="loading-row"><div class="spinner-sm"></div> Loading machines...</div>
+        <p class="shortcut-label">{{ $t('scan.shortcutLabel') }}</p>
+        <div v-if="loadingMachines" class="loading-row"><div class="spinner-sm"></div> {{ $t('scan.loadingMachines') }}</div>
         <div v-else class="machine-shortcuts">
           <button
             v-for="machine in activeMachines"

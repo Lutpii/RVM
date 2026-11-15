@@ -40,14 +40,16 @@ function detailsMessage(details) {
   return typeof parsed === 'string' ? parsed : String(parsed)
 }
 
-export function formatAuditLog(log) {
+// opts.label(action) may return a translated label (undefined = built-in);
+// opts.locale formats the time in the chosen language.
+export function formatAuditLog(log, opts = {}) {
   const hasTarget = log.target_type && log.target_type !== 'system'
   return {
     id: log.id,
-    time: log.created_at ? new Date(log.created_at).toLocaleString() : '—',
+    time: log.created_at ? new Date(log.created_at).toLocaleString(opts.locale) : '—',
     admin: log.admin?.name || '—',
     action: log.action,
-    actionLabel: AUDIT_ACTION_LABELS[log.action] ?? titleCase(log.action),
+    actionLabel: opts.label?.(log.action) ?? AUDIT_ACTION_LABELS[log.action] ?? titleCase(log.action),
     target: !hasTarget ? '—' : (log.target_id ? `${log.target_type} #${log.target_id}` : log.target_type),
     message: detailsMessage(log.details),
   }

@@ -3,52 +3,52 @@
      close it with the action taken. Not the kiosk "maintenance shutdown". -->
 <template>
   <div class="mh-overlay" @click.self="$emit('close')">
-    <div class="mh-modal" role="dialog" aria-modal="true" :aria-label="'Service history: ' + machine.name">
-      <button ref="closeBtn" class="mh-close" aria-label="Close" @click="$emit('close')"><PhX weight="bold" aria-hidden="true" /></button>
-      <h3 class="mh-title">Service History</h3>
+    <div class="mh-modal" role="dialog" aria-modal="true" :aria-label="$t('adminUi.mhAria', { name: machine.name })">
+      <button ref="closeBtn" class="mh-close" :aria-label="$t('adminUi.closeModal')" @click="$emit('close')"><PhX weight="bold" aria-hidden="true" /></button>
+      <h3 class="mh-title">{{ $t('adminUi.serviceHistoryBtn') }}</h3>
       <p class="mh-sub">{{ machine.name }} · {{ machine.machine_code }}</p>
 
       <form class="mh-form" @submit.prevent="openRecord">
         <div class="mh-row">
           <label class="mh-field">
-            <span>Technician *</span>
-            <input v-model.trim="form.technician_name" type="text" maxlength="100" placeholder="e.g. Ali (DSME)" />
+            <span>{{ $t('adminUi.mhTechnician') }}</span>
+            <input v-model.trim="form.technician_name" type="text" maxlength="100" :placeholder="$t('adminUi.mhTechnicianEg')" />
           </label>
         </div>
         <label class="mh-field">
-          <span>Issue *</span>
-          <textarea v-model.trim="form.issue" rows="2" maxlength="2000" placeholder="What is wrong with the machine?"></textarea>
+          <span>{{ $t('adminUi.mhIssue') }}</span>
+          <textarea v-model.trim="form.issue" rows="2" maxlength="2000" :placeholder="$t('adminUi.mhIssueEg')"></textarea>
         </label>
         <p v-if="formError" class="mh-error">{{ formError }}</p>
-        <button class="mh-btn mh-primary" type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Add record' }}</button>
+        <button class="mh-btn mh-primary" type="submit" :disabled="saving">{{ saving ? $t('adminUi.saving') : $t('adminUi.mhAddRecord') }}</button>
       </form>
 
       <p v-if="notice" class="mh-notice" role="status">{{ notice }}</p>
 
       <div v-if="loading" class="mh-loading"><div class="mh-spinner"></div></div>
       <p v-else-if="loadError" class="mh-error">{{ loadError }}</p>
-      <p v-else-if="!records.length" class="mh-empty">No maintenance records for this machine yet.</p>
+      <p v-else-if="!records.length" class="mh-empty">{{ $t('adminUi.mhEmpty') }}</p>
       <ul v-else class="mh-list">
         <li v-for="r in records" :key="r.id" class="mh-item">
           <div class="mh-item-head">
             <strong>{{ r.technician_name }}</strong>
-            <span :class="['mh-status', 'mh-' + r.status]">{{ r.status === 'open' ? 'Open' : 'Resolved' }}</span>
+            <span :class="['mh-status', 'mh-' + r.status]">{{ r.status === 'open' ? $t('adminUi.mhOpen') : $t('adminUi.mhResolved') }}</span>
           </div>
           <p class="mh-issue">{{ r.issue }}</p>
-          <p class="mh-meta">Opened {{ fmt(r.opened_at) }}<template v-if="r.opened_by_name"> by {{ r.opened_by_name }}</template></p>
+          <p class="mh-meta">{{ $t('adminUi.mhOpened', { time: fmt(r.opened_at) }) }}<template v-if="r.opened_by_name"> {{ $t('adminUi.mhBy', { name: r.opened_by_name }) }}</template></p>
           <template v-if="r.status === 'closed'">
-            <p class="mh-action"><span>Action taken:</span> {{ r.action_taken }}</p>
-            <p class="mh-meta">Closed {{ fmt(r.closed_at) }}<template v-if="r.closed_by_name"> by {{ r.closed_by_name }}</template></p>
+            <p class="mh-action"><span>{{ $t('adminUi.mhActionTaken') }}</span> {{ r.action_taken }}</p>
+            <p class="mh-meta">{{ $t('adminUi.mhClosed', { time: fmt(r.closed_at) }) }}<template v-if="r.closed_by_name"> {{ $t('adminUi.mhBy', { name: r.closed_by_name }) }}</template></p>
           </template>
           <div v-else-if="closingId === r.id" class="mh-close-form">
-            <textarea v-model.trim="actionTaken" rows="2" maxlength="2000" placeholder="What was done to fix it? (required)"></textarea>
+            <textarea v-model.trim="actionTaken" rows="2" maxlength="2000" :placeholder="$t('adminUi.mhActionEg')"></textarea>
             <p v-if="closeError" class="mh-error">{{ closeError }}</p>
             <div class="mh-close-actions">
-              <button class="mh-btn" type="button" @click="cancelClose">Cancel</button>
-              <button class="mh-btn mh-primary" type="button" :disabled="saving" @click="closeRecord(r)">{{ saving ? 'Saving...' : 'Mark resolved' }}</button>
+              <button class="mh-btn" type="button" @click="cancelClose">{{ $t('adminUi.cancel') }}</button>
+              <button class="mh-btn mh-primary" type="button" :disabled="saving" @click="closeRecord(r)">{{ saving ? $t('adminUi.saving') : $t('adminUi.mhMarkResolved') }}</button>
             </div>
           </div>
-          <button v-else class="mh-btn mh-resolve" type="button" @click="startClose(r)">Mark resolved…</button>
+          <button v-else class="mh-btn mh-resolve" type="button" @click="startClose(r)">{{ $t('adminUi.mhMarkResolvedDots') }}</button>
         </li>
       </ul>
     </div>
@@ -60,11 +60,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { PhX } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import { useEscapeToClose } from '@/composables/useEscapeToClose'
+import { useI18n } from 'vue-i18n'
+import { intlLocale } from '@/composables/useLanguage'
 
 const props = defineProps({
   machine: { type: Object, required: true },
 })
 const emit = defineEmits(['close'])
+const { t, locale } = useI18n()
 const closeBtn = ref(null)
 useEscapeToClose(() => emit('close'), closeBtn)
 
@@ -83,8 +86,9 @@ function fmt(ts) {
   if (!ts) return '—'
   const d = new Date(ts)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const loc = intlLocale(locale.value)
+  return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })
+    + ', ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })
 }
 
 function errorMessage(err, fallback) {
@@ -100,7 +104,7 @@ async function load() {
     const res = await api.get(`/admin/machines/${props.machine.id}/maintenance-records`)
     records.value = res.data.records || []
   } catch (err) {
-    loadError.value = errorMessage(err, 'Maintenance records could not be loaded.')
+    loadError.value = errorMessage(err, t('adminUi.mhLoadFailed'))
   } finally {
     loading.value = false
   }
@@ -109,7 +113,7 @@ async function load() {
 async function openRecord() {
   formError.value = ''
   if (!form.technician_name || !form.issue) {
-    formError.value = 'Technician and issue are required.'
+    formError.value = t('adminUi.mhRequired')
     return
   }
   saving.value = true
@@ -118,9 +122,9 @@ async function openRecord() {
     records.value = [res.data.record, ...records.value]
     form.technician_name = ''
     form.issue = ''
-    notice.value = 'Record added.'
+    notice.value = t('adminUi.mhAdded')
   } catch (err) {
-    formError.value = errorMessage(err, 'The record could not be saved.')
+    formError.value = errorMessage(err, t('adminUi.mhSaveFailed'))
   } finally {
     saving.value = false
   }
@@ -136,7 +140,7 @@ function cancelClose() { closingId.value = null }
 async function closeRecord(record) {
   closeError.value = ''
   if (!actionTaken.value) {
-    closeError.value = 'Describe the action taken.'
+    closeError.value = t('adminUi.mhDescribe')
     return
   }
   saving.value = true
@@ -144,9 +148,9 @@ async function closeRecord(record) {
     const res = await api.patch(`/admin/maintenance-records/${record.id}/close`, { action_taken: actionTaken.value })
     records.value = records.value.map((r) => (r.id === record.id ? res.data.record : r))
     closingId.value = null
-    notice.value = 'Record marked resolved.'
+    notice.value = t('adminUi.mhResolvedNotice')
   } catch (err) {
-    closeError.value = errorMessage(err, 'The record could not be closed.')
+    closeError.value = errorMessage(err, t('adminUi.mhCloseFailed'))
     if (err?.response?.status === 409) load()
   } finally {
     saving.value = false

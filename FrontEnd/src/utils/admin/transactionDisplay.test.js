@@ -51,3 +51,18 @@ describe('percentOf', () => {
     expect(percentOf(1, 3)).toBe(33)
   })
 })
+
+describe('translated labels', () => {
+  // A stand-in translator: returns "key|params" so the test sees which text was asked for.
+  const tr = (key, params) => (params ? `${key}|${JSON.stringify(params)}` : key)
+  it('itemLabel asks the translator for material names and result codes', () => {
+    expect(itemLabel({ material_selected: 'plastic' }, tr)).toBe('mat_plastic')
+    expect(itemLabel({ material_selected: 'unknown' }, tr)).toBe('notRecognised')
+    expect(itemLabel({ material_selected: 'reject', ai_detected_type: 'bricks' }, tr)).toBe('mat_bricks')
+  })
+  it('resultReason passes the bin name and letter to the translator', () => {
+    expect(resultReason({ is_valid: 1, material_selected: 'aluminum' }, tr)).toBe('putInBin|{"name":"mat_aluminum","letter":"B"}')
+    expect(resultReason({ is_valid: 0, material_selected: 'reject', ai_detected_type: 'wooden' }, tr)).toBe('noTake|{"noun":"noun_wooden"}')
+    expect(resultReason({ is_valid: 0, material_selected: 'unknown' }, tr)).toBe('aiNotSure')
+  })
+})

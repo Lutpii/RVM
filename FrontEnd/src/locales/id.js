@@ -166,6 +166,7 @@ export default {
     switchToDark: 'Beralih ke mode gelap',
     showPassword: 'Tampilkan kata sandi',
     hidePassword: 'Sembunyikan kata sandi',
+    phonePlaceholder: 'mis. 081234567890',
   },
   dashboard: {
     title: 'Dasbor Saya',
@@ -536,6 +537,8 @@ export default {
     elsewhereText: 'Selesaikan dulu di sana, atau akhiri di sini.',
     viewSession: 'Lihat sesi',
     machinesLoadError: 'Mesin tidak dapat dimuat. Periksa koneksi Anda dan coba lagi.',
+    shortcutLabel: 'Pilih mesin langsung (mode demo):',
+    loadingMachines: 'Memuat mesin...',
     title: 'Pindai Kode QR RVM',
     subtitle: 'Pindai kode QR yang tampil di layar RVM',
     cameraActiveStatus: 'Kamera aktif, arahkan ke kode QR di layar RVM',

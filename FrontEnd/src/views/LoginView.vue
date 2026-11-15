@@ -28,7 +28,7 @@
 
         <!-- Tab switcher — WhatsApp option temporarily hidden, Email-only for now
         <div class="tab-group">
-          <button :class="['tab', { active: loginMethod === 'email' }]" @click="loginMethod = 'email'">Email</button>
+          <button :class="['tab', { active: loginMethod === 'email' }]" @click="loginMethod = 'email'">{{ $t('auth.email') }}</button>
           <button :class="['tab', { active: loginMethod === 'phone' }]" @click="loginMethod = 'phone'">WhatsApp</button>
         </div>
         -->
@@ -81,7 +81,7 @@
           <div v-if="!otpSent">
             <div class="form-group">
               <label>{{ $t('auth.phone') }}</label>
-              <input v-model="form.phone" type="tel" placeholder="e.g. 0812345678" autocomplete="tel" />
+              <input v-model="form.phone" type="tel" :placeholder="$t('auth.phonePlaceholder')" autocomplete="tel" />
             </div>
             <div v-if="error" class="error-msg">{{ error }}</div>
             <button class="submit-btn whatsapp-btn" @click="handleSendOtp" :disabled="loading">
