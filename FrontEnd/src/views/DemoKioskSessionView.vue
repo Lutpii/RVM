@@ -176,6 +176,8 @@
           </p>
           <div class="result-box">
             <p>{{ $t('demoKiosk.glassRejected') }}</p>
+            <!-- Same as the real DSME machine: a rejected item is handed back. -->
+            <p>{{ $t('session.takeItemBack') }}</p>
             <p>{{ $t('session.pointsEarned') }}: +0</p>
           </div>
           <div class="action-buttons">
