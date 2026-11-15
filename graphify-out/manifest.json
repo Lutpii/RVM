@@ -18,15 +18,15 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794717517.953833,
-    "seen": 1794718516.4101486,
-    "ast_hash": "bc70508cc5c2f01ace325c0439d73e1f",
+    "mtime": 1794720811.782076,
+    "seen": 1794721125.430777,
+    "ast_hash": "866c3ba41e61c861d523c21257d5016c",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
-    "mtime": 1794366611.853042,
-    "seen": 1794372152.4699793,
-    "ast_hash": "54c740b5f3ebd57a2ff074089fdfb754",
+    "mtime": 1794720811.7815514,
+    "seen": 1794721125.430777,
+    "ast_hash": "771739da60b4855bbf45cd05c694be91",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/Controller.php": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Models/User.php": {
-    "mtime": 1794717496.27187,
-    "seen": 1794718516.4159956,
-    "ast_hash": "26885ebec5e44f0b435b6d2065a335f1",
+    "mtime": 1794720811.7767596,
+    "seen": 1794721125.4377694,
+    "ast_hash": "67298f68bd9abb8651ac504debc2a25f",
     "semantic_hash": ""
   },
   "BackEnd/app/Providers/AppServiceProvider.php": {
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794720439.7569983,
-    "seen": 1794720540.9247732,
-    "ast_hash": "d18925e855f26738d8190d1fc69bc02e",
+    "mtime": 1794721076.3298855,
+    "seen": 1794721125.4909494,
+    "ast_hash": "97e023fc80896d1643a8e90f6e6b1f31",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -2460,9 +2460,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/privacyContent.js": {
-    "mtime": 1794718145.327486,
-    "seen": 1794718516.4644923,
-    "ast_hash": "de46bf92cd38fc6a0d16f91446143a29",
+    "mtime": 1794720853.032233,
+    "seen": 1794721125.4942822,
+    "ast_hash": "01b0a825e5d2ce35d2fb25a3ed017771",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/privacyContent.test.js": {
@@ -2472,9 +2472,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/adminUi.js": {
-    "mtime": 1794720427.1207538,
-    "seen": 1794720540.9049978,
-    "ast_hash": "5ef9fa20467f4fb8fd11212b38001dbb",
+    "mtime": 1794720843.8168325,
+    "seen": 1794721125.4714942,
+    "ast_hash": "eb8f56c6771375f7437b2b667464363e",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/adminUi.test.js": {
@@ -2493,6 +2493,30 @@
     "mtime": 1794719294.9904137,
     "seen": 1794720540.9102035,
     "ast_hash": "ad090180bb16064e7fa7f14ba0667ed9",
+    "semantic_hash": ""
+  },
+  "BackEnd/database/migrations/2026_11_15_000002_add_last_login_at_to_users_table.php": {
+    "mtime": 1794720811.6938674,
+    "seen": 1794721125.4473784,
+    "ast_hash": "8ecb7a6e188e2341a6ee2020924eb388",
+    "semantic_hash": ""
+  },
+  "BackEnd/tests/Feature/LastLoginTest.php": {
+    "mtime": 1794720792.808959,
+    "seen": 1794721125.4610565,
+    "ast_hash": "284e2340d5254f437ead9eb47cf7b899",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/weekdayLabel.js": {
+    "mtime": 1794721064.829302,
+    "seen": 1794721125.4789553,
+    "ast_hash": "d44592f596c3ff4e062353b81e9a2ac7",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/admin/weekdayLabel.test.js": {
+    "mtime": 1794721056.5752075,
+    "seen": 1794721125.4789553,
+    "ast_hash": "8100030e6b14c147a2f643efdee19c91",
     "semantic_hash": ""
   }
 }
