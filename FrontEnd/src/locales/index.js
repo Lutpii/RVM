@@ -1,4 +1,6 @@
 // src/locales/index.js
+import id from './id.js'
+
 export const messages = {
   en: {
     app: { name: 'Reverse Vending Machine', tagline: 'Smart Recycling' },
@@ -1266,4 +1268,5 @@ export const messages = {
       failed: 'Log masuk Google gagal. Sila cuba lagi.',
     },
   },
+  id,
 }

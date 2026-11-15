@@ -55,8 +55,8 @@ return [
     'qr_scanned'            => 'Kode QR berhasil dipindai. Sesi siap.',
 
     // TransactionController
-    'bin_full'              => 'Tempat :material sudah penuh. Silakan pilih material lain.',
-    'bin_has_space'         => 'Tempat masih cukup. Membuka penutup.',
+    'bin_full'              => 'Wadah :material sudah penuh. Silakan pilih material lain.',
+    'bin_has_space'         => 'Wadah masih muat. Membuka penutup.',
     'lid_opening'           => 'Penutup sedang dibuka. Mohon tunggu...',
     'item_received'         => 'Barang diterima. Menjalankan konveyor...',
     'conveyor_running'      => 'Konveyor berjalan. Memindahkan barang ke area pemindaian...',
