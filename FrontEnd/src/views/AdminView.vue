@@ -445,7 +445,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th class="sortable" @click="sortUsersBy('id')">ID{{ usersSortIndicator('id') }}</th>
+                  <th class="sortable" @click="sortUsersBy('display_no')">ID{{ usersSortIndicator('display_no') }}</th>
                   <th class="sortable" @click="sortUsersBy('name')">Name{{ usersSortIndicator('name') }}</th>
                   <th class="sortable" @click="sortUsersBy('email')">Email{{ usersSortIndicator('email') }}</th>
                   <th class="sortable" @click="sortUsersBy('total_points')">Points{{ usersSortIndicator('total_points') }}</th>
@@ -1385,6 +1385,7 @@ import { toDatetimeLocalValue } from '@/utils/admin/toDatetimeLocalValue.js'
 import { DETECTION_DATE_PRESETS, detectionDateRange } from '@/utils/admin/detectionDateRange.js'
 import { buildAdminQuery, parseAdminQuery } from '@/utils/admin/adminTabState.js'
 import { itemLabel, resultReason, confidenceLevel, percentOf } from '@/utils/admin/transactionDisplay.js'
+import { formatUserId } from '@/utils/admin/userCode.js'
 import { DATA_SCOPES, isStaleScope, readDataScope, writeDataScope } from '@/utils/admin/dataScope.js'
 import { downloadExcel } from '@/utils/admin/excelExport.js'
 import { filterHidden, pruneSettled, removeLog, restoreLog } from '@/utils/admin/detectionOptimistic.js'
@@ -1906,12 +1907,6 @@ function timeOnly(ts) {
 
 function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
-}
-
-function formatUserId(user) {
-  if (!user) return 'GUEST'
-  if (user.role === 'admin') return 'ADMIN-' + String(user.id).padStart(3, '0')
-  return 'USR-' + String(user.id).padStart(4, '0')
 }
 
 // ── Transactions table display ──
