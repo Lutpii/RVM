@@ -139,7 +139,7 @@ class AdminTransactionFiltersTest extends TestCase
         $this->makeTx($m, $bob);
         $this->asAdmin();
 
-        $this->getJson('/api/admin/transactions?search=USR-' . str_pad((string) $bob->id, 4, '0', STR_PAD_LEFT))
+        $this->getJson('/api/admin/transactions?search=USR-' . str_pad((string) $bob->display_no, 4, '0', STR_PAD_LEFT))
             ->assertOk()
             ->assertJsonCount(1, 'transactions.data')
             ->assertJsonPath('transactions.data.0.user_id', $bob->id);

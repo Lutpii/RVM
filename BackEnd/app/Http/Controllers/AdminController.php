@@ -137,7 +137,7 @@ class AdminController extends Controller
 
     // Users management
     private const USER_SORTABLE_COLUMNS = [
-        'id', 'name', 'email', 'total_points', 'role', 'is_verified', 'created_at',
+        'id', 'display_no', 'name', 'email', 'total_points', 'role', 'is_verified', 'created_at',
     ];
 
     public function users(Request $request): JsonResponse
@@ -168,8 +168,15 @@ class AdminController extends Controller
     private function displayUserId(?User $user): string
     {
         if (!$user) return 'GUEST';
-        if ($user->role === 'admin') return 'ADMIN-' . str_pad((string) $user->id, 3, '0', STR_PAD_LEFT);
-        return 'USR-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT);
+        $no = (string) ($user->display_no ?? $user->id);
+        if ($user->role === 'admin') return 'ADMIN-' . str_pad($no, 3, '0', STR_PAD_LEFT);
+        return 'USR-' . str_pad($no, 4, '0', STR_PAD_LEFT);
+    }
+
+    // "USR-0042", "ADMIN-003" or "42" as shown in the admin tables -> 42.
+    private function searchedDisplayNo(string $search): ?int
+    {
+        return preg_match('/^(?:usr-|admin-)?0*(\d+)$/i', $search, $m) ? (int) $m[1] : null;
     }
 
     private function usersQuery(Request $request): Builder
@@ -189,10 +196,12 @@ class AdminController extends Controller
         // from anywhere users are browsed/managed individually.
         $query = User::where('email', '!=', User::GUEST_EMAIL)->orderBy($sortColumn, $sortDirection);
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
+            $displayNo = $this->searchedDisplayNo($search);
+            $query->where(function ($q) use ($search, $displayNo) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%");
+                if ($displayNo !== null) $q->orWhere('display_no', $displayNo);
             });
         }
 
@@ -637,12 +646,12 @@ class AdminController extends Controller
 
         if ($search !== '') {
             // "USR-0042" / "42" as shown in the table also find that user.
-            $userId = preg_match('/^(?:usr-)?0*(\d+)$/i', $search, $m) ? (int) $m[1] : null;
-            $query->where(function ($q) use ($search, $userId) {
+            $displayNo = $this->searchedDisplayNo($search);
+            $query->where(function ($q) use ($search, $displayNo) {
                 $q->where('material_selected', 'like', "%{$search}%")
                   ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%"));
-                if ($userId !== null) $q->orWhere('user_id', $userId);
+                if ($displayNo !== null) $q->orWhereHas('user', fn ($u) => $u->where('display_no', $displayNo));
             });
         }
 

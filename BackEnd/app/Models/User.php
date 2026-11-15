@@ -4,11 +4,44 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 class User extends Authenticatable {
     use HasApiTokens, Notifiable;
     protected $fillable = ['name','email','phone','password_hash','google_id','avatar_url','avatar_icon','total_points','role','is_verified','otp_code','otp_expires_at','preferred_language','theme_preference','account_status'];
     protected $hidden   = ['password_hash','otp_code'];
+    protected $casts    = ['display_no' => 'integer'];
+
+    protected static function booted(): void
+    {
+        static::created(fn (User $user) => $user->assignDisplayNo());
+    }
+
+    // Admin-facing number in registration order (USR-0042), see the
+    // 2026_11_15 migration. Two sign-ups at the same moment can read the same
+    // max(display_no); the unique index rejects the second, which retries.
+    public function assignDisplayNo(): void
+    {
+        if ($this->display_no !== null) return;
+
+        for ($attempt = 0; ; $attempt++) {
+            $candidate = static::displayNoCandidate($attempt);
+            try {
+                static::query()->whereKey($this->getKey())->whereNull('display_no')
+                    ->update(['display_no' => $candidate]);
+                $this->display_no = $candidate;
+                $this->syncOriginalAttribute('display_no');
+                return;
+            } catch (UniqueConstraintViolationException $e) {
+                if ($attempt >= 4) throw $e;
+            }
+        }
+    }
+
+    protected static function displayNoCandidate(int $attempt): int
+    {
+        return (int) static::query()->max('display_no') + 1;
+    }
     public function recyclingSessions() { return $this->hasMany(RecyclingSession::class); }
     public function transactions()      { return $this->hasMany(Transaction::class); }
     public function pointsHistory()     { return $this->hasMany(PointsHistory::class); }
