@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794730668.171138,
-    "seen": 1794730860.3263562,
-    "ast_hash": "09b87e42e4a9f686cf47c5477711e77a",
+    "mtime": 1794731131.936275,
+    "seen": 1794731274.7400522,
+    "ast_hash": "783c76319f7d692d54f58318a49b2a41",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LandingView.vue": {
-    "mtime": 1794730668.4481778,
-    "seen": 1794730860.3445842,
-    "ast_hash": "485ffe02dcf47434a07de914c3e253e0",
+    "mtime": 1794731217.3613307,
+    "seen": 1794731274.759934,
+    "ast_hash": "262fd23e3b9bbf82d4487da74b761ce8",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LoginView.vue": {
@@ -2412,9 +2412,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/id.js": {
-    "mtime": 1794730668.2192848,
-    "seen": 1794730860.3263562,
-    "ast_hash": "c1cd2657c57b2499bccc3efc06cffc70",
+    "mtime": 1794731131.9294155,
+    "seen": 1794731274.7395852,
+    "ast_hash": "238744c249fe07655e1aa0dac7013532",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/idParity.test.js": {
@@ -2538,9 +2538,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/brandLocales.test.js": {
-    "mtime": 1794730786.2225702,
-    "seen": 1794730860.3259022,
-    "ast_hash": "ecac37d55f0ca8bbbe1240daff21d239",
+    "mtime": 1794731217.3627973,
+    "seen": 1794731274.7386909,
+    "ast_hash": "d621dd4f1552f7a3e4696f74f9adad0b",
     "semantic_hash": ""
   }
 }
