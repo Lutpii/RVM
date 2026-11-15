@@ -17,14 +17,17 @@ function titleCase(slug) {
     .join(' ')
 }
 
-function detailsMessage(details) {
+function detailsMessage(details, opts = {}) {
   if (details == null) return ''
   let parsed = details
   if (typeof details === 'string') {
     try { parsed = JSON.parse(details) } catch { return details }
   }
   if (parsed && typeof parsed === 'object') {
-    let msg = typeof parsed.message === 'string' ? parsed.message : ''
+    // New rows carry message_key + params so the text can follow the viewer's
+    // language; old rows (and unknown keys) keep the stored English message.
+    const translated = parsed.message_key ? opts.message?.(parsed.message_key, parsed.params || {}) : undefined
+    let msg = translated ?? (typeof parsed.message === 'string' ? parsed.message : '')
     const ch = parsed.changes
     if (ch && typeof ch === 'object' && !Array.isArray(ch)) {
       const parts = Object.entries(ch).map(([field, v]) => {
@@ -44,13 +47,14 @@ function detailsMessage(details) {
 // opts.locale formats the time in the chosen language.
 export function formatAuditLog(log, opts = {}) {
   const hasTarget = log.target_type && log.target_type !== 'system'
+  const targetName = opts.target?.(log.target_type) ?? log.target_type
   return {
     id: log.id,
     time: log.created_at ? new Date(log.created_at).toLocaleString(opts.locale) : '—',
     admin: log.admin?.name || '—',
     action: log.action,
     actionLabel: opts.label?.(log.action) ?? AUDIT_ACTION_LABELS[log.action] ?? titleCase(log.action),
-    target: !hasTarget ? '—' : (log.target_id ? `${log.target_type} #${log.target_id}` : log.target_type),
-    message: detailsMessage(log.details),
+    target: !hasTarget ? '—' : (log.target_id ? `${targetName} #${log.target_id}` : targetName),
+    message: detailsMessage(log.details, opts),
   }
 }

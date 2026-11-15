@@ -30,3 +30,15 @@ describe('adminUi messages', () => {
     }
   })
 })
+
+describe('audit log detail keys written by the backend', () => {
+  it('each has a translation in every language', () => {
+    const php = read('../../../BackEnd/app/Http/Controllers/AdminController.php')
+    const keys = [...new Set([...php.matchAll(/\[\s*'([a-zA-Z]+)',\s*\[/g)].map((m) => m[1]))]
+      .filter((k) => /^(export|update|delete|create|kiosk|maintenance|bin|reward|cash|compactor|use|email)/.test(k))
+    expect(keys.length).toBeGreaterThan(20)
+    for (const lang of ['en', 'my', 'id']) {
+      expect(keys.filter((k) => !adminUi[lang]['auditMsg_' + k])).toEqual([])
+    }
+  })
+})

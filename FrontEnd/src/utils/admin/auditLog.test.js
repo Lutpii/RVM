@@ -55,3 +55,20 @@ describe('formatAuditLog with a translator', () => {
     expect(formatAuditLog({ id: 2, action: 'export_csv' }, { label }).actionLabel).toBe('Report exported')
   })
 })
+
+describe('formatAuditLog translated details and target', () => {
+  const message = (key, params) => (key === 'deleteMachine' ? `Mesin dihapus: ${params.name}` : undefined)
+  const target = (type) => ({ machine: 'mesin' })[type]
+  it('uses message_key + params when the translator knows the key', () => {
+    const details = JSON.stringify({ message: 'Deleted machine: Lobby', message_key: 'deleteMachine', params: { name: 'Lobby' } })
+    const row = formatAuditLog({ id: 1, action: 'delete_machine', target_type: 'machine', target_id: 7, details }, { message, target })
+    expect(row.message).toBe('Mesin dihapus: Lobby')
+    expect(row.target).toBe('mesin #7')
+  })
+  it('falls back to the stored English text for old rows and unknown keys', () => {
+    const old = formatAuditLog({ id: 2, action: 'x', details: JSON.stringify({ message: 'Old text' }) }, { message, target })
+    expect(old.message).toBe('Old text')
+    const unknown = formatAuditLog({ id: 3, action: 'x', details: JSON.stringify({ message: 'Kept', message_key: 'nope', params: {} }) }, { message })
+    expect(unknown.message).toBe('Kept')
+  })
+})

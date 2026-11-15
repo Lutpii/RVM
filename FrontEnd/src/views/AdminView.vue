@@ -1529,7 +1529,10 @@ const auditPerPage = ref(20)
 const auditTotal = ref(0)
 const auditLastPage = ref(1)
 const auditLabel = (a) => (te('adminUi.audit_' + a) ? t('adminUi.audit_' + a) : undefined)
-const auditRows = computed(() => auditLogs.value.map((log) => formatAuditLog(log, { label: auditLabel, locale: intl() })))
+const auditMessage = (key, params) => (te('adminUi.auditMsg_' + key) ? t('adminUi.auditMsg_' + key, params) : undefined)
+const auditTarget = (type) => (te('adminUi.target_' + type) ? t('adminUi.target_' + type) : undefined)
+const auditRows = computed(() => auditLogs.value.map((log) =>
+  formatAuditLog(log, { label: auditLabel, message: auditMessage, target: auditTarget, locale: intl() })))
 function auditActionLabel(a) {
   return formatAuditLog({ action: a }, { label: auditLabel }).actionLabel
 }
