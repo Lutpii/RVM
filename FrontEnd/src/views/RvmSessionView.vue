@@ -164,7 +164,7 @@
             </svg>
           </div>
           <h2 class="step-status">{{ $t('session.weighing') }}</h2>
-          <div class="points-display" v-if="itemPoints > 0">
+          <div class="points-display" :class="{ shown: itemPoints > 0 }" :aria-hidden="itemPoints > 0 ? null : 'true'">
             <span class="points-value">+{{ itemPoints }}</span>
             <span class="points-preview">{{ $t('session.pointsEarned') }}</span>
           </div>
@@ -1499,7 +1499,8 @@ onMounted(() => {
 
 .points-icon { width: 60px; height: 60px; color: var(--accent-green); margin-bottom: 16px; animation: pulse 1.2s ease-in-out infinite; }
 
-.points-display { margin-top: 12px; text-align: center; }
+.points-display { margin-top: 12px; text-align: center; opacity: 0; transition: opacity 0.3s ease; }
+.points-display.shown { opacity: 1; }
 .points-value { display: block; font-size: 40px; font-weight: 800; color: var(--accent-green); }
 .points-preview { color: var(--text-secondary); font-size: 16px; font-weight: 600; }
 
