@@ -38,9 +38,14 @@ class User extends Authenticatable {
         }
     }
 
+    // A retry reads with FOR UPDATE: inside a long transaction (e.g. the demo
+    // data generator) a plain read keeps seeing its old snapshot and would
+    // collide again; a locking read sees the latest committed number.
     protected static function displayNoCandidate(int $attempt): int
     {
-        return (int) static::query()->max('display_no') + 1;
+        $query = static::query();
+        if ($attempt > 0) $query->lockForUpdate();
+        return (int) $query->max('display_no') + 1;
     }
     public function recyclingSessions() { return $this->hasMany(RecyclingSession::class); }
     public function transactions()      { return $this->hasMany(Transaction::class); }
