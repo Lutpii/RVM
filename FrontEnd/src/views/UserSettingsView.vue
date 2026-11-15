@@ -91,12 +91,18 @@
           <nav class="menu-group" :aria-label="$t('settings.sectionPreferences')">
             <h2 class="menu-title">{{ $t('settings.sectionPreferences') }}</h2>
             <div class="menu-card">
-              <button type="button" class="menu-row" @click="openView('language')">
+              <!-- Inline dropdown: the invisible native select covers the whole
+                   row, so a tap anywhere opens the phone's own picker. -->
+              <div class="menu-row lang-row">
                 <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
-                <span class="menu-label">{{ $t('settings.language') }}</span>
-                <span class="menu-value">{{ currentLanguage.label }}</span>
-                <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-              </button>
+                <span class="menu-label" aria-hidden="true">{{ $t('settings.language') }}</span>
+                <span class="menu-value" aria-hidden="true">{{ currentLanguage.label }}</span>
+                <PhCaretDown class="menu-chevron" :size="18" aria-hidden="true" />
+                <select class="lang-select" :value="locale" :aria-label="$t('settings.language')"
+                  @change="setLanguage($event.target.value)">
+                  <option v-for="opt in languages" :key="opt.code" :value="opt.code">{{ opt.label }}</option>
+                </select>
+              </div>
               <button type="button" class="menu-row" role="switch" :aria-checked="theme === 'dark'" @click="toggleTheme()">
                 <PhMoonStars class="menu-icon icon-purple" :size="22" aria-hidden="true" />
                 <span class="menu-label">{{ $t('settings.darkMode') }}</span>
@@ -109,6 +115,11 @@
         <nav class="menu-group" :aria-label="$t('settings.sectionAccount')">
           <h2 class="menu-title">{{ $t('settings.sectionAccount') }}</h2>
           <div class="menu-card">
+            <RouterLink v-if="auth.isAdmin" to="/admin" class="menu-row">
+              <PhGear class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+              <span class="menu-label">{{ $t('settings.openAdminPanel') }}</span>
+              <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
+            </RouterLink>
             <button type="button" class="menu-row" @click="openView('profile')">
               <PhUserCircle class="menu-icon icon-blue" :size="22" aria-hidden="true" />
               <span class="menu-label">{{ $t('settings.editProfile') }}</span>
@@ -119,11 +130,6 @@
               <span class="menu-label">{{ $t('settings.accountInfo') }}</span>
               <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
             </button>
-            <RouterLink v-if="auth.isAdmin" to="/admin" class="menu-row">
-              <PhGear class="menu-icon icon-blue" :size="22" aria-hidden="true" />
-              <span class="menu-label">{{ $t('settings.openAdminPanel') }}</span>
-              <PhCaretRight class="menu-chevron" :size="18" aria-hidden="true" />
-            </RouterLink>
             <RouterLink to="/privacy" class="menu-row">
               <PhShieldCheck class="menu-icon icon-muted" :size="22" aria-hidden="true" />
               <span class="menu-label">{{ $t('settings.privacyPolicy') }}</span>
@@ -291,18 +297,6 @@
           </div>
         </template>
 
-        <!-- Language -->
-        <template v-else-if="view === 'language'">
-          <div class="menu-card" role="radiogroup" :aria-label="$t('settings.language')">
-            <button v-for="opt in languages" :key="opt.code" type="button" class="menu-row"
-              role="radio" :aria-checked="locale === opt.code" @click="setLanguage(opt.code)">
-              <span class="menu-label">{{ opt.label }}</span>
-              <PhCheck v-if="locale === opt.code" class="menu-check" :size="20" weight="bold" aria-hidden="true" />
-            </button>
-          </div>
-          <p class="sub-hint">{{ $t('settings.languageHint') }}</p>
-        </template>
-
         <!-- Account info + danger zone -->
         <template v-else-if="view === 'info'">
           <div class="menu-card">
@@ -438,7 +432,7 @@ import {
   PhPencilSimple, PhCaretRight, PhCaretLeft, PhScan, PhClockCounterClockwise,
   PhCoins, PhRecycle, PhLeaf, PhArrowDown, PhArrowUp, PhTicket, PhWallet, PhReceipt,
   PhTranslate, PhMoonStars, PhUserCircle, PhInfo, PhShieldCheck, PhGear, PhSignOut,
-  PhLock, PhArrowsLeftRight, PhCheck, PhTrash, PhX,
+  PhLock, PhArrowsLeftRight, PhCaretDown, PhTrash, PhX,
 } from '@phosphor-icons/vue'
 
 const router      = useRouter()
@@ -450,13 +444,12 @@ const showToast   = inject('showToast')
 const { locale, t } = useI18n()
 
 // ── Sub-pages live in ?view= so the phone's Back button returns to the menu ──
-const SUB_VIEWS = ['profile', 'redeem', 'history', 'language', 'info']
+const SUB_VIEWS = ['profile', 'redeem', 'history', 'info']
 const view = computed(() => (SUB_VIEWS.includes(route.query.view) ? route.query.view : 'main'))
 const subTitle = computed(() => ({
   profile: t('settings.editProfile'),
   redeem: t('settings.redeemEwallet'),
   history: t('settings.redemptionHistory'),
-  language: t('settings.language'),
   info: t('settings.accountInfo'),
 }[view.value] || ''))
 
@@ -854,6 +847,9 @@ onMounted(async () => {
 .menu-badge { padding: 2px 9px; border-radius: 999px; background: rgba(78,110,242,0.14); color: var(--accent-blue); font-size: 13px; font-weight: 700; }
 .menu-chevron { color: var(--text-muted); flex-shrink: 0; }
 .menu-check { color: var(--accent-blue); }
+.lang-row { position: relative; }
+.lang-row:focus-within { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
+.lang-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
 
 .switch { width: 46px; height: 28px; border-radius: 999px; background: #cbd5e1; position: relative; flex-shrink: 0; transition: background .2s; }
 .switch.on { background: var(--accent-blue); }
