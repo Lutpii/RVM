@@ -25,7 +25,7 @@ class MachineController extends Controller
     {
         $machine = RvmMachine::find($id);
         if (!$machine) {
-            return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
         }
         return response()->json(['success' => true, 'machine' => $machine]);
     }

@@ -150,7 +150,7 @@ class AdminController extends Controller
     public function exportUsers(Request $request, AdminTableExport $export)
     {
         $users = $this->usersQuery($request)->get();
-        $this->log($request->user(), 'export_csv', 'users', 0, "Exported {$users->count()} users (Excel)");
+        $this->log($request->user(), 'export_csv', 'users', 0, "Exported {$users->count()} users (Excel)", [], ['exportUsers', ['n' => $users->count()]]);
 
         return $export->download('Users', 'rvm_users', [
             'Search' => trim((string) $request->query('search', '')),
@@ -212,13 +212,13 @@ class AdminController extends Controller
     public function showUser(Request $request, int $id): JsonResponse
     {
         $user = User::with(['recyclingSessions', 'transactions'])->find($id);
-        if (!$user) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+        if (!$user) return response()->json(['success' => false, 'message' => __('messages.user_not_found')], 404);
         return response()->json(['success' => true, 'user' => $user]);
     }
 
     public function updateUser(Request $request, int $id): JsonResponse
     {
-        if (!User::whereKey($id)->exists()) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+        if (!User::whereKey($id)->exists()) return response()->json(['success' => false, 'message' => __('messages.user_not_found')], 404);
 
         $data = $request->validate([
             'name'         => 'sometimes|string|max:100',
@@ -235,7 +235,7 @@ class AdminController extends Controller
         if ((int) $id === (int) $admin->id && ($data['account_status'] ?? 'active') !== 'active') {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot suspend your own account.',
+                'message' => __('messages.cannot_suspend_self'),
                 'errors'  => ['account_status' => ['You cannot suspend your own account.']],
             ], 422);
         }
@@ -267,7 +267,7 @@ class AdminController extends Controller
                 ]);
             }
         });
-        $this->log($admin, 'update_user', 'user', $id, "Updated user: {$user->name}", ['changes' => $changes]);
+        $this->log($admin, 'update_user', 'user', $id, "Updated user: {$user->name}", ['changes' => $changes], ['updateUser', ['name' => $user->name]]);
 
         return response()->json(['success' => true, 'user' => $user]);
     }
@@ -275,10 +275,10 @@ class AdminController extends Controller
     public function deleteUser(Request $request, int $id): JsonResponse
     {
         $user = User::find($id);
-        if (!$user) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
-        $this->log($request->user(), 'delete_user', 'user', $id, "Deleted user: {$user->name}");
+        if (!$user) return response()->json(['success' => false, 'message' => __('messages.user_not_found')], 404);
+        $this->log($request->user(), 'delete_user', 'user', $id, "Deleted user: {$user->name}", [], ['deleteUser', ['name' => $user->name]]);
         $user->delete();
-        return response()->json(['success' => true, 'message' => 'User deleted.']);
+        return response()->json(['success' => true, 'message' => __('messages.user_deleted')]);
     }
 
     // Machine management
@@ -300,7 +300,7 @@ class AdminController extends Controller
             $submitted = $order;
             sort($submitted);
             if ($current !== $submitted) {
-                return response()->json(['message' => 'Machine list changed. Reload and try again.'], 409);
+                return response()->json(['message' => __('messages.machine_list_changed')], 409);
             }
 
             foreach ($order as $position => $id) {
@@ -337,14 +337,14 @@ class AdminController extends Controller
             'paper_level'   => 0,
         ]);
 
-        $this->log($request->user(), 'create_machine', 'machine', $machine->id, "Created machine: {$machine->name}");
+        $this->log($request->user(), 'create_machine', 'machine', $machine->id, "Created machine: {$machine->name}", [], ['createMachine', ['name' => $machine->name]]);
         return response()->json(['success' => true, 'machine' => $machine], 201);
     }
 
     public function updateMachine(Request $request, int $id): JsonResponse
     {
         $machine = RvmMachine::find($id);
-        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+        if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $validated = $request->validate([
             'name'          => 'sometimes|required|string|max:100',
@@ -364,17 +364,17 @@ class AdminController extends Controller
             'is_demo'       => $validated['is_demo'] ?? $machine->is_demo,
         ]);
 
-        $this->log($request->user(), 'update_machine', 'machine', $id, "Updated machine: {$machine->name}");
+        $this->log($request->user(), 'update_machine', 'machine', $id, "Updated machine: {$machine->name}", [], ['updateMachine', ['name' => $machine->name]]);
         return response()->json(['success' => true, 'machine' => $machine->fresh()]);
     }
 
     public function deleteMachine(Request $request, int $id): JsonResponse
     {
         $machine = RvmMachine::find($id);
-        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
-        $this->log($request->user(), 'delete_machine', 'machine', $id, "Deleted machine: {$machine->name}");
+        if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
+        $this->log($request->user(), 'delete_machine', 'machine', $id, "Deleted machine: {$machine->name}", [], ['deleteMachine', ['name' => $machine->name]]);
         $machine->delete();
-        return response()->json(['success' => true, 'message' => 'Machine deleted.']);
+        return response()->json(['success' => true, 'message' => __('messages.machine_deleted')]);
     }
 
     // Kiosk maintenance shutdown — gated by an admin session (this middleware
@@ -385,7 +385,7 @@ class AdminController extends Controller
     public function maintainMachine(Request $request, int $id): JsonResponse
     {
         $machine = RvmMachine::find($id);
-        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+        if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $validated = $request->validate(['qr_token' => 'required|string']);
 
@@ -398,7 +398,7 @@ class AdminController extends Controller
         if (!$qrSession) {
             return response()->json([
                 'success' => false,
-                'message' => 'QR is invalid, expired, or for a different machine. Scan the code currently shown on the kiosk.',
+                'message' => __('messages.maint_qr_invalid'),
             ], 400);
         }
 
@@ -406,19 +406,19 @@ class AdminController extends Controller
         // trigger (or picked up by the ordinary /qr/scan flow afterward).
         $qrSession->update(['status' => 'expired']);
 
-        $this->log($request->user(), 'kiosk_maintenance', 'machine', $machine->id, "Triggered kiosk maintenance shutdown for machine: {$machine->name}");
+        $this->log($request->user(), 'kiosk_maintenance', 'machine', $machine->id, "Triggered kiosk maintenance shutdown for machine: {$machine->name}", [], ['kioskMaintenance', ['name' => $machine->name]]);
 
         try {
             $response = Http::timeout(3)->post(config('services.kiosk_control.url'));
             if (!$response->successful()) {
-                return response()->json(['success' => false, 'message' => 'Kiosk control service responded with an error.'], 502);
+                return response()->json(['success' => false, 'message' => __('messages.kiosk_service_error')], 502);
             }
         } catch (\Throwable $e) {
             Log::error('[KioskMaintenance] failed to reach control service: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Could not reach the kiosk control service on this machine.'], 502);
+            return response()->json(['success' => false, 'message' => __('messages.kiosk_service_unreachable')], 502);
         }
 
-        return response()->json(['success' => true, 'message' => 'Kiosk closed for maintenance.']);
+        return response()->json(['success' => true, 'message' => __('messages.kiosk_closed')]);
     }
 
     // ── Maintenance records (A06): service history per machine ──
@@ -426,7 +426,7 @@ class AdminController extends Controller
     public function maintenanceRecords(int $id): JsonResponse
     {
         if (!RvmMachine::whereKey($id)->exists()) {
-            return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
         }
         $records = MaintenanceRecord::with(['opener:id,name', 'closer:id,name'])
             ->where('machine_id', $id)
@@ -440,7 +440,7 @@ class AdminController extends Controller
     public function createMaintenanceRecord(Request $request, int $id): JsonResponse
     {
         $machine = RvmMachine::find($id);
-        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+        if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $validated = $request->validate([
             'technician_name' => 'required|string|max:100',
@@ -453,7 +453,8 @@ class AdminController extends Controller
             'opened_by'  => $request->user()->id,
         ]);
         $this->log($request->user(), 'maintenance_open', 'machine', $machine->id,
-            "Opened maintenance record for {$machine->name} ({$validated['technician_name']})", ['record_id' => $record->id]);
+            "Opened maintenance record for {$machine->name} ({$validated['technician_name']})", ['record_id' => $record->id],
+            ['maintenanceOpen', ['name' => $machine->name, 'technician' => $validated['technician_name']]]);
 
         return response()->json(['success' => true, 'record' => $record->load(['opener', 'closer'])->toApi()], 201);
     }
@@ -463,9 +464,9 @@ class AdminController extends Controller
         $validated = $request->validate(['action_taken' => 'required|string|max:2000']);
 
         $record = MaintenanceRecord::with('machine')->find($recordId);
-        if (!$record) return response()->json(['success' => false, 'message' => 'Maintenance record not found.'], 404);
+        if (!$record) return response()->json(['success' => false, 'message' => __('messages.maintenance_not_found')], 404);
         if ($record->status === 'closed') {
-            return response()->json(['success' => false, 'message' => 'This maintenance record is already closed.'], 409);
+            return response()->json(['success' => false, 'message' => __('messages.maintenance_already_closed')], 409);
         }
 
         $record->update([
@@ -475,7 +476,8 @@ class AdminController extends Controller
             'closed_at'    => now(),
         ]);
         $this->log($request->user(), 'maintenance_close', 'machine', $record->machine_id,
-            "Closed maintenance record for " . ($record->machine?->name ?? "machine #{$record->machine_id}"), ['record_id' => $record->id]);
+            "Closed maintenance record for " . ($record->machine?->name ?? "machine #{$record->machine_id}"), ['record_id' => $record->id],
+            ['maintenanceClose', ['name' => $record->machine?->name ?? "#{$record->machine_id}"]]);
 
         return response()->json(['success' => true, 'record' => $record->load(['opener', 'closer'])->toApi()]);
     }
@@ -483,7 +485,7 @@ class AdminController extends Controller
     public function updateBinLevels(Request $request, int $id): JsonResponse
     {
         $machine = RvmMachine::find($id);
-        if (!$machine) return response()->json(['success' => false, 'message' => 'Machine not found.'], 404);
+        if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $request->validate([
             'aluminum_level' => 'sometimes|integer|min:0|max:100',
@@ -493,7 +495,7 @@ class AdminController extends Controller
         ]);
 
         $machine->update($request->only(['aluminum_level', 'plastic_level', 'glass_level', 'paper_level']));
-        $this->log($request->user(), 'update_bin_levels', 'machine', $machine->id, "Bin levels updated for {$machine->name}");
+        $this->log($request->user(), 'update_bin_levels', 'machine', $machine->id, "Bin levels updated for {$machine->name}", [], ['binLevels', ['name' => $machine->name]]);
         return response()->json(['success' => true, 'machine' => $machine]);
     }
 
@@ -507,7 +509,7 @@ class AdminController extends Controller
     public function exportSessions(Request $request, AdminTableExport $export)
     {
         $sessions = $this->sessionsQuery($request)->get();
-        $this->log($request->user(), 'export_csv', 'sessions', 0, "Exported {$sessions->count()} sessions (Excel)");
+        $this->log($request->user(), 'export_csv', 'sessions', 0, "Exported {$sessions->count()} sessions (Excel)", [], ['exportSessions', ['n' => $sessions->count()]]);
 
         return $export->download('Sessions', 'rvm_sessions', [
             'Search' => trim((string) $request->query('search', '')),
@@ -560,7 +562,7 @@ class AdminController extends Controller
     public function exportTransactions(Request $request, AdminTableExport $export)
     {
         $transactions = $this->transactionsQuery($request)->get();
-        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported {$transactions->count()} transactions (Excel)");
+        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported {$transactions->count()} transactions (Excel)", [], ['exportTransactions', ['n' => $transactions->count()]]);
 
         $status = $request->query('status');
         $machineName = $request->filled('machine_id') ? RvmMachine::find($request->query('machine_id'))?->name : null;
@@ -760,7 +762,7 @@ class AdminController extends Controller
     {
         $log = DetectionLog::find($id);
         if (!$log) {
-            return response()->json(['success' => false, 'message' => 'Detection log not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.detection_not_found')], 404);
         }
 
         if ($request->boolean('undo')) {
@@ -779,7 +781,7 @@ class AdminController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'The capture could not be returned to the pending folder.',
+                    'message' => __('messages.capture_return_failed'),
                 ], 500);
             }
 
@@ -789,7 +791,7 @@ class AdminController extends Controller
         if ($log->is_mock || !$log->image_path || !Storage::disk('public')->exists($log->image_path)) {
             return response()->json([
                 'success' => false,
-                'message' => 'A real captured image is required before this detection can be reviewed.',
+                'message' => __('messages.capture_required'),
             ], 422);
         }
 
@@ -805,7 +807,7 @@ class AdminController extends Controller
             if ($predicted === '' || $predicted === 'unknown' || !in_array($predicted, self::DETECTION_REVIEW_LABELS, true)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unknown predictions must be assigned an actual material.',
+                    'message' => __('messages.unknown_needs_material'),
                 ], 422);
             }
             $groundTruthLabel = $predicted;
@@ -814,13 +816,13 @@ class AdminController extends Controller
             if (!$groundTruthLabel) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Select the actual material for an incorrect prediction.',
+                    'message' => __('messages.select_actual_material'),
                 ], 422);
             }
             if ($groundTruthLabel === $predicted) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'The actual material must differ from the AI prediction.',
+                    'message' => __('messages.material_must_differ'),
                 ], 422);
             }
         }
@@ -844,7 +846,7 @@ class AdminController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'The review could not be saved because the capture could not be moved.',
+                'message' => __('messages.review_move_failed'),
             ], 500);
         }
 
@@ -882,7 +884,7 @@ class AdminController extends Controller
             $request,
             $exportStatus
         )->get();
-        $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs (Excel)");
+        $this->log($request->user(), 'export_csv', 'detection_logs', 0, "Exported {$logs->count()} detection logs (Excel)", [], ['exportDetections', ['n' => $logs->count()]]);
 
         return $export->download('Detection reviews', 'detection_reviews', [
             'Review status' => $exportStatus,
@@ -920,7 +922,7 @@ class AdminController extends Controller
     {
         // Read before logging this export, so the file doesn't list itself.
         $logs = $this->logsQuery($request)->get();
-        $this->log($request->user(), 'export_csv', 'admin_logs', 0, "Exported {$logs->count()} audit log rows (Excel)");
+        $this->log($request->user(), 'export_csv', 'admin_logs', 0, "Exported {$logs->count()} audit log rows (Excel)", [], ['exportAudit', ['n' => $logs->count()]]);
 
         return $export->download('Audit log', 'rvm_audit_log', [
             'Search' => trim((string) $request->query('search', '')),
@@ -984,7 +986,7 @@ class AdminController extends Controller
 
         $config = $request->only(['plastic', 'aluminum', 'glass', 'paper']);
         $rewardConfig->save($config);
-        $this->log($request->user(), 'update_reward_config', 'system', 0, 'Updated reward points configuration');
+        $this->log($request->user(), 'update_reward_config', 'system', 0, 'Updated reward points configuration', [], ['rewardConfig', []]);
 
         return response()->json(['success' => true, 'config' => $config]);
     }
@@ -1003,7 +1005,7 @@ class AdminController extends Controller
         ]);
 
         $settings->save($validated);
-        $this->log($request->user(), 'update_cash_redeem_settings', 'system', 0, 'Updated cash redeem settings');
+        $this->log($request->user(), 'update_cash_redeem_settings', 'system', 0, 'Updated cash redeem settings', [], ['cashSettings', []]);
 
         return response()->json(['success' => true, 'settings' => $validated]);
     }
@@ -1020,7 +1022,8 @@ class AdminController extends Controller
 
         $settings->save($validated);
         $this->log($request->user(), 'update_compactor_settings', 'system', 0,
-            "Updated compactor settings: max {$validated['plastic']} plastic, {$validated['aluminum']} aluminum per session");
+            "Updated compactor settings: max {$validated['plastic']} plastic, {$validated['aluminum']} aluminum per session", [],
+            ['compactorSettings', ['plastic' => $validated['plastic'], 'aluminum' => $validated['aluminum']]]);
 
         return response()->json(['success' => true, 'settings' => $settings->load()]);
     }
@@ -1059,14 +1062,14 @@ class AdminController extends Controller
             $item->storeImage($request->file('image'));
         }
 
-        $this->log($request->user(), 'create_reward_item', 'reward_item', $item->id, "Created reward item: {$item->name}");
+        $this->log($request->user(), 'create_reward_item', 'reward_item', $item->id, "Created reward item: {$item->name}", [], ['createReward', ['name' => $item->name]]);
         return response()->json(['success' => true, 'reward_item' => $item], 201);
     }
 
     public function updateRewardItem(Request $request, int $id): JsonResponse
     {
         $item = RewardItem::find($id);
-        if (!$item) return response()->json(['success' => false, 'message' => 'Reward item not found.'], 404);
+        if (!$item) return response()->json(['success' => false, 'message' => __('messages.reward_item_not_found')], 404);
 
         $validated = $request->validate([
             'name'         => 'sometimes|required|string|max:150',
@@ -1093,27 +1096,27 @@ class AdminController extends Controller
         if ($request->hasFile('image')) {
             $item->storeImage($request->file('image'));
         }
-        $this->log($request->user(), 'update_reward_item', 'reward_item', $id, "Updated reward item: {$item->name}");
+        $this->log($request->user(), 'update_reward_item', 'reward_item', $id, "Updated reward item: {$item->name}", [], ['updateReward', ['name' => $item->name]]);
         return response()->json(['success' => true, 'reward_item' => $item->fresh()]);
     }
 
     public function deleteRewardItem(Request $request, int $id): JsonResponse
     {
         $item = RewardItem::find($id);
-        if (!$item) return response()->json(['success' => false, 'message' => 'Reward item not found.'], 404);
+        if (!$item) return response()->json(['success' => false, 'message' => __('messages.reward_item_not_found')], 404);
 
-        $this->log($request->user(), 'delete_reward_item', 'reward_item', $id, "Deleted reward item: {$item->name}");
+        $this->log($request->user(), 'delete_reward_item', 'reward_item', $id, "Deleted reward item: {$item->name}", [], ['deleteReward', ['name' => $item->name]]);
         if ($item->image_path) {
             Storage::disk('public')->delete($item->image_path);
         }
         $item->delete();
-        return response()->json(['success' => true, 'message' => 'Reward item deleted.']);
+        return response()->json(['success' => true, 'message' => __('messages.reward_item_deleted')]);
     }
 
     public function exportRedemptions(Request $request, AdminTableExport $export)
     {
         $redemptions = RewardRedemption::with('user')->orderByDesc('created_at')->get();
-        $this->log($request->user(), 'export_csv', 'reward_redemptions', 0, "Exported {$redemptions->count()} redemptions (Excel)");
+        $this->log($request->user(), 'export_csv', 'reward_redemptions', 0, "Exported {$redemptions->count()} redemptions (Excel)", [], ['exportRedemptions', ['n' => $redemptions->count()]]);
 
         return $export->download('Redemption history', 'rvm_redemptions', [],
             ['Date', 'User', 'User ID', 'Reward', 'Points spent', 'Cash (RM)', 'E-wallet', 'E-wallet account', 'Voucher code', 'Voucher used'],
@@ -1144,18 +1147,18 @@ class AdminController extends Controller
                 ->first();
 
             if (!$redemption) {
-                return response()->json(['success' => false, 'message' => 'Voucher not found.'], 404);
+                return response()->json(['success' => false, 'message' => __('messages.voucher_not_found')], 404);
             }
             if ($redemption->used_at) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'This voucher has already been used.',
+                    'message' => __('messages.voucher_already_used'),
                     'voucher' => RewardController::formatVoucher($redemption),
                 ], 409);
             }
 
             $redemption->update(['used_at' => now(), 'used_by' => $request->user()->id]);
-            $this->log($request->user(), 'use_voucher', 'reward_redemption', $redemption->id, "Marked voucher {$redemption->voucher_code} as used");
+            $this->log($request->user(), 'use_voucher', 'reward_redemption', $redemption->id, "Marked voucher {$redemption->voucher_code} as used", [], ['useVoucher', ['code' => $redemption->voucher_code]]);
 
             return response()->json(['success' => true, 'voucher' => RewardController::formatVoucher($redemption)]);
         });
@@ -1178,12 +1181,12 @@ class AdminController extends Controller
         if ($machines->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No bins are at or above 90%.',
+                'message' => __('messages.no_bins_full'),
                 'affected' => 0,
             ], 422);
         }
 
-        $this->log($request->user(), 'request_bin_collection', 'system', 0, "Collection requested for {$machines->count()} machine(s)");
+        $this->log($request->user(), 'request_bin_collection', 'system', 0, "Collection requested for {$machines->count()} machine(s)", [], ['binCollection', ['n' => $machines->count()]]);
 
         // Best-effort — a flaky mail provider shouldn't block the admin's request
         // from being logged and acknowledged, since that's this endpoint's real
@@ -1197,7 +1200,7 @@ class AdminController extends Controller
             }
         }
 
-        return response()->json(['success' => true, 'message' => 'Bin collection request sent.', 'affected' => $machines->count()]);
+        return response()->json(['success' => true, 'message' => __('messages.bin_collection_sent'), 'affected' => $machines->count()]);
     }
 
     // 7-day daily collection trend + category breakdown + today overview
@@ -1284,7 +1287,7 @@ class AdminController extends Controller
 
         $spreadsheet = (new FormalReportService())->build($dateFrom, $dateTo, $this->dataScope($request));
         $filename = 'rvm_report_' . now()->format('Y-m-d') . '.xlsx';
-        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported formal report ({$dateFrom} to {$dateTo})");
+        $this->log($request->user(), 'export_csv', 'transactions', 0, "Exported formal report ({$dateFrom} to {$dateTo})", [], ['exportReport', ['from' => $dateFrom, 'to' => $dateTo]]);
 
         $writer = new Xlsx($spreadsheet);
 
@@ -1330,22 +1333,26 @@ class AdminController extends Controller
             Mail::to($validated['email'])->send(new FormalReportGenerated($periodLabel, $xlsxContents, $filename));
         } catch (\Throwable $e) {
             Log::warning('Formal report email failed to send', ['error' => $e->getMessage(), 'to' => $validated['email']]);
-            return response()->json(['success' => false, 'message' => 'Failed to send the report email. Please check the address and try again.'], 502);
+            return response()->json(['success' => false, 'message' => __('messages.report_email_failed')], 502);
         }
 
-        $this->log($request->user(), 'email_formal_report', 'transactions', 0, "Emailed formal report ({$periodLabel}) to {$validated['email']}");
+        $this->log($request->user(), 'email_formal_report', 'transactions', 0, "Emailed formal report ({$periodLabel}) to {$validated['email']}", [], ['emailReport', ['period' => $periodLabel, 'email' => $validated['email']]]);
 
-        return response()->json(['success' => true, 'message' => 'Report emailed to ' . $validated['email'] . '.']);
+        return response()->json(['success' => true, 'message' => __('messages.report_emailed', ['email' => $validated['email']])]);
     }
 
-    private function log(User $admin, string $action, string $targetType, int $targetId, string $details, array $extra = []): void
+    // $i18n = [key, params]: lets the admin panel show the details in the
+    // viewer's language (adminUi.auditMsg_<key>); 'message' keeps the English
+    // text for exports and for older viewers.
+    private function log(User $admin, string $action, string $targetType, int $targetId, string $details, array $extra = [], ?array $i18n = null): void
     {
+        $i18nFields = $i18n ? ['message_key' => $i18n[0], 'params' => (object) $i18n[1]] : [];
         AdminLog::create([
             'admin_id'    => $admin->id,
             'action'      => $action,
             'target_type' => $targetType,
             'target_id'   => $targetId,
-            'details'     => json_encode(array_merge(['message' => $details], $extra)),
+            'details'     => json_encode(array_merge(['message' => $details], $extra, $i18nFields)),
         ]);
     }
 }

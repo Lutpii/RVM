@@ -63,6 +63,20 @@ class AdminAuditLogTest extends TestCase
         $this->assertSame('update_user', $res->json('logs.data.0.action'));
     }
 
+    public function test_new_log_rows_carry_a_translation_key_and_params(): void
+    {
+        $admin = $this->makeUser('Admin', 'admin', '0123499001');
+        $machine = \App\Models\RvmMachine::create(['machine_code' => 'RVM-AL', 'name' => 'Lobby', 'location_name' => 'A', 'status' => 'active']);
+        Sanctum::actingAs($admin, ['*']);
+
+        $this->deleteJson('/api/admin/machines/' . $machine->id)->assertOk();
+
+        $details = json_decode(AdminLog::where('action', 'delete_machine')->value('details'), true);
+        $this->assertSame('Deleted machine: Lobby', $details['message']);
+        $this->assertSame('deleteMachine', $details['message_key']);
+        $this->assertSame(['name' => 'Lobby'], $details['params']);
+    }
+
     public function test_recycler_gets_403(): void
     {
         $user = $this->makeUser('Regular', 'user', '0111111111');

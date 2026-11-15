@@ -24,6 +24,25 @@ class IndonesianLocaleTest extends TestCase
             ->assertJsonPath('message', 'Email atau kata sandi salah.');
     }
 
+    public function test_validation_errors_follow_the_language(): void
+    {
+        $id = $this->withHeaders(['X-App-Locale' => 'id'])->postJson('/api/auth/login', [])->assertStatus(422);
+        $this->assertStringContainsString('wajib diisi', $id->json('errors.password.0'));
+
+        $my = $this->withHeaders(['X-App-Locale' => 'my'])->postJson('/api/auth/login', [])->assertStatus(422);
+        $this->assertStringContainsString('diperlukan', $my->json('errors.password.0'));
+    }
+
+    // Rejected items earn 0 points and nothing is deducted (since 10 Nov).
+    public function test_reject_message_never_says_points_were_deducted(): void
+    {
+        foreach (['en' => 'Points deducted', 'my' => 'Mata telah ditolak', 'id' => 'Poin dikurangi'] as $lang => $bad) {
+            $text = (require lang_path("$lang/messages.php"))['item_rejected'];
+            $this->assertStringNotContainsString($bad, $text, $lang);
+            $this->assertStringContainsString('0', $text, $lang);
+        }
+    }
+
     public function test_indonesian_messages_have_every_english_key(): void
     {
         $keys = function (array $a, string $prefix = '') use (&$keys): array {

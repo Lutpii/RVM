@@ -52,7 +52,7 @@ class RewardController extends Controller
         // Same reasoning as redeem() above: a kiosk_token proves device proximity,
         // not the account holder's own intent to spend their points.
         if ($request->attributes->get('via_kiosk_token')) {
-            return response()->json(['success' => false, 'message' => 'Redemption is only available from your own account, not a shared kiosk.'], 403);
+            return response()->json(['success' => false, 'message' => __('messages.redeem_own_account_only')], 403);
         }
 
         $validated = $request->validate([
@@ -63,16 +63,16 @@ class RewardController extends Controller
 
         $s = $settings->load();
         if ($validated['points'] < $s['min_points']) {
-            return response()->json(['success' => false, 'message' => "Minimum redeem is {$s['min_points']} points."], 422);
+            return response()->json(['success' => false, 'message' => __('messages.min_redeem', ['points' => $s['min_points']])], 422);
         }
         if ($validated['points'] % $s['points_per_unit'] !== 0) {
-            return response()->json(['success' => false, 'message' => "Points must be a multiple of {$s['points_per_unit']}."], 422);
+            return response()->json(['success' => false, 'message' => __('messages.points_multiple', ['n' => $s['points_per_unit']])], 422);
         }
 
         return DB::transaction(function () use ($request, $validated, $s) {
             $user = \App\Models\User::where('id', $request->user()->id)->lockForUpdate()->first();
             if ($user->total_points < $validated['points']) {
-                return response()->json(['success' => false, 'message' => 'Insufficient points.'], 422);
+                return response()->json(['success' => false, 'message' => __('messages.insufficient_points')], 422);
             }
 
             $rm = round(($validated['points'] / $s['points_per_unit']) * $s['rm_per_unit'], 2);
@@ -102,7 +102,7 @@ class RewardController extends Controller
                 'total_points'     => $user->total_points,
                 'cash_amount_rm'   => $rm,
                 'ewallet_provider' => $validated['ewallet_provider'],
-                'message'          => 'RM ' . number_format($rm, 2) . " sent to your {$validated['ewallet_provider']} account.",
+                'message'          => __('messages.cash_sent', ['amount' => number_format($rm, 2), 'provider' => $validated['ewallet_provider']]),
             ]);
         });
     }
@@ -131,13 +131,13 @@ class RewardController extends Controller
         // let it spend the scanned user's points, even though it's fine for reading the
         // catalog/history on this same route group.
         if ($request->attributes->get('via_kiosk_token')) {
-            return response()->json(['success' => false, 'message' => 'Redemption is only available from your own account, not a shared kiosk.'], 403);
+            return response()->json(['success' => false, 'message' => __('messages.redeem_own_account_only')], 403);
         }
 
         return DB::transaction(function () use ($request, $id) {
             $item = RewardItem::where('id', $id)->lockForUpdate()->first();
             if (!$item) {
-                return response()->json(['success' => false, 'message' => 'Reward not found.'], 404);
+                return response()->json(['success' => false, 'message' => __('messages.reward_not_found')], 404);
             }
 
             if (!$item->isAvailable()) {
@@ -153,7 +153,7 @@ class RewardController extends Controller
 
             $user = \App\Models\User::where('id', $request->user()->id)->lockForUpdate()->first();
             if ($user->total_points < $item->points_cost) {
-                return response()->json(['success' => false, 'message' => 'Insufficient points.'], 422);
+                return response()->json(['success' => false, 'message' => __('messages.insufficient_points')], 422);
             }
 
             if ($item->stock !== null) {
@@ -181,7 +181,7 @@ class RewardController extends Controller
 
             return response()->json([
                 'success'      => true,
-                'message'      => 'Reward redeemed.',
+                'message'      => __('messages.reward_redeemed'),
                 'total_points' => $user->total_points,
                 'redemption'   => $redemption,
             ]);
@@ -222,7 +222,7 @@ class RewardController extends Controller
             ->first();
 
         if (!$redemption) {
-            return response()->json(['success' => false, 'message' => 'Voucher not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('messages.voucher_not_found')], 404);
         }
 
         return response()->json(['success' => true, 'voucher' => $this->formatVoucher($redemption)]);
