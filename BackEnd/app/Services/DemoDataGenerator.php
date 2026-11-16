@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AdminLog;
+use App\Models\Location;
 use App\Models\MaintenanceRecord;
 use App\Models\PointsHistory;
 use App\Models\RecyclingSession;
@@ -163,8 +164,12 @@ class DemoDataGenerator
         $deleted = false;
         $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
         if ($dsme && !RecyclingSession::where('machine_id', $dsme->id)->exists()) {
+            $locationId = $dsme->location_id;
             $dsme->delete();
             $deleted = true;
+            if ($locationId) {
+                $platform['platform_locations'] += Location::whereKey($locationId)->whereDoesntHave('machines')->delete();
+            }
         }
 
         return ['users' => $users, 'admin_logs' => $logs, 'maintenance_records' => $maintenance, 'machine_deleted' => $deleted] + $platform;

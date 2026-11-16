@@ -84,6 +84,7 @@ class DemoDataGeneratorTest extends TestCase
         $this->assertDatabaseCount('composter_deposits', 0);
         $this->assertDatabaseMissing('rvm_machines', ['machine_code' => 'CMP-PEKAN']);
         $this->assertDatabaseMissing('locations', ['name' => 'UMPSA Pekan Hub']);
+        $this->assertDatabaseMissing('locations', ['name' => 'DSME Puchong']);
         $this->assertSame(25, $this->realUser->fresh()->total_points);
         $this->assertFalse(PointsHistory::where('user_id', $this->realUser->id)->whereNotNull('source')->exists());
     }
