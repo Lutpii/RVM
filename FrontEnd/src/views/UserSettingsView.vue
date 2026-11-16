@@ -91,19 +91,16 @@
 
           <nav class="menu-group" :aria-label="$t('settings.sectionPreferences')">
             <h2 class="menu-title">{{ $t('settings.sectionPreferences') }}</h2>
-            <div class="menu-card">
-              <!-- Inline dropdown: the invisible native select covers the whole
-                   row, so a tap anywhere opens the phone's own picker. -->
-              <div class="menu-row lang-row">
-                <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
-                <span class="menu-label" aria-hidden="true">{{ $t('settings.language') }}</span>
-                <span class="menu-value" aria-hidden="true">{{ currentLanguage.label }}</span>
-                <PhCaretDown class="menu-chevron" :size="18" aria-hidden="true" />
-                <select class="lang-select" :value="locale" :aria-label="$t('settings.language')"
-                  @change="setLanguage($event.target.value)">
-                  <option v-for="opt in languages" :key="opt.code" :value="opt.code">{{ opt.label }}</option>
-                </select>
-              </div>
+            <div class="menu-card menu-card-overflow">
+              <!-- Same language menu as the landing page; the row is its trigger. -->
+              <LanguageSwitch variant="row" class="lang-row-switch" v-slot="{ current }">
+                <span class="menu-row lang-row">
+                  <PhTranslate class="menu-icon icon-blue" :size="22" aria-hidden="true" />
+                  <span class="menu-label">{{ $t('settings.language') }}</span>
+                  <span class="menu-value">{{ current.label }}</span>
+                  <PhCaretDown class="menu-chevron" :size="18" aria-hidden="true" />
+                </span>
+              </LanguageSwitch>
               <button type="button" class="menu-row" role="switch" :aria-checked="theme === 'dark'" @click="toggleTheme()">
                 <PhMoonStars class="menu-icon icon-purple" :size="22" aria-hidden="true" />
                 <span class="menu-label">{{ $t('settings.darkMode') }}</span>
@@ -428,7 +425,7 @@ import api from '@/services/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 import CarbonSourcesNote from '@/components/platform/CarbonSourcesNote.vue'
 import { platformMode } from '@/utils/featureFlags'
-import { useLanguage } from '@/composables/useLanguage'
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import { AVATAR_ICONS, AVATAR_COLOURS, DEFAULT_AVATAR, parseAvatar, formatAvatar, maskEmail } from '@/utils/avatarIcons.js'
 import { version as appVersion } from '../../package.json'
 import {
@@ -444,7 +441,7 @@ const auth        = useAuthStore()
 const theme       = inject('theme')
 const toggleTheme = inject('toggleTheme')
 const showToast   = inject('showToast')
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 // ── Sub-pages live in ?view= so the phone's Back button returns to the menu ──
 const SUB_VIEWS = ['profile', 'redeem', 'history', 'info']
@@ -688,7 +685,6 @@ async function loadRedemptionHistory() {
 }
 
 // ── Preferences ───────────────────────────────────────────────────────────────
-const { languages, currentLanguage, setLanguage } = useLanguage()
 
 // ── Account ───────────────────────────────────────────────────────────────────
 const confirmDelete     = ref(false)
@@ -851,9 +847,11 @@ onMounted(async () => {
 .menu-badge { padding: 2px 9px; border-radius: 999px; background: rgba(78,110,242,0.14); color: var(--accent-blue); font-size: 13px; font-weight: 700; }
 .menu-chevron { color: var(--text-muted); flex-shrink: 0; }
 .menu-check { color: var(--accent-blue); }
-.lang-row { position: relative; }
-.lang-row:focus-within { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
-.lang-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+/* Language row = trigger of the shared LanguageSwitch menu (same as landing). */
+.lang-row-switch :deep(.lang-menu-btn:focus-visible) { outline: 2px solid var(--accent-blue); outline-offset: -2px; }
+.lang-row-switch + .menu-row { border-top: 1px solid var(--border); }
+/* The open menu hangs below the row, so this card must not clip it. */
+.menu-card-overflow { overflow: visible; }
 
 .switch { width: 46px; height: 28px; border-radius: 999px; background: #cbd5e1; position: relative; flex-shrink: 0; transition: background .2s; }
 .switch.on { background: var(--accent-blue); }

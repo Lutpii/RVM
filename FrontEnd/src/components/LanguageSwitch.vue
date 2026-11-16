@@ -8,12 +8,16 @@
     </button>
   </div>
 
-  <!-- Landing page: compact button that opens a small menu. -->
-  <div v-else ref="root" class="lang-menu">
+  <!-- Landing page: compact button that opens a small menu. variant="row": the same
+       menu, but the trigger is a full-width row whose content the parent supplies
+       through the default slot (Account page). -->
+  <div v-else ref="root" :class="['lang-menu', { 'lang-menu-row': variant === 'row' }]">
     <button ref="button" type="button" class="lang-menu-btn" aria-haspopup="menu" :aria-expanded="open"
       :aria-label="`${$t('settings.language')}: ${currentLanguage.label}`" @click="act('toggle')">
-      {{ currentLanguage.short }}
-      <PhCaretDown :size="14" weight="bold" aria-hidden="true" />
+      <slot :current="currentLanguage">
+        {{ currentLanguage.short }}
+        <PhCaretDown :size="14" weight="bold" aria-hidden="true" />
+      </slot>
     </button>
     <div v-if="open" class="lang-menu-list" role="menu" :aria-label="$t('settings.language')">
       <button v-for="l in languages" :key="l.code" type="button" role="menuitemradio" class="lang-menu-item"
@@ -91,4 +95,12 @@ onUnmounted(() => {
 }
 .lang-menu-item:hover, .lang-menu-item:focus-visible { background: var(--bg-secondary); outline: none; }
 .lang-menu-item[aria-checked="true"] { font-weight: 700; color: var(--accent-blue); }
+
+/* Row trigger: plain, full width; the parent styles what is inside it. */
+.lang-menu-row .lang-menu-btn {
+  width: 100%; height: auto; padding: 0; gap: 0; border-radius: 0;
+  background: transparent; color: inherit; font-weight: inherit; text-align: left;
+}
+.lang-menu-row .lang-menu-btn:hover { background: transparent; }
+.lang-menu-row .lang-menu-list { right: 12px; }
 </style>
