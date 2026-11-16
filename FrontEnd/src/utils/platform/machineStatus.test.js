@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { statusPill, pillTone } from './machineStatus.js'
+import { statusPill, pillTone, isRvmMachine } from './machineStatus.js'
+
+describe('isRvmMachine', () => {
+  it('treats a missing type (legacy rows, OFF API) as Ultra RVM', () => {
+    expect(isRvmMachine({})).toBe(true)
+    expect(isRvmMachine({ machine_type: 'rvm' })).toBe(true)
+    expect(isRvmMachine({ machine_type: 'compactor' })).toBe(false)
+    expect(isRvmMachine({ machine_type: 'composter' })).toBe(false)
+  })
+})
 
 describe('statusPill', () => {
   it.each([[79, 'available'], [80, 'almost_full'], [89, 'almost_full'], [90, 'full']])(

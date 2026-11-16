@@ -67,10 +67,6 @@ class PublicStatsController extends Controller
 
     private function carbon(array $counts): float
     {
-        $kg = 0.0;
-        foreach ($counts as $material => $n) {
-            $kg += $n * CarbonService::forMaterial($material);
-        }
-        return round($kg, 2);
+        return round(CarbonService::forCounts($counts), 2);
     }
 }

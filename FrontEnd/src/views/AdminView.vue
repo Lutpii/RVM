@@ -616,7 +616,7 @@
                 </div>
               </div>
               <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ (platformMode ? machine.location || machine.location_name : machine.location_name) || $t('adminUi.noLocation') }}</p>
-              <template v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'">
+              <template v-if="isRvmCard(machine)">
               <p class="machine-heartbeat">
                 <span :class="['hb-dot', 'hb-' + machineConnectivity(machine, nowTick)]"></span>
                 <template v-if="machineConnectivity(machine, nowTick) === 'never'">{{ $t('adminUi.neverReported') }}</template>
@@ -654,13 +654,13 @@
                   <button class="action-btn machine-btn edit-btn" @click="openEditMachine(machine)">
                     <PhPencilSimple weight="regular" aria-hidden="true" /> {{ $t('adminUi.edit') }}
                   </button>
-                  <button class="action-btn machine-btn maint-btn" v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'" @click="openMaintenance(machine)">
+                  <button class="action-btn machine-btn maint-btn" v-if="isRvmCard(machine)" @click="openMaintenance(machine)">
                     <PhWrench weight="regular" aria-hidden="true" /> {{ $t('adminUi.maintenance') }}
                   </button>
-                  <button class="action-btn machine-btn" v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'" @click="resetBins(machine)">
+                  <button class="action-btn machine-btn" v-if="isRvmCard(machine)" @click="resetBins(machine)">
                     <PhArrowCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.resetBins') }}
                   </button>
-                  <button class="action-btn machine-btn" v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'" @click="historyMachine = machine">
+                  <button class="action-btn machine-btn" v-if="isRvmCard(machine)" @click="historyMachine = machine">
                     <PhClockCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.serviceHistoryBtn') }}
                   </button>
                 </div>
@@ -1122,7 +1122,7 @@
             <input v-model="newMachine.longitude" type="number" step="any" placeholder="103.1234" />
           </div>
         </div>
-        <div v-if="!platformMode || newMachine.machine_type === 'rvm'" class="form-group demo-check">
+        <div v-if="isRvmCard(newMachine)" class="form-group demo-check">
           <label class="check-row"><input v-model="newMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
           <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
         </div>
@@ -1302,7 +1302,7 @@
             <input v-model="editingMachine.longitude" type="number" step="any" />
           </div>
         </div>
-        <div v-if="!platformMode || editingMachine.machine_type === 'rvm'" class="form-group demo-check">
+        <div v-if="isRvmCard(editingMachine)" class="form-group demo-check">
           <label class="check-row"><input v-model="editingMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
           <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
         </div>
@@ -1437,6 +1437,10 @@ import ComposterMonitor from '@/components/admin/platform/ComposterMonitor.vue'
 import PlatformActivityTable from '@/components/admin/platform/PlatformActivityTable.vue'
 import '@/components/admin/platform/platformAdmin.css'
 import { platformMode } from '@/utils/featureFlags'
+import { isRvmMachine } from '@/utils/platform/machineStatus'
+// RVM-only controls (bins, maintenance, history, demo checkbox) show for every machine
+// when the platform is OFF, and only for Ultra RVM machines when it is ON.
+const isRvmCard = (machine) => !platformMode || isRvmMachine(machine)
 import { platformNavGroups } from '@/utils/admin/platformNav'
 import ImageCropper from '@/components/admin/ImageCropper.vue'
 import MaintenanceHistoryModal from '@/components/admin/MaintenanceHistoryModal.vue'

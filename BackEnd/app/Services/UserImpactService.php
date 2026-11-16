@@ -21,7 +21,7 @@ class UserImpactService
             ->selectRaw('material_selected, COUNT(*) AS total')
             ->groupBy('material_selected')->pluck('total', 'material_selected');
 
-        $carbon = $counts->map(fn ($count, $material) => $count * CarbonService::forMaterial($material))->sum();
+        $carbon = CarbonService::forCounts($counts);
         if ($platform && config('platform.enabled')) {
             $carbon += CompactorBatch::where('user_id', $user->id)->sum('carbon_kg');
             $carbon += ComposterDeposit::where('user_id', $user->id)->sum('carbon_kg');

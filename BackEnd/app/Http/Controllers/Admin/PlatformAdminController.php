@@ -43,9 +43,8 @@ class PlatformAdminController extends Controller
 
         $rvm = Transaction::dataScope($scope)->where('is_valid', true)
             ->whereHas('machine', fn ($query) => $query->rvmOnly());
-        $carbon = (clone $rvm)->selectRaw('material_selected, COUNT(*) AS total')
-            ->groupBy('material_selected')->pluck('total', 'material_selected')
-            ->map(fn ($count, $material) => $count * CarbonService::forMaterial($material))->sum();
+        $carbon = CarbonService::forCounts((clone $rvm)->selectRaw('material_selected, COUNT(*) AS total')
+            ->groupBy('material_selected')->pluck('total', 'material_selected'));
         $points = $rvm->sum('points_earned');
         $byDate = [];
         $rvmDays = $rvm->where('created_at', '>=', $since)
@@ -100,7 +99,7 @@ class PlatformAdminController extends Controller
         $type = $request->validate(['type' => 'required|in:compactor,composter'])['type'];
         $now = now();
         $machines = RvmMachine::ofType($type)->with('location:id,name')->orderBy('name')->get()
-            ->map(fn (RvmMachine $machine) => $this->machineRow($machine, $now) + ['telemetry' => $this->reading($machine, $now)]);
+            ->map(fn (RvmMachine $machine) => $this->machineRow($machine, $now) + ['telemetry' => $this->telemetry->reading($machine, $now)]);
 
         return response()->json(['machines' => $machines]);
     }
@@ -111,11 +110,12 @@ class PlatformAdminController extends Controller
         $now = now();
         $recent = $this->recentActivity($machine->machine_type)->where('machine_id', $id)->limit(10)->get()
             ->map(fn ($activity) => $this->activityRow($activity));
+        $reading = $this->telemetry->reading($machine, $now);
 
         return response()->json([
             'machine' => $this->machineRow($machine, $now),
-            'telemetry' => $this->reading($machine, $now),
-            'alerts' => $this->telemetry->alerts($machine, $now),
+            'telemetry' => $reading,
+            'alerts' => $this->telemetry->alerts($machine, $now, $reading),
             'recent' => $recent,
         ]);
     }
@@ -166,12 +166,5 @@ class PlatformAdminController extends Controller
             'status' => $this->telemetry->status($machine, $now),
             'is_demo' => $machine->is_demo,
         ];
-    }
-
-    private function reading(RvmMachine $machine, Carbon $now): array
-    {
-        return $machine->machine_type === 'compactor'
-            ? $this->telemetry->compactor($machine, $now)
-            : $this->telemetry->composter($machine, $now);
     }
 }

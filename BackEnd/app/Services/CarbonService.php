@@ -45,6 +45,17 @@ class CarbonService
         ],
     ];
 
+    // Total kg CO2e for a map of material => item count (unrounded). The one place
+    // every aggregate (user totals, admin, landing, platform) does this sum.
+    public static function forCounts(iterable $countsByMaterial): float
+    {
+        $kg = 0.0;
+        foreach ($countsByMaterial as $material => $count) {
+            $kg += (int) $count * self::forMaterial($material);
+        }
+        return $kg;
+    }
+
     public static function forMaterial(?string $material): float
     {
         return self::SOURCES[$material]['kg_co2e_per_item'] ?? 0.0;

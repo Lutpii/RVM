@@ -9,11 +9,16 @@ const tones = {
   maintenance: 'muted',
 }
 
+// A row without machine_type comes from an OFF API or a legacy record: Ultra RVM.
+export function isRvmMachine(machine) {
+  return !machine?.machine_type || machine.machine_type === 'rvm'
+}
+
 export function statusPill(machine, now = new Date()) {
   if (Object.hasOwn(tones, machine.status)) return machine.status
   if (machine.status === 'inactive') return 'maintenance'
 
-  const isRvm = !machine.machine_type || machine.machine_type === 'rvm'
+  const isRvm = isRvmMachine(machine)
   const availability = machineAvailability(machine, now)
   if (availability === 'fault' || (isRvm && availability === 'offline')) return availability
 

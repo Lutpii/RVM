@@ -85,12 +85,13 @@ class PlatformController extends Controller
 
     private function carbonByType(?Carbon $since = null): array
     {
-        $rvm = Transaction::where('is_valid', true)->whereIn('material_selected', ['aluminum', 'plastic', 'paper'])
-            ->whereHas('machine', fn ($machine) => $machine->rvmOnly())
-            ->when($since, fn ($query) => $query->where('created_at', '>=', $since))
-            ->selectRaw('material_selected, COUNT(*) AS total')->groupBy('material_selected')
-            ->pluck('total', 'material_selected')
-            ->map(fn ($total, $material) => $total * CarbonService::forMaterial($material))->sum();
+        $rvm = CarbonService::forCounts(
+            Transaction::where('is_valid', true)->whereIn('material_selected', ['aluminum', 'plastic', 'paper'])
+                ->whereHas('machine', fn ($machine) => $machine->rvmOnly())
+                ->when($since, fn ($query) => $query->where('created_at', '>=', $since))
+                ->selectRaw('material_selected, COUNT(*) AS total')->groupBy('material_selected')
+                ->pluck('total', 'material_selected')
+        );
 
         return [
             'rvm' => round($rvm, 3),

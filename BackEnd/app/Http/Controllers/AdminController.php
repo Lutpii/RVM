@@ -90,10 +90,7 @@ class AdminController extends Controller
             ->groupBy('material_selected')
             ->pluck('count', 'material_selected');
 
-        $totalCarbonSaved = 0.0;
-        foreach ($materialCounts as $material => $count) {
-            $totalCarbonSaved += $count * \App\Services\CarbonService::forMaterial($material);
-        }
+        $totalCarbonSaved = \App\Services\CarbonService::forCounts($materialCounts);
 
         $materialStats = Transaction::dataScope($scope)->where('is_valid', 1)
             ->where('created_at', '>=', now()->subDays(6)->startOfDay())

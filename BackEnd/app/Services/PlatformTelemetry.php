@@ -105,9 +105,25 @@ class PlatformTelemetry
         ];
     }
 
-    /** @return list<array{level: string, code: string}> */
-    public function alerts(RvmMachine $machine, Carbon $now): array
+    // The compactor/composter reading for a machine (null for Ultra RVM).
+    public function reading(RvmMachine $machine, Carbon $now): ?array
     {
+        return match ($machine->machine_type) {
+            'compactor' => $this->compactor($machine, $now),
+            'composter' => $this->composter($machine, $now),
+            default => null,
+        };
+    }
+
+    /**
+     * Pass $reading when the caller already has it, so the day's aggregate query
+     * is not run a second time.
+     *
+     * @return list<array{level: string, code: string}>
+     */
+    public function alerts(RvmMachine $machine, Carbon $now, ?array $reading = null): array
+    {
+        $reading ??= $this->reading($machine, $now);
         $status = $this->status($machine, $now);
         $alerts = match ($status) {
             'full' => [['level' => 'critical', 'code' => 'full']],
@@ -115,11 +131,10 @@ class PlatformTelemetry
             default => [],
         };
 
-        if ($machine->machine_type === 'compactor' && $this->compactor($machine, $now)['non_target_today'] > 0) {
+        if ($machine->machine_type === 'compactor' && $reading['non_target_today'] > 0) {
             $alerts[] = ['level' => 'warning', 'code' => 'non_target_paused'];
         }
         if ($machine->machine_type === 'composter') {
-            $reading = $this->composter($machine, $now);
             if ($reading['temperature_c'] < 55) {
                 $alerts[] = ['level' => 'warning', 'code' => 'temp_low'];
             }
