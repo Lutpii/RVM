@@ -9,7 +9,18 @@
         <PhRecycle class="sidebar-logo" weight="regular" aria-hidden="true" />
         <span class="sidebar-title">{{ $t('adminUi.sidebarTitle') }}</span>
       </div>
-      <nav class="sidebar-nav">
+      <nav v-if="platformMode" class="sidebar-nav platform-sidebar">
+        <div v-for="group in groupedNav" :key="group.group" class="platform-nav-group">
+          <span v-if="!sidebarCollapsed" class="platform-nav-label">{{ $t('adminUi.platform.group.' + group.group) }}</span>
+          <button v-for="item in group.items" :key="item.id" type="button" :title="item.label"
+            :class="['nav-item', { active: activeTab === item.id }]" :aria-current="activeTab === item.id ? 'page' : undefined"
+            @click="switchTab(item.id)">
+            <component :is="item.icon" class="nav-icon" weight="regular" aria-hidden="true" />
+            <span class="nav-label">{{ item.label }}</span>
+          </button>
+        </div>
+      </nav>
+      <nav v-else class="sidebar-nav">
         <button v-for="item in navItems" :key="item.id"
           :class="['nav-item', { active: activeTab === item.id }]"
           @click="switchTab(item.id)">
@@ -80,6 +91,10 @@
           <PhX weight="regular" aria-hidden="true" />
         </button>
       </div>
+
+      <PlatformOverview v-if="platformMode && activeTab === 'platform-overview'" class="tab-content" :scope="dataScope" :refresh="platformRefresh" />
+      <CompactorMonitor v-if="platformMode && activeTab === 'compactor'" class="tab-content" :scope="dataScope" :refresh="platformRefresh" />
+      <ComposterMonitor v-if="platformMode && activeTab === 'composter'" class="tab-content" :scope="dataScope" :refresh="platformRefresh" />
 
       <!-- ── DASHBOARD ── -->
       <div v-if="activeTab === 'dashboard'" class="tab-content">
@@ -297,7 +312,14 @@
 
       <!-- ── TRANSACTIONS ── -->
       <div v-if="activeTab === 'transactions'" class="tab-content">
-        <div class="section-card">
+        <label v-if="platformMode" class="platform-admin-select">
+          {{ $t('adminUi.platform.machineType') }}
+          <select v-model="transactionType">
+            <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
+          </select>
+        </label>
+        <PlatformActivityTable v-if="platformMode && transactionType !== 'rvm'" :type="transactionType" :scope="dataScope" :refresh="platformRefresh" />
+        <div v-else class="section-card">
           <div class="tx-intro">
             <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.transactionLog') }}</h3>
             <p class="tx-help">
@@ -347,7 +369,7 @@
               <span>{{ $t('adminUi.machine') }}</span>
               <select v-model="txMachine" @change="filterTransactions" class="filter-select">
                 <option value="">{{ $t('adminUi.allMachines') }}</option>
-                <option v-for="m in adminMachines" :key="m.id" :value="m.id">{{ m.name }}</option>
+                <option v-for="m in rvmAdminMachines" :key="m.id" :value="m.id">{{ m.name }}</option>
               </select>
             </label>
             <label class="tx-field date-field picker-field" @click="openDatePicker">
@@ -551,9 +573,16 @@
 
         <div class="section-card">
           <div class="card-header">
-            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.rvmMachines') }}</h3>
+            <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t(platformMode ? 'adminUi.navMachines' : 'adminUi.rvmMachines') }}</h3>
             <button class="add-btn" @click="openAddMachine">{{ $t('adminUi.addMachine') }}</button>
           </div>
+          <label v-if="platformMode" class="platform-admin-select">
+            {{ $t('adminUi.platform.machineType') }}
+            <select v-model="machineTypeFilter">
+              <option value="all">{{ $t('adminUi.platform.allTypes') }}</option>
+              <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
+            </select>
+          </label>
           <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-if="machineOrderDirty" class="machine-order-actions">
             <button type="button" class="action-btn" :disabled="savingMachineOrder" @click="resetMachineOrder">
@@ -566,16 +595,17 @@
           <p v-if="machineOrderError" class="form-error" role="alert">{{ $t('machineOrder.saveError') }}</p>
           <p v-if="machineOrderSaved" class="machine-order-saved" role="status">{{ $t('machineOrder.saved') }}</p>
           <div v-if="!loadingMachines" class="machines-grid">
-            <div v-for="(machine, index) in orderedMachines" :key="machine.id" class="machine-admin-card">
+            <div v-for="(machine, index) in visibleMachines" :key="machine.id" class="machine-admin-card">
               <div class="machine-admin-header">
                 <div>
                   <strong>{{ machine.name }}</strong>
                   <span class="machine-code-badge">{{ machine.machine_code }}</span>
+                  <span v-if="platformMode" class="machine-code-badge">{{ $t('platform.machine.' + (machine.machine_type || 'rvm')) }}</span>
                   <span v-if="machine.is_demo" class="demo-chip">{{ $t('admin.demoChip') }}</span>
                 </div>
                 <div class="machine-header-actions">
                   <span :class="['status-badge', 'status-' + machine.status]">{{ statusLabel(machine.status) }}</span>
-                  <div v-if="orderedMachines.length > 1" class="machine-order-buttons">
+                  <div v-if="(!platformMode || machineTypeFilter === 'all') && orderedMachines.length > 1" class="machine-order-buttons">
                     <button type="button" class="action-btn" :disabled="savingMachineOrder || index === 0"
                             :aria-label="$t('machineOrder.moveUp', { card: machine.name })"
                             @click="moveMachine(index, -1)">↑</button>
@@ -585,7 +615,8 @@
                   </div>
                 </div>
               </div>
-              <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ machine.location_name || $t('adminUi.noLocation') }}</p>
+              <p class="machine-loc"><PhMapPin weight="regular" aria-hidden="true" /> {{ (platformMode ? machine.location || machine.location_name : machine.location_name) || $t('adminUi.noLocation') }}</p>
+              <template v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'">
               <p class="machine-heartbeat">
                 <span :class="['hb-dot', 'hb-' + machineConnectivity(machine, nowTick)]"></span>
                 <template v-if="machineConnectivity(machine, nowTick) === 'never'">{{ $t('adminUi.neverReported') }}</template>
@@ -615,6 +646,7 @@
                   </span>
                 </div>
               </div>
+              </template>
               <!-- Everyday actions in an even 2×2 grid; Delete sits apart below
                    a divider so it can't be hit by accident next to Edit. -->
               <div class="machine-actions">
@@ -622,13 +654,13 @@
                   <button class="action-btn machine-btn edit-btn" @click="openEditMachine(machine)">
                     <PhPencilSimple weight="regular" aria-hidden="true" /> {{ $t('adminUi.edit') }}
                   </button>
-                  <button class="action-btn machine-btn maint-btn" @click="openMaintenance(machine)">
+                  <button class="action-btn machine-btn maint-btn" v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'" @click="openMaintenance(machine)">
                     <PhWrench weight="regular" aria-hidden="true" /> {{ $t('adminUi.maintenance') }}
                   </button>
-                  <button class="action-btn machine-btn" @click="resetBins(machine)">
+                  <button class="action-btn machine-btn" v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'" @click="resetBins(machine)">
                     <PhArrowCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.resetBins') }}
                   </button>
-                  <button class="action-btn machine-btn" @click="historyMachine = machine">
+                  <button class="action-btn machine-btn" v-if="!platformMode || !machine.machine_type || machine.machine_type === 'rvm'" @click="historyMachine = machine">
                     <PhClockCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.serviceHistoryBtn') }}
                   </button>
                 </div>
@@ -637,7 +669,7 @@
                 </button>
               </div>
             </div>
-            <div v-if="!adminMachines.length" class="empty-machines">
+            <div v-if="!visibleMachines.length" class="empty-machines">
               <p>{{ $t('adminUi.noMachines') }}</p>
               <button class="add-btn" @click="openAddMachine">{{ $t('adminUi.addMachine') }}</button>
             </div>
@@ -1053,7 +1085,22 @@
           <label>{{ $t('adminUi.machineNameReq') }}</label>
           <input v-model="newMachine.name" type="text" :placeholder="$t('adminUi.egMachineName')" />
         </div>
-        <div class="form-group">
+        <template v-if="platformMode">
+          <div class="form-group">
+            <label for="newMachine-type">{{ $t('adminUi.platform.machineType') }}</label>
+            <select id="newMachine-type" v-model="newMachine.machine_type">
+              <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="newMachine-location">{{ $t('adminUi.location') }}</label>
+            <select id="newMachine-location" v-model="newMachine.location_id">
+              <option :value="null">{{ $t('adminUi.noLocation') }}</option>
+              <option v-for="location in platformLocations" :key="location.id" :value="location.id">{{ location.name }}</option>
+            </select>
+          </div>
+        </template>
+        <div v-if="!platformMode || !newMachine.location_id" class="form-group">
           <label>{{ $t('adminUi.location') }}</label>
           <input v-model="newMachine.location_name" type="text" :placeholder="$t('adminUi.egLocation')" />
         </div>
@@ -1065,7 +1112,7 @@
             <option value="maintenance">{{ $t('adminUi.optMaintenance') }}</option>
           </select>
         </div>
-        <div class="form-row">
+        <div v-if="!platformMode || !newMachine.location_id" class="form-row">
           <div class="form-group">
             <label>{{ $t('adminUi.latitude') }}</label>
             <input v-model="newMachine.latitude" type="number" step="any" placeholder="3.1234" />
@@ -1075,7 +1122,7 @@
             <input v-model="newMachine.longitude" type="number" step="any" placeholder="103.1234" />
           </div>
         </div>
-        <div class="form-group demo-check">
+        <div v-if="!platformMode || newMachine.machine_type === 'rvm'" class="form-group demo-check">
           <label class="check-row"><input v-model="newMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
           <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
         </div>
@@ -1218,7 +1265,22 @@
           <label>{{ $t('adminUi.machineNameReq') }}</label>
           <input v-model="editingMachine.name" type="text" />
         </div>
-        <div class="form-group">
+        <template v-if="platformMode">
+          <div class="form-group">
+            <label for="editingMachine-type">{{ $t('adminUi.platform.machineType') }}</label>
+            <select id="editingMachine-type" v-model="editingMachine.machine_type">
+              <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editingMachine-location">{{ $t('adminUi.location') }}</label>
+            <select id="editingMachine-location" v-model="editingMachine.location_id">
+              <option :value="null">{{ $t('adminUi.noLocation') }}</option>
+              <option v-for="location in platformLocations" :key="location.id" :value="location.id">{{ location.name }}</option>
+            </select>
+          </div>
+        </template>
+        <div v-if="!platformMode || !editingMachine.location_id" class="form-group">
           <label>{{ $t('adminUi.location') }}</label>
           <input v-model="editingMachine.location_name" type="text" />
         </div>
@@ -1230,7 +1292,7 @@
             <option value="maintenance">{{ $t('adminUi.optMaintenance') }}</option>
           </select>
         </div>
-        <div class="form-row">
+        <div v-if="!platformMode || !editingMachine.location_id" class="form-row">
           <div class="form-group">
             <label>{{ $t('adminUi.latitude') }}</label>
             <input v-model="editingMachine.latitude" type="number" step="any" />
@@ -1240,7 +1302,7 @@
             <input v-model="editingMachine.longitude" type="number" step="any" />
           </div>
         </div>
-        <div class="form-group demo-check">
+        <div v-if="!platformMode || editingMachine.machine_type === 'rvm'" class="form-group demo-check">
           <label class="check-row"><input v-model="editingMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
           <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
         </div>
@@ -1369,6 +1431,13 @@ import { materialIconSvg } from '@/utils/materialIcons'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
+import PlatformOverview from '@/components/admin/platform/PlatformOverview.vue'
+import CompactorMonitor from '@/components/admin/platform/CompactorMonitor.vue'
+import ComposterMonitor from '@/components/admin/platform/ComposterMonitor.vue'
+import PlatformActivityTable from '@/components/admin/platform/PlatformActivityTable.vue'
+import '@/components/admin/platform/platformAdmin.css'
+import { platformMode } from '@/utils/featureFlags'
+import { platformNavGroups } from '@/utils/admin/platformNav'
 import ImageCropper from '@/components/admin/ImageCropper.vue'
 import MaintenanceHistoryModal from '@/components/admin/MaintenanceHistoryModal.vue'
 import {
@@ -1378,7 +1447,7 @@ import {
   PhGlobe, PhStar, PhPackage, PhRobot, PhWarningOctagon, PhGear, PhWifiSlash,
   PhDownloadSimple, PhEnvelopeSimple, PhBellSlash, PhTrash,
   PhCheckCircle, PhXCircle, PhCamera, PhCheck, PhMapPin, PhPencilSimple, PhUploadSimple, PhCrop,
-  PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise, PhLink, PhCopy,
+  PhWrench, PhArrowCounterClockwise, PhClockCounterClockwise, PhLink, PhCopy, PhCube, PhLeaf,
 } from '@phosphor-icons/vue'
 import { kioskLink } from '@/utils/admin/kioskLink.js'
 import { weekdayLabel } from '@/utils/admin/weekdayLabel.js'
@@ -1418,6 +1487,12 @@ const toggleTheme = inject('toggleTheme')
 
 // ── State ──
 const activeTab = ref('dashboard')
+const platformTypes = ['rvm', 'compactor', 'composter']
+const platformTabIds = ['platform-overview', 'compactor', 'composter']
+const platformRefresh = ref(0)
+const platformLocations = ref([])
+const machineTypeFilter = ref('all')
+const transactionType = ref('rvm')
 const dataScope = ref(readDataScope())
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
@@ -1669,6 +1744,13 @@ const savingReward = ref('')
 const statsData = ref({})
 const users = ref([])
 const adminMachines = ref([])
+const rvmAdminMachines = computed(() => platformMode
+  ? adminMachines.value.filter(machine => (machine.machine_type || 'rvm') === 'rvm')
+  : adminMachines.value)
+
+function requestAdminMachines() {
+  return platformMode ? api.get('/admin/machines', { params: { types: 'all' } }) : api.get('/admin/machines')
+}
 
 const draftMachineOrder = ref(null)
 const savingMachineOrder = ref(false)
@@ -1685,6 +1767,9 @@ const orderedMachines = computed(() => {
   }
   return [...ordered, ...byId.values()]
 })
+const visibleMachines = computed(() => !platformMode || machineTypeFilter.value === 'all'
+  ? orderedMachines.value
+  : orderedMachines.value.filter(machine => (machine.machine_type || 'rvm') === machineTypeFilter.value))
 const machineOrderDirty = computed(() =>
   orderedMachines.value.some((machine, index) => machine.id !== adminMachines.value[index].id)
 )
@@ -1714,7 +1799,7 @@ async function saveMachineOrder() {
   try {
     const { data } = await api.put('/admin/machines/order', {
       order: orderedMachines.value.map(machine => machine.id),
-    })
+    }, platformMode ? { params: { types: 'all' } } : undefined)
     draftMachineOrder.value = data.order
     adminMachines.value = [...orderedMachines.value]
     draftMachineOrder.value = null
@@ -1815,10 +1900,17 @@ const navItems = [
   { id: 'detection',    icon: PhMagnifyingGlass, get label() { return t('admin.detectionReview.title') } },
 ]
 
+const platformNavIcons = { 'platform-overview': PhChartBar, compactor: PhCube, composter: PhLeaf }
+const groupedNav = computed(() => platformNavGroups(t).map(group => ({
+  ...group,
+  items: group.items.map(item => ({ ...item, icon: platformNavIcons[item.id] || navItems.find(nav => nav.id === item.id)?.icon })),
+})))
+const navigableItems = computed(() => platformMode ? groupedNav.value.flatMap(group => group.items) : navItems)
+
 // Reopen the menu (and Detection Review sub-view) named in the URL, so a
 // refresh stays where the admin was; see the watch that writes it back below.
 {
-  const saved = parseAdminQuery(route.query, navItems.map(item => item.id))
+  const saved = parseAdminQuery(route.query, navigableItems.value.map(item => item.id))
   activeTab.value = saved.tab
   detectionView.value = saved.detectionView
 }
@@ -1844,12 +1936,12 @@ const overviewMaterials = [
 
 
 // ── Computed ──
-const currentNavItem = computed(() => navItems.find(n => n.id === activeTab.value))
+const currentNavItem = computed(() => navigableItems.value.find(n => n.id === activeTab.value))
 
 const statsCards = computed(() => [
   // Users are not demo or real, so Total Users cannot follow the switch: say so.
   { icon: PhUsers,           label: dataScope.value === 'all' ? t('adminUi.totalUsers') : t('adminUi.totalUsersAll'), value: statsData.value.total_users || 0 },
-  { icon: PhFactory,         label: t('adminUi.navMachines'), value: countMachinesInScope(adminMachines.value, dataScope.value) },
+  { icon: PhFactory,         label: t('adminUi.navMachines'), value: countMachinesInScope(rvmAdminMachines.value, dataScope.value) },
   { icon: PhArrowsClockwise, label: t('adminUi.activeSessions'), value: statsData.value.active_sessions || 0 },
   { icon: PhGlobe,           label: t('adminUi.carbonSavedKg'), color: 'var(--carbon-accent)', value: statsData.value.total_carbon_saved_kg || 0 },
   { icon: PhStar,            label: t('adminUi.pointsIssued'), value: (statsData.value.total_points_given || 0).toLocaleString(), color: 'var(--accent-green)' },
@@ -1868,9 +1960,9 @@ function openHistoryFor(machineId) {
   const machine = adminMachines.value.find(m => m.id === machineId)
   if (machine) historyMachine.value = machine
 }
-const scopedMachines = computed(() => machinesInScope(adminMachines.value, dataScope.value))
+const scopedMachines = computed(() => machinesInScope(rvmAdminMachines.value, dataScope.value))
 const machineSummary = computed(() => connectivitySummary(scopedMachines.value, nowTick.value))
-const machineAlerts  = computed(() => buildMachineAlerts(adminMachines.value, nowTick.value))
+const machineAlerts  = computed(() => buildMachineAlerts(rvmAdminMachines.value, nowTick.value))
 
 function relativeTime(ts) {
   const t = ts ? new Date(ts).getTime() : NaN
@@ -1885,7 +1977,7 @@ function relativeTime(ts) {
 }
 
 const systemStatusItems = computed(() => {
-  const machines = adminMachines.value
+  const machines = rvmAdminMachines.value
   const activeSessions = statsData.value.active_sessions ?? 0
 
   const binLevel = (key) => machines.length
@@ -1984,6 +2076,10 @@ async function fetchTabData(tab, showSpinner = false) {
   const scope = dataScope.value // responses from an older data scope are dropped below
   lastUpdated.value = fmtTime(new Date(), true)
   tabError.value = ''
+  if (platformMode && (platformTabIds.includes(tab) || (tab === 'transactions' && transactionType.value !== 'rvm'))) {
+    platformRefresh.value++
+    return
+  }
   try {
     if (tab === 'dashboard') {
       if (showSpinner) loadingStats.value = true
@@ -2004,7 +2100,7 @@ async function fetchTabData(tab, showSpinner = false) {
       // The machine filter needs the machine list even if the Machines tab was never opened.
       if (!adminMachines.value.length) {
         try {
-          const mres = await api.get('/admin/machines')
+          const mres = await requestAdminMachines()
           adminMachines.value = (mres.data.machines || []).map(normalizeMachine)
         } catch { /* filter simply stays on "All machines" */ }
       }
@@ -2031,7 +2127,7 @@ async function fetchTabData(tab, showSpinner = false) {
       usersLastPage.value = res.data.users?.last_page ?? 1
     } else if (tab === 'machines') {
       if (showSpinner) loadingMachines.value = true
-      const res = await api.get('/admin/machines')
+      const res = await requestAdminMachines()
       adminMachines.value = (res.data.machines || []).map(normalizeMachine)
     } else if (tab === 'sessions') {
       if (showSpinner) loadingSessions.value = true
@@ -2486,7 +2582,7 @@ watch([activeTab, detectionView], ([tab, view]) => {
 // The other direction: a ?tab= edited in the address bar (or Back/Forward)
 // changes the route without remounting this view, so follow it here.
 watch(() => [route.query.tab, route.query.view], () => {
-  const wanted = parseAdminQuery(route.query, navItems.map(item => item.id))
+  const wanted = parseAdminQuery(route.query, navigableItems.value.map(item => item.id))
   if (wanted.detectionView !== detectionView.value) detectionView.value = wanted.detectionView
   if (wanted.tab !== activeTab.value) switchTab(wanted.tab)
 })
@@ -2829,14 +2925,28 @@ async function deleteUser(id) {
 }
 
 // ── Machine management ──
+async function fetchPlatformLocations() {
+  try {
+    const { data } = await api.get('/admin/platform/locations')
+    platformLocations.value = data.locations
+  } catch {
+    tabError.value = t('adminUi.platform.failed')
+  }
+}
+
 function openAddMachine() {
   newMachine.value = { machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '', is_demo: false }
+  if (platformMode) {
+    Object.assign(newMachine.value, { machine_type: 'rvm', location_id: null })
+    fetchPlatformLocations()
+  }
   machineError.value = ''
   showAddMachine.value = true
 }
 
 function openEditMachine(machine) {
   editingMachine.value = { ...machine }
+  if (platformMode) fetchPlatformLocations()
   machineError.value = ''
 }
 
@@ -2857,8 +2967,13 @@ async function addMachine() {
       longitude:     newMachine.value.longitude !== '' ? newMachine.value.longitude : null,
       is_demo:       Boolean(newMachine.value.is_demo),
     }
+    if (platformMode) {
+      payload.machine_type = newMachine.value.machine_type
+      if (newMachine.value.location_id) payload.location_id = newMachine.value.location_id
+    }
     const res = await api.post('/admin/machines', payload)
-    adminMachines.value.push(normalizeMachine(res.data.machine))
+    if (platformMode) await fetchTabData('machines', true)
+    else adminMachines.value.push(normalizeMachine(res.data.machine))
     showAddMachine.value = false
     showToast(t('adminUi.machineAdded', { name: payload.name }))
   } catch (e) {
@@ -2890,9 +3005,17 @@ async function saveMachine() {
       longitude:     editingMachine.value.longitude !== '' ? editingMachine.value.longitude : null,
       is_demo:       Boolean(editingMachine.value.is_demo),
     }
+    if (platformMode) {
+      payload.machine_type = editingMachine.value.machine_type
+      if (editingMachine.value.location_id) payload.location_id = editingMachine.value.location_id
+    }
     const res = await api.put(`/admin/machines/${editingMachine.value.id}`, payload)
-    const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
-    if (idx > -1) adminMachines.value[idx] = normalizeMachine(res.data.machine)
+    if (platformMode) {
+      await fetchTabData('machines', true)
+    } else {
+      const idx = adminMachines.value.findIndex(m => m.id === editingMachine.value.id)
+      if (idx > -1) adminMachines.value[idx] = normalizeMachine(res.data.machine)
+    }
     editingMachine.value = null
     showToast(t('adminUi.machineSaved', { name: payload.name }))
   } catch (e) {
@@ -3252,6 +3375,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.platform-nav-group + .platform-nav-group { margin-top: 8px; }
+.platform-nav-label { display: block; padding: 5px 10px; font-size: .7rem; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.platform-nav-group .nav-item { width: 100%; }
 .admin-page {
   /* Cards and modals use 10px corners (same as the Account page); pills stay round. */
   --radius: 10px;
