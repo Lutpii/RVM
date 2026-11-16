@@ -46,7 +46,7 @@ const levelTone = level => level >= 90 ? 'bad' : level >= 80 ? 'warn' : 'ok'
 
 <style scoped>
 .location-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
-.location-toggle { appearance: none; display: block; width: 100%; border: 0; background: transparent; color: var(--text-primary); text-align: start; padding: 12px 14px; cursor: pointer; }
+.location-toggle { appearance: none; display: block; width: 100%; border: 0; background: transparent; color: var(--text-primary); text-align: start; padding: 10px 12px 3px; cursor: pointer; }
 .location-toggle:focus-visible { outline-offset: -3px; }
 .location-heading, .location-machine { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .location-heading { font-weight: 700; margin-bottom: 4px; }
@@ -62,7 +62,7 @@ const levelTone = level => level >= 90 ? 'bad' : level >= 80 ? 'warn' : 'ok'
 .tone-ok { background: #dcfce7; color: #166534; }
 .tone-bad { background: #fee2e2; color: #991b1b; }
 .tone-muted { background: var(--bg-hover); color: var(--text-muted); }
-.location-details { padding: 0 14px 12px; }
+.location-details { padding: 0 12px 12px; }
 .machine-detail { padding: 10px 0; border-top: 1px solid var(--border); font-size: .8125rem; }
 .machine-detail > strong { margin-inline-end: 6px; }
 .bin-level { display: grid; grid-template-columns: minmax(62px, 30%) 1fr 36px; gap: 6px; align-items: center; margin-top: 5px; }

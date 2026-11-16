@@ -24,8 +24,9 @@
         <div v-if="loadingMachines" class="map-placeholder" role="status">{{ $t('dashboard.locating') }}</div>
         <p v-else-if="locationError" role="status">{{ $t('platform.locationsError') }}</p>
         <p v-else-if="!stations.length">{{ $t('platform.locationsEmpty') }}</p>
-        <div v-else class="machines-list platform-location-list">
-          <StationCard v-for="station in stations" :key="station.id" :station="station"
+        <div v-else class="platform-columns" :style="{ '--station-columns': stationColumns.length }">
+          <div v-for="(column, c) in stationColumns" :key="c" class="platform-column">
+          <StationCard v-for="station in column" :key="station.id" :station="station"
             :expanded-id="selectedMachineId" @toggle="selectMachine" v-slot="{ place }">
             <div class="map-embed">
               <template v-if="place.latitude !== null && place.longitude !== null">
@@ -38,6 +39,7 @@
               <PhMapTrifold class="points-sub-icon" weight="regular" aria-hidden="true" /> {{ $t('dashboard.getDirections') }}
             </a>
           </StationCard>
+          </div>
         </div>
       </section>
     </template>
@@ -137,6 +139,7 @@ import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold, PhCamera } from '@phosphor-
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
 import { demoDataLabel, platformMode } from '@/utils/featureFlags'
 import StationCard from '@/components/platform/StationCard.vue'
+import { splitColumns } from '@/utils/platform/splitColumns'
 import PointsCo2Card from '@/components/platform/PointsCo2Card.vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { machineAvailability } from '@/utils/machineConnectivity'
@@ -175,6 +178,11 @@ const machines          = ref([])
 const stations          = ref([])
 // Every place of every station, for the map lookup by the expanded place id.
 const places = computed(() => stations.value.flatMap(s => s.places))
+// Two tight columns on wide screens (same breakpoint as the old grid), one on phones.
+const wideQuery = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(min-width: 769px)') : null
+const wide = ref(Boolean(wideQuery?.matches))
+const onWideChange = (e) => { wide.value = e.matches }
+const stationColumns = computed(() => splitColumns(stations.value, wide.value ? 2 : 1))
 const locationError     = ref(false)
 const loadingMachines    = ref(true)
 const selectedMachineId  = ref(null)
@@ -236,6 +244,8 @@ watch(selectedMachineId, async (id) => {
 })
 
 onUnmounted(destroyMap)
+onMounted(() => wideQuery?.addEventListener?.('change', onWideChange))
+onUnmounted(() => wideQuery?.removeEventListener?.('change', onWideChange))
 
 function getDirectionsUrl(machine) {
   if (platformMode ? machine.latitude != null && machine.longitude != null : machine.latitude && machine.longitude) {
@@ -265,7 +275,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.platform-location-list { display: grid; gap: 8px; }
+.platform-columns { display: grid; grid-template-columns: repeat(var(--station-columns, 1), minmax(0, 1fr)); align-items: start; gap: 12px; }
+.platform-column { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .dashboard-page { background: var(--bg-primary); }
 
 /* Points hero */

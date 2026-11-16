@@ -23,8 +23,7 @@ const { t } = useI18n()
 </script>
 
 <style scoped>
-.station-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 12px 4px; }
-.station-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 2px 8px; }
+.station-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 12px 4px; }.station-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 2px 8px; }
 .station-name { margin: 0; font-size: 1rem; font-weight: 750; color: var(--text-primary); }
 .station-count { flex-shrink: 0; font-size: .75rem; font-weight: 600; color: var(--text-muted); }
 </style>
