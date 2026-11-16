@@ -30,8 +30,10 @@ class PlatformController extends Controller
                 'id' => $key,
                 'name' => $group->first()->name,
                 'location' => $location->name,
-                'latitude' => $location->latitude === null ? null : (float) $location->latitude,
-                'longitude' => $location->longitude === null ? null : (float) $location->longitude,
+                // The station's own machine coordinates (exact pin, follows Edit Machine);
+                // the shared Location row is only a fallback, since its name can repeat
+                // across campuses (e.g. "Main Lobby").
+                ...$this->stationCoordinates($group, $location),
                 'machines' => $group->map(function (RvmMachine $machine) use ($telemetry, $now) {
                     $row = [
                         'id' => $machine->id,
@@ -59,6 +61,18 @@ class PlatformController extends Controller
         })->values();
 
         return response()->json(['success' => true, 'locations' => $locations]);
+    }
+
+    /** @return array{latitude: ?float, longitude: ?float} */
+    private function stationCoordinates($machines, $location): array
+    {
+        $pinned = $machines->first(fn (RvmMachine $m) => $m->latitude !== null && $m->longitude !== null);
+        $source = $pinned ?? $location;
+
+        return [
+            'latitude' => $source->latitude === null ? null : (float) $source->latitude,
+            'longitude' => $source->longitude === null ? null : (float) $source->longitude,
+        ];
     }
 
     public function stats(): JsonResponse

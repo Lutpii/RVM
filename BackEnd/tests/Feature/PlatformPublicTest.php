@@ -122,6 +122,24 @@ class PlatformPublicTest extends TestCase
             ->assertJsonPath('locations.1.location', 'Main Lobby');
     }
 
+    public function test_each_card_maps_its_own_machines_not_the_shared_location_name(): void
+    {
+        config(['platform.enabled' => true]);
+        RvmMachine::query()->update(['status' => 'inactive']);
+        // "Main Lobby" exists on both campuses; the Location row only keeps the first coordinates.
+        $lobby = Location::create(['name' => 'Main Lobby', 'latitude' => 3.54, 'longitude' => 103.43]);
+        $this->machine('rvm', $lobby, 1, 'RVM UMPSA Pekan')->update(['latitude' => 3.5397, 'longitude' => 103.4301]);
+        $this->machine('rvm', $lobby, 2, 'RVM UMPSA Gambang')->update(['latitude' => 3.7237, 'longitude' => 103.1233]);
+        $this->machine('rvm', $lobby, 3, 'RVM No Coordinates');
+
+        $this->getJson('/api/platform/locations')->assertOk()
+            ->assertJsonPath('locations.0.latitude', 3.5397)
+            ->assertJsonPath('locations.1.latitude', 3.7237)
+            ->assertJsonPath('locations.1.longitude', 103.1233)
+            // No machine coordinates: fall back to the location's own.
+            ->assertJsonPath('locations.2.latitude', 3.54);
+    }
+
     private function machine(string $type, Location $location, int $order, ?string $name = null): RvmMachine
     {
         return RvmMachine::forceCreate([
