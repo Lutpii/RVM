@@ -171,6 +171,7 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
         Route::get('/sessions', [AdminController::class, 'allSessions']);
         Route::get('/transactions', [AdminController::class, 'allTransactions']);
         Route::get('/stats', [AdminController::class, 'stats']);
+        Route::post('/maps/resolve', [AdminController::class, 'resolveMapsLink'])->middleware('throttle:30,1');
         Route::get('/logs', [AdminController::class, 'logs']);
         Route::get('/reward-config', [AdminController::class, 'getRewardConfig']);
         Route::put('/reward-config', [AdminController::class, 'updateRewardConfig']);

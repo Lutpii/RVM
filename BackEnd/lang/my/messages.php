@@ -105,4 +105,5 @@ return [
     'voucher_already_used' => 'Baucar ini sudah digunakan.',
     'voucher_not_found' => 'Baucar tidak ditemui.',
     'machine_has_history' => 'Mesin ini mempunyai sejarah kitar semula, jadi tidak boleh dipadam. Tukar statusnya kepada Tidak Aktif.',
+    'maps_link_invalid' => 'Lokasi tidak dapat dibaca daripada pautan ini. Tampal pautan Google Maps (Kongsi, Salin pautan).',
 ];

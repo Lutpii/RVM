@@ -651,10 +651,10 @@
                   <button class="action-btn machine-btn maint-btn" v-if="isRvmCard(machine)" @click="openMaintenance(machine)">
                     <PhWrench weight="regular" aria-hidden="true" /> {{ $t('adminUi.maintenance') }}
                   </button>
-                  <button class="action-btn machine-btn" v-if="isRvmCard(machine)" @click="resetBins(machine)">
+                  <button class="action-btn machine-btn neutral-btn" v-if="isRvmCard(machine)" @click="resetBins(machine)">
                     <PhArrowCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.resetBins') }}
                   </button>
-                  <button class="action-btn machine-btn" v-if="isRvmCard(machine)" @click="historyMachine = machine">
+                  <button class="action-btn machine-btn neutral-btn" v-if="isRvmCard(machine)" @click="historyMachine = machine">
                     <PhClockCounterClockwise weight="regular" aria-hidden="true" /> {{ $t('adminUi.serviceHistoryBtn') }}
                   </button>
                 </div>
@@ -1083,13 +1083,10 @@
             {{ $t('adminUi.platform.willCreate', { codes: plannedMachineCodes.join(', ') }) }}
           </p>
         </fieldset>
+        <MapsLinkField id="newMachine-maps" @resolved="applyMapsLocation(newMachine, $event)" />
         <div class="form-group">
           <label>{{ $t('adminUi.location') }}</label>
           <input v-model="newMachine.location_name" type="text" :placeholder="$t('adminUi.egLocation')" />
-        </div>
-        <div class="form-group">
-          <label>{{ $t('adminUi.colStatus') }}</label>
-          <AppSelect v-model="newMachine.status" :options="[{ value: 'active', label: $t('adminUi.optActive') }, { value: 'inactive', label: $t('adminUi.optInactive') }, { value: 'maintenance', label: $t('adminUi.optMaintenance') }]" />
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1248,6 +1245,7 @@
           <label for="editingMachine-type">{{ $t('adminUi.platform.machineType') }}</label>
           <AppSelect id="editingMachine-type" v-model="editingMachine.machine_type" :options="platformTypes.map(type => ({ value: type, label: $t('platform.machine.' + type) }))" />
         </div>
+        <MapsLinkField id="editingMachine-maps" @resolved="applyMapsLocation(editingMachine, $event)" />
         <div class="form-group">
           <label>{{ $t('adminUi.location') }}</label>
           <input v-model="editingMachine.location_name" type="text" />
@@ -1404,6 +1402,7 @@ import { platformMode } from '@/utils/featureFlags'
 import { isRvmMachine } from '@/utils/platform/machineStatus'
 import { plannedCodes } from '@/utils/platform/machineCodes'
 import AppSelect from '@/components/AppSelect.vue'
+import MapsLinkField from '@/components/admin/MapsLinkField.vue'
 // RVM-only controls (bins, maintenance, history, demo checkbox) show for every machine
 // when the platform is OFF, and only for Ultra RVM machines when it is ON.
 const isRvmCard = (machine) => !platformMode || isRvmMachine(machine)
@@ -2911,6 +2910,13 @@ function openAddMachine() {
 // Codes the Add Machine form will create, shown under the type chips.
 const plannedMachineCodes = computed(() => plannedCodes(newMachine.value.machine_code?.trim() || '…', newMachine.value.machine_types || []))
 
+// A pasted Google Maps link fills the coordinates; the place name only fills an
+// empty Location, so a name the admin typed (e.g. "Main Lobby") is kept.
+function applyMapsLocation(form, { latitude, longitude, place }) {
+  Object.assign(form, { latitude, longitude })
+  if (place && !form.location_name?.trim()) form.location_name = place
+}
+
 function openEditMachine(machine) {
   editingMachine.value = { ...machine }
   machineError.value = ''
@@ -3886,6 +3892,8 @@ onUnmounted(() => {
 .text-muted-sm { color: var(--text-muted) !important; font-size: 11px; }
 .machine-actions { display: flex; flex-direction: column; gap: 10px; }
 .machine-actions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+/* Compactor/Composter cards only have Edit: let it span the row like Delete. */
+.machine-actions-grid > .machine-btn:only-child { grid-column: 1 / -1; }
 .action-btn.machine-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 40px; margin: 0; padding: 6px 10px; border-radius: 6px;
@@ -3893,9 +3901,14 @@ onUnmounted(() => {
 }
 .action-btn.machine-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .action-btn.machine-btn:hover { background: var(--bg-card); }
-/* Delete: separated and quieter until hovered, so it isn't the loudest button. */
+/* Reset Bins / Service History: a visible neutral outline (var(--border) alone
+   disappears against the button background in light mode). */
+.action-btn.machine-btn.neutral-btn {
+  border-color: color-mix(in srgb, var(--text-muted) 45%, transparent); color: var(--text-primary);
+}
+/* Delete: full width below the divider, same height as the buttons above, red outline. */
 .action-btn.machine-delete {
-  align-self: flex-end; border-color: transparent; background: transparent;
+  align-self: stretch; width: 100%; border-color: var(--accent-red); background: transparent;
   color: var(--accent-red); position: relative;
 }
 .action-btn.machine-delete:hover { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 8%, transparent); }

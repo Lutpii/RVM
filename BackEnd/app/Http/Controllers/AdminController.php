@@ -385,6 +385,17 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'machine' => $machines->first(), 'machines' => $machines], 201);
     }
 
+    // POST /admin/maps/resolve: a pasted Google Maps link -> pin coordinates + place name.
+    public function resolveMapsLink(Request $request, \App\Services\GoogleMapsLinkService $maps): JsonResponse
+    {
+        $url = $request->validate(['url' => 'required|string|max:2048'])['url'];
+        $location = $maps->resolve(trim($url));
+
+        return $location
+            ? response()->json(['success' => true] + $location)
+            : response()->json(['success' => false, 'message' => __('messages.maps_link_invalid')], 422);
+    }
+
     public function updateMachine(Request $request, int $id): JsonResponse
     {
         $machine = RvmMachine::find($id);
