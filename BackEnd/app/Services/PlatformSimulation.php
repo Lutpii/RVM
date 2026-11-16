@@ -16,6 +16,9 @@ class PlatformSimulation
 {
     private const LOCK = 'platform:simulation';
     public const LAST_TICK = 'platform:last_tick';
+    // The only machines generate() creates; purge deletes these and nothing else, so
+    // a compactor/composter an admin added by hand survives `rvm:demo-data --purge`.
+    public const GENERATED_CODES = ['RVM-PEKAN', 'CMP-PEKAN', 'CPS-PEKAN', 'CMP-DSME'];
 
     public function __construct(private PlatformCreditService $credits)
     {
@@ -88,9 +91,8 @@ class PlatformSimulation
             'compactor_batches' => CompactorBatch::where('is_demo', true)->delete(),
             'composter_deposits' => ComposterDeposit::where('is_demo', true)->delete(),
         ];
-        $machines = RvmMachine::where('is_demo', true)->where(function ($query) {
-            $query->whereIn('machine_type', ['compactor', 'composter'])->orWhere('machine_code', 'RVM-PEKAN');
-        })->whereDoesntHave('sessions')->whereDoesntHave('transactions');
+        $machines = RvmMachine::where('is_demo', true)->whereIn('machine_code', self::GENERATED_CODES)
+            ->whereDoesntHave('sessions')->whereDoesntHave('transactions');
         $locations = (clone $machines)->whereNotNull('location_id')->pluck('location_id');
         $counts['platform_machines'] = $machines->delete();
         $counts['platform_locations'] = Location::whereKey($locations->all())->whereDoesntHave('machines')->delete();
@@ -116,7 +118,7 @@ class PlatformSimulation
     {
         $email = config('platform.booth_email');
         $booth = $email ? User::where('email', $email)->where('role', 'user')->first() : null;
-        $users = User::where('email', 'like', '%@demo.rvm')->where('role', 'user')->orderBy('id')
+        $users = User::where('email', 'like', '%' . DemoDataGenerator::EMAIL_SUFFIX)->where('role', 'user')->orderBy('id')
             ->when($booth, fn ($query) => $query->whereKeyNot($booth->id))->get()->values();
         $counts = ['compactor_batches' => 0, 'composter_deposits' => 0];
         if (!$booth && $users->isEmpty()) {

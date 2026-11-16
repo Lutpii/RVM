@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
 class DemoDataGenerator
 {
     private const TZ = 'Asia/Kuala_Lumpur';
-    private const EMAIL_SUFFIX = '@demo.rvm';
+    public const EMAIL_SUFFIX = '@demo.rvm';
     private const DAY_START = 8 * 3600;
     private const DAY_END = 20 * 3600;
     private const REJECT_PERCENT = 7;

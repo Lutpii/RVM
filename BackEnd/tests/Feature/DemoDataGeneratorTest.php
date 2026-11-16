@@ -89,6 +89,25 @@ class DemoDataGeneratorTest extends TestCase
         $this->assertFalse(PointsHistory::where('user_id', $this->realUser->id)->whereNotNull('source')->exists());
     }
 
+    public function test_purge_keeps_compactor_added_by_an_admin(): void
+    {
+        config(['platform.enabled' => true]);
+        $generator = app(DemoDataGenerator::class);
+        $generator->generate(3, $this->now, 42);
+        // An admin-created compactor is simulated too (is_demo), but it is not generated data.
+        $location = \App\Models\Location::create(['name' => 'Gambang']);
+        \App\Models\RvmMachine::create([
+            'machine_code' => 'CMP-GAMBANG', 'name' => 'Compactor Gambang', 'machine_type' => 'compactor',
+            'location_id' => $location->id, 'status' => 'active', 'is_demo' => true,
+        ]);
+
+        $generator->purge();
+
+        $this->assertDatabaseMissing('rvm_machines', ['machine_code' => 'CMP-PEKAN']);
+        $this->assertDatabaseHas('rvm_machines', ['machine_code' => 'CMP-GAMBANG']);
+        $this->assertDatabaseHas('locations', ['name' => 'Gambang']);
+    }
+
 
     private function gen(?int $seed = 42): array
     {
