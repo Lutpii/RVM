@@ -18,15 +18,15 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794812569.9645107,
-    "seen": 1794814758.8463614,
-    "ast_hash": "eb03dc28065c93e608178eddbf118e4a",
+    "mtime": 1794818126.8304749,
+    "seen": 1794818286.9669948,
+    "ast_hash": "a7ed3254d7e37759db65a58c72785eaa",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
-    "mtime": 1794812395.1239765,
-    "seen": 1794814758.8463614,
-    "ast_hash": "0b9526b5c39918f755a55efb11f40fd3",
+    "mtime": 1794817768.1334248,
+    "seen": 1794818286.9669948,
+    "ast_hash": "f657c9b5de23cf2f09980760a2cce060",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/Controller.php": {
@@ -60,15 +60,15 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/TransactionController.php": {
-    "mtime": 1794811462.761848,
-    "seen": 1794811587.0237107,
-    "ast_hash": "85b729d7bee6bcb9ba5f8eeaf5f9c7b8",
+    "mtime": 1794817647.9016356,
+    "seen": 1794818286.9689782,
+    "ast_hash": "be4510d3b5159679a160a28e3dafa3c2",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/UserController.php": {
-    "mtime": 1794812395.2714345,
-    "seen": 1794814758.848377,
-    "ast_hash": "c55b1aa1ead1515b5265eebc9f787259",
+    "mtime": 1794817774.6826568,
+    "seen": 1794818286.9689782,
+    "ast_hash": "ffa8fba26868930109a98bc9f2bc3ac6",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Kernel.php": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/CarbonService.php": {
-    "mtime": 1794811831.3056753,
-    "seen": 1794814758.8560758,
-    "ast_hash": "8a1c0824f6fee1bf0ac6599d400c7299",
+    "mtime": 1794818070.3066018,
+    "seen": 1794818286.9804482,
+    "ast_hash": "a4b66f7ace5d2f98901ede381623014d",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/FonnteService.php": {
@@ -276,10 +276,10 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/RewardConfigService.php": {
-    "mtime": 1789053238.49046,
-    "seen": 1789196533.3199804,
-    "ast_hash": "1187c8d716a757371a8f2242157c251e",
-    "semantic_hash": "1187c8d716a757371a8f2242157c251e"
+    "mtime": 1794817647.9016356,
+    "seen": 1794818286.9825506,
+    "ast_hash": "72cd73d3a9468ecd1219fd7fda6ee691",
+    "semantic_hash": ""
   },
   "BackEnd/artisan": {
     "mtime": 1707791014.0,
@@ -798,15 +798,15 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/services/api.js": {
-    "mtime": 1794278349.6358154,
-    "seen": 1794303756.3516767,
-    "ast_hash": "3a09b6f02c23dd75005942ef37d487be",
+    "mtime": 1794817799.3637688,
+    "seen": 1794818287.0522928,
+    "ast_hash": "b02395934427a610cf21e2790e135a97",
     "semantic_hash": ""
   },
   "FrontEnd/src/store/auth.js": {
-    "mtime": 1794813176.6469035,
-    "seen": 1794814758.8907173,
-    "ast_hash": "13b12f0886280aeccbf624c3365d8db5",
+    "mtime": 1794817799.5151558,
+    "seen": 1794818287.0538104,
+    "ast_hash": "c45ec4d7bfe17ad81f9da1de59a7597d",
     "semantic_hash": ""
   },
   "FrontEnd/src/store/rvm.js": {
@@ -924,15 +924,15 @@
     "semantic_hash": "bf41781875f89b965d4e1187ad280935"
   },
   "FrontEnd/src/views/ActivityView.vue": {
-    "mtime": 1794813842.3903098,
-    "seen": 1794814758.9028683,
-    "ast_hash": "dc7c614c8c8191c1d2f8d461057cf372",
+    "mtime": 1794817799.7012095,
+    "seen": 1794818287.089702,
+    "ast_hash": "7ab60030a39e563f4744d5c4a5a1fd1b",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794814265.57799,
-    "seen": 1794814758.9028683,
-    "ast_hash": "0487d79627cd491c21ae2fd90bf31cbd",
+    "mtime": 1794818164.799665,
+    "seen": 1794818287.089702,
+    "ast_hash": "431c7f84eea0fe4badd3f89c46f0a6b0",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/UserSettingsView.vue": {
-    "mtime": 1794813842.5273066,
-    "seen": 1794814758.9062352,
-    "ast_hash": "774f6bd571c375fdc40897a88eb5f979",
+    "mtime": 1794817799.8072574,
+    "seen": 1794818287.095887,
+    "ast_hash": "573b9ffd6686e9b42bdcfa8d857f69bc",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/WelcomeView.vue": {
@@ -1320,9 +1320,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DemoDataGenerator.php": {
-    "mtime": 1794814471.600678,
-    "seen": 1794814758.8560758,
-    "ast_hash": "4b75d6957db1d7b70207fb888522285c",
+    "mtime": 1794817862.3335893,
+    "seen": 1794818286.9814484,
+    "ast_hash": "6dffac04bed9a076564822456f4064ed",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DetectionCaptureStorage.php": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/DemoDataGeneratorTest.php": {
-    "mtime": 1794814445.2660894,
-    "seen": 1794814758.8695827,
-    "ast_hash": "658b90729105403e514d781df3cfcb3b",
+    "mtime": 1794817847.3371751,
+    "seen": 1794818287.01173,
+    "ast_hash": "f0cf85010218e76da23082cb20de6169",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/GoogleCallbackAccountLinkTest.php": {
@@ -2022,9 +2022,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/PublicStatsController.php": {
-    "mtime": 1794811696.7819366,
-    "seen": 1794814758.8463614,
-    "ast_hash": "ccea6d1c3b79c22220fc1b42a77045e1",
+    "mtime": 1794818126.904933,
+    "seen": 1794818286.967978,
+    "ast_hash": "68762a6274129a44865427098b7a641b",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PublicStatsTest.php": {
@@ -2592,9 +2592,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/Admin/PlatformAdminController.php": {
-    "mtime": 1794812569.7256763,
-    "seen": 1794814758.8463614,
-    "ast_hash": "43f4030f15e0702af1da8b55bbc2ecbb",
+    "mtime": 1794818111.6143296,
+    "seen": 1794818286.9669948,
+    "ast_hash": "a246112366845f1816b4fa69e7096c06",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/CarbonSourcesController.php": {
@@ -2604,9 +2604,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/PlatformController.php": {
-    "mtime": 1794812253.0151885,
-    "seen": 1794814758.8463614,
-    "ast_hash": "39a153c16a705df760fdfc10e39ffdc3",
+    "mtime": 1794818082.1184545,
+    "seen": 1794818286.967978,
+    "ast_hash": "1ac03a1c3614f2575ae08b01b6e66b4e",
     "semantic_hash": ""
   },
   "BackEnd/app/Models/CompactorBatch.php": {
@@ -2622,9 +2622,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformCreditService.php": {
-    "mtime": 1794811975.1215966,
-    "seen": 1794814758.8565948,
-    "ast_hash": "ea1acb9e1d4dea71e24e7d91b856ffd7",
+    "mtime": 1794817647.9016356,
+    "seen": 1794818286.9814484,
+    "ast_hash": "17dbfbf7f9c68bbc5ba692c4ac309e6d",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformSettingsService.php": {
@@ -2634,21 +2634,21 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformSimulation.php": {
-    "mtime": 1794812773.4234374,
-    "seen": 1794814758.8565948,
-    "ast_hash": "2934f9a697daa1deb418a335c048577b",
+    "mtime": 1794817861.9051542,
+    "seen": 1794818286.9825506,
+    "ast_hash": "090199ace332cbb90aad662e9ff69332",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformTelemetry.php": {
-    "mtime": 1794812103.5358472,
-    "seen": 1794814758.8565948,
-    "ast_hash": "84f99a7d2edd20472b6664c54aa18043",
+    "mtime": 1794818111.2813334,
+    "seen": 1794818286.9825506,
+    "ast_hash": "08467064bbf84f6d1994e07fbb74a60d",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/UserImpactService.php": {
-    "mtime": 1794812394.995093,
-    "seen": 1794814758.8565948,
-    "ast_hash": "302966d30cfb625baf575d71c43c5055",
+    "mtime": 1794818070.3886254,
+    "seen": 1794818286.9825506,
+    "ast_hash": "b4f3d398a35aa2bb4a8757a47fd945b0",
     "semantic_hash": ""
   },
   "BackEnd/database/migrations/2026_11_16_000002_create_platform_activity_tables.php": {
@@ -2664,9 +2664,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminPlatformTest.php": {
-    "mtime": 1794812479.7443497,
-    "seen": 1794814758.8695827,
-    "ast_hash": "92a587885d340433cdec16d09b1d3dc3",
+    "mtime": 1794817998.1981702,
+    "seen": 1794818287.0092182,
+    "ast_hash": "ef3ba654da60f7c33eec544f46263a19",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/CarbonSourcesTest.php": {
@@ -2676,9 +2676,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformCreditTest.php": {
-    "mtime": 1794811961.9300458,
-    "seen": 1794814758.8762724,
-    "ast_hash": "751f93abefeba00f8a5e2809da8b9974",
+    "mtime": 1794817623.50101,
+    "seen": 1794818287.0174196,
+    "ast_hash": "a41656eb0a320790195c42466cf35c01",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformPublicTest.php": {
@@ -2694,9 +2694,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/UserPlatformImpactTest.php": {
-    "mtime": 1794812330.5825977,
-    "seen": 1794814758.8792,
-    "ast_hash": "ee3be1c04169573418caab18dc6293cc",
+    "mtime": 1794817730.4967945,
+    "seen": 1794818287.0244396,
+    "ast_hash": "33bc26dcd73ddee1fe45f12210d682fc",
     "semantic_hash": ""
   },
   "BackEnd/tests/Unit/PlatformTelemetryTest.php": {
@@ -2802,15 +2802,21 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/utils/platform/machineStatus.js": {
-    "mtime": 1794812933.5649087,
-    "seen": 1794814758.9020169,
-    "ast_hash": "917d88da7bcf44eccf55df78a7f8df78",
+    "mtime": 1794818156.358479,
+    "seen": 1794818287.0831616,
+    "ast_hash": "adcbd8628a9e0018bb068fb0c846b414",
     "semantic_hash": ""
   },
   "FrontEnd/src/utils/platform/machineStatus.test.js": {
-    "mtime": 1794812910.7401156,
-    "seen": 1794814758.9020169,
-    "ast_hash": "cd4d222949c28b70ebf11e22bc56047e",
+    "mtime": 1794818156.2695653,
+    "seen": 1794818287.0831616,
+    "ast_hash": "4bd9ba22ee13f4b13352f51faa9a6906",
+    "semantic_hash": ""
+  },
+  "BackEnd/app/Support/PlatformRequest.php": {
+    "mtime": 1794817747.2516816,
+    "seen": 1794818286.9825506,
+    "ast_hash": "48e9700b8cbb10337eae327632661629",
     "semantic_hash": ""
   }
 }
