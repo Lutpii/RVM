@@ -30,20 +30,21 @@ class PlatformPublicTest extends TestCase
         $this->machine('composter', $hub, 4, 'Pekan Station');
         $this->machine('rvm', $campus, 1, 'Campus RVM');
 
-        // One card per station = same machine name at the same location.
+        // One card per station name; each place (location) of that name inside it.
         $response = $this->getJson('/api/platform/locations')->assertOk()
-            ->assertJsonCount(2, 'locations')
-            ->assertJsonPath('locations.0.name', 'Campus RVM')
-            ->assertJsonPath('locations.0.location', 'Campus')
-            ->assertJsonPath('locations.1.name', 'Pekan Station')
-            ->assertJsonPath('locations.1.location', 'Pekan Hub')
-            ->assertJsonPath('locations.1.latitude', 3.54)
-            ->assertJsonCount(3, 'locations.1.machines')
-            ->assertJsonPath('locations.1.machines.0.id', $compactor->id)
-            ->assertJsonPath('locations.1.machines.0.is_demo', true)
-            ->assertJsonMissingPath('locations.1.machines.0.bins')
-            ->assertJsonPath('locations.1.machines.1.id', $rvm->id)
-            ->assertJsonPath('locations.1.machines.1.bins.plastic', 0);
+            ->assertJsonCount(2, 'stations')
+            ->assertJsonPath('stations.0.name', 'Campus RVM')
+            ->assertJsonPath('stations.0.places.0.location', 'Campus')
+            ->assertJsonPath('stations.1.name', 'Pekan Station')
+            ->assertJsonCount(1, 'stations.1.places')
+            ->assertJsonPath('stations.1.places.0.location', 'Pekan Hub')
+            ->assertJsonPath('stations.1.places.0.latitude', 3.54)
+            ->assertJsonCount(3, 'stations.1.places.0.machines')
+            ->assertJsonPath('stations.1.places.0.machines.0.id', $compactor->id)
+            ->assertJsonPath('stations.1.places.0.machines.0.is_demo', true)
+            ->assertJsonMissingPath('stations.1.places.0.machines.0.bins')
+            ->assertJsonPath('stations.1.places.0.machines.1.id', $rvm->id)
+            ->assertJsonPath('stations.1.places.0.machines.1.bins.plastic', 0);
         $this->assertNoItemKeys($response->json());
     }
 
@@ -115,11 +116,35 @@ class PlatformPublicTest extends TestCase
         $this->machine('rvm', $lobby, 3, 'RVM Library');
 
         $this->getJson('/api/platform/locations')->assertOk()
-            ->assertJsonCount(2, 'locations')
-            ->assertJsonPath('locations.0.name', 'RVM UMPSA Gambang')
-            ->assertJsonCount(2, 'locations.0.machines')
-            ->assertJsonPath('locations.1.name', 'RVM Library')
-            ->assertJsonPath('locations.1.location', 'Main Lobby');
+            ->assertJsonCount(2, 'stations')
+            ->assertJsonPath('stations.0.name', 'RVM UMPSA Gambang')
+            ->assertJsonCount(2, 'stations.0.places.0.machines')
+            ->assertJsonPath('stations.1.name', 'RVM Library')
+            ->assertJsonPath('stations.1.places.0.location', 'Main Lobby');
+    }
+
+    public function test_one_name_at_several_places_is_one_card_with_its_places_in_order(): void
+    {
+        config(['platform.enabled' => true]);
+        RvmMachine::query()->update(['status' => 'inactive']);
+        $lobby = Location::create(['name' => 'Main Lobby']);
+        $library = Location::create(['name' => 'Library']);
+        $cafe = Location::create(['name' => 'Cafeteria']);
+        $this->machine('rvm', $library, 2, 'RVM UMPSA Gambang');
+        $this->machine('rvm', $lobby, 1, 'RVM UMPSA Gambang');
+        $this->machine('rvm', $cafe, 3, 'RVM UMPSA Gambang');
+        $this->machine('composter', $cafe, 4, 'RVM UMPSA Gambang');
+        $this->machine('rvm', $lobby, 5, 'RVM UMPSA Pekan');
+
+        $this->getJson('/api/platform/locations')->assertOk()
+            ->assertJsonCount(2, 'stations')
+            ->assertJsonPath('stations.0.name', 'RVM UMPSA Gambang')
+            ->assertJsonCount(3, 'stations.0.places')
+            ->assertJsonPath('stations.0.places.0.location', 'Main Lobby')
+            ->assertJsonPath('stations.0.places.1.location', 'Library')
+            ->assertJsonPath('stations.0.places.2.location', 'Cafeteria')
+            ->assertJsonCount(2, 'stations.0.places.2.machines')
+            ->assertJsonPath('stations.1.name', 'RVM UMPSA Pekan');
     }
 
     public function test_each_card_maps_its_own_machines_not_the_shared_location_name(): void
@@ -133,11 +158,11 @@ class PlatformPublicTest extends TestCase
         $this->machine('rvm', $lobby, 3, 'RVM No Coordinates');
 
         $this->getJson('/api/platform/locations')->assertOk()
-            ->assertJsonPath('locations.0.latitude', 3.5397)
-            ->assertJsonPath('locations.1.latitude', 3.7237)
-            ->assertJsonPath('locations.1.longitude', 103.1233)
+            ->assertJsonPath('stations.0.places.0.latitude', 3.5397)
+            ->assertJsonPath('stations.1.places.0.latitude', 3.7237)
+            ->assertJsonPath('stations.1.places.0.longitude', 103.1233)
             // No machine coordinates: fall back to the location's own.
-            ->assertJsonPath('locations.2.latitude', 3.54);
+            ->assertJsonPath('stations.2.places.0.latitude', 3.54);
     }
 
     private function machine(string $type, Location $location, int $order, ?string $name = null): RvmMachine

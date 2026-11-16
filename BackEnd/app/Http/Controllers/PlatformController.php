@@ -17,54 +17,63 @@ class PlatformController extends Controller
     public function locations(PlatformTelemetry $telemetry): JsonResponse
     {
         $now = now();
-        $groups = RvmMachine::query()->where('status', 'active')->whereNotNull('location_id')
+        // Already in admin display order, so every groupBy below keeps that order:
+        // a station sits where its first machine is, a place where its first machine is.
+        $machines = RvmMachine::query()->where('status', 'active')->whereNotNull('location_id')
             ->with('location')->orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('id')
-            // One card per station: machines with the same name at the same location
-            // (an Add Machine form with several types creates exactly that).
-            ->get()->groupBy(fn (RvmMachine $machine) => $machine->location_id . ':' . $machine->name);
+            ->get();
 
-        $locations = $groups->map(function ($group, $key) use ($telemetry, $now) {
-            $location = $group->first()->location;
+        // One card per station name (e.g. "RVM UMPSA Gambang"); inside it one place per
+        // location (Main Lobby, Library, ...) with that place's machines.
+        $stations = $machines->groupBy('name')->map(fn ($named, $name) => [
+            'id' => $name,
+            'name' => $name,
+            'places' => $named->groupBy('location_id')
+                ->map(fn ($group) => $this->place($group, $telemetry, $now))->values(),
+        ])->values();
 
-            return [
-                'id' => $key,
-                'name' => $group->first()->name,
-                'location' => $location->name,
-                // The station's own machine coordinates (exact pin, follows Edit Machine);
-                // the shared Location row is only a fallback, since its name can repeat
-                // across campuses (e.g. "Main Lobby").
-                ...$this->stationCoordinates($group, $location),
-                'machines' => $group->map(function (RvmMachine $machine) use ($telemetry, $now) {
-                    $row = [
-                        'id' => $machine->id,
-                        'machine_code' => $machine->machine_code,
-                        'name' => $machine->name,
-                        'machine_type' => $machine->machine_type,
-                        'status' => $telemetry->status($machine, $now),
-                        'fill_level' => $telemetry->fillLevel($machine, $now),
-                        'is_demo' => $machine->is_demo,
-                        'last_seen_at' => $machine->last_seen_at,
-                        'fault_active' => $machine->fault_active,
+        return response()->json(['success' => true, 'stations' => $stations]);
+    }
+
+    private function place($group, PlatformTelemetry $telemetry, Carbon $now): array
+    {
+        $location = $group->first()->location;
+
+        return [
+            'id' => $group->first()->location_id . ':' . $group->first()->name,
+            'location' => $location->name,
+            // The place's own machine coordinates (exact pin, follows Edit Machine);
+            // the shared Location row is only a fallback, since its name can repeat
+            // across campuses (e.g. "Main Lobby").
+            ...$this->placeCoordinates($group, $location),
+            'machines' => $group->map(function (RvmMachine $machine) use ($telemetry, $now) {
+                $row = [
+                    'id' => $machine->id,
+                    'machine_code' => $machine->machine_code,
+                    'name' => $machine->name,
+                    'machine_type' => $machine->machine_type,
+                    'status' => $telemetry->status($machine, $now),
+                    'fill_level' => $telemetry->fillLevel($machine, $now),
+                    'is_demo' => $machine->is_demo,
+                    'last_seen_at' => $machine->last_seen_at,
+                    'fault_active' => $machine->fault_active,
+                ];
+
+                if ($machine->machine_type === 'rvm') {
+                    $row['bins'] = [
+                        'aluminum' => (int) $machine->aluminum_level,
+                        'plastic' => (int) $machine->plastic_level,
+                        'paper' => (int) $machine->paper_level,
                     ];
+                }
 
-                    if ($machine->machine_type === 'rvm') {
-                        $row['bins'] = [
-                            'aluminum' => (int) $machine->aluminum_level,
-                            'plastic' => (int) $machine->plastic_level,
-                            'paper' => (int) $machine->paper_level,
-                        ];
-                    }
-
-                    return $row;
-                })->values(),
-            ];
-        })->values();
-
-        return response()->json(['success' => true, 'locations' => $locations]);
+                return $row;
+            })->values(),
+        ];
     }
 
     /** @return array{latitude: ?float, longitude: ?float} */
-    private function stationCoordinates($machines, $location): array
+    private function placeCoordinates($machines, $location): array
     {
         $pinned = $machines->first(fn (RvmMachine $m) => $m->latitude !== null && $m->longitude !== null);
         $source = $pinned ?? $location;

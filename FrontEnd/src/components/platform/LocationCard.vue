@@ -1,12 +1,11 @@
 <template>
-  <article class="location-card">
+  <!-- One place of a station (inside StationCard): its machines, and on tap
+       their bars plus the map slot. -->
+  <section class="location-card">
     <button class="location-toggle" type="button" :aria-expanded="expanded" @click="$emit('toggle')">
       <span class="location-heading">
-        <span class="station-name">{{ location.name }}</span>
+        <span class="place-name"><PhMapPin :size="15" weight="bold" aria-hidden="true" /> {{ location.location }}</span>
         <PhCaretDown :class="{ turned: expanded }" :size="16" weight="bold" aria-hidden="true" />
-      </span>
-      <span v-if="location.location" class="station-place">
-        <PhMapPin :size="15" weight="bold" aria-hidden="true" /> {{ location.location }}
       </span>
       <span v-for="machine in location.machines" :key="machine.id" class="location-machine">
         <span class="machine-name">
@@ -30,7 +29,7 @@
       </section>
       <slot />
     </div>
-  </article>
+  </section>
 </template>
 
 <script setup>
@@ -46,14 +45,13 @@ const levelTone = level => level >= 90 ? 'bad' : level >= 80 ? 'warn' : 'ok'
 </script>
 
 <style scoped>
-.location-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.location-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
 .location-toggle { appearance: none; display: block; width: 100%; border: 0; background: transparent; color: var(--text-primary); text-align: start; padding: 12px 14px; cursor: pointer; }
 .location-toggle:focus-visible { outline-offset: -3px; }
 .location-heading, .location-machine { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.location-heading { font-weight: 750; margin-bottom: 2px; }
-.station-name { font-size: 1rem; }
-.station-place { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; font-size: .8125rem; color: var(--text-muted); }
-.station-place > svg { color: var(--accent-green); flex-shrink: 0; }
+.location-heading { font-weight: 700; margin-bottom: 4px; }
+.place-name { display: flex; align-items: center; gap: 4px; font-size: .875rem; }
+.place-name > svg { color: var(--accent-green); flex-shrink: 0; }
 .machine-name { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .machine-name > svg { color: var(--accent-green); flex-shrink: 0; }
 .location-machine { font-size: .8125rem; padding: 7px 0; border-top: 1px dashed var(--border); }

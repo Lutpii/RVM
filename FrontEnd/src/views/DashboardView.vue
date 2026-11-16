@@ -23,21 +23,21 @@
         <h3 class="section-title"><PhMapPin class="points-sub-icon" weight="regular" /> {{ $t('dashboard.nearbyMachines') }}</h3>
         <div v-if="loadingMachines" class="map-placeholder" role="status">{{ $t('dashboard.locating') }}</div>
         <p v-else-if="locationError" role="status">{{ $t('platform.locationsError') }}</p>
-        <p v-else-if="!locations.length">{{ $t('platform.locationsEmpty') }}</p>
+        <p v-else-if="!stations.length">{{ $t('platform.locationsEmpty') }}</p>
         <div v-else class="machines-list platform-location-list">
-          <LocationCard v-for="location in locations" :key="location.id" :location="location"
-            :expanded="selectedMachineId === location.id" @toggle="selectMachine(location)">
+          <StationCard v-for="station in stations" :key="station.id" :station="station"
+            :expanded-id="selectedMachineId" @toggle="selectMachine" v-slot="{ place }">
             <div class="map-embed">
-              <template v-if="location.latitude !== null && location.longitude !== null">
+              <template v-if="place.latitude !== null && place.longitude !== null">
                 <div ref="mapContainer" class="leaflet-map"></div>
                 <span class="map-attribution">© OpenStreetMap contributors</span>
               </template>
               <div v-else class="no-map">{{ $t('dashboard.locationNotSet') }}</div>
             </div>
-            <a :href="getDirectionsUrl(location)" target="_blank" rel="noopener noreferrer" class="directions-btn">
+            <a :href="getDirectionsUrl({ ...place, name: station.name })" target="_blank" rel="noopener noreferrer" class="directions-btn">
               <PhMapTrifold class="points-sub-icon" weight="regular" aria-hidden="true" /> {{ $t('dashboard.getDirections') }}
             </a>
-          </LocationCard>
+          </StationCard>
         </div>
       </section>
     </template>
@@ -124,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import L from 'leaflet'
@@ -136,7 +136,7 @@ import { RouterLink } from 'vue-router'
 import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold, PhCamera } from '@phosphor-icons/vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
 import { demoDataLabel, platformMode } from '@/utils/featureFlags'
-import LocationCard from '@/components/platform/LocationCard.vue'
+import StationCard from '@/components/platform/StationCard.vue'
 import PointsCo2Card from '@/components/platform/PointsCo2Card.vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { machineAvailability } from '@/utils/machineConnectivity'
@@ -172,7 +172,9 @@ L.Icon.Default.mergeOptions({
 const auth = useAuthStore()
 
 const machines          = ref([])
-const locations         = ref([])
+const stations          = ref([])
+// Every place of every station, for the map lookup by the expanded place id.
+const places = computed(() => stations.value.flatMap(s => s.places))
 const locationError     = ref(false)
 const loadingMachines    = ref(true)
 const selectedMachineId  = ref(null)
@@ -207,7 +209,7 @@ watch(selectedMachineId, async (id) => {
   destroyMap()
   if (id == null) return
 
-  const machine = (platformMode ? locations : machines).value.find(m => m.id === id)
+  const machine = (platformMode ? places : machines).value.find(m => m.id === id)
   if (!machine || (platformMode ? machine.latitude == null || machine.longitude == null : !machine.latitude || !machine.longitude)) return
 
   await nextTick()
@@ -239,14 +241,14 @@ function getDirectionsUrl(machine) {
   if (platformMode ? machine.latitude != null && machine.longitude != null : machine.latitude && machine.longitude) {
     return `https://maps.google.com/?q=${machine.latitude},${machine.longitude}`
   }
-  return `https://maps.google.com/?q=${encodeURIComponent(platformMode ? machine.name : machine.location_name)}`
+  return `https://maps.google.com/?q=${encodeURIComponent(platformMode ? `${machine.name} ${machine.location}` : machine.location_name)}`
 }
 
 onMounted(async () => {
   try {
     if (platformMode) {
       const res = await api.get('/platform/locations')
-      locations.value = res.data.locations || []
+      stations.value = res.data.stations || []
     } else {
       const res = await api.get('/machines')
       machines.value = res.data.machines || []

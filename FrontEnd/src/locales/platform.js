@@ -5,6 +5,7 @@ export const platformMessages = {
     simulated: 'Simulated',
     fillLevel: 'Fill level',
     locationsEmpty: 'No machine locations are available.',
+    placeCount: '{n} location | {n} locations',
     locationsError: 'Could not load machine locations.',
     sources: {
       title: 'How CO₂ is calculated',
@@ -24,6 +25,7 @@ export const platformMessages = {
     simulated: 'Simulasi',
     fillLevel: 'Paras isian',
     locationsEmpty: 'Tiada lokasi mesin tersedia.',
+    placeCount: '{n} lokasi | {n} lokasi',
     locationsError: 'Lokasi mesin tidak dapat dimuatkan.',
     sources: {
       title: 'Cara CO₂ dikira',
@@ -43,6 +45,7 @@ export const platformMessages = {
     simulated: 'Simulasi',
     fillLevel: 'Tingkat keterisian',
     locationsEmpty: 'Belum ada lokasi mesin yang tersedia.',
+    placeCount: '{n} lokasi | {n} lokasi',
     locationsError: 'Lokasi mesin gagal dimuat.',
     sources: {
       title: 'Cara CO₂ dihitung',
