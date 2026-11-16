@@ -1,16 +1,16 @@
 # Graph Report - RVM  (2026-11-16)
 
 ## Corpus Check
-- 448 files · ~289,038 words
+- 453 files · ~290,681 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3250 nodes · 7246 edges · 219 communities (117 shown, 57 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 130 edges (avg confidence: 0.85)
+- 3286 nodes · 7319 edges · 210 communities (117 shown, 48 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 133 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `52358311`
+- Built from commit: `77c560c5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,16 +22,16 @@
 - ai_service/app.py
 - Illuminate\Database\Migrations\Migration
 - UserSettingsView.vue
-- User
+- TestCase
 - Illuminate\Http\Request
 - RewardItem
-- RewardController
+- RewardRedemption
 - GpioDriver
 - ScanView.vue
 - FormalReportService
 - ♻️ Reverse Vending Machine (RVM) — Full Stack Web System
 - RegisterView.vue
-- AdminEmailFormalReportTest
+- User
 - AuthController
 - AdminBinCollectionEmailTest
 - AdminPaginationTest
@@ -45,12 +45,12 @@
 - Illuminate\Http\JsonResponse
 - router/index.js
 - RewardsView.vue
-- LandingView.vue
+- Transaction
 - showToast
 - SessionSummaryView.vue
 - transactionDisplay.js
 - Backend Build Config
-- Carbon\Carbon
+- DemoDataGenerator
 - api.js
 - App & Broadcast Providers
 - dependencies
@@ -58,15 +58,15 @@
 - vue
 - GpioDriverTest
 - DemoKioskSessionView.vue
-- ActiveSessionSheet.vue
+- SessionFloat.vue
 - App.vue
 - detectionDateRange.js
 - ai_service_4bin/app.py
 - Event Service Provider
-- PointsHistory
+- CompactorBatch
 - Closure
 - Console Kernel Scheduling
-- AdminCachingTest
+- Illuminate\Database\Eloquent\Model
 - useIdleLogout.js
 - Exception Handler
 - Logging Configuration
@@ -88,9 +88,9 @@
 - MachineTest
 - isReviewable
 - Machine
-- tapGesture.test.js
-- Transaction
-- machineAlerts.test.js
+- PlatformSimulation
+- DemoDataGeneratorTest
+- LocationCard.vue
 - swipe.js
 - AuthVerificationGateTest
 - toDatetimeLocalValue
@@ -99,26 +99,26 @@
 - DemoFlagTest
 - AppSelect.vue
 - AdminCompactorSettingsTest
-- GoogleCallbackAccountLinkTest
+- LastLoginTest.php
 - MaintenanceHistoryModal.vue
 - LanguageSwitch.vue
 - PlaceholderDriver
 - compactorFlow.js
 - activityTimeline.test.js
 - MachineHeartbeatTest
-- AccountSuspensionTest
+- AdminLog
 - CashRedeemTest
 - RecordingDriver
-- QrSession
-- Illuminate\Support\Str
+- Carbon\Carbon
+- intlLocale
 - AiService
 - RvmMachine
-- api.php
+- SessionController
 - saveDetectionReview
 - AdminController.php
 - UserAvatar.vue
 - AdminTransactionFiltersTest
-- AccountSummaryTest
+- AccountSummaryTest.php
 - VoucherModal.vue
 - intl
 - test_yolo.py
@@ -128,79 +128,70 @@
 - adminTabState.js
 - DashboardView.vue
 - normalize_material
-- SessionDetailModal.vue
-- intlLocale
-- Illuminate\Database\Eloquent\Builder
+- ActiveSessionSheet.vue
+- PlatformOverview.vue
+- PlatformAdminController
 - Handler
 - rvm-kiosk-launch.sh
-- scanMaintFrame
+- extractQrToken
 - redeemNow
 - AdminPlatformTest
-- awardPoints
+- depositAndWait
 - devDependencies
 - vercel.json
 - CompactorSettingsService
 - Illuminate\Support\Facades\Schema
 - Authenticate.php
-- brandLocales.test.js
+- MapsLinkField.vue
 - Illuminate\Database\Schema\Blueprint
 - _UsbCameraWrapper
 - normalizeMachine
 - AdminPlatformSettingsTest
-- AdminTableExportTest
-- @phosphor-icons/vue
+- Location
+- PlatformCreditService
 - AdminCashRedeemSettingsTest
 - ai_service_4bin/README.md
 - start.sh
-- qrToken.js
+- UserPlatformImpactTest.php
 - useLanguage.js
-- AdminRewardConfigTest
+- RewardConfigService
 - RVM Web Application: Test Plan Results (T01–T09) and Issue Register
-- GoogleRedirectFrontendOriginTest
-- LocationCard.vue
+- autoStartFlow
+- startLimitEnd
 - RecyclingSession
-- DemoSessionMachineTest
-- AdminAuditLogTest
+- QrSession
+- buildRewardUpdatePayload
 - countMachinesInScope
 - MaintenanceRecordsTest
 - OneMachineRuleTest
-- rvm.js
-- downloadExcel
 - HardwareError
 - machineCodes.js
 - scripts
 - index.php
 - 2026_11_15_000001_add_display_no_to_users_table.php
-- IdleOverlay.vue
-- scanOutcome
-- VoucherView.vue
 - voucher.js
-- AdminCarbonStatsTest
-- rewardCategory.test.js
+- AdminCarbonStatsTest.php
 - FrontEnd/vite.config.js
 - platformNavGroups
-- localeChecks.test.js
 - cancelEditPassword
 - num
-- AvatarIcon
-- AdminKioskMaintenanceTest
+- UserController.php
 - vue-i18n
-- EnforceIdleTimeoutTest
-- AdminUpdateUserTest
-- main.js
+- PointsHistory
+- scrollReveal.js
 - PlatformRequest.php
 
 ## God Nodes (most connected - your core abstractions)
-1. `User` - 230 edges
-2. `RvmMachine` - 203 edges
-3. `TestCase` - 155 edges
+1. `User` - 233 edges
+2. `RvmMachine` - 205 edges
+3. `TestCase` - 157 edges
 4. `RecyclingSession` - 112 edges
 5. `Transaction` - 84 edges
-6. `AdminController` - 70 edges
+6. `AdminController` - 71 edges
 7. `vitest` - 70 edges
 8. `RewardItem` - 59 edges
 9. `PointsHistory` - 54 edges
-10. `vue` - 53 edges
+10. `vue` - 54 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `GpioDriverTest` --uses--> `HardwareError`  [INFERRED]
@@ -217,7 +208,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (219 total, 57 thin omitted)
+## Communities (210 total, 48 thin omitted)
 
 ### Community 0 - "AdminView.vue"
 Cohesion: 0.01
@@ -233,7 +224,7 @@ Nodes (47): pestphp/pest-plugin, php-http/discovery, autoload, autoload-dev, psr
 
 ### Community 3 - "RvmSessionView.vue"
 Cohesion: 0.05
-Nodes (54): flushChamber(), isFlapEmpty(), aiConfidence, aiDetected, annotatedImageDataUrl, auth, autoStartFlow(), cameraCountdown (+46 more)
+Nodes (40): aiConfidence, aiDetected, annotatedImageDataUrl, auth, cameraCountdown, cameraMode, cameraStreamUrl, canvasRef (+32 more)
 
 ### Community 4 - "ai_service/app.py"
 Cohesion: 0.22
@@ -243,44 +234,48 @@ Nodes (11): capture(), classify(), _generate_mjpeg(), health(), _PiCameraWrapper
 Cohesion: 0.04
 Nodes (39): auth, carbonText, confirmDelete, conversionRate, deleteConfirmText, deletingAccount, draft, draftHex (+31 more)
 
-### Community 7 - "User"
+### Community 7 - "TestCase"
 Cohesion: 0.05
-Nodes (33): RewardRedemption, User, AdminRedemptionsListTest, AuthControllerLocaleTest, ExampleTest, MachineOrderTest, PointsHistoryOrderTest, PointsHistoryRedeemedTypeTest (+25 more)
+Nodes (22): AdminRedemptionsListTest, AdminRewardConfigTest, AuthControllerLocaleTest, ExampleTest, GoogleRedirectFrontendOriginTest, IndonesianLocaleTest, MachineOrderTest, PointsHistoryOrderTest (+14 more)
 
 ### Community 8 - "Illuminate\Http\Request"
 Cohesion: 0.09
 Nodes (3): AdminController, AdminTableExport, Illuminate\Http\Request
 
 ### Community 9 - "RewardItem"
-Cohesion: 0.07
-Nodes (8): RewardItem, RewardItemImage, AdminRewardItemsCrudTest, RewardCatalogTest, RewardItemAvailabilityTest, RewardRedeemTest, RewardVoucherTest, UploadedFile
+Cohesion: 0.08
+Nodes (7): RewardItem, AdminRewardItemsCrudTest, RewardCatalogTest, RewardItemAvailabilityTest, RewardRedeemTest, RewardVoucherTest, UploadedFile
 
-### Community 10 - "RewardController"
-Cohesion: 0.12
-Nodes (3): RewardController, CashRedeemSettingsService, self
+### Community 10 - "RewardRedemption"
+Cohesion: 0.13
+Nodes (3): RewardController, RewardRedemption, CashRedeemSettingsService
 
 ### Community 11 - "GpioDriver"
 Cohesion: 0.13
 Nodes (11): GpioDriver, Stop every motor and close the flap. Called after any failure., Open the flap and hold it so the item drops into the compactor., Press the batch, then bring the compactor back., Tilt to the material's bin, hold, then return to the limit switch., Release the pins (tests and shutdown)., One relay on for `seconds`; all others off first (interlock)., Run the tilt back until the limit switch is pressed, at most TILT_HOME_TIMEOUT. (+3 more)
 
 ### Community 12 - "ScanView.vue"
-Cohesion: 0.08
-Nodes (26): activeMachines, activeStore, auth, cameraActive, cameraError, cameraSupported, canvasRef, elsewhere (+18 more)
+Cohesion: 0.07
+Nodes (30): scanOutcome(), activeMachines, activeStore, auth, cameraActive, cameraError, cameraSupported, canvasRef (+22 more)
 
 ### Community 13 - "FormalReportService"
-Cohesion: 0.07
-Nodes (15): FormalReportService, ReadsExcelDownloads, AdminDataScopeTest, LastLoginTest, UserDisplayNumberTest, FormalReportServiceTest, Illuminate\Testing\TestResponse, PhpOffice\PhpSpreadsheet\Cell\Coordinate (+7 more)
+Cohesion: 0.05
+Nodes (18): FormalReportService, ReadsExcelDownloads, AdminDataScopeTest, AdminTableExportTest, LastLoginTest, UserDisplayNumberTest, FormalReportServiceTest, Illuminate\Testing\TestResponse (+10 more)
 
 ### Community 14 - "♻️ Reverse Vending Machine (RVM) — Full Stack Web System"
 Cohesion: 0.05
 Nodes (38): 0. Prasyarat ✅ (sudah diverifikasi), 10. Opsional — HTTPS dengan sertifikat terpercaya (Let's Encrypt), 1. Install paket sistem, 2. Permission GPIO & kamera, 3. Clone project & setup database, 4. Backend (Laravel), 5. AI service (kamera + YOLO + servo), 6. Frontend (build production) (+30 more)
 
 ### Community 15 - "RegisterView.vue"
-Cohesion: 0.11
-Nodes (22): auth, clearDraft(), error, form, handleRegister(), handleResendOtp(), handleVerifyOtp(), loading (+14 more)
+Cohesion: 0.10
+Nodes (23): RegisterView(), auth, clearDraft(), error, form, handleRegister(), handleResendOtp(), handleVerifyOtp() (+15 more)
+
+### Community 16 - "User"
+Cohesion: 0.09
+Nodes (10): User, AdminCachingTest, AdminEmailFormalReportTest, AdminMapsLinkTest, TransactionControllerLocaleTest, CollidingUser, Illuminate\Database\UniqueConstraintViolationException, Illuminate\Foundation\Auth\User (+2 more)
 
 ### Community 17 - "AuthController"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (6): AuthController, FonnteService, SecurityLog, Illuminate\Http\RedirectResponse, Illuminate\Support\Facades\Validator, Illuminate\Validation\Rule
 
 ### Community 20 - "fetchTabData"
@@ -288,44 +283,44 @@ Cohesion: 0.06
 Nodes (35): isFresh(), resolveLoadingFlag(), TAB_LOADING_FLAG, changeAuditPerPage(), changeDetectionPerPage(), changeRedemptionsPerPage(), changeRewardItemsPerPage(), changeSessionsPerPage() (+27 more)
 
 ### Community 22 - "DetectionLog"
-Cohesion: 0.07
-Nodes (10): DemoData, ExpireStaleSessions, MachineKey, OrganizeDetectionCaptures, PlatformTick, DetectionLog, DetectionCaptureStorage, AdminDetectionLogsTest (+2 more)
+Cohesion: 0.10
+Nodes (5): OrganizeDetectionCaptures, DetectionLog, DetectionCaptureStorage, AdminDetectionLogsTest, OrganizeDetectionCapturesTest
 
 ### Community 23 - "CarbonService"
-Cohesion: 0.12
-Nodes (7): PublicStatsController, CarbonService, ActiveSessionTest, CarbonSourcesTest, CarbonServiceTest, ExampleTest, PHPUnit\Framework\TestCase
+Cohesion: 0.05
+Nodes (15): PublicStatsController, CarbonService, GoogleMapsLinkService, UserFactory, ActiveSessionTest, CarbonSourcesTest, CarbonServiceTest, ExampleTest (+7 more)
 
 ### Community 24 - "vitest"
-Cohesion: 0.16
-Nodes (9): flattenKeys(), __dirname, leaves(), messages, platformMessages, COMPACTOR_KEYS, __dirname, KEYS (+1 more)
+Cohesion: 0.05
+Nodes (31): installGhostClickGuard(), mounted(), sourceFiles(), SRC, adminUi, SOURCES, used, LANGS (+23 more)
 
 ### Community 25 - "LoginView.vue"
 Cohesion: 0.10
 Nodes (17): LoginView(), auth, error, form, handleEmailLogin(), handleResendLoginOtp(), loading, loginMethod (+9 more)
 
 ### Community 26 - "ActivityView.vue"
-Cohesion: 0.08
-Nodes (19): ActivityView(), clock(), filters, hasLoadError, loading, materialList(), MATERIALS, openSessionCode (+11 more)
+Cohesion: 0.09
+Nodes (18): clock(), filters, hasLoadError, loading, materialList(), MATERIALS, openSessionCode, openSessionDemo (+10 more)
 
 ### Community 27 - "Illuminate\Http\JsonResponse"
-Cohesion: 0.11
-Nodes (4): MachineController, TransactionController, UserController, Illuminate\Http\JsonResponse
+Cohesion: 0.16
+Nodes (3): MachineController, TransactionController, Illuminate\Http\JsonResponse
 
 ### Community 28 - "router/index.js"
-Cohesion: 0.06
-Nodes (35): AdminView(), DemoKioskSessionView(), GoodbyeView(), KioskLandingView(), NotFoundView(), PrivacyView(), RegisterView(), routes (+27 more)
+Cohesion: 0.05
+Nodes (46): activeKey, route, ActivityView(), AdminView(), DemoKioskSessionView(), GoodbyeView(), KioskLandingView(), NotFoundView() (+38 more)
 
 ### Community 29 - "RewardsView.vue"
 Cohesion: 0.12
 Nodes (19): RewardsView(), activeCategory, activeVoucher, auth, categories, detailItem, fetchItems(), fetchVouchers() (+11 more)
 
-### Community 30 - "LandingView.vue"
-Cohesion: 0.10
-Nodes (18): LandingView(), acceptedChips, barLabel, intlLocale, itemsText(), { locale, t }, machineTypes, MONTH_MATERIALS (+10 more)
+### Community 30 - "Transaction"
+Cohesion: 0.11
+Nodes (4): Transaction, PointsHistoryLocaleTest, SessionSummaryReceiptTest, TransactionCompleteAtomicityTest
 
 ### Community 31 - "showToast"
 Cohesion: 0.10
-Nodes (23): kioskLink(), buildRewardUpdatePayload(), addRewardItem(), askConfirm(), buildRewardItemFormData(), capitalize(), copyKioskLink(), deleteMachine() (+15 more)
+Nodes (26): cleanParams(), downloadExcel(), excelFilename(), kioskLink(), addRewardItem(), askConfirm(), buildRewardItemFormData(), capitalize() (+18 more)
 
 ### Community 32 - "SessionSummaryView.vue"
 Cohesion: 0.11
@@ -339,13 +334,13 @@ Nodes (15): AI_CONFIDENCE_MIN, BIN_LETTERS, cap(), confidenceLevel(), isKnown(),
 Cohesion: 0.14
 Nodes (12): devDependencies, axios, laravel-vite-plugin, vite, axios, vite, private, scripts (+4 more)
 
-### Community 35 - "Carbon\Carbon"
-Cohesion: 0.16
-Nodes (5): DemoDataGenerator, Carbon, Carbon, PlatformSimulation, Carbon\Carbon
+### Community 35 - "DemoDataGenerator"
+Cohesion: 0.21
+Nodes (3): DemoDataGenerator, Carbon, Carbon\CarbonInterface
 
 ### Community 36 - "api.js"
-Cohesion: 0.15
-Nodes (16): demoMachineGuard(), GoogleCallbackView(), api, registerClearAuth(), storedKioskToken, useActiveSessionStore, useAuthStore, isDemoMachine() (+8 more)
+Cohesion: 0.11
+Nodes (22): app, i18n, pinia, startLanguage, demoMachineGuard(), GoogleCallbackView(), router, api (+14 more)
 
 ### Community 37 - "App & Broadcast Providers"
 Cohesion: 0.20
@@ -356,24 +351,24 @@ Cohesion: 0.14
 Nodes (14): dependencies, axios, chart.js, jsqr, leaflet, lenis, @phosphor-icons/vue, pinia (+6 more)
 
 ### Community 39 - "KioskQrView.vue"
-Cohesion: 0.13
-Nodes (23): KioskQrView(), base, clearIntervals(), currentToken, elsewhereMsg, expiresInSec, generateQr(), handleExpiry() (+15 more)
+Cohesion: 0.12
+Nodes (26): KioskQrView(), afterQrExpiry(), QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, base, clearIntervals(), currentToken, elsewhereMsg (+18 more)
 
 ### Community 40 - "vue"
-Cohesion: 0.18
-Nodes (14): IDLE_COUNTDOWN_MS, IDLE_MS, mount(), useIdleTimer(), SESSION_ENDED_MS, useKioskSessionGuard(), onEnded(), mount() (+6 more)
+Cohesion: 0.13
+Nodes (19): progress, props, seconds, IDLE_COUNTDOWN_MS, IDLE_MS, mount(), useIdleTimer(), SESSION_ENDED_MS (+11 more)
 
 ### Community 41 - "GpioDriverTest"
 Cohesion: 0.14
 Nodes (7): duty(), GpioDriverTest, run(), PWM duty of a servo pulse of `ms` milliseconds at 50 Hz., Switch releases when the tilt drives out; presses again shortly after the…, [(on_time, off_time), ...] of a relay pin., skipIf
 
 ### Community 42 - "DemoKioskSessionView.vue"
-Cohesion: 0.07
-Nodes (39): DEMO_ITEMS, itemCounts(), itemSaveOutcome(), RESUME_TO_CHOOSE, resumeStep(), sessionMatchesMachine(), simulatedConfidence(), aiConfidence (+31 more)
-
-### Community 43 - "ActiveSessionSheet.vue"
 Cohesion: 0.06
-Nodes (32): cancelBtn, closeBtn, confirming, dialogEl, emit, endBtn, endError, ending (+24 more)
+Nodes (45): onEnded(), setKioskToken(), DEMO_ITEMS, itemCounts(), itemSaveOutcome(), RESUME_TO_CHOOSE, resumeStep(), sessionMatchesMachine() (+37 more)
+
+### Community 43 - "SessionFloat.vue"
+Cohesion: 0.12
+Nodes (17): summary, auth, isUserRoute, mode, route, shape, store, summary (+9 more)
 
 ### Community 44 - "App.vue"
 Cohesion: 0.15
@@ -391,17 +386,21 @@ Nodes (22): capture(), classify(), _drop(), drop_back_left(), drop_back_right(),
 Cohesion: 0.29
 Nodes (5): EventServiceProvider, Illuminate\Auth\Events\Registered, Illuminate\Auth\Listeners\SendEmailVerificationNotification, Illuminate\Foundation\Support\Providers\EventServiceProvider, Illuminate\Support\Facades\Event
 
-### Community 48 - "PointsHistory"
-Cohesion: 0.05
-Nodes (15): PlatformController, CompactorBatch, ComposterDeposit, Location, PointsHistory, UserImpactService, PlatformPublicTest, PlatformTickTest (+7 more)
+### Community 48 - "CompactorBatch"
+Cohesion: 0.23
+Nodes (4): CompactorBatch, ComposterDeposit, UserImpactService, Illuminate\Database\Eloquent\Relations\BelongsTo
 
 ### Community 49 - "Closure"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (14): AdminMiddleware, EnforceIdleTimeout, EnsureAccountActive, EnsurePlatformMode, KioskAuthMiddleware, MachineAuthMiddleware, RedirectIfAuthenticated, SetLocaleFromHeader (+6 more)
 
 ### Community 50 - "Console Kernel Scheduling"
 Cohesion: 0.47
 Nodes (3): Kernel, Illuminate\Console\Scheduling\Schedule, Illuminate\Foundation\Console\Kernel
+
+### Community 51 - "Illuminate\Database\Eloquent\Model"
+Cohesion: 0.10
+Nodes (4): MaintenanceRecord, RewardItemImage, Illuminate\Database\Eloquent\Builder, Illuminate\Database\Eloquent\Model
 
 ### Community 52 - "useIdleLogout.js"
 Cohesion: 0.20
@@ -424,8 +423,8 @@ Cohesion: 0.22
 Nodes (8): About Laravel, Code of Conduct, Contributing, Laravel Sponsors, Learning Laravel, License, Premium Partners, Security Vulnerabilities
 
 ### Community 60 - "AdminPagination.vue"
-Cohesion: 0.22
-Nodes (11): bounds, changePage(), changePerPage(), emit, numberFormatter, pageItems, props, { t, locale } (+3 more)
+Cohesion: 0.24
+Nodes (10): bounds, changePage(), changePerPage(), emit, pageItems, props, { t, locale }, paginationBounds() (+2 more)
 
 ### Community 61 - "ImageCropper.vue"
 Cohesion: 0.11
@@ -439,17 +438,13 @@ Nodes (11): closeDetectionViewer(), correctDisabledReason(), isReviewable(), isU
 Cohesion: 0.15
 Nodes (5): chamber_capacity(), Machine, Ask the driver whether the machine is safe to run (flap closed, tilt at its…, Chamber material/count once the running and queued jobs finish, plus the…, A deposit's capacity: a whole number 1..MAX_CHAMBER_CAPACITY, else the default.
 
-### Community 93 - "tapGesture.test.js"
-Cohesion: 0.26
-Nodes (9): installGhostClickGuard(), mounted(), GHOST_CLICK_MS, GHOST_CLICK_RADIUS_PX, isGhostClick(), isTap(), TAP_MAX_MOVE_PX, TAP_MAX_MS (+1 more)
+### Community 93 - "PlatformSimulation"
+Cohesion: 0.14
+Nodes (7): DemoData, ExpireStaleSessions, MachineKey, PlatformTick, Carbon, PlatformSimulation, Illuminate\Console\Command
 
-### Community 94 - "Transaction"
-Cohesion: 0.09
-Nodes (6): AdminLog, MaintenanceRecord, Transaction, DemoDataGeneratorTest, Carbon, TransactionCompleteAtomicityTest
-
-### Community 95 - "machineAlerts.test.js"
-Cohesion: 0.27
-Nodes (9): buildMachineAlerts(), connectivitySummary(), now, machineAvailability(), machineConnectivity(), ONLINE_WINDOW_MS, now, machineAlerts (+1 more)
+### Community 95 - "LocationCard.vue"
+Cohesion: 0.15
+Nodes (16): icons, { t }, buildMachineAlerts(), connectivitySummary(), now, machineAvailability(), machineConnectivity(), ONLINE_WINDOW_MS (+8 more)
 
 ### Community 96 - "swipe.js"
 Cohesion: 0.19
@@ -471,53 +466,61 @@ Nodes (5): Compactor hardware for the 2-bin DSME RVM. A gate (flap) servo holds 
 Cohesion: 0.16
 Nodes (19): button, choose(), close(), emit, enabled, focusItem(), hasValue, label (+11 more)
 
+### Community 105 - "LastLoginTest.php"
+Cohesion: 0.35
+Nodes (4): GoogleCallbackAccountLinkTest, Laravel\Socialite\Facades\Socialite, Laravel\Socialite\Two\User, Mockery
+
 ### Community 106 - "MaintenanceHistoryModal.vue"
 Cohesion: 0.11
-Nodes (19): actionTaken, closeBtn, closeError, closeRecord(), closingId, emit, errorMessage(), fmt() (+11 more)
+Nodes (18): actionTaken, closeBtn, closeError, closeRecord(), closingId, emit, errorMessage(), form (+10 more)
 
 ### Community 107 - "LanguageSwitch.vue"
-Cohesion: 0.20
-Nodes (11): act(), button, choose(), { locale, languages, currentLanguage, setLanguage }, onKey, onPointer(), open, root (+3 more)
+Cohesion: 0.26
+Nodes (9): act(), button, choose(), { locale, languages, currentLanguage, setLanguage }, onKey, onPointer(), open, root (+1 more)
 
 ### Community 108 - "PlaceholderDriver"
 Cohesion: 0.21
 Nodes (3): PlaceholderDriver, Stands in for the real GPIO driver: same timing, no hardware., PlaceholderDriverTest
 
 ### Community 109 - "compactorFlow.js"
-Cohesion: 0.12
-Nodes (25): depositItem(), HEARTBEAT_INTERVAL_MS, startHeartbeat(), tick(), ACCEPTED_2BIN, AUTO_END_SECONDS, isMachineFault(), limitEndsSession() (+17 more)
+Cohesion: 0.16
+Nodes (17): HEARTBEAT_INTERVAL_MS, startHeartbeat(), tick(), ACCEPTED_2BIN, AUTO_END_SECONDS, isMachineFault(), limitEndsSession(), limitFor() (+9 more)
 
 ### Community 110 - "activityTimeline.test.js"
 Cohesion: 0.16
 Nodes (14): activeFilterCount(), buildActivityTimeline(), filterTimeline(), groupByDay(), RANGE_DAYS, RECYCLING_KINDS, SIMULATED_SOURCES, history (+6 more)
 
-### Community 115 - "QrSession"
-Cohesion: 0.29
-Nodes (3): QrController, QrSession, SimpleSoftwareIO\QrCode\Facades\QrCode
+### Community 112 - "AdminLog"
+Cohesion: 0.13
+Nodes (3): AdminLog, AccountSuspensionTest, AdminAuditLogTest
 
-### Community 116 - "Illuminate\Support\Str"
-Cohesion: 0.19
-Nodes (4): UserFactory, Illuminate\Database\Eloquent\Factories\Factory, Illuminate\Support\Str, static
+### Community 115 - "Carbon\Carbon"
+Cohesion: 0.27
+Nodes (3): PlatformController, PlatformTelemetry, Carbon\Carbon
+
+### Community 116 - "intlLocale"
+Cohesion: 0.18
+Nodes (11): numberFormatter, fmt(), date(), number(), { t, locale }, number(), { t, locale }, intlLocale() (+3 more)
 
 ### Community 117 - "AiService"
-Cohesion: 0.08
-Nodes (4): AiService, GuestCarbonTest, HardwareCompactorProxyTest, IndonesianLocaleTest
+Cohesion: 0.10
+Nodes (3): AiService, GuestCarbonTest, HardwareCompactorProxyTest
 
 ### Community 118 - "RvmMachine"
-Cohesion: 0.09
-Nodes (7): RvmMachine, PlatformTelemetry, ExpireStaleSessionsTest, MachineDeleteGuardTest, MachineTypeIsolationTest, PublicStatsTest, PlatformTelemetryTest
+Cohesion: 0.08
+Nodes (7): RvmMachine, MachineDeleteGuardTest, MachineTypeIsolationTest, PlatformTickTest, PublicStatsTest, PlatformTelemetryTest, Illuminate\Support\Facades\Cache
 
-### Community 119 - "api.php"
-Cohesion: 0.15
-Nodes (6): RouteServiceProvider, PlatformFlagTest, Illuminate\Cache\RateLimiting\Limit, Illuminate\Foundation\Support\Providers\RouteServiceProvider, Illuminate\Support\Facades\RateLimiter, Illuminate\Support\Facades\Route
+### Community 119 - "SessionController"
+Cohesion: 0.11
+Nodes (7): SessionController, RouteServiceProvider, PlatformFlagTest, Illuminate\Cache\RateLimiting\Limit, Illuminate\Foundation\Support\Providers\RouteServiceProvider, Illuminate\Support\Facades\RateLimiter, Illuminate\Support\Facades\Route
 
 ### Community 120 - "saveDetectionReview"
 Cohesion: 0.15
 Nodes (16): filterHidden(), pruneSettled(), removeLog(), restoreLog(), a, b, c, closeIncorrectReview() (+8 more)
 
 ### Community 121 - "AdminController.php"
-Cohesion: 0.07
-Nodes (13): PlatformCreditService, PlatformSettingsService, RewardConfigService, PlatformCreditTest, SecurityLogTest, Illuminate\Filesystem\Filesystem, Illuminate\Support\Facades\Hash, Illuminate\Support\Facades\Http (+5 more)
+Cohesion: 0.19
+Nodes (3): SecurityLogTest, Illuminate\Support\Facades\Http, Illuminate\Support\Facades\Log
 
 ### Community 122 - "UserAvatar.vue"
 Cohesion: 0.18
@@ -540,8 +543,8 @@ Cohesion: 0.15
 Nodes (10): fields, fields, detail, detailError, listError, machines, props, selected (+2 more)
 
 ### Community 129 - "Controller"
-Cohesion: 0.19
-Nodes (6): CarbonSourcesController, Controller, SessionController, Illuminate\Foundation\Auth\Access\AuthorizesRequests, Illuminate\Foundation\Validation\ValidatesRequests, Illuminate\Routing\Controller
+Cohesion: 0.17
+Nodes (7): CarbonSourcesController, Controller, QrController, Illuminate\Foundation\Auth\Access\AuthorizesRequests, Illuminate\Foundation\Validation\ValidatesRequests, Illuminate\Routing\Controller, SimpleSoftwareIO\QrCode\Facades\QrCode
 
 ### Community 130 - "dataScope.test.js"
 Cohesion: 0.17
@@ -552,20 +555,20 @@ Cohesion: 0.32
 Nodes (6): buildAdminQuery(), DEFAULT_ADMIN_TAB, DEFAULT_DETECTION_VIEW, DETECTION_VIEWS, parseAdminQuery(), TABS
 
 ### Community 132 - "DashboardView.vue"
-Cohesion: 0.10
-Nodes (16): DashboardView(), demoDataLabel, googleLoginEnabled, platformMode, auth, AVAILABILITY_LABEL, binTypes, loadingMachines (+8 more)
+Cohesion: 0.09
+Nodes (17): DashboardView(), demoDataLabel, googleLoginEnabled, platformMode, auth, AVAILABILITY_LABEL, binTypes, loadingMachines (+9 more)
 
 ### Community 134 - "normalize_material"
 Cohesion: 0.31
 Nodes (3): normalize_material(), Material slugs for the 2-bin DSME machine. Only tin (aluminum) and plastic have…, NormalizeMaterialTest
 
-### Community 135 - "SessionDetailModal.vue"
-Cohesion: 0.14
-Nodes (10): closeBtn, emit, items, loadError, loading, props, summary, { t, te } (+2 more)
+### Community 135 - "ActiveSessionSheet.vue"
+Cohesion: 0.06
+Nodes (27): cancelBtn, closeBtn, confirming, dialogEl, emit, endBtn, endError, ending (+19 more)
 
-### Community 136 - "intlLocale"
-Cohesion: 0.13
-Nodes (18): chart, colors, error, format(), kpis, options, overview, props (+10 more)
+### Community 136 - "PlatformOverview.vue"
+Cohesion: 0.20
+Nodes (11): chart, colors, error, format(), kpis, options, overview, props (+3 more)
 
 ### Community 138 - "Handler"
 Cohesion: 0.33
@@ -575,17 +578,17 @@ Nodes (3): BaseHTTPRequestHandler, Handler, Local-only companion for the RVM kio
 Cohesion: 0.60
 Nodes (5): new_bytes(), rvm-kiosk-launch.sh script, size_of(), start_ai(), uptime_s()
 
-### Community 140 - "scanMaintFrame"
-Cohesion: 0.47
-Nodes (6): closeMaintenance(), scanMaintFrame(), startMaintCamera(), stopMaintCamera(), submitMaintenance(), toggleMaintCamera()
+### Community 140 - "extractQrToken"
+Cohesion: 0.43
+Nodes (7): extractQrToken(), closeMaintenance(), scanMaintFrame(), startMaintCamera(), stopMaintCamera(), submitMaintenance(), toggleMaintCamera()
 
 ### Community 141 - "redeemNow"
 Cohesion: 0.33
 Nodes (6): deleteAccount(), loadRedemptionHistory(), loadSummary(), redeemNow(), saveAvatar(), showToast
 
-### Community 144 - "awardPoints"
-Cohesion: 0.23
-Nodes (11): isNetworkError(), newIdempotencyKey(), retryOnce(), saveUserItem(), awardPoints(), claimSwitchDecision(), continueSwitch, openMaterialSwitch() (+3 more)
+### Community 144 - "depositAndWait"
+Cohesion: 0.25
+Nodes (11): depositItem(), awardPoints(), claimSwitchDecision(), continueSwitch, depositAndWait(), machineLocked(), openMaterialSwitch(), randomPointsFallback() (+3 more)
 
 ### Community 145 - "devDependencies"
 Cohesion: 0.25
@@ -595,9 +598,9 @@ Nodes (8): devDependencies, autoprefixer, postcss, tailwindcss, vite, @vitejs/pl
 Cohesion: 0.50
 Nodes (3): framework, rewrites, $schema
 
-### Community 151 - "brandLocales.test.js"
-Cohesion: 0.19
-Nodes (5): adminUi, SOURCES, used, LANGS, content
+### Community 151 - "MapsLinkField.vue"
+Cohesion: 0.15
+Nodes (14): busy, emit, error, found, onPaste(), resolve(), { t }, url (+6 more)
 
 ### Community 153 - "_UsbCameraWrapper"
 Cohesion: 0.23
@@ -607,13 +610,13 @@ Nodes (5): Wraps an OpenCV VideoCapture (USB webcam) behind the same capture_arr
 Cohesion: 0.31
 Nodes (5): BIN_LEVEL_KEYS, normalizeMachine(), validateMachineName(), addMachine(), saveMachine()
 
-### Community 159 - "@phosphor-icons/vue"
-Cohesion: 0.46
-Nodes (5): activeKey, route, NAV_ITEMS, resolveActiveNavKey(), @phosphor-icons/vue
+### Community 156 - "Location"
+Cohesion: 0.32
+Nodes (3): Location, PlatformPublicTest, Illuminate\Database\Eloquent\Relations\HasMany
 
-### Community 163 - "qrToken.js"
-Cohesion: 0.43
-Nodes (6): afterQrExpiry(), extractQrToken(), QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, handleScan(), onQrDetected()
+### Community 159 - "PlatformCreditService"
+Cohesion: 0.24
+Nodes (4): PlatformCreditService, PlatformSettingsService, Illuminate\Filesystem\Filesystem, InvalidArgumentException
 
 ### Community 164 - "useLanguage.js"
 Cohesion: 0.30
@@ -623,25 +626,25 @@ Nodes (9): applyLanguage(), browserStorage(), CODES, htmlLang(), INTL, isLanguag
 Cohesion: 0.40
 Nodes (4): Issue Register (§8), Not covered by this run, Results, RVM Web Application: Test Plan Results (T01–T09) and Issue Register
 
-### Community 173 - "LocationCard.vue"
-Cohesion: 0.29
-Nodes (7): icons, { t }, isRvmMachine(), pillTone(), statusPill(), tones, isRvmCard()
+### Community 170 - "autoStartFlow"
+Cohesion: 0.38
+Nodes (7): isFlapEmpty(), autoStartFlow(), delay(), ensureFlapEmpty(), recycleAgain(), refreshChamber(), takeBackSwitch()
+
+### Community 173 - "startLimitEnd"
+Cohesion: 0.50
+Nodes (5): flushChamber(), confirmEndSession(), materialLimit(), { showOverlay: showIdleOverlay, msLeft: idleMsLeft, poke: pokeIdle, sessionEnded, endingSession }, startLimitEnd()
 
 ### Community 175 - "RecyclingSession"
-Cohesion: 0.09
-Nodes (6): RecyclingSession, AdminExportExcelTest, DetectionLogTest, PointsHistoryLocaleTest, SessionSummaryReceiptTest, WeighAwardsConfiguredPointsTest
+Cohesion: 0.11
+Nodes (5): RecyclingSession, AdminExportExcelTest, DetectionLogTest, ExpireStaleSessionsTest, WeighAwardsConfiguredPointsTest
+
+### Community 176 - "QrSession"
+Cohesion: 0.13
+Nodes (5): QrSession, DemoSessionMachineTest, EnforceIdleTimeoutTest, QrLifetimeTest, Illuminate\Support\Carbon
 
 ### Community 178 - "countMachinesInScope"
 Cohesion: 0.43
 Nodes (5): countMachinesInScope(), machinesInScope(), machines, scopedMachines, statsCards
-
-### Community 186 - "rvm.js"
-Cohesion: 0.62
-Nodes (4): getHardwareState(), readKioskState(), readStoredProfile(), useRvmStore
-
-### Community 187 - "downloadExcel"
-Cohesion: 0.52
-Nodes (5): cleanParams(), downloadExcel(), excelFilename(), exportDetectionLogsExcel(), exportTable()
 
 ### Community 188 - "HardwareError"
 Cohesion: 0.40
@@ -655,21 +658,9 @@ Nodes (3): plannedCodes(), SUFFIX, plannedMachineCodes
 Cohesion: 0.40
 Nodes (5): scripts, build, dev, preview, test
 
-### Community 195 - "IdleOverlay.vue"
-Cohesion: 0.50
-Nodes (3): progress, props, seconds
-
-### Community 201 - "VoucherView.vue"
-Cohesion: 0.15
-Nodes (9): VoucherView(), auth, error, loading, markError, marking, route, { t } (+1 more)
-
 ### Community 202 - "voucher.js"
 Cohesion: 0.39
 Nodes (6): loadImage(), voucherImageDataUrl(), voucherLink(), voucherQrDataUrl(), wrapLines(), qrcode
-
-### Community 205 - "rewardCategory.test.js"
-Cohesion: 0.53
-Nodes (3): KNOWN, rewardCategoryKey(), rewardCategoryLabel()
 
 ### Community 206 - "FrontEnd/vite.config.js"
 Cohesion: 0.33
@@ -680,32 +671,32 @@ Cohesion: 0.50
 Nodes (3): platformNavGroups(), t(), groupedNav
 
 ### Community 219 - "vue-i18n"
-Cohesion: 0.07
-Nodes (21): activity, error, page, pending, props, { t }, error, saved (+13 more)
+Cohesion: 0.04
+Nodes (38): activity, error, page, pending, props, { t }, error, saved (+30 more)
 
-### Community 224 - "main.js"
-Cohesion: 0.20
-Nodes (8): mounted(), prefersReducedMotion(), app, i18n, pinia, startLanguage, router, hasMachineKey
+### Community 223 - "PointsHistory"
+Cohesion: 0.11
+Nodes (6): PointsHistory, AdminUpdateUserTest, PlatformCreditTest, PointsHistoryRedeemedTypeTest, TransactionRejectNoDeductionTest, Illuminate\Support\Facades\DB
 
 ## Knowledge Gaps
-- **746 isolated node(s):** `name`, `type`, `description`, `keywords`, `license` (+741 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1178 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **57 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **753 isolated node(s):** `name`, `type`, `description`, `keywords`, `license` (+748 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1191 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **48 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `User` connect `User` to `Controller`, `Illuminate\Http\Request`, `RewardItem`, `RewardController`, `FormalReportService`, `AdminPlatformTest`, `AdminEmailFormalReportTest`, `AuthController`, `AdminBinCollectionEmailTest`, `AdminPaginationTest`, `SessionStatusAndGraceTest`, `DetectionLog`, `CarbonService`, `Illuminate\Http\JsonResponse`, `AdminPlatformSettingsTest`, `AdminTableExportTest`, `AdminCashRedeemSettingsTest`, `Carbon\Carbon`, `AdminRewardConfigTest`, `RecyclingSession`, `PointsHistory`, `AdminAuditLogTest`, `DemoSessionMachineTest`, `AdminCachingTest`, `MaintenanceRecordsTest`, `OneMachineRuleTest`, `AdminCarbonStatsTest`, `AdminKioskMaintenanceTest`, `Transaction`, `AdminUpdateUserTest`, `EnforceIdleTimeoutTest`, `AuthVerificationGateTest`, `DemoFlagTest`, `AdminCompactorSettingsTest`, `GoogleCallbackAccountLinkTest`, `MachineHeartbeatTest`, `AccountSuspensionTest`, `CashRedeemTest`, `Illuminate\Support\Str`, `AiService`, `RvmMachine`, `AdminController.php`, `AdminTransactionFiltersTest`, `AccountSummaryTest`?**
-  _High betweenness centrality (0.050) - this node is a cross-community bridge._
-- **Why does `RvmMachine` connect `RvmMachine` to `BinCollectionRequested`, `User`, `Illuminate\Http\Request`, `Illuminate\Database\Eloquent\Builder`, `FormalReportService`, `AdminPlatformTest`, `AdminEmailFormalReportTest`, `AuthController`, `AdminBinCollectionEmailTest`, `AdminPaginationTest`, `SessionStatusAndGraceTest`, `DetectionLog`, `CarbonService`, `Illuminate\Http\JsonResponse`, `AdminTableExportTest`, `Carbon\Carbon`, `RecyclingSession`, `PointsHistory`, `Closure`, `DemoSessionMachineTest`, `MaintenanceRecordsTest`, `OneMachineRuleTest`, `AdminCarbonStatsTest`, `AdminKioskMaintenanceTest`, `Transaction`, `EnforceIdleTimeoutTest`, `DemoFlagTest`, `MachineHeartbeatTest`, `QrSession`, `AdminController.php`, `AdminTransactionFiltersTest`, `AccountSummaryTest`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `TestCase` connect `User` to `RewardItem`, `FormalReportService`, `AdminPlatformTest`, `AdminEmailFormalReportTest`, `AdminBinCollectionEmailTest`, `AdminPaginationTest`, `SessionStatusAndGraceTest`, `DetectionLog`, `CarbonService`, `AdminPlatformSettingsTest`, `AdminTableExportTest`, `AdminCashRedeemSettingsTest`, `AdminRewardConfigTest`, `GoogleRedirectFrontendOriginTest`, `RecyclingSession`, `PointsHistory`, `AdminAuditLogTest`, `DemoSessionMachineTest`, `AdminCachingTest`, `MaintenanceRecordsTest`, `OneMachineRuleTest`, `Test Application Bootstrap`, `AdminCarbonStatsTest`, `AdminKioskMaintenanceTest`, `Transaction`, `AdminUpdateUserTest`, `EnforceIdleTimeoutTest`, `AuthVerificationGateTest`, `DemoFlagTest`, `AdminCompactorSettingsTest`, `GoogleCallbackAccountLinkTest`, `MachineHeartbeatTest`, `AccountSuspensionTest`, `CashRedeemTest`, `AiService`, `RvmMachine`, `api.php`, `AdminController.php`, `AdminTransactionFiltersTest`, `AccountSummaryTest`?**
-  _High betweenness centrality (0.027) - this node is a cross-community bridge._
+- **Why does `User` connect `User` to `TestCase`, `Illuminate\Http\Request`, `RewardItem`, `FormalReportService`, `AdminPlatformTest`, `AuthController`, `AdminBinCollectionEmailTest`, `AdminPaginationTest`, `SessionStatusAndGraceTest`, `DetectionLog`, `CarbonService`, `AdminPlatformSettingsTest`, `Location`, `Transaction`, `PlatformCreditService`, `AdminCashRedeemSettingsTest`, `DemoDataGenerator`, `UserPlatformImpactTest.php`, `RecyclingSession`, `CompactorBatch`, `Closure`, `QrSession`, `MaintenanceRecordsTest`, `OneMachineRuleTest`, `AdminCarbonStatsTest.php`, `PlatformSimulation`, `DemoDataGeneratorTest`, `PointsHistory`, `AuthVerificationGateTest`, `DemoFlagTest`, `AdminCompactorSettingsTest`, `LastLoginTest.php`, `MachineHeartbeatTest`, `AdminLog`, `CashRedeemTest`, `RvmMachine`, `SessionController`, `AdminController.php`, `AdminTransactionFiltersTest`, `AccountSummaryTest.php`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
+- **Why does `RvmMachine` connect `RvmMachine` to `Controller`, `BinCollectionRequested`, `TestCase`, `Illuminate\Http\Request`, `PlatformAdminController`, `FormalReportService`, `AdminPlatformTest`, `User`, `AuthController`, `AdminBinCollectionEmailTest`, `AdminPaginationTest`, `SessionStatusAndGraceTest`, `CarbonService`, `Illuminate\Http\JsonResponse`, `Location`, `Transaction`, `PlatformCreditService`, `DemoDataGenerator`, `UserPlatformImpactTest.php`, `RecyclingSession`, `CompactorBatch`, `Closure`, `QrSession`, `Illuminate\Database\Eloquent\Model`, `MaintenanceRecordsTest`, `OneMachineRuleTest`, `AdminCarbonStatsTest.php`, `PlatformSimulation`, `DemoDataGeneratorTest`, `PointsHistory`, `DemoFlagTest`, `MachineHeartbeatTest`, `AdminLog`, `Carbon\Carbon`, `AdminController.php`, `AdminTransactionFiltersTest`, `AccountSummaryTest.php`?**
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+- **Why does `vue` connect `vue` to `MonitorPanel.vue`, `AdminView.vue`, `RvmSessionView.vue`, `DashboardView.vue`, `UserSettingsView.vue`, `ActiveSessionSheet.vue`, `PlatformOverview.vue`, `ScanView.vue`, `RegisterView.vue`, `MapsLinkField.vue`, `vitest`, `LoginView.vue`, `ActivityView.vue`, `router/index.js`, `RewardsView.vue`, `SessionSummaryView.vue`, `useLanguage.js`, `api.js`, `KioskQrView.vue`, `DemoKioskSessionView.vue`, `SessionFloat.vue`, `App.vue`, `useIdleLogout.js`, `AdminPagination.vue`, `ImageCropper.vue`, `vue-i18n`, `FrontEnd/package.json`, `AppSelect.vue`, `MaintenanceHistoryModal.vue`, `LanguageSwitch.vue`, `UserAvatar.vue`, `VoucherModal.vue`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `RvmMachine` (e.g. with `.booted()` and `.booted()`) actually correct?**
   _`RvmMachine` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `type`, `description` to the rest of the system?**
-  _746 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _753 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `AdminView.vue` be split into smaller, more focused modules?**
-  _Cohesion score 0.010049751243781095 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.00999950741342791 - nodes in this community are weakly interconnected._
 - **Should `BinCollectionRequested` be split into smaller, more focused modules?**
   _Cohesion score 0.12258064516129032 - nodes in this community are weakly interconnected._

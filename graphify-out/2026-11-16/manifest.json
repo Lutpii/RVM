@@ -18,9 +18,9 @@
     "semantic_hash": "883d928c9ddacb4e1841d6cae92c1762"
   },
   "BackEnd/app/Http/Controllers/AdminController.php": {
-    "mtime": 1794818126.8304749,
-    "seen": 1794818286.9669948,
-    "ast_hash": "a7ed3254d7e37759db65a58c72785eaa",
+    "mtime": 1794819498.6478517,
+    "seen": 1794820008.1291077,
+    "ast_hash": "e65c80e63323b67af43edf0524a58042",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/AuthController.php": {
@@ -546,9 +546,9 @@
     "semantic_hash": "477b725a852c34ce0aaad68e17b7019a"
   },
   "BackEnd/routes/api.php": {
-    "mtime": 1794812569.7592423,
-    "seen": 1794814758.8665004,
-    "ast_hash": "98f685bd957a1d00c2e9c964a2312abc",
+    "mtime": 1794819653.6413398,
+    "seen": 1794820008.1520622,
+    "ast_hash": "c7123dfe7775147152d0abe9af43ec8b",
     "semantic_hash": ""
   },
   "BackEnd/routes/channels.php": {
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/AdminView.vue": {
-    "mtime": 1794818164.799665,
-    "seen": 1794818287.089702,
-    "ast_hash": "431c7f84eea0fe4badd3f89c46f0a6b0",
+    "mtime": 1794819710.6577127,
+    "seen": 1794820008.1970088,
+    "ast_hash": "683d072ef0fee057ede49667ccc4c06a",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/DashboardView.vue": {
@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/UserSettingsView.vue": {
-    "mtime": 1794817799.8072574,
-    "seen": 1794818287.095887,
-    "ast_hash": "573b9ffd6686e9b42bdcfa8d857f69bc",
+    "mtime": 1794819743.2202258,
+    "seen": 1794820008.200023,
+    "ast_hash": "c250b5e42b12373c8d5d94a1797b4068",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/WelcomeView.vue": {
@@ -1182,9 +1182,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/admin/AdminPagination.vue": {
-    "mtime": 1794722468.708206,
-    "seen": 1794724100.5423937,
-    "ast_hash": "c2f418e2c6f5bb7adecbbee6de60c431",
+    "mtime": 1794819743.2187095,
+    "seen": 1794820008.1711094,
+    "ast_hash": "4638622126710673db0999fd8c9778cd",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/paginationLocales.test.js": {
@@ -2388,9 +2388,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/LanguageSwitch.vue": {
-    "mtime": 1794722468.7021768,
-    "seen": 1794724100.5423937,
-    "ast_hash": "55c799cd58298ff67959488f167b25b0",
+    "mtime": 1794818678.7025526,
+    "seen": 1794820008.1701107,
+    "ast_hash": "20f93913e76d8fb0b0f0b93df62a7636",
     "semantic_hash": ""
   },
   "FrontEnd/src/composables/useLanguage.js": {
@@ -2472,9 +2472,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/adminUi.js": {
-    "mtime": 1794814027.3914094,
-    "seen": 1794814758.886643,
-    "ast_hash": "cc2c44f9f5aaac131e8a124099a07231",
+    "mtime": 1794819673.86948,
+    "seen": 1794820008.1757367,
+    "ast_hash": "42b3c84d0657d9925b4e5c65d40f5965",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/adminUi.test.js": {
@@ -2592,9 +2592,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/Admin/PlatformAdminController.php": {
-    "mtime": 1794818111.6143296,
-    "seen": 1794818286.9669948,
-    "ast_hash": "a246112366845f1816b4fa69e7096c06",
+    "mtime": 1794819653.6423388,
+    "seen": 1794820008.1291077,
+    "ast_hash": "5d0bc930e74eb20e6745b2e3ef6b0fbe",
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/CarbonSourcesController.php": {
@@ -2604,9 +2604,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Http/Controllers/PlatformController.php": {
-    "mtime": 1794818082.1184545,
-    "seen": 1794818286.967978,
-    "ast_hash": "1ac03a1c3614f2575ae08b01b6e66b4e",
+    "mtime": 1794819536.4785726,
+    "seen": 1794820008.130115,
+    "ast_hash": "19c2eabac7d41c8aa065f4c90225573c",
     "semantic_hash": ""
   },
   "BackEnd/app/Models/CompactorBatch.php": {
@@ -2634,9 +2634,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformSimulation.php": {
-    "mtime": 1794817861.9051542,
-    "seen": 1794818286.9825506,
-    "ast_hash": "090199ace332cbb90aad662e9ff69332",
+    "mtime": 1794819556.1884575,
+    "seen": 1794820008.1396363,
+    "ast_hash": "136ab3594ca4182dc93fd55d0ae23a8c",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformTelemetry.php": {
@@ -2664,9 +2664,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/AdminPlatformTest.php": {
-    "mtime": 1794817998.1981702,
-    "seen": 1794818287.0092182,
-    "ast_hash": "ef3ba654da60f7c33eec544f46263a19",
+    "mtime": 1794819880.413629,
+    "seen": 1794820008.1551564,
+    "ast_hash": "8d7627bbdc477288d49d10382b8399ff",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/CarbonSourcesTest.php": {
@@ -2682,9 +2682,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformPublicTest.php": {
-    "mtime": 1794812182.9067557,
-    "seen": 1794814758.8762724,
-    "ast_hash": "522da5cfb72eee7baa2cfe033d673e24",
+    "mtime": 1794819536.4314632,
+    "seen": 1794820008.1611536,
+    "ast_hash": "88c12905550a7b79fcbefbf1878702c0",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformTickTest.php": {
@@ -2754,9 +2754,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/LocationCard.vue": {
-    "mtime": 1794813176.4458926,
-    "seen": 1794814758.8846278,
-    "ast_hash": "1bfaaa18cfbfd397a3535e3c89827bd0",
+    "mtime": 1794819568.7422335,
+    "seen": 1794820008.1727164,
+    "ast_hash": "1fad38a5798db96bfd765ec43c11e389",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PlatformMachinesSection.vue": {
@@ -2817,6 +2817,36 @@
     "mtime": 1794817747.2516816,
     "seen": 1794818286.9825506,
     "ast_hash": "48e9700b8cbb10337eae327632661629",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/components/AppSelect.vue": {
+    "mtime": 1794819352.4062192,
+    "seen": 1794820008.1691093,
+    "ast_hash": "02f1b66a181bf73cb88a26353a63f052",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/platform/machineCodes.js": {
+    "mtime": 1794819664.3110547,
+    "seen": 1794820008.1935,
+    "ast_hash": "3a037346a1a919f882851810f53373aa",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/platform/machineCodes.test.js": {
+    "mtime": 1794819664.24865,
+    "seen": 1794820008.1935,
+    "ast_hash": "7e59959ee56c51d29270d4954d5e9075",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/selectNav.js": {
+    "mtime": 1794819342.3173099,
+    "seen": 1794820008.195505,
+    "ast_hash": "dc681cdd1816f52a95c8943a82a6c8be",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/utils/selectNav.test.js": {
+    "mtime": 1794819313.373745,
+    "seen": 1794820008.195505,
+    "ast_hash": "853e53a6048899d9aef812928ddf78bf",
     "semantic_hash": ""
   }
 }
