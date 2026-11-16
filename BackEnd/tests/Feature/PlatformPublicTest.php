@@ -25,15 +25,19 @@ class PlatformPublicTest extends TestCase
         $campus = Location::create(['name' => 'Campus']);
         Location::create(['name' => 'Empty']);
 
-        $compactor = $this->machine('compactor', $hub, 2);
-        $rvm = $this->machine('rvm', $hub, 3);
-        $this->machine('composter', $hub, 4);
-        $this->machine('rvm', $campus, 1);
+        $compactor = $this->machine('compactor', $hub, 2, 'Pekan Station');
+        $rvm = $this->machine('rvm', $hub, 3, 'Pekan Station');
+        $this->machine('composter', $hub, 4, 'Pekan Station');
+        $this->machine('rvm', $campus, 1, 'Campus RVM');
 
+        // One card per station = same machine name at the same location.
         $response = $this->getJson('/api/platform/locations')->assertOk()
             ->assertJsonCount(2, 'locations')
-            ->assertJsonPath('locations.0.id', $campus->id)
-            ->assertJsonPath('locations.1.id', $hub->id)
+            ->assertJsonPath('locations.0.name', 'Campus RVM')
+            ->assertJsonPath('locations.0.location', 'Campus')
+            ->assertJsonPath('locations.1.name', 'Pekan Station')
+            ->assertJsonPath('locations.1.location', 'Pekan Hub')
+            ->assertJsonPath('locations.1.latitude', 3.54)
             ->assertJsonCount(3, 'locations.1.machines')
             ->assertJsonPath('locations.1.machines.0.id', $compactor->id)
             ->assertJsonPath('locations.1.machines.0.is_demo', true)
@@ -101,10 +105,27 @@ class PlatformPublicTest extends TestCase
         $this->getJson('/api/stats/public')->assertOk()->assertExactJson($before);
     }
 
-    private function machine(string $type, Location $location, int $order): RvmMachine
+    public function test_two_stations_at_one_location_get_two_cards(): void
+    {
+        config(['platform.enabled' => true]);
+        RvmMachine::query()->update(['status' => 'inactive']);
+        $lobby = Location::create(['name' => 'Main Lobby']);
+        $this->machine('rvm', $lobby, 1, 'RVM UMPSA Gambang');
+        $this->machine('compactor', $lobby, 2, 'RVM UMPSA Gambang');
+        $this->machine('rvm', $lobby, 3, 'RVM Library');
+
+        $this->getJson('/api/platform/locations')->assertOk()
+            ->assertJsonCount(2, 'locations')
+            ->assertJsonPath('locations.0.name', 'RVM UMPSA Gambang')
+            ->assertJsonCount(2, 'locations.0.machines')
+            ->assertJsonPath('locations.1.name', 'RVM Library')
+            ->assertJsonPath('locations.1.location', 'Main Lobby');
+    }
+
+    private function machine(string $type, Location $location, int $order, ?string $name = null): RvmMachine
     {
         return RvmMachine::forceCreate([
-            'machine_code' => 'PUBLIC-' . $order, 'name' => $type, 'location_id' => $location->id,
+            'machine_code' => 'PUBLIC-' . $order, 'name' => $name ?? $type, 'location_id' => $location->id,
             'machine_type' => $type, 'display_order' => $order, 'is_demo' => $type !== 'rvm',
         ]);
     }

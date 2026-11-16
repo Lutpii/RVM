@@ -314,9 +314,7 @@
       <div v-if="activeTab === 'transactions'" class="tab-content">
         <label v-if="platformMode" class="platform-admin-select">
           {{ $t('adminUi.platform.machineType') }}
-          <select v-model="transactionType">
-            <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
-          </select>
+          <AppSelect v-model="transactionType" size="compact" :options="platformTypes.map(type => ({ value: type, label: $t('platform.machine.' + type) }))" />
         </label>
         <PlatformActivityTable v-if="platformMode && transactionType !== 'rvm'" :type="transactionType" :scope="dataScope" :refresh="platformRefresh" />
         <div v-else class="section-card">
@@ -367,10 +365,8 @@
             </label>
             <label class="tx-field">
               <span>{{ $t('adminUi.machine') }}</span>
-              <select v-model="txMachine" @change="filterTransactions" class="filter-select">
-                <option value="">{{ $t('adminUi.allMachines') }}</option>
-                <option v-for="m in rvmAdminMachines" :key="m.id" :value="m.id">{{ m.name }}</option>
-              </select>
+              <AppSelect v-model="txMachine" size="compact" class="filter-select-app" @change="filterTransactions"
+                :options="[{ value: '', label: $t('adminUi.allMachines') }, ...rvmAdminMachines.map(m => ({ value: m.id, label: m.name }))]" />
             </label>
             <label class="tx-field date-field picker-field" @click="openDatePicker">
               <span>{{ $t('adminUi.from') }}</span>
@@ -578,10 +574,8 @@
           </div>
           <label v-if="platformMode" class="platform-admin-select">
             {{ $t('adminUi.platform.machineType') }}
-            <select v-model="machineTypeFilter">
-              <option value="all">{{ $t('adminUi.platform.allTypes') }}</option>
-              <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
-            </select>
+            <AppSelect v-model="machineTypeFilter" size="compact"
+              :options="[{ value: 'all', label: $t('adminUi.platform.allTypes') }, ...platformTypes.map(type => ({ value: type, label: $t('platform.machine.' + type) }))]" />
           </label>
           <div v-if="loadingMachines" class="loading-overlay"><div class="spinner-lg"></div></div>
           <div v-if="machineOrderDirty" class="machine-order-actions">
@@ -724,10 +718,8 @@
             <h3 class="card-title-bar"><span class="title-sq"></span> {{ $t('adminUi.auditLog') }}</h3>
             <div class="topbar-right">
               <input v-model="auditSearch" @keyup.enter="searchAudit" :placeholder="$t('adminUi.searchAudit')" class="search-input" />
-              <select v-model="auditAction" @change="searchAudit" class="filter-select">
-                <option value="">{{ $t('adminUi.allActions') }}</option>
-                <option v-for="a in auditActions" :key="a" :value="a">{{ auditActionLabel(a) }}</option>
-              </select>
+              <AppSelect v-model="auditAction" size="compact" class="filter-select-app" @change="searchAudit"
+                :options="[{ value: '', label: $t('adminUi.allActions') }, ...auditActions.map(a => ({ value: a, label: auditActionLabel(a) }))]" />
             </div>
           </div>
           <div class="filter-toolbar">
@@ -804,12 +796,8 @@
           <div class="filter-toolbar detection-filter-toolbar">
             <label class="date-field detection-date-preset">
               <span>{{ $t('admin.detectionReview.capturedDate') }}</span>
-              <select class="filter-select" :value="activeDetectionDateFilter.preset"
-                @change="setDetectionDatePreset($event.target.value)">
-                <option v-for="preset in detectionDatePresetOptions" :key="preset.value" :value="preset.value">
-                  {{ preset.label }}
-                </option>
-              </select>
+              <AppSelect size="compact" class="filter-select-app" :model-value="activeDetectionDateFilter.preset"
+                :options="detectionDatePresetOptions" @update:model-value="setDetectionDatePreset" />
             </label>
             <div v-if="activeDetectionDateFilter.preset === 'custom'" class="date-range detection-custom-range">
               <label class="date-field picker-field" @click="openDatePicker">
@@ -988,17 +976,13 @@
         </div>
         <div class="form-group">
           <label>{{ $t('adminUi.colRole') }}</label>
-          <select v-model="editingUser.role">
-            <option value="user">{{ $t('adminUi.optUser') }}</option>
-            <option value="admin">{{ $t('adminUi.optAdmin') }}</option>
-          </select>
+          <AppSelect v-model="editingUser.role"
+            :options="[{ value: 'user', label: $t('adminUi.optUser') }, { value: 'admin', label: $t('adminUi.optAdmin') }]" />
         </div>
         <div class="form-group">
           <label>{{ $t('adminUi.colVerified') }}</label>
-          <select v-model="editingUser.is_verified">
-            <option :value="1">{{ $t('adminUi.yes') }}</option>
-            <option :value="0">{{ $t('adminUi.no') }}</option>
-          </select>
+          <AppSelect v-model="editingUser.is_verified"
+            :options="[{ value: 1, label: $t('adminUi.yes') }, { value: 0, label: $t('adminUi.no') }]" />
         </div>
         <div class="modal-actions">
           <button class="action-btn edit-btn" @click="saveUser">{{ $t('adminUi.save') }}</button>
@@ -1085,34 +1069,29 @@
           <label>{{ $t('adminUi.machineNameReq') }}</label>
           <input v-model="newMachine.name" type="text" :placeholder="$t('adminUi.egMachineName')" />
         </div>
-        <template v-if="platformMode">
-          <div class="form-group">
-            <label for="newMachine-type">{{ $t('adminUi.platform.machineType') }}</label>
-            <select id="newMachine-type" v-model="newMachine.machine_type">
-              <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
-            </select>
+        <!-- One form = one station: each ticked type becomes its own machine
+             (same name and location, code + "-RVM"/"-CMP"/"-CPS" when more than one). -->
+        <fieldset v-if="platformMode" class="form-group type-picker">
+          <legend>{{ $t('adminUi.platform.machineType') }}</legend>
+          <div class="type-chips">
+            <label v-for="type in platformTypes" :key="type" :class="['type-chip', { on: newMachine.machine_types.includes(type) }]">
+              <input v-model="newMachine.machine_types" type="checkbox" :value="type" />
+              {{ $t('platform.machine.' + type) }}
+            </label>
           </div>
-          <div class="form-group">
-            <label for="newMachine-location">{{ $t('adminUi.location') }}</label>
-            <select id="newMachine-location" v-model="newMachine.location_id">
-              <option :value="null">{{ $t('adminUi.noLocation') }}</option>
-              <option v-for="location in platformLocations" :key="location.id" :value="location.id">{{ location.name }}</option>
-            </select>
-          </div>
-        </template>
-        <div v-if="!platformMode || !newMachine.location_id" class="form-group">
+          <p v-if="newMachine.machine_types.length > 1" class="field-hint">
+            {{ $t('adminUi.platform.willCreate', { codes: plannedMachineCodes.join(', ') }) }}
+          </p>
+        </fieldset>
+        <div class="form-group">
           <label>{{ $t('adminUi.location') }}</label>
           <input v-model="newMachine.location_name" type="text" :placeholder="$t('adminUi.egLocation')" />
         </div>
         <div class="form-group">
           <label>{{ $t('adminUi.colStatus') }}</label>
-          <select v-model="newMachine.status">
-            <option value="active">{{ $t('adminUi.optActive') }}</option>
-            <option value="inactive">{{ $t('adminUi.optInactive') }}</option>
-            <option value="maintenance">{{ $t('adminUi.optMaintenance') }}</option>
-          </select>
+          <AppSelect v-model="newMachine.status" :options="[{ value: 'active', label: $t('adminUi.optActive') }, { value: 'inactive', label: $t('adminUi.optInactive') }, { value: 'maintenance', label: $t('adminUi.optMaintenance') }]" />
         </div>
-        <div v-if="!platformMode || !newMachine.location_id" class="form-row">
+        <div class="form-row">
           <div class="form-group">
             <label>{{ $t('adminUi.latitude') }}</label>
             <input v-model="newMachine.latitude" type="number" step="any" placeholder="3.1234" />
@@ -1122,7 +1101,7 @@
             <input v-model="newMachine.longitude" type="number" step="any" placeholder="103.1234" />
           </div>
         </div>
-        <div v-if="isRvmCard(newMachine)" class="form-group demo-check">
+        <div v-if="!platformMode || newMachine.machine_types.includes('rvm')" class="form-group demo-check">
           <label class="check-row"><input v-model="newMachine.is_demo" type="checkbox" /> {{ $t('admin.machine.isDemo') }}</label>
           <p class="field-hint">{{ $t('admin.machine.isDemoHint') }}</p>
         </div>
@@ -1153,7 +1132,7 @@
           <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableFrom') }}</label><input v-model="newRewardItem.valid_from" type="datetime-local" /></div>
           <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableUntil') }}</label><input v-model="newRewardItem.valid_until" type="datetime-local" /></div>
         </div>
-        <div class="form-group"><label>{{ $t('adminUi.activeLabel') }}</label><select v-model="newRewardItem.is_active"><option :value="true">{{ $t('adminUi.yes') }}</option><option :value="false">{{ $t('adminUi.no') }}</option></select></div>
+        <div class="form-group"><label>{{ $t('adminUi.activeLabel') }}</label><AppSelect v-model="newRewardItem.is_active" :options="[{ value: true, label: $t('adminUi.yes') }, { value: false, label: $t('adminUi.no') }]" /></div>
         <div class="form-group">
           <label>{{ $t('adminUi.image') }}</label>
           <!-- Reward images are cropped to 4:3 so every card in the Rewards menu looks the same. -->
@@ -1202,7 +1181,7 @@
           <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableFrom') }}</label><input v-model="editingRewardItem.valid_from" type="datetime-local" /></div>
           <div class="form-group picker-field" @click="openDatePicker"><label>{{ $t('adminUi.availableUntil') }}</label><input v-model="editingRewardItem.valid_until" type="datetime-local" /></div>
         </div>
-        <div class="form-group"><label>{{ $t('adminUi.activeLabel') }}</label><select v-model="editingRewardItem.is_active"><option :value="true">{{ $t('adminUi.yes') }}</option><option :value="false">{{ $t('adminUi.no') }}</option></select></div>
+        <div class="form-group"><label>{{ $t('adminUi.activeLabel') }}</label><AppSelect v-model="editingRewardItem.is_active" :options="[{ value: true, label: $t('adminUi.yes') }, { value: false, label: $t('adminUi.no') }]" /></div>
         <div class="form-group">
           <label>{{ $t('adminUi.replaceImage') }}</label>
           <!-- Reward images are cropped to 4:3 so every card in the Rewards menu looks the same. -->
@@ -1265,34 +1244,19 @@
           <label>{{ $t('adminUi.machineNameReq') }}</label>
           <input v-model="editingMachine.name" type="text" />
         </div>
-        <template v-if="platformMode">
-          <div class="form-group">
-            <label for="editingMachine-type">{{ $t('adminUi.platform.machineType') }}</label>
-            <select id="editingMachine-type" v-model="editingMachine.machine_type">
-              <option v-for="type in platformTypes" :key="type" :value="type">{{ $t('platform.machine.' + type) }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="editingMachine-location">{{ $t('adminUi.location') }}</label>
-            <select id="editingMachine-location" v-model="editingMachine.location_id">
-              <option :value="null">{{ $t('adminUi.noLocation') }}</option>
-              <option v-for="location in platformLocations" :key="location.id" :value="location.id">{{ location.name }}</option>
-            </select>
-          </div>
-        </template>
-        <div v-if="!platformMode || !editingMachine.location_id" class="form-group">
+        <div v-if="platformMode" class="form-group">
+          <label for="editingMachine-type">{{ $t('adminUi.platform.machineType') }}</label>
+          <AppSelect id="editingMachine-type" v-model="editingMachine.machine_type" :options="platformTypes.map(type => ({ value: type, label: $t('platform.machine.' + type) }))" />
+        </div>
+        <div class="form-group">
           <label>{{ $t('adminUi.location') }}</label>
           <input v-model="editingMachine.location_name" type="text" />
         </div>
         <div class="form-group">
           <label>{{ $t('adminUi.colStatus') }}</label>
-          <select v-model="editingMachine.status">
-            <option value="active">{{ $t('adminUi.optActive') }}</option>
-            <option value="inactive">{{ $t('adminUi.optInactive') }}</option>
-            <option value="maintenance">{{ $t('adminUi.optMaintenance') }}</option>
-          </select>
+          <AppSelect v-model="editingMachine.status" :options="[{ value: 'active', label: $t('adminUi.optActive') }, { value: 'inactive', label: $t('adminUi.optInactive') }, { value: 'maintenance', label: $t('adminUi.optMaintenance') }]" />
         </div>
-        <div v-if="!platformMode || !editingMachine.location_id" class="form-row">
+        <div class="form-row">
           <div class="form-group">
             <label>{{ $t('adminUi.latitude') }}</label>
             <input v-model="editingMachine.latitude" type="number" step="any" />
@@ -1438,6 +1402,8 @@ import PlatformActivityTable from '@/components/admin/platform/PlatformActivityT
 import '@/components/admin/platform/platformAdmin.css'
 import { platformMode } from '@/utils/featureFlags'
 import { isRvmMachine } from '@/utils/platform/machineStatus'
+import { plannedCodes } from '@/utils/platform/machineCodes'
+import AppSelect from '@/components/AppSelect.vue'
 // RVM-only controls (bins, maintenance, history, demo checkbox) show for every machine
 // when the platform is OFF, and only for Ultra RVM machines when it is ON.
 const isRvmCard = (machine) => !platformMode || isRvmMachine(machine)
@@ -1494,7 +1460,6 @@ const activeTab = ref('dashboard')
 const platformTypes = ['rvm', 'compactor', 'composter']
 const platformTabIds = ['platform-overview', 'compactor', 'composter']
 const platformRefresh = ref(0)
-const platformLocations = ref([])
 const machineTypeFilter = ref('all')
 const transactionType = ref('rvm')
 const dataScope = ref(readDataScope())
@@ -2574,14 +2539,6 @@ watch(activeTab, async (tab) => {
   window.dispatchEvent(new Event('resize'))
 })
 
-// Edit Machine: the free-text location fields mirror the selected location. When the
-// admin switches the select to "No location", clear them; otherwise saving sends the
-// old location_name and the backend links the same location again.
-watch(() => [editingMachine.value?.id, editingMachine.value?.location_id], ([id, locationId], [prevId, prevLocationId]) => {
-  if (!platformMode || id == null || id !== prevId || locationId != null || prevLocationId == null) return
-  Object.assign(editingMachine.value, { location_name: '', latitude: '', longitude: '' })
-})
-
 // While Compactor/Composter is selected, fetchTabData skips the Ultra RVM list, so a
 // data-scope change or refresh made then never reaches it. Reload it when the admin
 // switches back, so the table always matches the current scope.
@@ -2944,34 +2901,28 @@ async function deleteUser(id) {
 }
 
 // ── Machine management ──
-async function fetchPlatformLocations() {
-  try {
-    const { data } = await api.get('/admin/platform/locations')
-    platformLocations.value = data.locations
-  } catch {
-    tabError.value = t('adminUi.platform.failed')
-  }
-}
-
 function openAddMachine() {
   newMachine.value = { machine_code: '', name: '', location_name: '', status: 'active', latitude: '', longitude: '', is_demo: false }
-  if (platformMode) {
-    Object.assign(newMachine.value, { machine_type: 'rvm', location_id: null })
-    fetchPlatformLocations()
-  }
+  if (platformMode) newMachine.value.machine_types = ['rvm']
   machineError.value = ''
   showAddMachine.value = true
 }
 
+// Codes the Add Machine form will create, shown under the type chips.
+const plannedMachineCodes = computed(() => plannedCodes(newMachine.value.machine_code?.trim() || '…', newMachine.value.machine_types || []))
+
 function openEditMachine(machine) {
   editingMachine.value = { ...machine }
-  if (platformMode) fetchPlatformLocations()
   machineError.value = ''
 }
 
 async function addMachine() {
   if (!newMachine.value.machine_code?.trim() || validateMachineName(newMachine.value.name)) {
     machineError.value = t('adminUi.machineRequired')
+    return
+  }
+  if (platformMode && !newMachine.value.machine_types.length) {
+    machineError.value = t('adminUi.platform.pickType')
     return
   }
   savingMachine.value = true
@@ -2986,10 +2937,7 @@ async function addMachine() {
       longitude:     newMachine.value.longitude !== '' ? newMachine.value.longitude : null,
       is_demo:       Boolean(newMachine.value.is_demo),
     }
-    if (platformMode) {
-      payload.machine_type = newMachine.value.machine_type
-      if (newMachine.value.location_id) payload.location_id = newMachine.value.location_id
-    }
+    if (platformMode) payload.machine_types = [...newMachine.value.machine_types]
     const res = await api.post('/admin/machines', payload)
     if (platformMode) await fetchTabData('machines', true)
     else adminMachines.value.push(normalizeMachine(res.data.machine))
@@ -3024,10 +2972,7 @@ async function saveMachine() {
       longitude:     editingMachine.value.longitude !== '' ? editingMachine.value.longitude : null,
       is_demo:       Boolean(editingMachine.value.is_demo),
     }
-    if (platformMode) {
-      payload.machine_type = editingMachine.value.machine_type
-      if (editingMachine.value.location_id) payload.location_id = editingMachine.value.location_id
-    }
+    if (platformMode) payload.machine_type = editingMachine.value.machine_type
     const res = await api.put(`/admin/machines/${editingMachine.value.id}`, payload)
     if (platformMode) {
       await fetchTabData('machines', true)
@@ -3549,6 +3494,17 @@ onUnmounted(() => {
 .form-group .check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 0; font-size: 14px; color: var(--text-primary); }
 .form-group .check-row input { width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; flex-shrink: 0; cursor: pointer; }
 .field-hint { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
+/* Add Machine: tick one or more machine types (one machine per type). */
+.type-picker { border: 0; padding: 0; margin: 0 0 12px; min-width: 0; }
+.type-picker legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.type-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.type-picker .type-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-hover); color: var(--text-primary); font-size: 14px; cursor: pointer; user-select: none; }
+.type-picker .type-chip.on { border-color: var(--accent-blue); background: rgba(78, 110, 242, 0.12); color: var(--accent-blue); font-weight: 600; }
+.type-picker .type-chip input { width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--accent-blue); }
+.type-picker .type-chip:focus-within { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+/* AppSelect in toolbars takes the place of the old .filter-select. */
+.filter-select-app { min-width: 170px; }
+.detection-date-preset .filter-select-app { width: 100%; }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .last-updated { font-size: 12px; color: var(--text-muted); }
@@ -4452,7 +4408,7 @@ onUnmounted(() => {
      Add buttons share the next one at equal width, all 44px tall to tap. */
   .card-header > .topbar-right { width: 100%; gap: 8px; }
   .card-header > .topbar-right > .search-input,
-  .card-header > .topbar-right > .filter-select { flex: 1 1 100%; width: 100%; min-height: 44px; box-sizing: border-box; }
+  .card-header > .topbar-right > .filter-select, .card-header > .topbar-right > .filter-select-app { flex: 1 1 100%; width: 100%; min-height: 44px; box-sizing: border-box; }
   .card-header > .topbar-right > button { flex: 1 1 0; }
   .card-header > .export-btn { width: 100%; }
   .export-btn, .card-header .add-btn { min-height: 44px; font-size: 13px; }

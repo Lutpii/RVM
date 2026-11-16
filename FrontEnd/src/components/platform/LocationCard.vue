@@ -2,8 +2,11 @@
   <article class="location-card">
     <button class="location-toggle" type="button" :aria-expanded="expanded" @click="$emit('toggle')">
       <span class="location-heading">
-        <span><PhMapPin :size="17" weight="bold" aria-hidden="true" /> {{ location.name }}</span>
+        <span class="station-name">{{ location.name }}</span>
         <PhCaretDown :class="{ turned: expanded }" :size="16" weight="bold" aria-hidden="true" />
+      </span>
+      <span v-if="location.location" class="station-place">
+        <PhMapPin :size="15" weight="bold" aria-hidden="true" /> {{ location.location }}
       </span>
       <span v-for="machine in location.machines" :key="machine.id" class="location-machine">
         <span class="machine-name">
@@ -17,7 +20,7 @@
 
     <div v-if="expanded" class="location-details">
       <section v-for="machine in location.machines" :key="machine.id" class="machine-detail">
-        <strong>{{ machine.name }}</strong>
+        <strong>{{ t('platform.machine.' + machine.machine_type) }}</strong>
         <span v-if="machine.is_demo" class="simulation-chip">{{ t('platform.simulated') }}</span>
         <div v-for="(level, bin) in machine.bins || { fill: machine.fill_level }" :key="bin" class="bin-level">
           <label :for="'level-' + machine.id + '-' + bin">{{ t(bin === 'fill' ? 'platform.fillLevel' : 'session.' + bin) }}</label>
@@ -47,9 +50,12 @@ const levelTone = level => level >= 90 ? 'bad' : level >= 80 ? 'warn' : 'ok'
 .location-toggle { appearance: none; display: block; width: 100%; border: 0; background: transparent; color: var(--text-primary); text-align: start; padding: 12px 14px; cursor: pointer; }
 .location-toggle:focus-visible { outline-offset: -3px; }
 .location-heading, .location-machine { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.location-heading { font-weight: 750; margin-bottom: 6px; }
-.location-heading > span, .machine-name { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
-.location-heading > span > svg, .machine-name > svg { color: var(--accent-green); flex-shrink: 0; }
+.location-heading { font-weight: 750; margin-bottom: 2px; }
+.station-name { font-size: 1rem; }
+.station-place { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; font-size: .8125rem; color: var(--text-muted); }
+.station-place > svg { color: var(--accent-green); flex-shrink: 0; }
+.machine-name { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.machine-name > svg { color: var(--accent-green); flex-shrink: 0; }
 .location-machine { font-size: .8125rem; padding: 7px 0; border-top: 1px dashed var(--border); }
 .turned { transform: rotate(180deg); }
 .status-pill, .simulation-chip { border-radius: 99px; padding: 2px 7px; font-size: .72rem; font-weight: 700; }

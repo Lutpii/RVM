@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CompactorBatch;
 use App\Models\ComposterDeposit;
-use App\Models\Location;
 use App\Models\RvmMachine;
 use App\Models\Transaction;
 use App\Services\CarbonService;
@@ -87,11 +86,6 @@ class PlatformAdminController extends Controller
             'carbon_7d' => $chart,
             'alerts' => $alerts,
         ]);
-    }
-
-    public function locations(): JsonResponse
-    {
-        return response()->json(['locations' => Location::orderBy('name')->get(['id', 'name'])]);
     }
 
     public function machines(Request $request): JsonResponse

@@ -35,10 +35,11 @@ class PlatformSimulation
                 $dsme->update(['location_id' => $puchong->id]);
             }
 
-            $this->demoMachine('RVM-PEKAN', 'Ultra RVM Pekan', 'rvm', $pekan);
-            $this->demoMachine('CMP-PEKAN', 'Compactor Pekan', 'compactor', $pekan);
-            $this->demoMachine('CPS-PEKAN', 'Composter Pekan', 'composter', $pekan);
-            $this->demoMachine('CMP-DSME', 'Compactor DSME', 'compactor', $puchong);
+            // Machines of one station share its name, so the home page shows one card each.
+            $this->demoMachine('RVM-PEKAN', 'RVM UMPSA Pekan', 'rvm', $pekan);
+            $this->demoMachine('CMP-PEKAN', 'RVM UMPSA Pekan', 'compactor', $pekan);
+            $this->demoMachine('CPS-PEKAN', 'RVM UMPSA Pekan', 'composter', $pekan);
+            $this->demoMachine('CMP-DSME', $dsme->name, 'compactor', $puchong);
             Cache::forget('rvm:public_stats');
             Cache::forget('platform:public_stats');
 

@@ -371,10 +371,9 @@
         <h3>{{ $t('settings.ewalletModalTitle') }}</h3>
         <div class="form-group">
           <label class="form-label" for="ew-prov">{{ $t('settings.ewalletProviderLabel') }}</label>
-          <select id="ew-prov" v-model="ewalletProvider" class="form-input">
-            <option value="" disabled>{{ $t('settings.ewalletProviderPlaceholder') }}</option>
-            <option v-for="p in ewalletProviders" :key="p" :value="p">{{ p }}</option>
-          </select>
+          <AppSelect id="ew-prov" v-model="ewalletProvider" class="ew-provider-select"
+            :placeholder="$t('settings.ewalletProviderPlaceholder')"
+            :options="ewalletProviders.map(p => ({ value: p, label: p }))" />
         </div>
         <div class="form-group">
           <label class="form-label" for="ew-acc">{{ $t('settings.ewalletAccountLabel') }}</label>
@@ -426,6 +425,7 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import CarbonSourcesNote from '@/components/platform/CarbonSourcesNote.vue'
 import { platformMode } from '@/utils/featureFlags'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
+import AppSelect from '@/components/AppSelect.vue'
 import { AVATAR_ICONS, AVATAR_COLOURS, DEFAULT_AVATAR, parseAvatar, formatAvatar, maskEmail } from '@/utils/avatarIcons.js'
 import { version as appVersion } from '../../package.json'
 import {

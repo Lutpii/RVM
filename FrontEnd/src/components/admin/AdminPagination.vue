@@ -2,9 +2,9 @@
   <footer class="admin-pagination">
     <label class="per-page-control">
       <span>{{ t('admin.pagination.perPage') }}</span>
-      <select :value="perPage" @change="changePerPage">
-        <option v-for="option in perPageOptions" :key="option" :value="option">{{ option }}</option>
-      </select>
+      <AppSelect :model-value="perPage" size="compact" class="per-page-select"
+        :options="perPageOptions.map(option => ({ value: option, label: String(option) }))"
+        @update:model-value="changePerPage" />
     </label>
 
     <div class="pagination-right">
@@ -42,6 +42,7 @@ import { useI18n } from 'vue-i18n'
 import { PhCaretLeft, PhCaretRight } from '@phosphor-icons/vue'
 import { paginationBounds, paginationItems } from '@/utils/admin/paginationLabel.js'
 import { intlLocale } from '@/composables/useLanguage'
+import AppSelect from '@/components/AppSelect.vue'
 
 const props = defineProps({
   currentPage: { type: Number, required: true },
@@ -66,8 +67,8 @@ function changePage(page) {
   emit('change-page', page)
 }
 
-function changePerPage(event) {
-  emit('change-per-page', Number(event.target.value))
+function changePerPage(value) {
+  emit('change-per-page', Number(value))
 }
 </script>
 
@@ -89,18 +90,7 @@ function changePerPage(event) {
   align-items: center;
 }
 .per-page-control { gap: 9px; color: var(--text-secondary); font-size: 13px; }
-.per-page-control select {
-  min-width: 72px;
-  min-height: 38px;
-  padding: 7px 28px 7px 11px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
+.per-page-select { min-width: 84px; font-weight: 600; }
 .pagination-right { gap: 14px; margin-left: auto; }
 .range-label {
   color: var(--text-secondary);

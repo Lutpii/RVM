@@ -331,10 +331,18 @@ class AdminController extends Controller
         }, 3);
     }
 
+    // Code suffix per type when one Add Machine form creates several machines
+    // (one station: e.g. GMB-01-RVM + GMB-01-CMP at the same name and location).
+    private const TYPE_CODE_SUFFIX = ['rvm' => 'RVM', 'compactor' => 'CMP', 'composter' => 'CPS'];
+
     public function createMachine(Request $request): JsonResponse
     {
+        $types = config('platform.enabled') ? array_values(array_unique((array) $request->input('machine_types', []))) : [];
+        $several = count($types) > 1;
+
         $validated = $request->validate([
-            'machine_code'  => 'required|string|max:50|unique:rvm_machines,machine_code',
+            // With several types the typed code is only a prefix; each machine gets "-RVM"/"-CMP"/"-CPS".
+            'machine_code'  => $several ? 'required|string|max:46' : 'required|string|max:50|unique:rvm_machines,machine_code',
             'name'          => 'required|string|max:100',
             'location_name' => 'nullable|string|max:255',
             'latitude'      => 'nullable|numeric',
@@ -343,22 +351,38 @@ class AdminController extends Controller
             'is_demo'       => 'sometimes|boolean',
         ] + $this->platformMachineRules());
 
-        $machine = RvmMachine::create($this->platformMachineAttributes($validated) + [
-            'machine_code'  => $validated['machine_code'],
-            'name'          => $validated['name'],
-            'location_name' => $validated['location_name'] ?? null,
-            'latitude'      => isset($validated['latitude']) && $validated['latitude'] !== '' ? $validated['latitude'] : null,
-            'longitude'     => isset($validated['longitude']) && $validated['longitude'] !== '' ? $validated['longitude'] : null,
-            'status'        => $validated['status'] ?? 'active',
-            'is_demo'       => $validated['is_demo'] ?? false,
-            'aluminum_level'=> 0,
-            'plastic_level' => 0,
-            'glass_level'   => 0,
-            'paper_level'   => 0,
-        ]);
+        // [code => type]; a single type (or the OFF form) keeps the code as typed.
+        $plan = $several
+            ? collect($types)->mapWithKeys(fn ($type) => ["{$validated['machine_code']}-" . self::TYPE_CODE_SUFFIX[$type] => $type])->all()
+            : [$validated['machine_code'] => $types[0] ?? ($validated['machine_type'] ?? null)];
+        $taken = RvmMachine::whereIn('machine_code', array_keys($plan))->pluck('machine_code');
+        if ($taken->isNotEmpty()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'machine_code' => __('validation.unique', ['attribute' => $taken->implode(', ')]),
+            ]);
+        }
 
-        $this->log($request->user(), 'create_machine', 'machine', $machine->id, "Created machine: {$machine->name}", [], ['createMachine', ['name' => $machine->name]]);
-        return response()->json(['success' => true, 'machine' => $machine], 201);
+        $machines = DB::transaction(fn () => collect($plan)->map(function ($type, $code) use ($validated) {
+            $fields = $type ? ['machine_type' => $type] + $validated : $validated;
+            return RvmMachine::create($this->platformMachineAttributes($fields) + [
+                'machine_code'  => $code,
+                'name'          => $validated['name'],
+                'location_name' => $validated['location_name'] ?? null,
+                'latitude'      => isset($validated['latitude']) && $validated['latitude'] !== '' ? $validated['latitude'] : null,
+                'longitude'     => isset($validated['longitude']) && $validated['longitude'] !== '' ? $validated['longitude'] : null,
+                'status'        => $validated['status'] ?? 'active',
+                'is_demo'       => $validated['is_demo'] ?? false,
+                'aluminum_level'=> 0,
+                'plastic_level' => 0,
+                'glass_level'   => 0,
+                'paper_level'   => 0,
+            ]);
+        })->values());
+
+        foreach ($machines as $machine) {
+            $this->log($request->user(), 'create_machine', 'machine', $machine->id, "Created machine: {$machine->name}", [], ['createMachine', ['name' => $machine->name]]);
+        }
+        return response()->json(['success' => true, 'machine' => $machines->first(), 'machines' => $machines], 201);
     }
 
     public function updateMachine(Request $request, int $id): JsonResponse
@@ -424,6 +448,8 @@ class AdminController extends Controller
 
         return [
             'machine_type' => 'sometimes|required|in:' . implode(',', RvmMachine::TYPES),
+            'machine_types' => 'sometimes|array|min:1|max:' . count(RvmMachine::TYPES),
+            'machine_types.*' => 'in:' . implode(',', RvmMachine::TYPES),
             'location_id' => 'sometimes|nullable|integer|exists:locations,id',
         ];
     }

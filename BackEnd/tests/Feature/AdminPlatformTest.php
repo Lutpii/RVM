@@ -22,6 +22,50 @@ class AdminPlatformTest extends TestCase
         $this->actingAsRole('admin');
     }
 
+    public function test_create_with_several_types_makes_one_machine_per_type_at_one_location(): void
+    {
+        $this->postJson('/api/admin/machines', [
+            'machine_code' => 'GMB-01', 'name' => 'RVM UMPSA Gambang', 'location_name' => 'Main Lobby',
+            'machine_types' => ['rvm', 'compactor'], 'status' => 'active',
+        ])->assertCreated()->assertJsonCount(2, 'machines');
+
+        $rvm = RvmMachine::where('machine_code', 'GMB-01-RVM')->firstOrFail();
+        $compactor = RvmMachine::where('machine_code', 'GMB-01-CMP')->firstOrFail();
+        $this->assertSame(['rvm', 'compactor'], [$rvm->machine_type, $compactor->machine_type]);
+        $this->assertSame('RVM UMPSA Gambang', $compactor->name);
+        $this->assertNotNull($rvm->location_id);
+        $this->assertSame($rvm->location_id, $compactor->location_id);
+        $this->assertTrue((bool) $compactor->is_demo);
+        $this->assertDatabaseMissing('rvm_machines', ['machine_code' => 'GMB-01']);
+    }
+
+    public function test_create_with_one_type_in_the_list_keeps_the_code_as_typed(): void
+    {
+        $this->postJson('/api/admin/machines', [
+            'machine_code' => 'GMB-02', 'name' => 'Composter Gambang', 'machine_types' => ['composter'],
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('rvm_machines', ['machine_code' => 'GMB-02', 'machine_type' => 'composter']);
+    }
+
+    public function test_create_with_several_types_creates_nothing_if_one_code_is_taken(): void
+    {
+        RvmMachine::create(['machine_code' => 'GMB-03-CMP', 'name' => 'Old', 'machine_type' => 'compactor', 'is_demo' => true]);
+
+        $this->postJson('/api/admin/machines', [
+            'machine_code' => 'GMB-03', 'name' => 'Station', 'machine_types' => ['rvm', 'compactor'],
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseMissing('rvm_machines', ['machine_code' => 'GMB-03-RVM']);
+    }
+
+    public function test_create_rejects_an_unknown_type(): void
+    {
+        $this->postJson('/api/admin/machines', [
+            'machine_code' => 'GMB-04', 'name' => 'Station', 'machine_types' => ['rvm', 'shredder'],
+        ])->assertUnprocessable()->assertJsonValidationErrors('machine_types.1');
+    }
+
     public function test_update_with_blank_location_name_and_no_location_id_clears_location(): void
     {
         $location = \App\Models\Location::create(['name' => 'UMPSA Pekan Hub']);
@@ -124,7 +168,7 @@ class AdminPlatformTest extends TestCase
     public function test_platform_reads_require_the_flag_and_an_admin(): void
     {
         $machine = $this->machine('compactor');
-        $paths = ['/overview', '/machines?type=compactor', "/machines/{$machine->id}", '/activity?type=compactor', '/locations'];
+        $paths = ['/overview', '/machines?type=compactor', "/machines/{$machine->id}", '/activity?type=compactor'];
         config(['platform.enabled' => false]);
         foreach ($paths as $path) {
             $this->getJson('/api/admin/platform' . $path)->assertNotFound();

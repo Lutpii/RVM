@@ -19,14 +19,17 @@ class PlatformController extends Controller
         $now = now();
         $groups = RvmMachine::query()->where('status', 'active')->whereNotNull('location_id')
             ->with('location')->orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('id')
-            ->get()->groupBy('location_id');
+            // One card per station: machines with the same name at the same location
+            // (an Add Machine form with several types creates exactly that).
+            ->get()->groupBy(fn (RvmMachine $machine) => $machine->location_id . ':' . $machine->name);
 
-        $locations = $groups->map(function ($group) use ($telemetry, $now) {
+        $locations = $groups->map(function ($group, $key) use ($telemetry, $now) {
             $location = $group->first()->location;
 
             return [
-                'id' => $location->id,
-                'name' => $location->name,
+                'id' => $key,
+                'name' => $group->first()->name,
+                'location' => $location->name,
                 'latitude' => $location->latitude === null ? null : (float) $location->latitude,
                 'longitude' => $location->longitude === null ? null : (float) $location->longitude,
                 'machines' => $group->map(function (RvmMachine $machine) use ($telemetry, $now) {
