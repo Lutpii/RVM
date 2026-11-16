@@ -6,7 +6,10 @@ use App\Models\PointsHistory;
 use App\Models\RecyclingSession;
 use App\Models\RewardRedemption;
 use App\Models\Transaction;
+use App\Models\CompactorBatch;
+use App\Models\ComposterDeposit;
 use App\Services\CarbonService;
+use App\Services\UserImpactService;
 use App\Support\AvatarIcon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -96,8 +99,11 @@ class UserController extends Controller
 
     public function pointsHistory(Request $request): JsonResponse
     {
+        $platform = config('platform.enabled') && $request->boolean('platform');
+        $userId = $request->user()->id;
         $history = PointsHistory::with('transaction')
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $userId)
+            ->when(!$platform, fn ($query) => $query->whereNull('source'))
             ->orderByDesc('created_at')
             ->orderByDesc('id') // same-second rows: newest first (BUG-001)
             ->paginate(20);
@@ -111,9 +117,31 @@ class UserController extends Controller
         $demoSessions = RecyclingSession::whereIn('id', $history->getCollection()->pluck('session_id')->filter()->unique())
             ->pluck('is_demo', 'id');
 
-        $history->getCollection()->transform(function (PointsHistory $entry) use ($demoSessions) {
-            $entry->description = $this->describeHistoryEntry($entry);
-            $entry->setAttribute('is_demo', (bool) ($demoSessions[$entry->session_id] ?? false));
+        $batchCounts = collect();
+        $depositWeights = collect();
+        if ($platform) {
+            $history->appends(['platform' => 1]);
+            $entries = $history->getCollection();
+            $batchCounts = CompactorBatch::where('user_id', $userId)
+                ->whereIn('id', $entries->where('source', 'compactor')->pluck('source_id'))
+                ->selectRaw('id, plastic_count + aluminum_count AS total')->pluck('total', 'id');
+            $depositWeights = ComposterDeposit::where('user_id', $userId)
+                ->whereIn('id', $entries->where('source', 'composter')->pluck('source_id'))
+                ->pluck('weight_kg', 'id');
+        }
+
+        $history->getCollection()->transform(function (PointsHistory $entry) use ($demoSessions, $batchCounts, $depositWeights) {
+            $entry->description = match ($entry->source) {
+                'compactor' => __('messages.history_compactor', ['n' => $batchCounts[$entry->source_id] ?? 0]),
+                'composter' => __('messages.history_composter', ['kg' => (float) ($depositWeights[$entry->source_id] ?? 0)]),
+                default => $this->describeHistoryEntry($entry),
+            };
+            $simulated = in_array($entry->source, ['compactor', 'composter'], true);
+            if ($simulated) {
+                $entry->makeVisible('source');
+            }
+            $entry->setAttribute('is_demo', $simulated || ($demoSessions[$entry->session_id] ?? false));
+
             return $entry;
         });
 
@@ -124,7 +152,7 @@ class UserController extends Controller
     {
         $t = $entry->transaction;
         if (!$t) {
-            return $entry->description; // fallback for any orphaned/legacy row
+            return $entry->description ?? ''; // fallback for any orphaned/legacy row
         }
 
         if ($entry->type === 'earned') {
@@ -144,23 +172,16 @@ class UserController extends Controller
      * The numbers on the Account page summary card: lifetime items and CO2,
      * this month's points in and out, and vouchers not used yet.
      */
-    public function accountSummary(Request $request): JsonResponse
+    public function accountSummary(Request $request, UserImpactService $impact): JsonResponse
     {
         $user = $request->user();
         $monthStart = now()->startOfMonth();
-
-        $counts = Transaction::where('user_id', $user->id)->where('is_valid', 1)
-            ->selectRaw('material_selected, COUNT(*) AS n')
-            ->groupBy('material_selected')
-            ->pluck('n', 'material_selected');
-
-        $carbon = 0.0;
-        foreach ($counts as $material => $n) {
-            $carbon += $n * CarbonService::forMaterial($material);
-        }
+        $platform = config('platform.enabled') && $request->boolean('platform');
+        $totals = $impact->summaryFor($user, $platform);
 
         $month = PointsHistory::where('user_id', $user->id)
             ->where('created_at', '>=', $monthStart)
+            ->when(!$platform, fn ($query) => $query->whereNull('source'))
             ->selectRaw('COALESCE(SUM(CASE WHEN points_change > 0 THEN points_change ELSE 0 END), 0) AS earned,
                          COALESCE(SUM(CASE WHEN points_change < 0 THEN -points_change ELSE 0 END), 0) AS redeemed')
             ->first();
@@ -169,8 +190,8 @@ class UserController extends Controller
             'success' => true,
             'summary' => [
                 'total_points'        => (int) $user->total_points,
-                'items_recycled'      => (int) $counts->sum(),
-                'carbon_saved_kg'     => round($carbon, 2),
+                'items_recycled'      => $totals['items'],
+                'carbon_saved_kg'     => $platform ? $totals['carbon'] : round($totals['carbon'], 2),
                 'earned_this_month'   => (int) $month->earned,
                 'redeemed_this_month' => (int) $month->redeemed,
                 'active_vouchers'     => RewardRedemption::where('user_id', $user->id)

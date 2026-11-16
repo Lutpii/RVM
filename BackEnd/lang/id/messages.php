@@ -9,6 +9,8 @@ return [
         'unknown'  => 'tidak dikenal',
     ],
 
+    'history_compactor' => 'Batch compactor: :n barang',
+    'history_composter' => 'Composter: :kg kg sisa makanan',
     'recycled_item' => 'Mendaur ulang :weight g :material',
     'invalid_item'  => 'Barang tidak valid: dipilih :selected, terdeteksi :detected',
 

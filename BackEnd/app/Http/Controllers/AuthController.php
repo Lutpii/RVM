@@ -510,7 +510,10 @@ class AuthController extends Controller
     // Get current user
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['success' => true, 'user' => $this->formatUser($request->user())]);
+        return response()->json([
+            'success' => true,
+            'user' => $this->formatUser($request->user(), $request->boolean('platform')),
+        ]);
     }
 
     // Logout
@@ -571,7 +574,7 @@ class AuthController extends Controller
         return $user->createToken('rvm_token')->plainTextToken;
     }
 
-    private function formatUser(User $user): array
+    private function formatUser(User $user, bool $platform = false): array
     {
         return [
             'id'           => $user->id,
@@ -581,7 +584,7 @@ class AuthController extends Controller
             'avatar_url'   => $user->avatar_url,
             'avatar_icon'  => $user->avatar_icon,
             'total_points' => $user->total_points,
-            'total_carbon_saved' => $this->totalCarbonSavedFor($user),
+            'total_carbon_saved' => app(\App\Services\UserImpactService::class)->carbonFor($user, $platform),
             'role'         => $user->role,
             'is_verified'  => $user->is_verified,
             'theme_preference' => $user->theme_preference,
@@ -593,18 +596,4 @@ class AuthController extends Controller
         ];
     }
 
-    private function totalCarbonSavedFor(User $user): float
-    {
-        $counts = \App\Models\Transaction::where('user_id', $user->id)
-            ->where('is_valid', 1)
-            ->selectRaw('material_selected, COUNT(*) as count')
-            ->groupBy('material_selected')
-            ->pluck('count', 'material_selected');
-
-        $total = 0.0;
-        foreach ($counts as $material => $count) {
-            $total += $count * \App\Services\CarbonService::forMaterial($material);
-        }
-        return round($total, 3);
-    }
 }

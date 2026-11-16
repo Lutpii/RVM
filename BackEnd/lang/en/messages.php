@@ -9,6 +9,8 @@ return [
         'unknown'  => 'unknown',
     ],
 
+    'history_compactor' => 'Compactor batch: :n items',
+    'history_composter' => 'Composter: :kg kg food waste',
     'recycled_item' => 'Recycled :weight g of :material',
     'invalid_item'  => 'Invalid item: selected :selected, detected :detected',
 

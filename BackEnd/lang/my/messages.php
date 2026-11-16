@@ -9,6 +9,8 @@ return [
         'unknown'  => 'tidak diketahui',
     ],
 
+    'history_compactor' => 'Kelompok pemadat: :n barang',
+    'history_composter' => 'Pengompos: :kg kg sisa makanan',
     'recycled_item' => 'Mengitar semula :weight g :material',
     'invalid_item'  => 'Item tidak sah: dipilih :selected, dikesan :detected',
 
