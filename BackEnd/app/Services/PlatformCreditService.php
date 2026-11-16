@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Http\Controllers\TransactionController;
 use App\Models\CompactorBatch;
 use App\Models\ComposterDeposit;
 use App\Models\PointsHistory;
@@ -14,7 +13,7 @@ use InvalidArgumentException;
 
 class PlatformCreditService
 {
-    public function __construct(private PlatformSettingsService $settings)
+    public function __construct(private PlatformSettingsService $settings, private RewardConfigService $rewards)
     {
     }
 
@@ -26,10 +25,14 @@ class PlatformCreditService
             throw new InvalidArgumentException('Item counts must be nonnegative.');
         }
 
+        // Same per-item amounts as Ultra RVM (user decision 16 Nov).
+        $config = $this->rewards->load();
         $points = 0;
-        $count = $plastic + $aluminum;
-        for ($item = 0; $item < $count; $item++) {
-            $points += rand(TransactionController::POINTS_MIN, TransactionController::POINTS_MAX);
+        for ($item = 0; $item < $plastic; $item++) {
+            $points += $this->rewards->pointsFor('plastic', $config);
+        }
+        for ($item = 0; $item < $aluminum; $item++) {
+            $points += $this->rewards->pointsFor('aluminum', $config);
         }
         $carbon = $plastic * CarbonService::forMaterial('plastic') + $aluminum * CarbonService::forMaterial('aluminum');
 

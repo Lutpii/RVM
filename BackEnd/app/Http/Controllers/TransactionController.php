@@ -17,15 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
-    // Points awarded per recycled item — random per transaction, same range for
-    // every material (conversion baseline: 100 points = RM 1).
-    const POINTS_MIN = 15;
-    const POINTS_MAX = 20;
-
-    private static function calcPoints(): int
-    {
-        return rand(self::POINTS_MIN, self::POINTS_MAX);
-    }
+    // Points per item come from RewardConfigService::pointsFor() (configured amount,
+    // random 15-20 fallback), shared with the platform compactor.
 
     const BIN_FULL_THRESHOLD = 90; // 90% = full
 
@@ -224,7 +217,7 @@ class TransactionController extends Controller
             'unknown', 'reject'    => 0,
             default                => rand(9, 49),
         };
-        $pointsEarned  = $rewardConfig->load()[$material] ?? self::calcPoints();
+        $pointsEarned  = $rewardConfig->pointsFor($material);
 
         // Server-authoritative result for this session's pending item — complete()
         // reads this back instead of trusting client-supplied weight/points, so a
@@ -591,7 +584,7 @@ class TransactionController extends Controller
             'glass', 'paper'      => rand(50, 500),
             default               => 0, // unknown/reject
         };
-        $pointsEarned = $isValid ? ($rewardConfig->load()[$material] ?? self::calcPoints()) : 0;
+        $pointsEarned = $isValid ? $rewardConfig->pointsFor($material) : 0;
 
         $transaction = Transaction::create([
             'session_id'        => $session->id,

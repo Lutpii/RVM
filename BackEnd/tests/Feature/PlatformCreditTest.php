@@ -16,16 +16,17 @@ class PlatformCreditTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_compactor_batch_credits_15_to_20_per_item(): void
+    public function test_compactor_batch_uses_ultra_rvm_reward_config_per_item(): void
     {
+        app(\App\Services\RewardConfigService::class)->save(['plastic' => 5, 'aluminum' => 8, 'glass' => 5, 'paper' => 3]);
         $user = $this->user();
         $machine = $this->machine('compactor');
         $at = now()->subDay()->startOfSecond();
 
         $batch = app(PlatformCreditService::class)->creditCompactorBatch($user, $machine, 6, 4, 3, $at);
 
-        $this->assertGreaterThanOrEqual(150, $batch->points_earned);
-        $this->assertLessThanOrEqual(200, $batch->points_earned);
+        // 6 plastic x 5 + 4 aluminium x 8, the same per-item amounts Ultra RVM awards
+        $this->assertSame(62, $batch->points_earned);
         $this->assertSame(100 + $batch->points_earned, $user->fresh()->total_points);
         $this->assertSame('0.976', $batch->carbon_kg);
         $this->assertTrue($batch->is_demo);
