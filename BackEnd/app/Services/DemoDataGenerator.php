@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -49,7 +50,7 @@ class DemoDataGenerator
     private array $rates;
     private ?Carbon $windowStart = null;
 
-    public function __construct(private RewardConfigService $rewards)
+    public function __construct(private RewardConfigService $rewards, private PlatformSimulation $platform)
     {
     }
 
@@ -128,30 +129,45 @@ class DemoDataGenerator
 
         $result['maintenance_records'] = $this->generateMaintenanceRecords($windowStart, $now);
 
+        if (config('platform.enabled')) {
+            $result += $this->platform->generate($windowStart, $now, $this->machines['dsme']);
+        }
+
         return $result;
     }
 
     public function purge(): array
     {
         // Explicit deletes: do not rely on FK cascades (TiDB may not enforce them).
-        return DB::transaction(function () {
-            $ids = User::where('email', 'like', '%' . self::EMAIL_SUFFIX)->pluck('id')->all();
-            foreach (['points_history', 'transactions', 'reward_redemptions', 'recycling_sessions'] as $table) {
-                if ($ids) DB::table($table)->whereIn('user_id', $ids)->delete();
-            }
-            $users = $ids ? User::whereIn('id', $ids)->delete() : 0;
-            $logs = AdminLog::where('details->demo', true)->delete();
-            $maintenance = MaintenanceRecord::where('technician_name', 'like', self::DEMO_TECHNICIAN . '%')->delete();
+        return $this->platform->locked(function () {
+            $result = DB::transaction(fn () => $this->purgeDemoRows());
+            Cache::forget(PlatformSimulation::LAST_TICK);
+            Cache::forget('platform:public_stats');
+            Cache::forget('rvm:public_stats');
 
-            $deleted = false;
-            $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
-            if ($dsme && !RecyclingSession::where('machine_id', $dsme->id)->exists()) {
-                $dsme->delete();
-                $deleted = true;
-            }
-
-            return ['users' => $users, 'admin_logs' => $logs, 'maintenance_records' => $maintenance, 'machine_deleted' => $deleted];
+            return $result;
         });
+    }
+
+    private function purgeDemoRows(): array
+    {
+        $platform = $this->platform->purgeRows();
+        $ids = User::where('email', 'like', '%' . self::EMAIL_SUFFIX)->pluck('id')->all();
+        foreach (['points_history', 'transactions', 'reward_redemptions', 'recycling_sessions'] as $table) {
+            if ($ids) DB::table($table)->whereIn('user_id', $ids)->delete();
+        }
+        $users = $ids ? User::whereIn('id', $ids)->delete() : 0;
+        $logs = AdminLog::where('details->demo', true)->delete();
+        $maintenance = MaintenanceRecord::where('technician_name', 'like', self::DEMO_TECHNICIAN . '%')->delete();
+
+        $deleted = false;
+        $dsme = RvmMachine::where('machine_code', 'RVM-DSME')->first();
+        if ($dsme && !RecyclingSession::where('machine_id', $dsme->id)->exists()) {
+            $dsme->delete();
+            $deleted = true;
+        }
+
+        return ['users' => $users, 'admin_logs' => $logs, 'maintenance_records' => $maintenance, 'machine_deleted' => $deleted] + $platform;
     }
 
     // ---- maintenance records (A06) ----------------------------------------

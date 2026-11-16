@@ -50,6 +50,45 @@ class DemoDataGeneratorTest extends TestCase
         $this->now = Carbon::parse('2026-11-10 15:00', self::TZ);
     }
 
+    public function test_generate_skips_platform_when_disabled(): void
+    {
+        config(['platform.enabled' => false]);
+        app(DemoDataGenerator::class)->generate(2, $this->now, 42);
+
+        $this->assertDatabaseMissing('rvm_machines', ['machine_code' => 'CMP-PEKAN']);
+        $this->assertDatabaseCount('compactor_batches', 0);
+        $this->assertDatabaseCount('composter_deposits', 0);
+    }
+
+    public function test_generate_credits_booth_user_and_purge_reverses_unspent_simulated_points(): void
+    {
+        config(['platform.enabled' => true, 'platform.booth_email' => $this->realUser->email]);
+        $generator = app(DemoDataGenerator::class);
+        $generator->generate(3, $this->now, 42);
+
+        $this->assertDatabaseHas('rvm_machines', ['machine_code' => 'RVM-PEKAN', 'machine_type' => 'rvm', 'is_demo' => true]);
+        $this->assertDatabaseHas('rvm_machines', ['machine_code' => 'CMP-PEKAN', 'machine_type' => 'compactor', 'is_demo' => true]);
+        $this->assertDatabaseHas('rvm_machines', ['machine_code' => 'CPS-PEKAN', 'machine_type' => 'composter', 'is_demo' => true]);
+        $this->assertDatabaseHas('rvm_machines', ['machine_code' => 'CMP-DSME', 'machine_type' => 'compactor', 'is_demo' => true]);
+        $points = (int) PointsHistory::where('user_id', $this->realUser->id)->whereNotNull('source')->sum('points_change');
+        $this->assertGreaterThan(0, $points);
+        $this->assertSame(25 + $points, $this->realUser->fresh()->total_points);
+        $before = DB::table('compactor_batches')->count();
+        $this->assertGreaterThan(0, $before);
+        $this->assertGreaterThan(0, DB::table('composter_deposits')->count());
+        $generator->generate(3, $this->now, 42);
+        $this->assertDatabaseCount('compactor_batches', $before);
+
+        $generator->purge();
+        $this->assertDatabaseCount('compactor_batches', 0);
+        $this->assertDatabaseCount('composter_deposits', 0);
+        $this->assertDatabaseMissing('rvm_machines', ['machine_code' => 'CMP-PEKAN']);
+        $this->assertDatabaseMissing('locations', ['name' => 'UMPSA Pekan Hub']);
+        $this->assertSame(25, $this->realUser->fresh()->total_points);
+        $this->assertFalse(PointsHistory::where('user_id', $this->realUser->id)->whereNotNull('source')->exists());
+    }
+
+
     private function gen(?int $seed = 42): array
     {
         return app(DemoDataGenerator::class)->generate(30, $this->now, $seed);

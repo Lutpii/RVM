@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('sessions:expire-stale')->everyFiveMinutes();
+        $schedule->command('platform:tick')->everyTenMinutes()->when(fn () => config('platform.enabled'));
     }
 
     /**
