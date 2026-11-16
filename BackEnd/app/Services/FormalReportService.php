@@ -40,7 +40,7 @@ class FormalReportService
         if ($dateTo) $query->whereDate('created_at', '<=', $dateTo);
         $transactions = $query->get();
 
-        $machines = RvmMachine::orderBy('name')
+        $machines = RvmMachine::rvmOnly()->orderBy('name')
             ->when($scope === 'real', fn ($q) => $q->where('is_demo', false))
             ->when($scope === 'demo', fn ($q) => $q->where('is_demo', true))
             ->get();

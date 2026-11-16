@@ -21,7 +21,7 @@ class MachineAuthMiddleware
     {
         $key = (string) $request->header('X-Machine-Key', '');
         $machine = $key !== ''
-            ? RvmMachine::where('api_key_hash', hash('sha256', $key))->first()
+            ? RvmMachine::rvmOnly()->where('api_key_hash', hash('sha256', $key))->first()
             : null;
 
         if ($machine) {

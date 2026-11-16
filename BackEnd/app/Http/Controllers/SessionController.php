@@ -17,7 +17,7 @@ class SessionController extends Controller
     public function start(Request $request): JsonResponse
     {
         $request->validate([
-            'machine_id' => 'required|exists:rvm_machines,id',
+            'machine_id' => 'required|exists:rvm_machines,id,machine_type,rvm',
             'qr_token'   => 'required|string',
         ]);
 

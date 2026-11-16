@@ -10,7 +10,7 @@ class MachineController extends Controller
 {
     public function index(): JsonResponse
     {
-        $machines = RvmMachine::where('status', 'active')
+        $machines = RvmMachine::rvmOnly()->where('status', 'active')
             ->select(['id','machine_code','name','location_name','latitude','longitude','status',
                       'aluminum_level','plastic_level','glass_level','paper_level',
                       // heartbeat state for the recycler view (U06); the key hash stays hidden
@@ -23,7 +23,7 @@ class MachineController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $machine = RvmMachine::find($id);
+        $machine = RvmMachine::rvmOnly()->find($id);
         if (!$machine) {
             return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
         }

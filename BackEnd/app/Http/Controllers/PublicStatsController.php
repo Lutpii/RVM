@@ -35,7 +35,7 @@ class PublicStatsController extends Controller
             return [
                 'items_recycled'  => array_sum($allTime),
                 'carbon_saved_kg' => $this->carbon($allTime),
-                'machines'        => RvmMachine::count(),
+                'machines'        => RvmMachine::rvmOnly()->count(),
                 'month' => [
                     'year'            => (int) now()->year,
                     'month'           => (int) now()->month,
@@ -56,7 +56,8 @@ class PublicStatsController extends Controller
     /** @return array<string, int> accepted items per material */
     private function countsByMaterial($since): array
     {
-        $q = Transaction::where('is_valid', 1)->whereIn('material_selected', self::MATERIALS);
+        $q = Transaction::where('is_valid', 1)->whereIn('material_selected', self::MATERIALS)
+            ->whereHas('machine', fn ($machine) => $machine->rvmOnly());
         if ($since) $q->where('created_at', '>=', $since);
 
         return $q->selectRaw('material_selected, COUNT(*) AS n')

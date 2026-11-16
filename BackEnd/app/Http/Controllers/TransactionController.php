@@ -533,7 +533,7 @@ class TransactionController extends Controller
     // saw guests at all since the old guest flow was pure client-side simulation.
     public function guestSessionStart(Request $request): JsonResponse
     {
-        $request->validate(['machine_id' => 'required|exists:rvm_machines,id']);
+        $request->validate(['machine_id' => 'required|exists:rvm_machines,id,machine_type,rvm']);
 
         $guest   = \App\Models\User::guest();
         $machine = RvmMachine::find($request->machine_id);

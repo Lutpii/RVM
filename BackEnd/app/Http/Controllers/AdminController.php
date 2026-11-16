@@ -74,7 +74,7 @@ class AdminController extends Controller
     private function computeDashboardStats(string $scope = 'all'): array
     {
         $totalUsers        = User::count();
-        $totalMachines     = RvmMachine::count();
+        $totalMachines     = RvmMachine::rvmOnly()->count();
         $activeSessions    = RecyclingSession::dataScope($scope)->where('status', 'active')->count();
         $totalTransactions = Transaction::dataScope($scope)->count();
         $totalPointsGiven  = Transaction::dataScope($scope)->where('is_valid', 1)->sum('points_earned');
@@ -114,10 +114,10 @@ class AdminController extends Controller
                 'started_at'    => $s->started_at,
             ]);
 
-        $fullBins = RvmMachine::where('aluminum_level', '>=', 90)
+        $fullBins = RvmMachine::rvmOnly()->where(fn ($query) => $query->where('aluminum_level', '>=', 90)
             ->orWhere('plastic_level', '>=', 90)
             ->orWhere('glass_level', '>=', 90)
-            ->orWhere('paper_level', '>=', 90)
+            ->orWhere('paper_level', '>=', 90))
             ->get(['id','name','aluminum_level','plastic_level','glass_level','paper_level']);
 
         return [
@@ -282,9 +282,25 @@ class AdminController extends Controller
     }
 
     // Machine management
-    public function machines(): JsonResponse
+    public function machines(Request $request): JsonResponse
     {
-        return response()->json(['success' => true, 'machines' => RvmMachine::orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('id')->get()]);
+        $query = RvmMachine::orderByRaw('display_order IS NULL')->orderBy('display_order')->orderBy('id');
+        $allTypes = $this->includesAllMachineTypes($request);
+        $machines = $allTypes ? $query->with('location:id,name')->get() : $query->rvmOnly()->get();
+
+        if ($allTypes) {
+            $machines = $machines->map(function (RvmMachine $machine) {
+                return $machine->makeVisible(['machine_type', 'location_id'])->attributesToArray()
+                    + ['location' => $machine->location?->name];
+            });
+        }
+
+        return response()->json(['success' => true, 'machines' => $machines]);
+    }
+
+    private function includesAllMachineTypes(Request $request): bool
+    {
+        return config('platform.enabled') && $request->query('types') === 'all';
     }
 
     public function updateMachineOrder(Request $request): JsonResponse
@@ -295,8 +311,11 @@ class AdminController extends Controller
         ]);
         $order = array_map('intval', array_values($validated['order']));
 
-        return DB::transaction(function () use ($order) {
-            $current = RvmMachine::orderBy('id')->lockForUpdate()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $allTypes = $this->includesAllMachineTypes($request);
+
+        return DB::transaction(function () use ($order, $allTypes) {
+            $query = RvmMachine::orderBy('id')->lockForUpdate();
+            $current = ($allTypes ? $query : $query->rvmOnly())->pluck('id')->map(fn ($id) => (int) $id)->all();
             $submitted = $order;
             sort($submitted);
             if ($current !== $submitted) {
@@ -1180,10 +1199,10 @@ class AdminController extends Controller
     // backend endpoint at all.
     public function requestBinCollection(Request $request): JsonResponse
     {
-        $machines = RvmMachine::where('aluminum_level', '>=', 90)
+        $machines = RvmMachine::rvmOnly()->where(fn ($query) => $query->where('aluminum_level', '>=', 90)
             ->orWhere('plastic_level', '>=', 90)
             ->orWhere('glass_level', '>=', 90)
-            ->orWhere('paper_level', '>=', 90)
+            ->orWhere('paper_level', '>=', 90))
             ->get();
 
         if ($machines->isEmpty()) {

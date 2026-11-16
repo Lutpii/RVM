@@ -20,7 +20,7 @@ class QrController extends Controller
     // Generate QR code for RVM machine display
     public function generate(string $machineCode): JsonResponse
     {
-        $machine = RvmMachine::where('machine_code', $machineCode)->first();
+        $machine = RvmMachine::rvmOnly()->where('machine_code', $machineCode)->first();
 
         if (!$machine) {
             return response()->json(['success' => false, 'message' => __('messages.machine_not_found')], 404);
