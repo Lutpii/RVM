@@ -467,7 +467,7 @@ class AdminController extends Controller
     // own /qr/scan — this only checks and consumes the token.
     public function maintainMachine(Request $request, int $id): JsonResponse
     {
-        $machine = RvmMachine::find($id);
+        $machine = RvmMachine::rvmOnly()->find($id);
         if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $validated = $request->validate(['qr_token' => 'required|string']);
@@ -508,7 +508,7 @@ class AdminController extends Controller
 
     public function maintenanceRecords(int $id): JsonResponse
     {
-        if (!RvmMachine::whereKey($id)->exists()) {
+        if (!RvmMachine::rvmOnly()->whereKey($id)->exists()) {
             return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
         }
         $records = MaintenanceRecord::with(['opener:id,name', 'closer:id,name'])
@@ -522,7 +522,7 @@ class AdminController extends Controller
 
     public function createMaintenanceRecord(Request $request, int $id): JsonResponse
     {
-        $machine = RvmMachine::find($id);
+        $machine = RvmMachine::rvmOnly()->find($id);
         if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $validated = $request->validate([
@@ -567,7 +567,7 @@ class AdminController extends Controller
 
     public function updateBinLevels(Request $request, int $id): JsonResponse
     {
-        $machine = RvmMachine::find($id);
+        $machine = RvmMachine::rvmOnly()->find($id);
         if (!$machine) return response()->json(['success' => false, 'message' => __('messages.admin_machine_not_found')], 404);
 
         $request->validate([

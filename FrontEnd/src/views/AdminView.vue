@@ -2570,6 +2570,21 @@ watch(activeTab, async (tab) => {
   window.dispatchEvent(new Event('resize'))
 })
 
+// Edit Machine: the free-text location fields mirror the selected location. When the
+// admin switches the select to "No location", clear them; otherwise saving sends the
+// old location_name and the backend links the same location again.
+watch(() => [editingMachine.value?.id, editingMachine.value?.location_id], ([id, locationId], [prevId, prevLocationId]) => {
+  if (!platformMode || id == null || id !== prevId || locationId != null || prevLocationId == null) return
+  Object.assign(editingMachine.value, { location_name: '', latitude: '', longitude: '' })
+})
+
+// While Compactor/Composter is selected, fetchTabData skips the Ultra RVM list, so a
+// data-scope change or refresh made then never reaches it. Reload it when the admin
+// switches back, so the table always matches the current scope.
+watch(transactionType, (type) => {
+  if (type === 'rvm' && activeTab.value === 'transactions') fetchTabData('transactions', true)
+})
+
 // Mirror the open menu into the URL (replace, not push: Back still leaves the
 // admin panel instead of stepping through every menu visited). Immediate, so
 // an invalid ?tab= from an old link is cleaned up on load too.

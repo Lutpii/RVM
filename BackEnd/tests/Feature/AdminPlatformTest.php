@@ -22,6 +22,30 @@ class AdminPlatformTest extends TestCase
         $this->actingAsRole('admin');
     }
 
+    public function test_update_with_blank_location_name_and_no_location_id_clears_location(): void
+    {
+        $location = \App\Models\Location::create(['name' => 'UMPSA Pekan Hub']);
+        $machine = $this->machine('compactor');
+        $machine->update(['location_id' => $location->id, 'location_name' => 'UMPSA Pekan Hub']);
+
+        // What the Edit Machine form now sends after "No location" (fields cleared).
+        $this->putJson('/api/admin/machines/' . $machine->id, [
+            'name' => 'compactor', 'location_name' => null, 'status' => 'active', 'machine_type' => 'compactor',
+        ])->assertOk();
+
+        $this->assertNull($machine->fresh()->location_id);
+    }
+
+    public function test_bin_levels_and_maintenance_reject_platform_machines(): void
+    {
+        $composter = $this->machine('composter');
+
+        $this->putJson("/api/admin/machines/{$composter->id}/bin-levels", ['plastic' => 0])->assertNotFound();
+        $this->postJson("/api/admin/machines/{$composter->id}/maintenance", [])->assertNotFound();
+        $this->getJson("/api/admin/machines/{$composter->id}/maintenance-records")->assertNotFound();
+        $this->postJson("/api/admin/machines/{$composter->id}/maintenance-records", ['type' => 'inspection'])->assertNotFound();
+    }
+
     public function test_overview_kpis_split_by_type_and_scope(): void
     {
         $this->batch($this->machine('compactor'));
