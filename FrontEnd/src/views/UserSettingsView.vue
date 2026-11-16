@@ -484,7 +484,7 @@ function signed(n, sign) { return (Number(n) || 0) > 0 ? sign + num(n) : '0' }
 
 async function loadSummary() {
   try {
-    const res = platformMode ? await api.get('/user/account-summary', { params: { platform: 1 } }) : await api.get('/user/account-summary')
+    const res = await api.get('/user/account-summary')
     if (res.data?.summary) summary.value = { ...summary.value, ...res.data.summary }
   } catch { /* keep what auth.user already gave us */ }
 }

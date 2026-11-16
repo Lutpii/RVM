@@ -99,7 +99,7 @@ class UserController extends Controller
 
     public function pointsHistory(Request $request): JsonResponse
     {
-        $platform = config('platform.enabled') && $request->boolean('platform');
+        $platform = \App\Support\PlatformRequest::wants($request);
         $userId = $request->user()->id;
         $history = PointsHistory::with('transaction')
             ->where('user_id', $userId)
@@ -176,7 +176,7 @@ class UserController extends Controller
     {
         $user = $request->user();
         $monthStart = now()->startOfMonth();
-        $platform = config('platform.enabled') && $request->boolean('platform');
+        $platform = \App\Support\PlatformRequest::wants($request);
         $totals = $impact->summaryFor($user, $platform);
 
         $month = PointsHistory::where('user_id', $user->id)

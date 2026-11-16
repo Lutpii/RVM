@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { platformMode } from '@/utils/featureFlags'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -28,6 +29,11 @@ api.interceptors.request.use((config) => {
   config.headers['X-App-Locale'] = localStorage.getItem('rvm_lang') || 'en'
   return config
 })
+
+// Platform builds (VITE_PLATFORM_MODE=true) ask every endpoint for platform data
+// (compactor/composter CO2 and history) in one place, so login, /auth/me, the
+// account summary and activity can never disagree. OFF builds never send it.
+if (platformMode) api.defaults.headers.common['X-Platform'] = '1'
 
 const KIOSK_TOKEN_STORAGE_KEY = 'rvm_kiosk_token'
 

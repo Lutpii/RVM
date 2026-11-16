@@ -494,7 +494,14 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'message' => __('messages.oauth_code_expired')], 400);
         }
 
-        return response()->json(['success' => true, 'token' => $payload['token'], 'user' => $payload['user']]);
+        // The cached user was formatted during the browser redirect (no platform
+        // header), so recompute CO2 for this request; otherwise the card jumps.
+        $user = $payload['user'];
+        if (\App\Support\PlatformRequest::wants($request) && isset($user['id']) && ($model = User::find($user['id']))) {
+            $user['total_carbon_saved'] = app(\App\Services\UserImpactService::class)->carbonFor($model, true);
+        }
+
+        return response()->json(['success' => true, 'token' => $payload['token'], 'user' => $user]);
     }
 
     // Same shape as EnsureAccountActive, so the frontend handles both alike.
@@ -512,7 +519,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'success' => true,
-            'user' => $this->formatUser($request->user(), $request->boolean('platform')),
+            'user' => $this->formatUser($request->user()),
         ]);
     }
 
@@ -574,7 +581,7 @@ class AuthController extends Controller
         return $user->createToken('rvm_token')->plainTextToken;
     }
 
-    private function formatUser(User $user, bool $platform = false): array
+    private function formatUser(User $user): array
     {
         return [
             'id'           => $user->id,
@@ -584,7 +591,7 @@ class AuthController extends Controller
             'avatar_url'   => $user->avatar_url,
             'avatar_icon'  => $user->avatar_icon,
             'total_points' => $user->total_points,
-            'total_carbon_saved' => app(\App\Services\UserImpactService::class)->carbonFor($user, $platform),
+            'total_carbon_saved' => app(\App\Services\UserImpactService::class)->carbonFor($user, \App\Support\PlatformRequest::wants()),
             'role'         => $user->role,
             'is_verified'  => $user->is_verified,
             'theme_preference' => $user->theme_preference,

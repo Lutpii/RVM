@@ -115,7 +115,6 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { PhCaretRight, PhCube, PhFunnelSimple, PhGift, PhLeaf, PhPlusMinus, PhRecycle, PhX } from '@phosphor-icons/vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
-import { platformMode } from '@/utils/featureFlags'
 import { intlLocale } from '@/composables/useLanguage'
 import api from '@/services/api'
 import { buildActivityTimeline, filterTimeline, groupByDay, activeFilterCount } from '@/utils/activityTimeline'
@@ -199,7 +198,7 @@ onMounted(async () => {
   let redemptions = []
 
   try {
-    const res = platformMode ? await api.get('/user/points-history', { params: { platform: 1 } }) : await api.get('/user/points-history')
+    const res = await api.get('/user/points-history')
     pointsHistory = res.data.history?.data || []
   } catch {
     pointsHistoryFailed.value = true

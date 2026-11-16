@@ -59,6 +59,36 @@ class UserPlatformImpactTest extends TestCase
         $this->getJson('/api/auth/me?platform=1')->assertOk()->assertJsonPath('user.total_carbon_saved', 0.226);
     }
 
+    public function test_x_platform_header_opts_in_like_the_query_param(): void
+    {
+        config(['platform.enabled' => true]);
+        $this->getJson('/api/auth/me', ['X-Platform' => '1'])->assertOk()->assertJsonPath('user.total_carbon_saved', 2.302);
+        $this->getJson('/api/user/account-summary', ['X-Platform' => '1'])->assertOk()
+            ->assertJsonPath('summary.carbon_saved_kg', 2.302);
+        $this->getJson('/api/user/points-history', ['X-Platform' => '1'])->assertOk()->assertJsonCount(2, 'history.data');
+    }
+
+    public function test_login_returns_platform_carbon_so_the_card_does_not_jump(): void
+    {
+        config(['platform.enabled' => true]);
+        User::where('email', 'platform-impact@example.test')->update(['password_hash' => \Illuminate\Support\Facades\Hash::make('secret-pass-1')]);
+
+        $this->postJson('/api/auth/login', ['email' => 'platform-impact@example.test', 'password' => 'secret-pass-1'], ['X-Platform' => '1'])
+            ->assertOk()->assertJsonPath('user.total_carbon_saved', 2.302);
+        $this->postJson('/api/auth/login', ['email' => 'platform-impact@example.test', 'password' => 'secret-pass-1'])
+            ->assertOk()->assertJsonPath('user.total_carbon_saved', 0.226);
+    }
+
+    public function test_google_exchange_refreshes_platform_carbon(): void
+    {
+        config(['platform.enabled' => true]);
+        $user = User::where('email', 'platform-impact@example.test')->firstOrFail();
+        \Illuminate\Support\Facades\Cache::put('oauth_code:abc', ['token' => 't', 'user' => ['id' => $user->id, 'total_carbon_saved' => 0.226]], 60);
+
+        $this->postJson('/api/auth/google/exchange', ['code' => 'abc'], ['X-Platform' => '1'])
+            ->assertOk()->assertJsonPath('user.total_carbon_saved', 2.302);
+    }
+
     public function test_account_summary_keeps_legacy_counts_for_a_legacy_client(): void
     {
         config(['platform.enabled' => true]);
