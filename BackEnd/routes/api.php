@@ -136,6 +136,8 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
     // Admin only routes
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::middleware('platform')->prefix('platform')->group(function () {
+            Route::get('/settings', [AdminController::class, 'platformSettings']);
+            Route::put('/settings', [AdminController::class, 'updatePlatformSettings']);
         });
 
         Route::put('/machines/order', [AdminController::class, 'updateMachineOrder']);

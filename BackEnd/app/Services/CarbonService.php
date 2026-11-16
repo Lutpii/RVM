@@ -53,6 +53,9 @@ class CarbonService
     /** @return array<string, array{mass_g: ?int, kg_co2e_per_kg: float, kg_co2e_per_item: ?float, reference: string, derived: bool}> */
     public static function sources(): array
     {
-        return self::SOURCES;
+        $sources = self::SOURCES;
+        $sources['food_waste']['kg_co2e_per_kg'] = app(PlatformSettingsService::class)->load()['composter_kg_co2_per_kg'];
+
+        return $sources;
     }
 }

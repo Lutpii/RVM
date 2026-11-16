@@ -19,6 +19,7 @@ use App\Services\FormalReportService;
 use App\Services\CashRedeemSettingsService;
 use App\Services\CompactorSettingsService;
 use App\Services\DetectionCaptureStorage;
+use App\Services\PlatformSettingsService;
 use App\Services\RewardConfigService;
 use App\Services\AdminTableExport;
 use Illuminate\Database\Eloquent\Builder;
@@ -1035,6 +1036,24 @@ class AdminController extends Controller
         $this->log($request->user(), 'update_cash_redeem_settings', 'system', 0, 'Updated cash redeem settings', [], ['cashSettings', []]);
 
         return response()->json(['success' => true, 'settings' => $validated]);
+    }
+
+    public function platformSettings(PlatformSettingsService $settings): JsonResponse
+    {
+        return response()->json(['success' => true, 'settings' => $settings->load()]);
+    }
+
+    public function updatePlatformSettings(Request $request, PlatformSettingsService $settings): JsonResponse
+    {
+        $validated = $request->validate([
+            'composter_points_per_kg' => 'required|integer|between:1,1000',
+            'composter_kg_co2_per_kg' => 'required|numeric|between:0.01,5',
+        ]);
+
+        $settings->save($validated);
+        $this->log($request->user(), 'update_platform_settings', 'system', 0, 'Updated composter settings', $validated, ['platformSettings', []]);
+
+        return $this->platformSettings($settings);
     }
 
     public function getCompactorSettings(CompactorSettingsService $settings): JsonResponse
