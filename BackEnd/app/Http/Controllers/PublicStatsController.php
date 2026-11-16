@@ -42,9 +42,7 @@ class PublicStatsController extends Controller
                     'items_recycled'  => array_sum($month),
                     'carbon_saved_kg' => $this->carbon($month),
                     'carbon_by_material_kg' => $monthByMaterial,
-                    // The landing page bar shows items, not CO2: per item an
-                    // aluminium can saves ~6x the CO2 of a bottle or paper,
-                    // so a CO2 bar is always mostly aluminium.
+                    // The legacy landing page bar shows items by material.
                     'items_by_material'     => $monthItems,
                 ],
             ];

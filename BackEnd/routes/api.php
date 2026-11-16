@@ -42,6 +42,7 @@ Route::get('/vouchers/{code}', [RewardController::class, 'showVoucher']);
 
 // Machine public info
 // Landing page numbers (no personal data, cached 5 min).
+Route::get('/carbon/sources', [\App\Http\Controllers\CarbonSourcesController::class, 'show']);
 Route::get('/stats/public', [\App\Http\Controllers\PublicStatsController::class, 'show']);
 Route::get('/machines', [MachineController::class, 'index']);
 Route::get('/machines/{id}', [MachineController::class, 'show']);

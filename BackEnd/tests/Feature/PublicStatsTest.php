@@ -44,8 +44,8 @@ class PublicStatsTest extends TestCase
         $res->assertJsonPath('stats.items_recycled', 4)
             ->assertJsonPath('stats.month.items_recycled', 3)
             ->assertJsonPath('stats.machines', RvmMachine::count());
-        // 0.038 + 0.226 + 0.04 this month
-        $this->assertEqualsWithDelta(0.30, $res->json('stats.month.carbon_saved_kg'), 0.01);
+        // 0.012 + 0.226 + 0.010 this month, rounded to two places.
+        $res->assertJsonPath('stats.month.carbon_saved_kg', 0.25);
         $this->assertEqualsWithDelta(0.23, $res->json('stats.month.carbon_by_material_kg.aluminum'), 0.01);
         $this->assertSame((int) now()->month, $res->json('stats.month.month'));
         // Glass is not a recyclable here any more: never counted, never listed.
