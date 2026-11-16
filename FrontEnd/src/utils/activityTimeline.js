@@ -5,6 +5,8 @@
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const RANGE_DAYS = { '7d': 7, '30d': 30 }
+const SIMULATED_SOURCES = new Set(['compactor', 'composter'])
+const RECYCLING_KINDS = new Set(['session', 'item', ...SIMULATED_SOURCES])
 
 function time(ts) {
   const t = ts ? new Date(ts).getTime() : NaN
@@ -43,6 +45,16 @@ export function buildActivityTimeline(pointsHistory = [], sessions = [], redempt
   })
 
   const looseEntries = loose.map((h) => {
+    if (SIMULATED_SOURCES.has(h.source)) {
+      return {
+        id: h.source + '-' + h.id,
+        kind: h.source,
+        title: h.description,
+        pointsChange: h.points_change,
+        timestamp: h.created_at,
+        simulated: true,
+      }
+    }
     const material = h.transaction?.material_selected ?? null
     const isItem = h.session_id != null || material !== null
     return {
@@ -73,7 +85,7 @@ export function filterTimeline(entries = [], { tab = 'all', range = 'all', mater
   const days = RANGE_DAYS[range] ?? null
   const cutoff = days === null ? null : now.getTime() - days * DAY_MS
   return entries.filter((e) => {
-    if (tab === 'recycling' && !(e.kind === 'session' || e.kind === 'item')) return false
+    if (tab === 'recycling' && !RECYCLING_KINDS.has(e.kind)) return false
     if (tab === 'rewards' && e.kind !== 'redemption') return false
     if (material !== 'all') {
       const has = e.kind === 'session' ? (e.materials || []).includes(material) : e.material === material

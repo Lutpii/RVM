@@ -87,10 +87,12 @@
             <div :class="['activity-icon', 'icon-' + entry.kind]" aria-hidden="true">
               <PhRecycle v-if="entry.kind === 'session' || entry.kind === 'item'" weight="regular" />
               <PhGift v-else-if="entry.kind === 'redemption'" weight="regular" />
+              <PhCube v-else-if="entry.kind === 'compactor'" weight="regular" />
+              <PhLeaf v-else-if="entry.kind === 'composter'" weight="regular" />
               <PhPlusMinus v-else weight="regular" />
             </div>
             <div class="activity-info">
-              <span class="activity-title">{{ titleOf(entry) }} <span v-if="entry.isDemo" class="demo-chip">{{ $t('activity.demoChip') }}</span></span>
+              <span class="activity-title">{{ titleOf(entry) }} <span v-if="entry.simulated" class="demo-chip platform-activity">{{ $t('platform.simulated') }}</span><span v-else-if="entry.isDemo" class="demo-chip">{{ $t('activity.demoChip') }}</span></span>
               <span class="activity-sub">{{ subtitleOf(entry) }}</span>
             </div>
             <span :class="['activity-pts', pointsClass(entry.pointsChange)]">{{ formatPoints(entry.pointsChange) }}</span>
@@ -111,8 +113,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { PhCaretRight, PhFunnelSimple, PhGift, PhPlusMinus, PhRecycle, PhX } from '@phosphor-icons/vue'
+import { PhCaretRight, PhCube, PhFunnelSimple, PhGift, PhLeaf, PhPlusMinus, PhRecycle, PhX } from '@phosphor-icons/vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
+import { platformMode } from '@/utils/featureFlags'
 import { intlLocale } from '@/composables/useLanguage'
 import api from '@/services/api'
 import { buildActivityTimeline, filterTimeline, groupByDay, activeFilterCount } from '@/utils/activityTimeline'
@@ -196,7 +199,7 @@ onMounted(async () => {
   let redemptions = []
 
   try {
-    const res = await api.get('/user/points-history')
+    const res = platformMode ? await api.get('/user/points-history', { params: { platform: 1 } }) : await api.get('/user/points-history')
     pointsHistory = res.data.history?.data || []
   } catch {
     pointsHistoryFailed.value = true
@@ -305,6 +308,8 @@ button.activity-item:last-child { border-bottom: none; }
 .icon-session, .icon-item { color: var(--accent-green); }
 .icon-redemption { color: var(--accent-blue); }
 .icon-adjustment { color: var(--text-secondary); }
+.icon-compactor { color: #b45309; }
+.icon-composter { color: var(--accent-green); }
 .activity-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .demo-chip { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; font-size: 10px; font-weight: 700; line-height: 1.5; vertical-align: middle; }
 .activity-title { font-size: 14px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }

@@ -24,6 +24,12 @@ const byId = (id) => timeline.find((e) => e.id === id)
 const ids = (list) => list.map((e) => e.id)
 
 describe('buildActivityTimeline', () => {
+  it.each(['compactor', 'composter'])('keeps %s credits as simulated recycling activity', source => {
+    const entries = buildActivityTimeline([{ ...history[3], source }])
+    expect(entries[0]).toMatchObject({ kind: source, simulated: true, title: history[3].description })
+    expect(filterTimeline(entries, { tab: 'recycling' })).toHaveLength(1)
+    expect(byId('adjustment-4')).not.toHaveProperty('simulated')
+  })
   it('folds a session\'s items into the session instead of listing them again', () => {
     expect(ids(timeline)).toEqual(['session-7', 'adjustment-4', 'redemption-9', 'session-8', 'points-5'])
   })

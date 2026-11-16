@@ -25,14 +25,14 @@
       </header>
 
       <section class="acct-summary" :aria-label="$t('settings.yourPoints')">
-        <div class="sum-tiles">
+        <div class="sum-tiles" :class="{ 'sum-tiles-platform': platformMode }">
           <div class="sum-tile">
             <span class="sum-icon sum-icon-green"><PhCoins :size="22" aria-hidden="true" /></span>
             <span class="sum-value">{{ num(summary.total_points) }}</span>
             <span class="sum-label">{{ $t('settings.points') }}</span>
             <span class="sum-sub sum-sub-green">≈ RM {{ pointsToMoney(summary.total_points) }}</span>
           </div>
-          <div class="sum-tile">
+          <div v-if="!platformMode" class="sum-tile">
             <span class="sum-icon sum-icon-blue"><PhRecycle :size="22" aria-hidden="true" /></span>
             <span class="sum-value">{{ num(summary.items_recycled) }}</span>
             <span class="sum-label">{{ $t('settings.itemsRecycled') }}</span>
@@ -41,6 +41,7 @@
             <span class="sum-icon sum-icon-teal"><PhLeaf :size="22" aria-hidden="true" /></span>
             <span class="sum-value carbon-value">{{ carbonText }}</span>
             <span class="sum-label">{{ $t('settings.carbonSaved') }}</span>
+            <CarbonSourcesNote v-if="platformMode" />
           </div>
         </div>
         <div class="sum-month">
@@ -425,6 +426,8 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
 import api from '@/services/api'
 import UserAvatar from '@/components/UserAvatar.vue'
+import CarbonSourcesNote from '@/components/platform/CarbonSourcesNote.vue'
+import { platformMode } from '@/utils/featureFlags'
 import { useLanguage } from '@/composables/useLanguage'
 import { AVATAR_ICONS, AVATAR_COLOURS, DEFAULT_AVATAR, parseAvatar, formatAvatar, maskEmail } from '@/utils/avatarIcons.js'
 import { version as appVersion } from '../../package.json'
@@ -481,7 +484,7 @@ function signed(n, sign) { return (Number(n) || 0) > 0 ? sign + num(n) : '0' }
 
 async function loadSummary() {
   try {
-    const res = await api.get('/user/account-summary')
+    const res = platformMode ? await api.get('/user/account-summary', { params: { platform: 1 } }) : await api.get('/user/account-summary')
     if (res.data?.summary) summary.value = { ...summary.value, ...res.data.summary }
   } catch { /* keep what auth.user already gave us */ }
 }
@@ -798,6 +801,7 @@ onMounted(async () => {
 }
 @media (min-width: 672px) { .acct-summary { margin-left: auto; margin-right: auto; } }
 .sum-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 18px 8px 16px; }
+.sum-tiles-platform { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .sum-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 0 4px; }
 .sum-value.carbon-value { color: var(--carbon-accent); }
 .sum-tile + .sum-tile { border-left: 1px solid var(--border); }
