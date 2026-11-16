@@ -140,6 +140,11 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
         Route::middleware('platform')->prefix('platform')->group(function () {
             Route::get('/settings', [AdminController::class, 'platformSettings']);
             Route::put('/settings', [AdminController::class, 'updatePlatformSettings']);
+            Route::get('/overview', [\App\Http\Controllers\Admin\PlatformAdminController::class, 'overview']);
+            Route::get('/locations', [\App\Http\Controllers\Admin\PlatformAdminController::class, 'locations']);
+            Route::get('/machines', [\App\Http\Controllers\Admin\PlatformAdminController::class, 'machines']);
+            Route::get('/machines/{id}', [\App\Http\Controllers\Admin\PlatformAdminController::class, 'machine'])->whereNumber('id');
+            Route::get('/activity', [\App\Http\Controllers\Admin\PlatformAdminController::class, 'activity']);
         });
 
         Route::put('/machines/order', [AdminController::class, 'updateMachineOrder']);

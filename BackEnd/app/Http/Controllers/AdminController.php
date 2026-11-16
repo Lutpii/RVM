@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\CompactorBatch;
+use App\Models\ComposterDeposit;
+use App\Models\Location;
 use App\Models\RvmMachine;
 use App\Models\RecyclingSession;
 use App\Models\Transaction;
@@ -341,9 +344,9 @@ class AdminController extends Controller
             'longitude'     => 'nullable|numeric',
             'status'        => 'nullable|in:active,inactive,maintenance',
             'is_demo'       => 'sometimes|boolean',
-        ]);
+        ] + $this->platformMachineRules());
 
-        $machine = RvmMachine::create([
+        $machine = RvmMachine::create($this->platformMachineAttributes($validated) + [
             'machine_code'  => $validated['machine_code'],
             'name'          => $validated['name'],
             'location_name' => $validated['location_name'] ?? null,
@@ -373,9 +376,14 @@ class AdminController extends Controller
             'longitude'     => 'nullable|numeric',
             'status'        => 'nullable|in:active,inactive,maintenance',
             'is_demo'       => 'sometimes|boolean',
-        ]);
+        ] + $this->platformMachineRules());
 
-        $machine->update([
+        if (isset($validated['machine_type']) && $validated['machine_type'] !== $machine->machine_type
+            && ($machine->api_key_hash || $this->machineHasHistory($machine))) {
+            return response()->json(['success' => false, 'message' => __('messages.machine_has_history')], 409);
+        }
+
+        $machine->update($this->platformMachineAttributes($validated, $machine) + [
             'name'          => $validated['name']          ?? $machine->name,
             'location_name' => array_key_exists('location_name', $validated) ? $validated['location_name'] : $machine->location_name,
             'latitude'      => array_key_exists('latitude',  $validated) && $validated['latitude']  !== '' ? $validated['latitude']  : $machine->latitude,
@@ -395,14 +403,61 @@ class AdminController extends Controller
         // Sessions and transactions cascade with the machine, so deleting one
         // with history erases recycling records (RVM-DSME, 13 Nov 2026).
         // Such a machine is set to Inactive instead.
-        $hasHistory = RecyclingSession::where('machine_id', $machine->id)->exists()
-            || Transaction::where('machine_id', $machine->id)->exists();
-        if ($hasHistory) {
+        if ($this->machineHasHistory($machine)) {
             return response()->json(['success' => false, 'message' => __('messages.machine_has_history')], 409);
         }
         $this->log($request->user(), 'delete_machine', 'machine', $id, "Deleted machine: {$machine->name}", [], ['deleteMachine', ['name' => $machine->name]]);
         $machine->delete();
         return response()->json(['success' => true, 'message' => __('messages.machine_deleted')]);
+    }
+
+    private function machineHasHistory(RvmMachine $machine): bool
+    {
+        return $machine->sessions()->exists()
+            || $machine->transactions()->exists()
+            || CompactorBatch::where('machine_id', $machine->id)->exists()
+            || ComposterDeposit::where('machine_id', $machine->id)->exists();
+    }
+
+    private function platformMachineRules(): array
+    {
+        if (!config('platform.enabled')) {
+            return [];
+        }
+
+        return [
+            'machine_type' => 'sometimes|required|in:' . implode(',', RvmMachine::TYPES),
+            'location_id' => 'sometimes|nullable|integer|exists:locations,id',
+        ];
+    }
+
+    private function platformMachineAttributes(array $validated, ?RvmMachine $existing = null): array
+    {
+        if (!config('platform.enabled')) {
+            return $existing && $existing->machine_type !== 'rvm' ? ['is_demo' => true] : [];
+        }
+
+        $type = $validated['machine_type'] ?? $existing?->machine_type ?? 'rvm';
+        $attributes = ['machine_type' => $type];
+        if ($type !== 'rvm') {
+            $attributes['is_demo'] = true;
+        }
+
+        if (array_key_exists('location_id', $validated)) {
+            $location = Location::find($validated['location_id']);
+            $attributes['location_id'] = $location?->id;
+            if ($location) {
+                $attributes += ['location_name' => $location->name, 'latitude' => $location->latitude, 'longitude' => $location->longitude];
+            }
+        } elseif (array_key_exists('location_name', $validated)) {
+            $name = $validated['location_name'];
+            $attributes['location_id'] = $name ? Location::firstOrCreate(['name' => $name], [
+                'latitude' => $validated['latitude'] ?? $existing?->latitude,
+                'longitude' => $validated['longitude'] ?? $existing?->longitude,
+            ])->id : null;
+        }
+
+        return $attributes;
     }
 
     // Kiosk maintenance shutdown — gated by an admin session (this middleware
