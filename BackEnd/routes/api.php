@@ -48,6 +48,8 @@ Route::get('/machines', [MachineController::class, 'index']);
 Route::get('/machines/{id}', [MachineController::class, 'show']);
 
 Route::middleware('platform')->prefix('platform')->group(function () {
+    Route::get('/locations', [\App\Http\Controllers\PlatformController::class, 'locations']);
+    Route::get('/stats', [\App\Http\Controllers\PlatformController::class, 'stats']);
 });
 
 // Kiosk heartbeat: always needs a valid X-Machine-Key; records last seen + fault state.
