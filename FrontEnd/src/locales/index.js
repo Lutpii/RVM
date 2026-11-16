@@ -1,6 +1,7 @@
 // src/locales/index.js
 import id from './id.js'
 import { adminUi } from './adminUi.js'
+import { platformMessages } from './platform.js'
 
 export const messages = {
   en: {
@@ -173,6 +174,7 @@ export const messages = {
     },
     dashboard: {
       title: 'My Dashboard',
+      platform: { totalPoints: 'Total points' },
       totalPoints: 'Total Points',
       nearbyMachines: 'Nearby Machines',
       recentActivity: 'Recent Activity',
@@ -810,6 +812,7 @@ export const messages = {
     },
     dashboard: {
       title: 'Papan Pemuka Saya',
+      platform: { totalPoints: 'Jumlah mata' },
       totalPoints: 'Jumlah Mata',
       nearbyMachines: 'Mesin Berdekatan',
       recentActivity: 'Aktiviti Terkini',
@@ -1281,4 +1284,7 @@ export const messages = {
 }
 
 // Admin panel text lives in adminUi.js (one file, three languages).
-for (const lang of ['en', 'my', 'id']) messages[lang].adminUi = adminUi[lang]
+for (const lang of ['en', 'my', 'id']) {
+  messages[lang].adminUi = adminUi[lang]
+  messages[lang].platform = platformMessages[lang]
+}

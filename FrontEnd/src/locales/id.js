@@ -170,6 +170,7 @@ export default {
   },
   dashboard: {
     title: 'Dasbor Saya',
+    platform: { totalPoints: 'Total poin' },
     totalPoints: 'Total Poin',
     nearbyMachines: 'Mesin Terdekat',
     recentActivity: 'Aktivitas Terbaru',

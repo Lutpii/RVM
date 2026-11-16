@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { platformMode } from '@/utils/featureFlags'
 import { ref, computed } from 'vue'
 import api, { registerClearAuth } from '@/services/api'
 import { resolveCachedPoints } from '@/utils/resolveCachedPoints'
@@ -147,7 +148,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       if (token.value) {
         api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
-        const res = await api.get('/auth/me')
+        const res = platformMode ? await api.get('/auth/me', { params: { platform: 1 } }) : await api.get('/auth/me')
         if (res.data.success) {
           user.value = res.data.user
           localStorage.setItem('rvm_user', JSON.stringify(res.data.user))

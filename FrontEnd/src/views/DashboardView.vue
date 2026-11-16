@@ -14,6 +14,34 @@
       </RouterLink>
     </div>
 
+    <template v-if="platformMode">
+      <div class="section-pad">
+        <div v-if="demoDataLabel" class="demo-row"><DemoDataBadge /></div>
+        <PointsCo2Card :points="Number(auth.user?.total_points || 0)" :carbon="Number(auth.user?.total_carbon_saved || 0)" />
+      </div>
+      <section class="section-pad">
+        <h3 class="section-title"><PhMapPin class="points-sub-icon" weight="regular" /> {{ $t('dashboard.nearbyMachines') }}</h3>
+        <div v-if="loadingMachines" class="map-placeholder" role="status">{{ $t('dashboard.locating') }}</div>
+        <p v-else-if="locationError" role="status">{{ $t('platform.locationsError') }}</p>
+        <p v-else-if="!locations.length">{{ $t('platform.locationsEmpty') }}</p>
+        <div v-else class="machines-list platform-location-list">
+          <LocationCard v-for="location in locations" :key="location.id" :location="location"
+            :expanded="selectedMachineId === location.id" @toggle="selectMachine(location)">
+            <div class="map-embed">
+              <template v-if="location.latitude !== null && location.longitude !== null">
+                <div ref="mapContainer" class="leaflet-map"></div>
+                <span class="map-attribution">© OpenStreetMap contributors</span>
+              </template>
+              <div v-else class="no-map">{{ $t('dashboard.locationNotSet') }}</div>
+            </div>
+            <a :href="getDirectionsUrl(location)" target="_blank" rel="noopener noreferrer" class="directions-btn">
+              <PhMapTrifold class="points-sub-icon" weight="regular" aria-hidden="true" /> {{ $t('dashboard.getDirections') }}
+            </a>
+          </LocationCard>
+        </div>
+      </section>
+    </template>
+    <template v-else>
     <div class="section-pad">
       <div v-if="demoDataLabel" class="demo-row"><DemoDataBadge /></div>
       <div class="stats-row">
@@ -90,6 +118,7 @@
         </div>
       </div>
     </div>
+    </template>
     <div style="height:32px"></div>
   </div>
 </template>
@@ -106,7 +135,9 @@ import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import { RouterLink } from 'vue-router'
 import { PhRecycle, PhGlobe, PhMapPin, PhMapTrifold, PhCamera } from '@phosphor-icons/vue'
 import DemoDataBadge from '@/components/DemoDataBadge.vue'
-import { demoDataLabel } from '@/utils/featureFlags'
+import { demoDataLabel, platformMode } from '@/utils/featureFlags'
+import LocationCard from '@/components/platform/LocationCard.vue'
+import PointsCo2Card from '@/components/platform/PointsCo2Card.vue'
 import { materialIconSvg } from '@/utils/materialIcons'
 import { machineAvailability } from '@/utils/machineConnectivity'
 
@@ -141,6 +172,8 @@ L.Icon.Default.mergeOptions({
 const auth = useAuthStore()
 
 const machines          = ref([])
+const locations         = ref([])
+const locationError     = ref(false)
 const loadingMachines    = ref(true)
 const selectedMachineId  = ref(null)
 
@@ -174,8 +207,8 @@ watch(selectedMachineId, async (id) => {
   destroyMap()
   if (id == null) return
 
-  const machine = machines.value.find(m => m.id === id)
-  if (!machine?.latitude || !machine?.longitude) return
+  const machine = (platformMode ? locations : machines).value.find(m => m.id === id)
+  if (!machine || (platformMode ? machine.latitude == null || machine.longitude == null : !machine.latitude || !machine.longitude)) return
 
   await nextTick()
   // mapContainer is declared on an element inside v-for, so Vue always binds it
@@ -203,17 +236,25 @@ watch(selectedMachineId, async (id) => {
 onUnmounted(destroyMap)
 
 function getDirectionsUrl(machine) {
-  if (machine.latitude && machine.longitude) {
+  if (platformMode ? machine.latitude != null && machine.longitude != null : machine.latitude && machine.longitude) {
     return `https://maps.google.com/?q=${machine.latitude},${machine.longitude}`
   }
-  return `https://maps.google.com/?q=${encodeURIComponent(machine.location_name)}`
+  return `https://maps.google.com/?q=${encodeURIComponent(platformMode ? machine.name : machine.location_name)}`
 }
 
 onMounted(async () => {
   try {
-    const res = await api.get('/machines')
-    machines.value = res.data.machines || []
-  } catch { machines.value = [] }
+    if (platformMode) {
+      const res = await api.get('/platform/locations')
+      locations.value = res.data.locations || []
+    } else {
+      const res = await api.get('/machines')
+      machines.value = res.data.machines || []
+    }
+  } catch {
+    machines.value = []
+    if (platformMode) locationError.value = true
+  }
   finally { loadingMachines.value = false }
 
   // Refresh user data (points hero reads auth.user directly)
@@ -222,6 +263,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.platform-location-list { display: grid; gap: 8px; }
 .dashboard-page { background: var(--bg-primary); }
 
 /* Points hero */
