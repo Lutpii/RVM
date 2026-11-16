@@ -8,3 +8,5 @@ export const googleLoginEnabled = import.meta.env.VITE_GOOGLE_LOGIN === 'true'
 // "Demonstration data (simulated)" badge on the recycler and admin pages, for a
 // deploy that runs on generated demo data instead of live machine readings.
 export const demoDataLabel = import.meta.env.VITE_DEMO_DATA_LABEL === 'true'
+
+export const platformMode = import.meta.env.VITE_PLATFORM_MODE === 'true'

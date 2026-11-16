@@ -46,6 +46,9 @@ Route::get('/stats/public', [\App\Http\Controllers\PublicStatsController::class,
 Route::get('/machines', [MachineController::class, 'index']);
 Route::get('/machines/{id}', [MachineController::class, 'show']);
 
+Route::middleware('platform')->prefix('platform')->group(function () {
+});
+
 // Kiosk heartbeat: always needs a valid X-Machine-Key; records last seen + fault state.
 Route::post('/hardware/heartbeat', [MachineController::class, 'heartbeat'])->middleware('machine.auth:required');
 
@@ -131,6 +134,9 @@ Route::middleware(['kiosk.auth', 'idle.timeout', 'auth:sanctum', 'account.active
 
     // Admin only routes
     Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::middleware('platform')->prefix('platform')->group(function () {
+        });
+
         Route::put('/machines/order', [AdminController::class, 'updateMachineOrder']);
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         // Excel exports of the admin tables (same filters as the list endpoints).

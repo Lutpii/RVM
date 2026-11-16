@@ -74,6 +74,7 @@ class Kernel extends HttpKernel
     ];
 
     protected $middlewareAliases = [
+        'platform' => \App\Http\Middleware\EnsurePlatformMode::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'kiosk.auth' => \App\Http\Middleware\KioskAuthMiddleware::class,
