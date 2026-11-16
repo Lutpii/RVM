@@ -22,8 +22,14 @@
         <div class="hero-grid">
           <div class="hero-copy">
             <span class="hero-badge"><PhLeaf :size="15" weight="bold" aria-hidden="true" /> {{ $t('landing.heroBadge') }}</span>
-            <h1 class="hero-title">{{ $t('landing.heroTitle1') }}<br>{{ $t('landing.heroTitle2') }}</h1>
-            <p class="hero-text">{{ $t('landing.heroText') }}</p>
+            <template v-if="platformMode">
+              <h1 class="hero-title">{{ $t('landing.platform.heroTitle1') }}<br>{{ $t('landing.platform.heroTitle2') }}</h1>
+              <p class="hero-text">{{ $t('landing.platform.heroText') }}</p>
+            </template>
+            <template v-else>
+              <h1 class="hero-title">{{ $t('landing.heroTitle1') }}<br>{{ $t('landing.heroTitle2') }}</h1>
+              <p class="hero-text">{{ $t('landing.heroText') }}</p>
+            </template>
             <div class="hero-buttons">
               <button type="button" class="btn-primary" @click="goToScan">
                 <PhScan :size="20" weight="bold" aria-hidden="true" /> {{ $t('landing.startRecycling') }}
@@ -34,7 +40,27 @@
           </div>
 
           <!-- CO2 saved this month, live from every machine -->
-          <section class="co2-card" :aria-label="$t('landing.co2Month')">
+          <section v-if="platformMode" class="co2-card platform-co2" :aria-label="$t('landing.co2Month')">
+            <div class="co2-head">
+              <span class="tile-icon tile-teal"><PhLeaf :size="24" aria-hidden="true" /></span>
+              <span class="co2-head-text">
+                <strong>{{ $t('landing.co2Month') }}</strong>
+                <span>{{ monthLabel }}</span>
+              </span>
+            </div>
+            <div class="co2-value-row platform-co2-value">
+              <span class="co2-value">{{ kg(stats.month.carbon_saved_kg) }}</span>
+              <CarbonSourcesNote />
+            </div>
+            <div v-for="m in monthMachineTypes" :key="m.type" class="platform-carbon-row">
+              <div class="platform-carbon-label">
+                <span>{{ $t('platform.machine.' + m.type) }} <span v-if="m.type !== 'rvm'" class="platform-simulation">{{ $t('platform.simulated') }}</span></span>
+                <strong>{{ kg(m.carbon) }}</strong>
+              </div>
+              <div class="platform-carbon-bar" aria-hidden="true"><span :class="'seg-type-' + m.type" :style="{ width: m.share + '%' }"></span></div>
+            </div>
+          </section>
+          <section v-else class="co2-card" :aria-label="$t('landing.co2Month')">
             <div class="co2-head">
               <span class="tile-icon tile-teal"><PhLeaf :size="24" aria-hidden="true" /></span>
               <span class="co2-head-text">
@@ -64,8 +90,8 @@
     <!-- ═══ Impact strip (overlaps the hero) ═══ -->
     <section class="wrap-pad impact-section" :aria-label="$t('landing.impactLabel')">
       <div class="wrap card impact">
-        <div class="impact-grid">
-          <div class="impact-tile">
+        <div class="impact-grid" :class="{ 'impact-grid-platform': platformMode }">
+          <div v-if="!platformMode" class="impact-tile">
             <span class="tile-icon tile-blue"><PhRecycle :size="24" aria-hidden="true" /></span>
             <span class="impact-text"><strong>{{ num(stats.items_recycled) }}</strong><span>{{ $t('landing.statItems') }}</span></span>
           </div>
@@ -75,12 +101,22 @@
           </div>
           <div class="impact-tile">
             <span class="tile-icon tile-orange"><PhDeviceTablet :size="24" aria-hidden="true" /></span>
-            <span class="impact-text"><strong>{{ num(stats.machines) }}</strong><span>{{ $t('landing.statMachines') }}</span></span>
+            <span v-if="platformMode" class="impact-text">
+              <strong>{{ num(platformMachineTotal) }}</strong><span>{{ $t('landing.statMachines') }}</span>
+              <span v-for="type in machineTypes" :key="type" class="platform-machine-count">
+                {{ $t('platform.machine.' + type) }} <b>{{ num(stats.machines?.[type]) }}</b>
+                <span v-if="type !== 'rvm'" class="platform-simulation">{{ $t('platform.simulated') }}</span>
+              </span>
+            </span>
+            <span v-else class="impact-text"><strong>{{ num(stats.machines) }}</strong><span>{{ $t('landing.statMachines') }}</span></span>
           </div>
         </div>
-        <span class="impact-foot"><span class="live-dot"></span>{{ $t('landing.liveAll') }}</span>
+        <span v-if="platformMode" class="impact-foot">{{ $t('landing.platform.includesSimulation') }}</span>
+        <span v-else class="impact-foot"><span class="live-dot"></span>{{ $t('landing.liveAll') }}</span>
       </div>
     </section>
+
+    <PlatformMachinesSection v-if="platformMode" />
 
     <!-- ═══ How it works ═══ -->
     <section class="wrap-pad section how" aria-labelledby="how-title">
@@ -109,8 +145,9 @@
           <h2 class="card-title">{{ $t('landing.goesInTitle') }}</h2>
           <ul class="chips" :aria-label="$t('landing.goesInTitle')">
             <li v-for="c in acceptedChips" :key="c" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t(c) }}</li>
+            <li v-if="platformMode" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t('landing.platform.foodChip') }}</li>
           </ul>
-          <p class="card-text">{{ $t('landing.goesInText') }}</p>
+          <p class="card-text">{{ $t(platformMode ? 'landing.platform.goesInText' : 'landing.goesInText') }}</p>
         </div>
 
         <div class="card info-card">
@@ -169,6 +206,9 @@ import { computed, inject, onMounted, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
+import CarbonSourcesNote from '@/components/platform/CarbonSourcesNote.vue'
+import PlatformMachinesSection from '@/components/platform/PlatformMachinesSection.vue'
+import { platformMode } from '@/utils/featureFlags'
 import { intlLocale as toIntlLocale } from '@/composables/useLanguage'
 import api from '@/services/api'
 import {
@@ -206,7 +246,7 @@ const stats = ref({
 
 onMounted(async () => {
   try {
-    const res = await api.get('/stats/public')
+    const res = await api.get(platformMode ? '/platform/stats' : '/stats/public')
     if (res.data?.stats) stats.value = res.data.stats
   } catch { /* numbers stay as "—" */ }
 })
@@ -223,6 +263,20 @@ const monthLabel = computed(() => {
   const { year, month } = stats.value.month
   const d = year && month ? new Date(year, month - 1, 1) : new Date()
   return d.toLocaleDateString(intlLocale.value, { month: 'long', year: 'numeric' })
+})
+
+const machineTypes = ['rvm', 'compactor', 'composter']
+const platformMachineTotal = computed(() => stats.value.machines == null
+  ? null
+  : machineTypes.reduce((sum, type) => sum + (Number(stats.value.machines[type]) || 0), 0))
+const monthMachineTypes = computed(() => {
+  const breakdown = stats.value.month.carbon_by_machine_kg
+  const total = Number(stats.value.month.carbon_saved_kg) || 0
+  return machineTypes.map(type => ({
+    type,
+    carbon: breakdown?.[type] ?? null,
+    share: total ? (Number(breakdown?.[type]) || 0) * 100 / total : 0,
+  }))
 })
 
 const MONTH_MATERIALS = [
@@ -247,6 +301,18 @@ const barLabel = computed(() => monthMaterials.value.map(m => `${m.label} ${item
 </script>
 
 <style scoped>
+.platform-co2-value { align-items: center; }
+.platform-co2-value :deep(summary) { color: inherit; }
+.platform-carbon-row + .platform-carbon-row { margin-top: 9px; }
+.platform-carbon-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .82rem; }
+.platform-carbon-bar { margin-top: 4px; height: 6px; overflow: hidden; border-radius: 99px; background: var(--bg-hover); }
+.platform-carbon-bar > span { display: block; height: 100%; border-radius: inherit; }
+.seg-type-rvm { background: #16a34a; }
+.seg-type-compactor { background: #d97706; }
+.seg-type-composter { background: #0891b2; }
+.platform-simulation { display: inline-block; padding: 2px 6px; border-radius: 99px; background: #fef3c7; color: #854d0e; font-size: .67rem; font-weight: 700; }
+.landing .impact-grid-platform { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.platform-machine-count { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 /* 10px corners for cards and buttons, pills fully round (same as the Account page). */
 .landing { min-height: 100vh; min-height: 100dvh; background: var(--bg-primary); color: var(--text-primary); }
 .wrap { max-width: 1160px; margin: 0 auto; box-sizing: border-box; }

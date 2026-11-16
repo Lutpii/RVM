@@ -80,6 +80,25 @@ export const messages = {
       // New landing page (2026-11)
       navLabel: 'Main',
       heroBadge: 'UMPSA · Eco Smart Campus',
+      platform: {
+        heroTitle1: "Recycle more.",
+        heroTitle2: "Earn points back.",
+        heroText: "Recycle bottles, cans and paper with Ultra RVM, bulk bottles and cans with the Compactor, and food waste with the Composter. One account, one points balance.",
+        machinesTitle: "Three machines, one account",
+        foodChip: "Food waste → Composter",
+        goesInText: "Empty bottles and cans, and keep paper dry. Glass is not accepted.",
+        includesSimulation: "Includes simulated results",
+        accepts: {
+          rvm: "Plastic bottles, aluminium cans and paper",
+          compactor: "Plastic bottles and aluminium cans in bulk",
+          composter: "Food waste for composting"
+        },
+        earns: {
+          rvm: "Points per item",
+          compactor: "Points per batch",
+          composter: "Points per kilogram"
+        }
+      },
       heroTitle1: 'Recycle a bottle.',
       heroTitle2: 'Get points back.',
       heroText: 'Drop plastic bottles, aluminium cans and paper into an RVM. The AI checks each item in seconds and adds points to your account.',
@@ -718,6 +737,25 @@ export const messages = {
       // Laman utama baharu (2026-11)
       navLabel: 'Utama',
       heroBadge: 'UMPSA · Eco Smart Campus',
+      platform: {
+        heroTitle1: "Kitar semula lebih banyak.",
+        heroTitle2: "Kumpul mata ganjaran.",
+        heroText: "Kitar semula botol, tin dan kertas dengan Ultra RVM, botol dan tin secara pukal dengan Pemadat, serta sisa makanan dengan Pengompos. Satu akaun, satu baki mata.",
+        machinesTitle: "Tiga mesin, satu akaun",
+        foodChip: "Sisa makanan → Pengompos",
+        goesInText: "Kosongkan botol dan tin, dan pastikan kertas kering. Kaca tidak diterima.",
+        includesSimulation: "Termasuk hasil simulasi",
+        accepts: {
+          rvm: "Botol plastik, tin aluminium dan kertas",
+          compactor: "Botol plastik dan tin aluminium secara pukal",
+          composter: "Sisa makanan untuk pengomposan"
+        },
+        earns: {
+          rvm: "Mata bagi setiap item",
+          compactor: "Mata bagi setiap kelompok",
+          composter: "Mata bagi setiap kilogram"
+        }
+      },
       heroTitle1: 'Kitar semula botol.',
       heroTitle2: 'Dapatkan mata.',
       heroText: 'Masukkan botol plastik, tin aluminium dan kertas ke dalam RVM. AI memeriksa setiap item dalam beberapa saat dan menambah mata ke akaun anda.',

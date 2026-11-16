@@ -76,6 +76,25 @@ export default {
     switchToDark: 'Beralih ke mode gelap',
     navLabel: 'Utama',
     heroBadge: 'UMPSA · Eco Smart Campus',
+    platform: {
+      heroTitle1: "Daur ulang lebih banyak.",
+      heroTitle2: "Dapatkan poin kembali.",
+      heroText: "Daur ulang botol, kaleng, dan kertas di Ultra RVM, botol dan kaleng dalam jumlah banyak di Compactor, serta sisa makanan di Composter. Satu akun, satu saldo poin.",
+      machinesTitle: "Tiga mesin, satu akun",
+      foodChip: "Sisa makanan → Composter",
+      goesInText: "Kosongkan botol dan kaleng, dan jaga kertas tetap kering. Kaca tidak diterima.",
+      includesSimulation: "Termasuk hasil simulasi",
+      accepts: {
+        rvm: "Botol plastik, kaleng aluminium, dan kertas",
+        compactor: "Botol plastik dan kaleng aluminium dalam jumlah banyak",
+        composter: "Sisa makanan untuk dijadikan kompos"
+      },
+      earns: {
+        rvm: "Poin per barang",
+        compactor: "Poin per batch",
+        composter: "Poin per kilogram"
+      }
+    },
     heroTitle1: 'Daur ulang satu botol.',
     heroTitle2: 'Dapatkan poin kembali.',
     heroText: 'Masukkan botol plastik, kaleng aluminium, dan kertas ke RVM. AI memeriksa setiap barang dalam hitungan detik dan menambahkan poin ke akun Anda.',
