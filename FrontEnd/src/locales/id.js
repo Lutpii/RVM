@@ -75,7 +75,7 @@ export default {
     switchToLight: 'Beralih ke mode terang',
     switchToDark: 'Beralih ke mode gelap',
     navLabel: 'Utama',
-    heroBadge: 'UMPSA · Eco Smart Campus',
+    heroBadge: 'DSME Engineering · Daur Ulang Pintar',
     platform: {
       heroTitle1: "Daur ulang lebih banyak.",
       heroTitle2: "Dapatkan poin kembali.",
@@ -137,7 +137,7 @@ export default {
     seeRewards: 'Lihat hadiah',
     ctaTitle: 'Punya botol kosong?',
     ctaText: 'Temukan RVM di DSME Engineering dan mulai sesi pertama Anda.',
-    footerTagline: 'UMPSA · Eco Smart Campus',
+    footerTagline: 'DSME Engineering · Daur Ulang Pintar',
     footerLabel: 'Footer',
   },
   auth: {

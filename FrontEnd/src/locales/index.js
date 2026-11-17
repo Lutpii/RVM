@@ -79,7 +79,7 @@ export const messages = {
       switchToDark: 'Switch to dark mode',
       // New landing page (2026-11)
       navLabel: 'Main',
-      heroBadge: 'UMPSA · Eco Smart Campus',
+      heroBadge: 'DSME Engineering · Smart Recycling',
       platform: {
         heroTitle1: "Recycle more.",
         heroTitle2: "Earn points back.",
@@ -141,7 +141,7 @@ export const messages = {
       seeRewards: 'See rewards',
       ctaTitle: 'Got an empty bottle on you?',
       ctaText: 'Find the RVM at DSME Engineering and start your first session.',
-      footerTagline: 'UMPSA · Eco Smart Campus',
+      footerTagline: 'DSME Engineering · Smart Recycling',
       footerLabel: 'Footer',
     },
     auth: {
@@ -736,7 +736,7 @@ export const messages = {
       switchToDark: 'Tukar ke mod gelap',
       // Laman utama baharu (2026-11)
       navLabel: 'Utama',
-      heroBadge: 'UMPSA · Eco Smart Campus',
+      heroBadge: 'DSME Engineering · Kitar Semula Pintar',
       platform: {
         heroTitle1: "Kitar semula lebih banyak.",
         heroTitle2: "Kumpul mata ganjaran.",
@@ -798,7 +798,7 @@ export const messages = {
       seeRewards: 'Lihat ganjaran',
       ctaTitle: 'Ada botol kosong?',
       ctaText: 'Cari RVM di DSME Engineering dan mulakan sesi pertama anda.',
-      footerTagline: 'UMPSA · Eco Smart Campus',
+      footerTagline: 'DSME Engineering · Kitar Semula Pintar',
       footerLabel: 'Kaki halaman',
     },
     auth: {

@@ -1,15 +1,11 @@
 <template>
   <div class="brand-logo-row">
-    <img src="@/assets/logo-umpsa-trimmed.webp" class="brand-logo-img" alt="UMPSA" width="255" height="192" />
     <img src="@/assets/dsme-logo.png" class="brand-logo-img" alt="DSME" width="600" height="216" />
   </div>
 </template>
 
 <script setup>
-// Both source files are pre-trimmed to their own visual content (no internal
-// padding) — see FrontEnd/src/assets/logo-umpsa-trimmed.webp — so a single
-// shared height keeps the two logos reading as the same size instead of one
-// looking smaller because its source canvas had more built-in whitespace.
+// DSME branding only (the web is exhibited on behalf of DSME Engineering).
 // Callers control the actual height by setting --brand-logo-height on an
 // ancestor (it's an inherited custom property, so it reaches in here across
 // the component boundary); 96px only applies with no ancestor override.

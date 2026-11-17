@@ -25,7 +25,7 @@
 
     <div class="kiosk-footer">
       <BrandFooter class="brand-logo" />
-      <span>UMPSA &nbsp;·&nbsp; DSME Engineering</span>
+      <span>DSME Engineering</span>
     </div>
   </div>
 </template>

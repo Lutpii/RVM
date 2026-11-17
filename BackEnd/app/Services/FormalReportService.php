@@ -69,7 +69,7 @@ class FormalReportService
         $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(14);
         $row++;
 
-        $sheet->setCellValue("A{$row}", 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)');
+        $sheet->setCellValue("A{$row}", 'DSME Engineering Sdn. Bhd.');
         $row++;
 
         $period = 'Period: ' . ($dateFrom ?: 'earliest') . ' to ' . ($dateTo ?: 'latest');

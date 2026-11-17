@@ -51,7 +51,7 @@
 
     <p style="margin-top: 24px;">
         RVM Team<br>
-        <strong>Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)</strong>
+        <strong>DSME Engineering Sdn. Bhd.</strong>
     </p>
 
 </body>

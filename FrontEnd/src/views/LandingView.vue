@@ -186,8 +186,6 @@
     <footer class="wrap-pad foot">
       <div class="wrap foot-inner">
         <div class="foot-logos">
-          <img :src="logoUmpsa" alt="UMPSA" class="logo-umpsa" width="255" height="192" />
-          <span class="foot-divider" aria-hidden="true"></span>
           <img :src="logoDsme" alt="DSME" class="logo-dsme" width="600" height="216" />
         </div>
         <span class="foot-tagline">{{ $t('landing.footerTagline') }}</span>
@@ -215,7 +213,6 @@ import {
   PhSun, PhMoon, PhRecycle, PhLeaf, PhScan, PhCheck, PhGift, PhCaretRight,
   PhDeviceTablet, PhQrCode, PhTrayArrowDown, PhCoins,
 } from '@phosphor-icons/vue'
-import logoUmpsa from '@/assets/logo-umpsa-trimmed.webp'
 import logoDsme from '@/assets/dsme-logo.png'
 import logoTng from '@/assets/ewallet/tng.png'
 import logoGrab from '@/assets/ewallet/grabpay.png'
@@ -440,13 +437,10 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .foot { padding-top: 32px; padding-bottom: 28px; }
 .foot-inner { padding-top: 32px; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
 .foot-logos { display: flex; align-items: center; justify-content: center; gap: 28px; }
-.logo-umpsa { height: 56px; width: auto; }
 .logo-dsme { height: 44px; width: auto; }
-.foot-divider { width: 1px; height: 40px; background: var(--border); }
-/* Dark mode: the navy DSME logo disappears on a dark page, so both logos
-   sit on a small white plate (the artwork itself stays unchanged). */
+/* Dark mode: the navy DSME logo disappears on a dark page, so it
+   sits on a small white plate (the artwork itself stays unchanged). */
 [data-theme="dark"] .foot-logos { background: #fff; padding: 10px 20px; border-radius: 10px; }
-[data-theme="dark"] .foot-divider { background: #e2e8f0; }
 .foot-tagline { font-size: 14px; color: var(--text-muted); }
 .foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 24px; font-size: 14px; }
 .foot-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent-blue); font-weight: 600; text-decoration: none; }
