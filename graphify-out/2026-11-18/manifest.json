@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794979128.1541145,
-    "seen": 1794979527.8807287,
-    "ast_hash": "6d6f7898036c4edb8d565a35489fa660",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.8881688,
+    "ast_hash": "838b23da6a2b575524418a8870bd57d3",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LandingView.vue": {
-    "mtime": 1794981364.84736,
-    "seen": 1794981511.6492155,
-    "ast_hash": "b0483dbf8b026be01f3fa1ad01b708d6",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.916231,
+    "ast_hash": "27bdafaab4a696c94505d570b2b93354",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LoginView.vue": {
@@ -1320,9 +1320,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DemoDataGenerator.php": {
-    "mtime": 1794980435.5168304,
-    "seen": 1794981511.583997,
-    "ast_hash": "2280967b5655210d0c4e25cc2eed6e3d",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.8229964,
+    "ast_hash": "0abd85bba73edcbc6f987266a9865584",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DetectionCaptureStorage.php": {
@@ -2412,9 +2412,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/id.js": {
-    "mtime": 1794979128.1541145,
-    "seen": 1794979527.8807287,
-    "ast_hash": "bcdd4a3bbb77800fefdb9ce2db74c276",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.8861403,
+    "ast_hash": "73d8a63dea65a621084045e381cff6e3",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/idParity.test.js": {
@@ -2472,9 +2472,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/adminUi.js": {
-    "mtime": 1794822547.7164764,
-    "seen": 1794900751.4549,
-    "ast_hash": "2d21cad3b44380670fa962d0a62ba007",
+    "mtime": 1794982845.877528,
+    "seen": 1794983300.8856344,
+    "ast_hash": "b9c9042c215fc51fe08006611998bbd4",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/adminUi.test.js": {
@@ -2634,9 +2634,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformSimulation.php": {
-    "mtime": 1794980435.5168304,
-    "seen": 1794981511.583997,
-    "ast_hash": "8d257d37f5f652f5fd27eac7a5c11c14",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.8262281,
+    "ast_hash": "a476211cee934f3dbe236f1a707c6ee2",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformTelemetry.php": {
@@ -2688,9 +2688,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformTickTest.php": {
-    "mtime": 1794980435.5168304,
-    "seen": 1794981511.611246,
-    "ast_hash": "a611b97e71cdd112591a90be069592ec",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.856613,
+    "ast_hash": "e9bd29f21fefc73d21f39a932f23708a",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/UserPlatformImpactTest.php": {
@@ -2706,21 +2706,15 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/admin/platform/CompactorMonitor.vue": {
-    "mtime": 1794822547.679111,
-    "seen": 1794900751.4519,
-    "ast_hash": "3ab1d4855134fd3bbdda0fb591fbf6fd",
+    "mtime": 1794982702.597692,
+    "seen": 1794983300.8764565,
+    "ast_hash": "436d550a1fe6c102399f0660e0befb34",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/admin/platform/ComposterMonitor.vue": {
-    "mtime": 1794822547.679111,
-    "seen": 1794900751.4519,
-    "ast_hash": "c4c88fc31fb68ae6bcbebc65c17eb8d8",
-    "semantic_hash": ""
-  },
-  "FrontEnd/src/components/admin/platform/MonitorPanel.vue": {
-    "mtime": 1794822547.680627,
-    "seen": 1794900751.4519,
-    "ast_hash": "257b10e409af98dce93ee77537ed27b6",
+    "mtime": 1794982702.647339,
+    "seen": 1794983300.8764565,
+    "ast_hash": "45c957f472a47757c2ad0fa4da63af07",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/admin/platform/PlatformActivityTable.vue": {
@@ -2760,9 +2754,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PlatformMachinesSection.vue": {
-    "mtime": 1794981364.84736,
-    "seen": 1794981511.6208458,
-    "ast_hash": "74037dfcb31178dc4174d01cc903e020",
+    "mtime": 1794981531.6118033,
+    "seen": 1794983300.8784912,
+    "ast_hash": "c0df9aac57677db16c210184386cb1d0",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PointsCo2Card.vue": {
@@ -2943,6 +2937,12 @@
     "mtime": 1794979088.4091034,
     "seen": 1794979527.907869,
     "ast_hash": "0d38d19726637e981a0b08fd77887586",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/components/admin/platform/PlatformMachineDashboard.vue": {
+    "mtime": 1794982811.873722,
+    "seen": 1794983300.876967,
+    "ast_hash": "f87a62f4eb8aca9d75eb260330141014",
     "semantic_hash": ""
   }
 }

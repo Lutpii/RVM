@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LandingView.vue": {
-    "mtime": 1794981531.6118033,
-    "seen": 1794983300.916231,
-    "ast_hash": "27bdafaab4a696c94505d570b2b93354",
+    "mtime": 1794989025.9564297,
+    "seen": 1794989256.6826189,
+    "ast_hash": "dd9acb9e42dfdc311bd3891e155bd9a8",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LoginView.vue": {
@@ -1080,9 +1080,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/composables/useLenisScroll.js": {
-    "mtime": 1790760942.0233848,
-    "seen": 1794278174.8931174,
-    "ast_hash": "1cdd42b40fd706f66e10219dde919268",
+    "mtime": 1794989025.9564297,
+    "seen": 1794989256.6565707,
+    "ast_hash": "48903037d1eb339b05059472df5b8d13",
     "semantic_hash": ""
   },
   "FrontEnd/src/directives/scrollReveal.js": {
@@ -2754,9 +2754,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PlatformMachinesSection.vue": {
-    "mtime": 1794981531.6118033,
-    "seen": 1794983300.8784912,
-    "ast_hash": "c0df9aac57677db16c210184386cb1d0",
+    "mtime": 1794989025.9752614,
+    "seen": 1794989256.6533127,
+    "ast_hash": "7c4aabe999b00cbb057c478b32b0bff8",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PointsCo2Card.vue": {
