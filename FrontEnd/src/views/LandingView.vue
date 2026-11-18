@@ -1,7 +1,7 @@
 <template>
   <div class="landing">
     <!-- ═══ Hero (gradient, nav inside) ═══ -->
-    <header class="hero">
+    <header ref="heroEl" class="hero">
       <div class="wrap hero-inner">
         <nav class="topnav" :aria-label="$t('landing.navLabel')">
           <RouterLink to="/" class="brand" aria-label="Ultra RVM, Reverse Vending Machine">
@@ -9,6 +9,9 @@
             <span class="brand-name">Ultra RVM</span>
           </RouterLink>
           <div class="nav-actions">
+            <button type="button" class="nav-link" @click="scrollToId('how')">{{ $t('landing.navHow') }}</button>
+            <button type="button" class="nav-link" @click="scrollToId('rewards')">{{ $t('landing.navRewards') }}</button>
+            <button type="button" class="nav-link" @click="scrollToId('faq')">{{ $t('landing.navFaq') }}</button>
             <button type="button" class="nav-round" @click="toggleTheme()"
               :aria-label="theme === 'dark' ? $t('landing.switchToLight') : $t('landing.switchToDark')">
               <PhSun v-if="theme === 'dark'" :size="19" aria-hidden="true" />
@@ -54,7 +57,7 @@
             </div>
             <div v-for="m in monthMachineTypes" :key="m.type" class="platform-carbon-row">
               <div class="platform-carbon-label">
-                <span>{{ $t('platform.machine.' + m.type) }} <span v-if="m.type !== 'rvm'" class="platform-simulation">{{ $t('platform.simulated') }}</span></span>
+                <span>{{ $t('platform.machine.' + m.type) }}</span>
                 <strong>{{ kg(m.carbon) }}</strong>
               </div>
               <div class="platform-carbon-bar" aria-hidden="true"><span :class="'seg-type-' + m.type" :style="{ width: m.share + '%' }"></span></div>
@@ -90,36 +93,44 @@
     <!-- ═══ Impact strip (overlaps the hero) ═══ -->
     <section class="wrap-pad impact-section" :aria-label="$t('landing.impactLabel')">
       <div class="wrap card impact">
-        <div class="impact-grid" :class="{ 'impact-grid-platform': platformMode }">
+        <div class="impact-grid">
           <div v-if="!platformMode" class="impact-tile">
-            <span class="tile-icon tile-blue"><PhRecycle :size="24" aria-hidden="true" /></span>
-            <span class="impact-text"><strong>{{ num(stats.items_recycled) }}</strong><span>{{ $t('landing.statItems') }}</span></span>
+            <strong class="big-num"><CountUp :value="toNum(stats.items_recycled)" :format="num" /></strong>
+            <span class="impact-label">{{ $t('landing.statItems') }}</span>
           </div>
           <div class="impact-tile">
-            <span class="tile-icon tile-teal"><PhLeaf :size="24" aria-hidden="true" /></span>
-            <span class="impact-text"><strong class="co2-total">{{ kg(stats.carbon_saved_kg) }}</strong><span>{{ $t('landing.statCo2') }}</span></span>
+            <strong class="big-num"><CountUp :value="toNum(stats.carbon_saved_kg)" :format="kg" /></strong>
+            <span class="impact-label">{{ $t('landing.statCo2') }}</span>
           </div>
           <div class="impact-tile">
-            <span class="tile-icon tile-orange"><PhDeviceTablet :size="24" aria-hidden="true" /></span>
-            <span v-if="platformMode" class="impact-text">
-              <strong>{{ num(platformMachineTotal) }}</strong><span>{{ $t('landing.statMachines') }}</span>
-              <span v-for="type in machineTypes" :key="type" class="platform-machine-count">
-                {{ $t('platform.machine.' + type) }} <b>{{ num(stats.machines?.[type]) }}</b>
-                <span v-if="type !== 'rvm'" class="platform-simulation">{{ $t('platform.simulated') }}</span>
+            <template v-if="platformMode">
+              <strong class="big-num"><CountUp :value="platformMachineTotal" :format="num" /></strong>
+              <span class="impact-label">{{ $t('landing.statMachines') }}</span>
+              <span class="impact-sub">
+                <span v-for="type in machineTypes" :key="type" class="platform-machine-count">
+                  {{ $t('platform.machine.' + type) }} <b>{{ num(stats.machines?.[type]) }}</b>
+                </span>
               </span>
-            </span>
-            <span v-else class="impact-text"><strong>{{ num(stats.machines) }}</strong><span>{{ $t('landing.statMachines') }}</span></span>
+            </template>
+            <template v-else>
+              <strong class="big-num"><CountUp :value="toNum(stats.machines)" :format="num" /></strong>
+              <span class="impact-label">{{ $t('landing.statMachines') }}</span>
+            </template>
+          </div>
+          <div v-if="platformMode" class="impact-tile">
+            <strong class="big-num">1</strong>
+            <span class="impact-label">{{ $t('landing.statAccounts') }}</span>
+            <span class="impact-sub">{{ $t('landing.statAccountsSub') }}</span>
           </div>
         </div>
-        <span v-if="platformMode" class="impact-foot">{{ $t('landing.platform.includesSimulation') }}</span>
-        <span v-else class="impact-foot"><span class="live-dot"></span>{{ $t('landing.liveAll') }}</span>
+        <span v-if="!platformMode" class="impact-foot"><span class="live-dot"></span>{{ $t('landing.liveAll') }}</span>
       </div>
     </section>
 
     <PlatformMachinesSection v-if="platformMode" />
 
     <!-- ═══ How it works ═══ -->
-    <section class="wrap-pad section how" aria-labelledby="how-title">
+    <section id="how" class="wrap-pad section how" aria-labelledby="how-title">
       <div class="wrap how-inner">
         <div class="section-head">
           <h2 id="how-title" class="section-title">{{ $t('landing.howTitle') }}</h2>
@@ -127,10 +138,24 @@
         </div>
         <ol class="steps">
           <li v-for="(s, i) in steps" :key="i" class="card step">
-            <div class="step-top">
-              <span :class="['tile-icon', 'tile-lg', s.tone]"><component :is="s.icon" :size="26" aria-hidden="true" /></span>
-              <span class="step-num" aria-hidden="true">{{ i + 1 }}</span>
+            <!-- Real screens: kiosk QR + phone scanning it, kiosk "Success", Rewards page -->
+            <div class="stage" role="img" :aria-label="$t('landing.stepAlt.s' + (i + 1))">
+              <div v-if="s.visual === 'scan'" class="scan-duo" aria-hidden="true">
+                <div class="device-tablet"><img :src="imgKioskQr" alt="" loading="lazy" /></div>
+                <div class="device-phone phone-scan">
+                  <div class="scan-feed" :style="{ backgroundImage: `url(${imgKioskQr})` }"></div>
+                  <span class="scan-top">{{ $t('scan.title') }}</span>
+                  <div class="scan-vf">
+                    <img :src="imgQrCode" alt="" loading="lazy" />
+                    <i class="vf-c tl"></i><i class="vf-c tr"></i><i class="vf-c bl"></i><i class="vf-c br"></i>
+                    <span class="vf-laser"></span>
+                  </div>
+                </div>
+              </div>
+              <div v-else-if="s.visual === 'tablet'" class="device-tablet tablet-up" aria-hidden="true"><img :src="imgKioskSuccess" alt="" loading="lazy" /></div>
+              <div v-else class="device-phone" aria-hidden="true"><img :src="imgPhoneRewards" alt="" loading="lazy" /></div>
             </div>
+            <span class="step-num" aria-hidden="true">{{ i + 1 }}</span>
             <h3 class="step-title">{{ $t(s.title) }}</h3>
             <p class="step-text">{{ $t(s.text) }}</p>
           </li>
@@ -138,33 +163,44 @@
       </div>
     </section>
 
-    <!-- ═══ What goes in + rewards ═══ -->
-    <section class="wrap-pad section">
-      <div class="wrap duo">
-        <div class="card info-card">
-          <h2 class="card-title">{{ $t('landing.goesInTitle') }}</h2>
-          <ul class="chips" :aria-label="$t('landing.goesInTitle')">
-            <li v-for="c in acceptedChips" :key="c" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t(c) }}</li>
-            <li v-if="platformMode" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t('landing.platform.foodChip') }}</li>
-          </ul>
-          <p class="card-text">{{ $t(platformMode ? 'landing.platform.goesInText' : 'landing.goesInText') }}</p>
-        </div>
-
-        <div class="card info-card">
-          <div class="card-title-row">
-            <span class="tile-icon tile-purple"><PhGift :size="24" aria-hidden="true" /></span>
-            <h2 class="card-title">{{ $t('landing.rewardsTitle') }}</h2>
+    <!-- ═══ Rewards + what goes in, then the scrolling partner strip ═══ -->
+    <section id="rewards" class="wrap-pad section" aria-labelledby="rewards-title">
+      <div class="wrap card rewards-card">
+        <div class="rewards-grid">
+          <div class="rewards-copy">
+            <h2 id="rewards-title" class="section-title">{{ $t('landing.rewardsTitle') }}</h2>
+            <p class="rewards-text">{{ $t('landing.rewardsText') }}</p>
+            <!-- /rewards needs a login; the router sends guests to /login first. -->
+            <RouterLink to="/rewards" class="see-rewards">{{ $t('landing.seeRewards') }} <PhCaretRight :size="16" weight="bold" aria-hidden="true" /></RouterLink>
           </div>
-          <p class="card-text">{{ $t('landing.rewardsText') }}</p>
-          <!-- Official artwork from each brand, unmodified; Boost's white logo sits on its own red. -->
-          <ul class="wallets" :aria-label="$t('landing.ewalletsLabel')">
-            <li class="wallet"><img :src="logoTng" alt="Touch 'n Go eWallet" class="w-tng" /></li>
-            <li class="wallet"><img :src="logoGrab" alt="GrabPay" class="w-grab" /></li>
-            <li class="wallet wallet-boost"><img :src="logoBoost" alt="Boost" class="w-boost" /></li>
-            <li class="wallet"><img :src="logoShopee" alt="ShopeePay" class="w-shopee" /></li>
+          <div class="goes-in">
+            <h3 class="card-title">{{ $t('landing.goesInTitle') }}</h3>
+            <ul class="chips" :aria-label="$t('landing.goesInTitle')">
+              <li v-for="c in acceptedChips" :key="c" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t(c) }}</li>
+              <li v-if="platformMode" class="chip-ok"><PhCheck :size="18" weight="bold" aria-hidden="true" />{{ $t('landing.platform.foodChip') }}</li>
+            </ul>
+            <p class="card-text">{{ $t(platformMode ? 'landing.platform.goesInText' : 'landing.goesInText') }}</p>
+          </div>
+        </div>
+        <!-- Official artwork from each brand, unmodified; white logos sit on the brand's own colour. -->
+        <div class="marquee">
+          <ul class="marquee-track" :aria-label="$t('landing.partnersLabel')">
+            <li v-for="p in partners" :key="p.name" :class="['partner', p.cls]"><img :src="p.src" :alt="p.name" /></li>
+            <li v-for="p in partners" :key="p.name + '-2'" :class="['partner', 'partner-copy', p.cls]" aria-hidden="true"><img :src="p.src" alt="" /></li>
           </ul>
-          <!-- /rewards needs a login; the router sends guests to /login first. -->
-          <RouterLink to="/rewards" class="see-rewards">{{ $t('landing.seeRewards') }} <PhCaretRight :size="16" weight="bold" aria-hidden="true" /></RouterLink>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FAQ ═══ -->
+    <section id="faq" class="wrap-pad section" aria-labelledby="faq-title">
+      <div class="wrap card faq-card">
+        <h2 id="faq-title" class="section-title">{{ $t('landing.faqTitle') }}</h2>
+        <div class="faq-grid">
+          <details v-for="n in 4" :key="n" class="faq-item">
+            <summary>{{ $t('landing.faq.q' + n) }}</summary>
+            <p>{{ $t('landing.faq.a' + n) }}</p>
+          </details>
         </div>
       </div>
     </section>
@@ -175,10 +211,11 @@
         <div class="cta-copy">
           <h2 class="cta-title">{{ $t('landing.ctaTitle') }}</h2>
           <p class="cta-text">{{ $t('landing.ctaText') }}</p>
+          <button type="button" class="btn-cta" @click="goToScan">
+            <PhScan :size="20" weight="bold" aria-hidden="true" /> {{ $t('landing.startRecycling') }}
+          </button>
         </div>
-        <button type="button" class="btn-cta" @click="goToScan">
-          <PhScan :size="20" weight="bold" aria-hidden="true" /> {{ $t('landing.startRecycling') }}
-        </button>
+        <div class="cta-phone device-phone" aria-hidden="true"><img :src="imgPhoneRewards" alt="" loading="lazy" /></div>
       </div>
     </section>
 
@@ -200,24 +237,30 @@
 </template>
 
 <script setup>
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
+import CountUp from '@/components/landing/CountUp.vue'
 import CarbonSourcesNote from '@/components/platform/CarbonSourcesNote.vue'
 import PlatformMachinesSection from '@/components/platform/PlatformMachinesSection.vue'
 import { platformMode } from '@/utils/featureFlags'
 import { intlLocale as toIntlLocale } from '@/composables/useLanguage'
 import api from '@/services/api'
-import {
-  PhSun, PhMoon, PhRecycle, PhLeaf, PhScan, PhCheck, PhGift, PhCaretRight,
-  PhDeviceTablet, PhQrCode, PhTrayArrowDown, PhCoins,
-} from '@phosphor-icons/vue'
+import { PhSun, PhMoon, PhRecycle, PhLeaf, PhScan, PhCheck, PhCaretRight } from '@phosphor-icons/vue'
 import logoDsme from '@/assets/dsme-logo.png'
 import logoTng from '@/assets/ewallet/tng.png'
 import logoGrab from '@/assets/ewallet/grabpay.png'
 import logoBoost from '@/assets/ewallet/boost.svg'
 import logoShopee from '@/assets/ewallet/shopeepay.png'
+import logoGrabFood from '@/assets/landing/grabfood-white.png'
+import logoTealive from '@/assets/landing/tealive.svg'
+import logoJaya from '@/assets/landing/jayagrocer.jpg'
+import logo99 from '@/assets/landing/99speedmart.jpg'
+import imgKioskQr from '@/assets/landing/kiosk-qr.webp'
+import imgQrCode from '@/assets/landing/kiosk-qr-code.png'
+import imgKioskSuccess from '@/assets/landing/kiosk-success.webp'
+import imgPhoneRewards from '@/assets/landing/phone-rewards.webp'
 
 const router = useRouter()
 const theme = inject('theme')
@@ -228,12 +271,60 @@ function goToScan() {
   router.push(localStorage.getItem('rvm_token') ? '/scan' : '/login')
 }
 
+function scrollToId(id) {
+  const smooth = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  document.getElementById(id)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+}
+
 const steps = [
-  { icon: PhQrCode, tone: 'tile-blue', title: 'landing.step1Title', text: 'landing.step1Text' },
-  { icon: PhTrayArrowDown, tone: 'tile-teal', title: 'landing.step2Title', text: 'landing.step2Text' },
-  { icon: PhCoins, tone: 'tile-green', title: 'landing.step3Title', text: 'landing.step3Text' },
+  { visual: 'scan', title: 'landing.step1Title', text: 'landing.step1Text' },
+  { visual: 'tablet', title: 'landing.step2Title', text: 'landing.step2Text' },
+  { visual: 'phone', title: 'landing.step3Title', text: 'landing.step3Text' },
+]
+
+// Reward partners and cash-out e-wallets (vouchers: GrabFood, Zus / Tealive,
+// Jaya Grocer / 99 Speedmart). No ZUS artwork yet, Tealive stands for that voucher.
+const partners = [
+  { name: "Touch 'n Go eWallet", src: logoTng, cls: 'p-tng' },
+  { name: 'GrabFood', src: logoGrabFood, cls: 'p-grabfood' },
+  { name: 'Tealive', src: logoTealive, cls: '' },
+  { name: 'Jaya Grocer', src: logoJaya, cls: '' },
+  { name: '99 Speedmart', src: logo99, cls: '' },
+  { name: 'GrabPay', src: logoGrab, cls: 'p-grab' },
+  { name: 'Boost', src: logoBoost, cls: 'p-boost' },
+  { name: 'ShopeePay', src: logoShopee, cls: '' },
 ]
 const acceptedChips = ['landing.chipPlastic', 'landing.chipCans', 'landing.chipPaper']
+
+// The window scrollbar track sits outside the page, so it showed as a white
+// (or dark) strip beside the purple hero. While this page is open the track
+// is painted purple for the part of the screen the hero still covers.
+// A plain ::-webkit-scrollbar-track rule is the only one Chromium applies to
+// the window scrollbar, so it lives in a <style> added here and removed on leave.
+const heroEl = ref(null)
+let trackStyle = null
+let trackFrame = 0
+function updateTrack() {
+  trackFrame = 0
+  const visible = Math.max(0, (heroEl.value?.offsetHeight || 0) - window.scrollY)
+  document.documentElement.style.setProperty('--landing-track-h', `${visible}px`)
+}
+function queueTrack() { if (!trackFrame) trackFrame = requestAnimationFrame(updateTrack) }
+onMounted(() => {
+  trackStyle = document.createElement('style')
+  trackStyle.textContent = '::-webkit-scrollbar-track { background: linear-gradient(180deg, #9568f6 0, #a855f7 var(--landing-track-h, 0px), var(--bg-primary) var(--landing-track-h, 0px)); }'
+  document.head.appendChild(trackStyle)
+  updateTrack()
+  window.addEventListener('scroll', queueTrack, { passive: true })
+  window.addEventListener('resize', queueTrack)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', queueTrack)
+  window.removeEventListener('resize', queueTrack)
+  cancelAnimationFrame(trackFrame)
+  trackStyle?.remove()
+  document.documentElement.style.removeProperty('--landing-track-h')
+})
 
 // ── Live numbers (GET /api/stats/public) ──
 const stats = ref({
@@ -249,7 +340,8 @@ onMounted(async () => {
 })
 
 const intlLocale = computed(() => toIntlLocale(locale.value))
-function num(n) { return n == null ? '—' : Number(n).toLocaleString('en-MY') }
+function num(n) { return n == null ? '—' : Math.round(Number(n)).toLocaleString('en-MY') }
+function toNum(n) { return n == null || Number.isNaN(Number(n)) ? null : Number(n) }
 function kg(n) {
   if (n == null) return '—'
   const v = Number(n) || 0
@@ -307,9 +399,7 @@ const barLabel = computed(() => monthMaterials.value.map(m => `${m.label} ${item
 .seg-type-rvm { background: #16a34a; }
 .seg-type-compactor { background: #d97706; }
 .seg-type-composter { background: #0891b2; }
-.platform-simulation { display: inline-block; padding: 2px 6px; border-radius: 99px; background: #fef3c7; color: #854d0e; font-size: .67rem; font-weight: 700; }
-.landing .impact-grid-platform { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.platform-machine-count { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.platform-machine-count { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: center; }
 /* 10px corners for cards and buttons, pills fully round (same as the Account page). */
 .landing { min-height: 100vh; min-height: 100dvh; background: var(--bg-primary); color: var(--text-primary); }
 .wrap { max-width: 1160px; margin: 0 auto; box-sizing: border-box; }
@@ -318,13 +408,21 @@ const barLabel = computed(() => monthMaterials.value.map(m => `${m.label} ${item
 h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 
 /* ── Hero ── */
-.hero { background: var(--grad-header); color: #fff; padding: 20px 24px 124px; }
+.hero { background: var(--grad-header); color: #fff; padding: 20px 24px 124px; position: relative; overflow: hidden; }
+/* Soft translucent circles on the purple gradient (decoration only) */
+.hero::before, .hero::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+.hero::before { right: -160px; top: -160px; width: 520px; height: 520px; background: rgba(255,255,255,0.07); }
+.hero::after { left: -120px; bottom: -220px; width: 420px; height: 420px; background: rgba(255,255,255,0.05); }
+.hero-inner { position: relative; z-index: 1; }
 .hero-inner { display: flex; flex-direction: column; gap: 48px; }
 .topnav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: #fff; text-decoration: none; }
 .brand-mark { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .brand-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; white-space: nowrap; }
 .nav-actions { display: flex; align-items: center; gap: 8px; }
+.nav-link { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; opacity: 0.95; white-space: nowrap; }
+.nav-link:hover { background: rgba(255,255,255,0.14); }
+@media (max-width: 900px) { .nav-link { display: none; } }
 .nav-round { min-width: 44px; height: 44px; padding: 0; border-radius: 999px; border: 0; background: rgba(255,255,255,0.18); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font: inherit; }
 .nav-round:hover { background: rgba(255,255,255,0.28); }
 .nav-login { height: 44px; padding: 0 18px; box-sizing: border-box; white-space: nowrap; display: inline-flex; align-items: center; border: 1.5px solid rgba(255,255,255,0.85); border-radius: 999px; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
@@ -385,53 +483,120 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 /* ── Impact strip ── */
 .impact-section { margin-top: -84px; position: relative; }
 .impact { box-shadow: 0 6px 20px rgba(15,23,42,0.08); }
-.impact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.impact-tile { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; padding: 20px 12px; text-align: center; }
+.impact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 14px 0 6px; }
+.impact-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 18px 16px; text-align: center; min-width: 0; }
 .impact-tile + .impact-tile { border-left: 1px solid var(--border); }
-.impact-text { display: flex; flex-direction: column; min-width: 0; }
-.impact-text strong { font-size: clamp(20px, 2.4vw, 26px); font-weight: 800; white-space: nowrap; }
-.impact-text span { font-size: 14px; color: var(--text-muted); }
-.impact-foot { display: flex; align-items: center; gap: 8px; padding: 10px 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
+/* Big gradient numbers; line-height + padding keep the "g" of "kg" from being clipped. */
+.big-num {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(34px, 4vw, 46px); font-weight: 800;
+  line-height: 1.2; padding-bottom: 0.06em; letter-spacing: -0.015em; white-space: nowrap;
+  background: var(--grad-header); -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.impact-label { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.impact-sub { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 10px; font-size: 13px; color: var(--text-muted); }
+.impact-foot { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 24px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--text-muted); }
+@media (max-width: 700px) {
+  .impact-grid { grid-template-columns: 1fr; }
+  .impact-tile + .impact-tile { border-left: 0; border-top: 1px solid var(--border); }
+}
 
 /* ── Sections ── */
-.section { padding-top: 28px; }
-.how-inner { display: flex; flex-direction: column; gap: 20px; }
+/* One spacing for every block: 32px between sections, 16px between cards in a row */
+.section { padding-top: 32px; }
+.how-inner { display: flex; flex-direction: column; gap: 18px; }
 .section-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .section-title { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.01em; }
 .section-sub { margin: 0; font-size: 16px; color: var(--text-muted); }
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-.step { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-.step-top { display: flex; align-items: center; justify-content: space-between; }
-.step-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 36px; font-weight: 800; color: var(--border); }
-.step-title { margin: 0; font-size: 18px; font-weight: 700; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+.step { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.stage { position: relative; width: 100%; height: 320px; margin-bottom: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at 50% 55%, rgba(78,110,242,0.10) 0%, var(--bg-hover) 75%); }
+.device-phone { width: 150px; height: 300px; border-radius: 24px; border: 7px solid #16182b; overflow: hidden; background: #fff; box-shadow: 0 18px 34px rgba(22,24,43,0.18); box-sizing: border-box; flex-shrink: 0; }
+.device-phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.device-tablet { width: 86%; aspect-ratio: 16 / 10; border-radius: 12px; border: 7px solid #16182b; overflow: hidden; background: #fff; box-shadow: 0 18px 34px rgba(22,24,43,0.18); box-sizing: border-box; }
+.device-tablet img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.tablet-up { align-self: flex-start; margin-top: 30px; }
+[data-theme="dark"] .device-phone, [data-theme="dark"] .device-tablet { border-color: #2c3150; }
+.scan-duo { position: absolute; inset: 0; }
+.scan-duo .device-tablet { position: absolute; left: 4%; top: 30px; width: 82%; }
+.phone-scan { position: absolute; right: 4%; bottom: 14px; width: 116px; height: 232px; border-width: 6px; border-radius: 22px; transform: rotate(5deg); background: #0e0f1a; }
+.scan-feed { position: absolute; inset: 0; background-position: 50% 30%; background-size: 300% auto; background-repeat: no-repeat; filter: blur(1.5px) brightness(0.55); }
+.scan-top { position: absolute; top: 0; left: 0; right: 0; padding: 12px 6px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 9px; font-weight: 700; color: #fff; text-align: center; background: linear-gradient(rgba(0,0,0,0.55), transparent); }
+.scan-vf { position: absolute; left: 50%; top: 48%; width: 76px; height: 76px; transform: translate(-50%, -50%); border-radius: 6px; overflow: hidden; }
+.scan-vf img { width: 100%; height: 100%; display: block; }
+.vf-c { position: absolute; width: 16px; height: 16px; border: 3px solid #4ade80; }
+.vf-c.tl { left: 0; top: 0; border-right: 0; border-bottom: 0; }
+.vf-c.tr { right: 0; top: 0; border-left: 0; border-bottom: 0; }
+.vf-c.bl { left: 0; bottom: 0; border-right: 0; border-top: 0; }
+.vf-c.br { right: 0; bottom: 0; border-left: 0; border-top: 0; }
+.vf-laser { position: absolute; left: 6px; right: 6px; top: 10%; height: 2px; background: #4ade80; box-shadow: 0 0 8px #4ade80; animation: vf-laser 2s ease-in-out infinite; }
+@keyframes vf-laser { 0%, 100% { top: 10%; } 50% { top: 88%; } }
+.step-num { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--grad-header); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 15px; }
+.step-title { margin: 4px 0 0; font-size: 18px; font-weight: 700; }
 .step-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
 
-.duo { display: flex; flex-wrap: wrap; gap: 16px; }
-.info-card { flex: 1 1 420px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-.card-title-row { display: flex; align-items: center; gap: 12px; }
-.card-title { margin: 0; font-size: 24px; font-weight: 800; }
+/* Rewards card: same width as the sections above and below; copy + "What goes in", then the partner strip */
+.rewards-card { padding: 40px; }
+.rewards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.rewards-copy { display: flex; flex-direction: column; gap: 10px; }
+.rewards-copy .section-title { font-size: 34px; }
+.rewards-text { margin: 0; font-size: 17px; line-height: 1.55; color: var(--text-muted); }
+.goes-in { background: var(--bg-primary); border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.marquee { margin-top: 36px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.marquee-track { list-style: none; margin: 0; padding: 0; display: flex; gap: 12px; width: max-content; animation: marquee 32s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes marquee { to { transform: translateX(calc(-50% - 6px)); } }
+.partner { width: 140px; height: 56px; flex: 0 0 auto; box-sizing: border-box; padding: 10px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; }
+.partner img { max-height: 30px; max-width: 100%; object-fit: contain; }
+.p-tng img { max-height: 40px; }
+.p-grab img { max-height: 22px; }
+.p-boost { background: #ea0029; border-color: #ea0029; }
+.p-boost img { max-height: 24px; }
+.p-grabfood { background: #00b14f; border-color: #00b14f; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee { -webkit-mask-image: none; mask-image: none; }
+  .marquee-track { animation: none; width: auto; flex-wrap: wrap; justify-content: center; padding: 0 16px; }
+  .partner-copy { display: none; }
+  .vf-laser { animation: none; top: 48%; }
+}
+
+/* FAQ */
+.faq-card { padding: 40px; display: flex; flex-direction: column; gap: 24px; }
+.faq-card .section-title { font-size: 34px; }
+/* Two columns of questions; each opens on its own without stretching its neighbour */
+.faq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; align-items: start; }
+@media (max-width: 760px) { .faq-grid { grid-template-columns: 1fr; } .faq-card { padding: 24px 20px; } }
+.faq-item { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 10px; padding: 0 20px; }
+.faq-item[open] { box-shadow: 0 10px 24px rgba(22,24,43,0.06); }
+.faq-item summary { min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; font-size: 16px; cursor: pointer; list-style: none; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; font-size: 22px; line-height: 1; color: var(--accent-blue); }
+.faq-item[open] summary::after { content: '−'; }
+.faq-item p { margin: 0 0 18px; font-size: 15px; line-height: 1.55; color: var(--text-muted); }
+
+.card-title { margin: 0; font-size: 22px; font-weight: 800; }
 .card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
 .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .chip-ok { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: rgba(34,197,94,0.12); color: #15803d; font-size: 15px; font-weight: 700; }
 [data-theme="dark"] .chip-ok { color: #4ade80; }
 .not-accepted { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
 .chip-no { padding: 4px 10px; border-radius: 999px; background: var(--bg-hover); color: var(--text-secondary); }
-.wallets { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
-.wallet { height: 56px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; }
-.wallet-boost { background: #ea0029; border-color: #ea0029; }
-.w-tng { height: 40px; width: auto; }
-.w-grab { height: 24px; width: auto; }
-.w-boost, .w-shopee { height: 26px; width: auto; }
-.see-rewards { margin-top: auto; align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; color: var(--accent-blue); font-size: 15px; font-weight: 700; text-decoration: none; }
+.see-rewards { margin-top: 8px; align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; color: var(--accent-blue); font-size: 15px; font-weight: 700; text-decoration: none; }
 .see-rewards:hover { text-decoration: underline; }
 
 /* ── CTA ── */
-.cta { border-radius: 10px; background: #1e293b; color: #fff; padding: 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; }
-.cta-copy { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.cta-title { margin: 0; font-size: 26px; font-weight: 800; }
-.cta-text { margin: 0; font-size: 16px; color: #cbd5e1; }
-.btn-cta { min-height: 52px; padding: 0 26px; border: 0; border-radius: 10px; background: #4e6ef2; color: #fff; display: inline-flex; align-items: center; gap: 10px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
-.btn-cta:hover { filter: brightness(1.08); }
+.cta { border-radius: 24px; background: var(--grad-header); color: #fff; display: grid; grid-template-columns: 1.3fr 0.7fr; align-items: center; overflow: hidden; }
+.cta-copy { min-width: 0; padding: 48px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.cta-title { margin: 0; font-size: 34px; font-weight: 800; line-height: 1.15; }
+.cta-text { margin: 0 0 14px; font-size: 17px; opacity: 0.95; }
+.btn-cta { min-height: 52px; padding: 0 24px; border: 0; border-radius: 10px; background: #fff; color: #3b5bdb; display: inline-flex; align-items: center; gap: 10px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(15,23,42,0.18); }
+.btn-cta:hover { filter: brightness(0.97); }
+.cta-phone { width: 200px; height: 400px; border-width: 9px; border-radius: 30px; margin: 28px auto -120px; transform: rotate(-6deg); }
+@media (max-width: 900px) {
+  .rewards-grid, .cta { grid-template-columns: 1fr; }
+  .cta-phone { display: none; }
+  .cta-copy { padding: 28px; }
+}
 
 /* ── Footer ── */
 .foot { padding-top: 32px; padding-bottom: 28px; }
@@ -451,10 +616,13 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
   .wrap-pad { padding-left: 16px; padding-right: 16px; }
   .hero-inner { gap: 36px; }
   .hero-text { font-size: 16px; }
-  .section-title { font-size: 26px; }
-  .cta { padding: 24px; }
-  .cta-title { font-size: 22px; }
+  .section-title, .rewards-copy .section-title { font-size: 26px; }
+  .cta-copy { padding: 24px; }
+  .cta-title { font-size: 24px; }
   .btn-cta { width: 100%; justify-content: center; }
+  .stage { height: 300px; }
+  .partner { width: 120px; height: 50px; }
+  .rewards-card { padding: 24px 20px; }
 }
 
 /* "Ultra RVM" is longer than the old "RVM": keep the logo on one line
