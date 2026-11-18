@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LandingView.vue": {
-    "mtime": 1794979492.424014,
-    "seen": 1794979527.9008014,
-    "ast_hash": "0d8c3a54761dc87e1770049c95b47a78",
+    "mtime": 1794981364.84736,
+    "seen": 1794981511.6492155,
+    "ast_hash": "b0483dbf8b026be01f3fa1ad01b708d6",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LoginView.vue": {
@@ -1320,9 +1320,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DemoDataGenerator.php": {
-    "mtime": 1794822547.5001416,
-    "seen": 1794900751.426049,
-    "ast_hash": "6dffac04bed9a076564822456f4064ed",
+    "mtime": 1794980435.5168304,
+    "seen": 1794981511.583997,
+    "ast_hash": "2280967b5655210d0c4e25cc2eed6e3d",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DetectionCaptureStorage.php": {
@@ -2634,9 +2634,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformSimulation.php": {
-    "mtime": 1794822547.521805,
-    "seen": 1794900751.426049,
-    "ast_hash": "136ab3594ca4182dc93fd55d0ae23a8c",
+    "mtime": 1794980435.5168304,
+    "seen": 1794981511.583997,
+    "ast_hash": "8d257d37f5f652f5fd27eac7a5c11c14",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformTelemetry.php": {
@@ -2688,9 +2688,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformTickTest.php": {
-    "mtime": 1794822547.63282,
-    "seen": 1794900751.4432628,
-    "ast_hash": "2bcc68357f02e9f281d836720115bb2c",
+    "mtime": 1794980435.5168304,
+    "seen": 1794981511.611246,
+    "ast_hash": "a611b97e71cdd112591a90be069592ec",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/UserPlatformImpactTest.php": {
@@ -2760,9 +2760,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PlatformMachinesSection.vue": {
-    "mtime": 1794822547.6988065,
-    "seen": 1794900751.4519,
-    "ast_hash": "bf7f2eea866e39c0f0ad928f96d3c67d",
+    "mtime": 1794981364.84736,
+    "seen": 1794981511.6208458,
+    "ast_hash": "74037dfcb31178dc4174d01cc903e020",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PointsCo2Card.vue": {
