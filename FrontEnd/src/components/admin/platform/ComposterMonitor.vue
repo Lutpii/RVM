@@ -1,11 +1,11 @@
 <template>
-  <MonitorPanel type="composter" :fields="fields">
+  <PlatformMachineDashboard type="composter" :fields="fields">
     <PlatformSettingsCard />
-  </MonitorPanel>
+  </PlatformMachineDashboard>
 </template>
 
 <script setup>
-import MonitorPanel from './MonitorPanel.vue'
+import PlatformMachineDashboard from './PlatformMachineDashboard.vue'
 import PlatformSettingsCard from './PlatformSettingsCard.vue'
 
 const fields = [

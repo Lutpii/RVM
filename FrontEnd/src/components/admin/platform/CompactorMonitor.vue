@@ -1,9 +1,9 @@
 <template>
-  <MonitorPanel type="compactor" :fields="fields" />
+  <PlatformMachineDashboard type="compactor" :fields="fields" />
 </template>
 
 <script setup>
-import MonitorPanel from './MonitorPanel.vue'
+import PlatformMachineDashboard from './PlatformMachineDashboard.vue'
 
 const fields = [
   { key: 'fill_level', unit: '%' },
