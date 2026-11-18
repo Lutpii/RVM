@@ -1,11 +1,11 @@
 <template>
   <section class="wrap-pad section platform-machines" aria-labelledby="platform-machines-title">
     <div class="wrap">
-      <div class="section-head">
+      <div v-reveal class="section-head">
         <h2 id="platform-machines-title" class="section-title">{{ t('landing.platform.machinesTitle') }}</h2>
       </div>
       <ul class="machine-platform-grid">
-        <li v-for="machine in machines" :key="machine.type" class="card machine-platform-card">
+        <li v-for="(machine, index) in machines" :key="machine.type" v-reveal="index" class="card machine-platform-card">
           <span class="machine-platform-icon"><component :is="machine.icon" :size="24" weight="bold" aria-hidden="true" /></span>
           <div>
             <h3>{{ t('platform.machine.' + machine.type) }}</h3>

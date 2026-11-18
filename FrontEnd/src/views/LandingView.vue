@@ -92,7 +92,7 @@
 
     <!-- ═══ Impact strip (overlaps the hero) ═══ -->
     <section class="wrap-pad impact-section" :aria-label="$t('landing.impactLabel')">
-      <div class="wrap card impact">
+      <div v-reveal class="wrap card impact">
         <div class="impact-grid">
           <div v-if="!platformMode" class="impact-tile">
             <strong class="big-num"><CountUp :value="toNum(stats.items_recycled)" :format="num" /></strong>
@@ -132,12 +132,12 @@
     <!-- ═══ How it works ═══ -->
     <section id="how" class="wrap-pad section how" aria-labelledby="how-title">
       <div class="wrap how-inner">
-        <div class="section-head">
+        <div v-reveal class="section-head">
           <h2 id="how-title" class="section-title">{{ $t('landing.howTitle') }}</h2>
           <p class="section-sub">{{ $t('landing.howSub') }}</p>
         </div>
         <ol class="steps">
-          <li v-for="(s, i) in steps" :key="i" class="card step">
+          <li v-for="(s, i) in steps" :key="i" v-reveal="i" class="card step">
             <!-- Real screens: kiosk QR + phone scanning it, kiosk "Success", Rewards page -->
             <div class="stage" role="img" :aria-label="$t('landing.stepAlt.s' + (i + 1))">
               <div v-if="s.visual === 'scan'" class="scan-duo" aria-hidden="true">
@@ -165,7 +165,7 @@
 
     <!-- ═══ Rewards + what goes in, then the scrolling partner strip ═══ -->
     <section id="rewards" class="wrap-pad section" aria-labelledby="rewards-title">
-      <div class="wrap card rewards-card">
+      <div v-reveal class="wrap card rewards-card">
         <div class="rewards-grid">
           <div class="rewards-copy">
             <h2 id="rewards-title" class="section-title">{{ $t('landing.rewardsTitle') }}</h2>
@@ -194,7 +194,7 @@
 
     <!-- ═══ FAQ ═══ -->
     <section id="faq" class="wrap-pad section" aria-labelledby="faq-title">
-      <div class="wrap card faq-card">
+      <div v-reveal class="wrap card faq-card">
         <h2 id="faq-title" class="section-title">{{ $t('landing.faqTitle') }}</h2>
         <div class="faq-grid">
           <details v-for="n in 4" :key="n" class="faq-item">
@@ -207,7 +207,7 @@
 
     <!-- ═══ Final call to action ═══ -->
     <section class="wrap-pad section">
-      <div class="wrap cta">
+      <div v-reveal class="wrap cta">
         <div class="cta-copy">
           <h2 class="cta-title">{{ $t('landing.ctaTitle') }}</h2>
           <p class="cta-text">{{ $t('landing.ctaText') }}</p>
@@ -242,6 +242,7 @@ import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import CountUp from '@/components/landing/CountUp.vue'
+import { getLenis } from '@/composables/useLenisScroll'
 import CarbonSourcesNote from '@/components/platform/CarbonSourcesNote.vue'
 import PlatformMachinesSection from '@/components/platform/PlatformMachinesSection.vue'
 import { platformMode } from '@/utils/featureFlags'
@@ -272,8 +273,12 @@ function goToScan() {
 }
 
 function scrollToId(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  const lenis = getLenis()
+  if (lenis) { lenis.scrollTo(el, { offset: -8 }); return }
   const smooth = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  document.getElementById(id)?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
+  el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
 }
 
 const steps = [
