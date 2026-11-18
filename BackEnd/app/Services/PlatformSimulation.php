@@ -137,7 +137,9 @@ class PlatformSimulation
 
             for ($day = $from->copy()->startOfDay(); $day->lt($through); $day->addDay()) {
                 $dayKey = "{$machine->machine_code}:{$day->toDateString()}";
-                $quota = $isCompactor ? 3 + crc32($dayKey) % 10 : 2 + crc32($dayKey) % 5;
+                // Balanced against the RVM volume (18 Nov 2026): compactor 2-5 batches
+                // of 10-30 items per machine per day, composter 3-7 deposits.
+                $quota = $isCompactor ? 2 + crc32($dayKey) % 4 : 3 + crc32($dayKey) % 5;
                 for ($slot = 0; $slot < $quota; $slot++) {
                     $at = $day->copy()->addSeconds(intdiv(($slot * 2 + 1) * 86400, $quota * 2));
                     if ($at->lte($from) || $at->gt($through) || $existing->has($at->toDateTimeString())) {
@@ -149,7 +151,7 @@ class PlatformSimulation
                         : $users[crc32("user:{$seed}") % $users->count()];
 
                     if ($isCompactor) {
-                        $items = 20 + crc32("items:{$seed}") % 41;
+                        $items = 10 + crc32("items:{$seed}") % 21;
                         $plastic = (int) round($items * 0.7);
                         $this->credits->creditCompactorBatch($user, $machine, $plastic, $items - $plastic, crc32("reject:{$seed}") % 4, $at);
                     } else {

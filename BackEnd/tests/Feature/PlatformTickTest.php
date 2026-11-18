@@ -26,10 +26,10 @@ class PlatformTickTest extends TestCase
 
         $batches = CompactorBatch::orderBy('created_at')->get();
         $deposits = ComposterDeposit::orderBy('created_at')->get();
-        $this->assertGreaterThanOrEqual(3, $batches->count());
-        $this->assertLessThanOrEqual(12, $batches->count());
-        $this->assertGreaterThanOrEqual(2, $deposits->count());
-        $this->assertLessThanOrEqual(6, $deposits->count());
+        $this->assertGreaterThanOrEqual(2, $batches->count());
+        $this->assertLessThanOrEqual(5, $batches->count());
+        $this->assertGreaterThanOrEqual(3, $deposits->count());
+        $this->assertLessThanOrEqual(7, $deposits->count());
         foreach ($batches->concat($deposits) as $row) {
             $this->assertTrue($row->created_at->betweenIncluded($now->copy()->subDay(), $now));
         }

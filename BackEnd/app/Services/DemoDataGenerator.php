@@ -264,7 +264,9 @@ class DemoDataGenerator
     private function rawQuota(Carbon $day): int
     {
         $h = crc32($day->toDateString());
-        [$lo, $hi] = $day->isWeekend() ? [6, 11] : [10, 18];
+        // About 4x the first pilot volume, so the RVM share of CO2 on the landing
+        // page sits closer to the Compactor and Composter (18 Nov 2026).
+        [$lo, $hi] = $day->isWeekend() ? [24, 44] : [40, 72];
         return $lo + $h % ($hi - $lo + 1);
     }
 
