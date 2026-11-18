@@ -270,8 +270,8 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/FormalReportService.php": {
-    "mtime": 1794900115.9511633,
-    "seen": 1794900751.426049,
+    "mtime": 1794971704.8549576,
+    "seen": 1794979527.8423083,
     "ast_hash": "9bccc28db187d300c7a334f935170421",
     "semantic_hash": ""
   },
@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1794900115.7974148,
-    "seen": 1794900751.4559,
-    "ast_hash": "ab515bdae65817491760d5ffaac37ad6",
+    "mtime": 1794979128.1541145,
+    "seen": 1794979527.8807287,
+    "ast_hash": "6d6f7898036c4edb8d565a35489fa660",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -954,21 +954,21 @@
     "semantic_hash": "9cd3c532f2bc8dda56cfa3c6135d9166"
   },
   "FrontEnd/src/views/KioskLandingView.vue": {
-    "mtime": 1794900105.3007004,
-    "seen": 1794900751.4749446,
-    "ast_hash": "e19b554b57b099f58f4516fc732d9b49",
+    "mtime": 1794971704.8601637,
+    "seen": 1794979527.9008014,
+    "ast_hash": "67e10421a1477e0f74acff8deef3b8ec",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/KioskQrView.vue": {
-    "mtime": 1794900105.3200905,
-    "seen": 1794900751.4749446,
-    "ast_hash": "3f72f8c30888881dd4848d3dcb7c32be",
+    "mtime": 1794971704.862215,
+    "seen": 1794979527.9008014,
+    "ast_hash": "952e5b1688c1ed5fde0fea1cf2da6f90",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LandingView.vue": {
-    "mtime": 1794900105.425614,
-    "seen": 1794900751.4749446,
-    "ast_hash": "e4a88ddbf91791ad51de8902e168067d",
+    "mtime": 1794981364.84736,
+    "seen": 1794981511.6492155,
+    "ast_hash": "b0483dbf8b026be01f3fa1ad01b708d6",
     "semantic_hash": ""
   },
   "FrontEnd/src/views/LoginView.vue": {
@@ -1320,9 +1320,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DemoDataGenerator.php": {
-    "mtime": 1794822547.5001416,
-    "seen": 1794900751.426049,
-    "ast_hash": "6dffac04bed9a076564822456f4064ed",
+    "mtime": 1794980435.5168304,
+    "seen": 1794981511.583997,
+    "ast_hash": "2280967b5655210d0c4e25cc2eed6e3d",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/DetectionCaptureStorage.php": {
@@ -1380,8 +1380,8 @@
     "semantic_hash": ""
   },
   "BackEnd/resources/views/emails/otp.blade.php": {
-    "mtime": 1794900115.9055338,
-    "seen": 1794900751.4356754,
+    "mtime": 1794971704.8569698,
+    "seen": 1794979527.8553922,
     "ast_hash": "837ab80debe42126288ddb70b0e8f760",
     "semantic_hash": ""
   },
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/BrandFooter.vue": {
-    "mtime": 1794900105.3007004,
-    "seen": 1794900751.4498951,
-    "ast_hash": "e30e27fcf4714d6a4a7d1fb758d2a3fc",
+    "mtime": 1794971704.857588,
+    "seen": 1794979527.8727145,
+    "ast_hash": "5fd01925fe4e7b30eb9aae82d7af0502",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/SessionDetailModal.vue": {
@@ -2412,9 +2412,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/id.js": {
-    "mtime": 1794900115.8389924,
-    "seen": 1794900751.4559,
-    "ast_hash": "3828efe9fb68f30c994eed11f6b36d06",
+    "mtime": 1794979128.1541145,
+    "seen": 1794979527.8807287,
+    "ast_hash": "bcdd4a3bbb77800fefdb9ce2db74c276",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/idParity.test.js": {
@@ -2634,9 +2634,9 @@
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformSimulation.php": {
-    "mtime": 1794822547.521805,
-    "seen": 1794900751.426049,
-    "ast_hash": "136ab3594ca4182dc93fd55d0ae23a8c",
+    "mtime": 1794980435.5168304,
+    "seen": 1794981511.583997,
+    "ast_hash": "8d257d37f5f652f5fd27eac7a5c11c14",
     "semantic_hash": ""
   },
   "BackEnd/app/Services/PlatformTelemetry.php": {
@@ -2688,9 +2688,9 @@
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/PlatformTickTest.php": {
-    "mtime": 1794822547.63282,
-    "seen": 1794900751.4432628,
-    "ast_hash": "2bcc68357f02e9f281d836720115bb2c",
+    "mtime": 1794980435.5168304,
+    "seen": 1794981511.611246,
+    "ast_hash": "a611b97e71cdd112591a90be069592ec",
     "semantic_hash": ""
   },
   "BackEnd/tests/Feature/UserPlatformImpactTest.php": {
@@ -2760,9 +2760,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PlatformMachinesSection.vue": {
-    "mtime": 1794822547.6988065,
-    "seen": 1794900751.4519,
-    "ast_hash": "bf7f2eea866e39c0f0ad928f96d3c67d",
+    "mtime": 1794981364.84736,
+    "seen": 1794981511.6208458,
+    "ast_hash": "74037dfcb31178dc4174d01cc903e020",
     "semantic_hash": ""
   },
   "FrontEnd/src/components/platform/PointsCo2Card.vue": {
@@ -2889,6 +2889,60 @@
     "mtime": 1794822547.781593,
     "seen": 1794900751.4713721,
     "ast_hash": "6894fe52e1fc49e6ac7bdfe026c235b5",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/components/landing/CountUp.vue": {
+    "mtime": 1794979148.498075,
+    "seen": 1794979527.8747206,
+    "ast_hash": "f37837a985b7d6652fb37bfb3108ec5a",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/99speedmart.jpg": {
+    "mtime": 1794979088.423198,
+    "seen": 1794979527.907869,
+    "ast_hash": "b527bccb360886ae006b7fabf1853356",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/grabfood-white.png": {
+    "mtime": 1794979088.8325107,
+    "seen": 1794979527.907869,
+    "ast_hash": "8ea5e8751b9cb2b471f8c24d89bd1260",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/jayagrocer.jpg": {
+    "mtime": 1794979088.423198,
+    "seen": 1794979527.907869,
+    "ast_hash": "37773d907e516e895150cb1bede3a2d9",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/kiosk-qr-code.png": {
+    "mtime": 1794979088.4412746,
+    "seen": 1794979527.907869,
+    "ast_hash": "096fbe83ceea4e5ef3e310c1f59d1214",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/kiosk-qr.webp": {
+    "mtime": 1794979088.8110826,
+    "seen": 1794979527.907869,
+    "ast_hash": "9990418ddc8adf5fd168ac80c3188936",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/kiosk-success.webp": {
+    "mtime": 1794979088.7701986,
+    "seen": 1794979527.907869,
+    "ast_hash": "a8f66418e0242007c07af91882b806c7",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/phone-rewards.webp": {
+    "mtime": 1794979088.7111728,
+    "seen": 1794979527.907869,
+    "ast_hash": "83d7a3a393235b397fb152c0b0f73b35",
+    "semantic_hash": ""
+  },
+  "FrontEnd/src/assets/landing/tealive.svg": {
+    "mtime": 1794979088.4091034,
+    "seen": 1794979527.907869,
+    "ast_hash": "0d38d19726637e981a0b08fd77887586",
     "semantic_hash": ""
   }
 }
