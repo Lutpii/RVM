@@ -70,9 +70,9 @@ watchEffect(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 28px;
-  padding: 72px 16px 32px;
+  padding: 72px 16px 24px;
   background:
     radial-gradient(60% 45% at 50% 0%, rgba(78, 110, 242, 0.14), transparent 70%),
     var(--m-bg);
@@ -123,6 +123,9 @@ watchEffect(() => {
   border-radius: 12px;
   padding: 40px 28px 32px;
   text-align: center;
+  /* auto margins centre the card in the space above the footer, which
+     stays pinned to the bottom of the screen */
+  margin: auto 0;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
 .mnt-icon {
