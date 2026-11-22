@@ -13,6 +13,18 @@ import api, { hasMachineKey } from './services/api'
 import { startHeartbeat } from './services/heartbeat'
 import { getHardwareState } from './services/compactor'
 
+import { isMaintenance } from './utils/maintenance'
+import MaintenanceView from './views/MaintenanceView.vue'
+
+// Maintenance: every link shows one static page; the real app (router, auth,
+// API calls, kiosk heartbeat) is never started. Switch in utils/maintenance.js.
+if (isMaintenance()) {
+  createApp(MaintenanceView).mount('#app')
+} else {
+  startApp()
+}
+
+function startApp() {
 const pinia = createPinia()
 
 // An old or unknown stored value (e.g. 'ms') starts in English instead of
@@ -40,4 +52,5 @@ app.mount('#app')
 // minute for as long as the kiosk app is open, whichever screen it is on.
 if (hasMachineKey) {
   startHeartbeat({ post: (url, body) => api.post(url, body), getState: () => getHardwareState() })
+}
 }
