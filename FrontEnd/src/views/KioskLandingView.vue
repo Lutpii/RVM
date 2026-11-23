@@ -2,6 +2,10 @@
   <div class="kiosk-landing" data-theme="light">
     <div class="kiosk-bg"></div>
 
+    <div class="kiosk-lang">
+      <LanguageSwitch variant="segmented" tone="light" />
+    </div>
+
     <div class="kiosk-content">
       <div class="rvm-logo-float">
         <PhRecycle class="rvm-logo" weight="regular" />
@@ -36,6 +40,7 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/services/api'
 import { PhRecycle, PhPlay } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 
 const router = useRouter()
@@ -85,6 +90,13 @@ function goToQr() {
   color: var(--text-primary);
   position: relative;
   overflow: hidden;
+}
+
+.kiosk-lang {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
 }
 
 .kiosk-bg {

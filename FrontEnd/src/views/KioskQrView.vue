@@ -5,7 +5,10 @@
     <!-- Header -->
     <div class="qr-header">
       <button class="back-btn" @click="$router.push(`${base}/${machineCode}`)">← {{ $t('kioskQr.back') }}</button>
-      <span class="machine-label">{{ machineCode }}</span>
+      <div class="qr-header-right">
+        <span class="machine-label">{{ machineCode }}</span>
+        <LanguageSwitch variant="segmented" tone="light" />
+      </div>
     </div>
 
     <!-- WAITING — show QR -->
@@ -94,6 +97,7 @@ import api, { setKioskToken } from '@/services/api'
 import { useRvmStore } from '@/store/rvm'
 import { PhHourglass } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 import { QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, afterQrExpiry } from '@/utils/qrToken'
 import { qrRetryDelay, isTemporaryQrError } from '@/utils/qrRetry'
@@ -438,6 +442,14 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 .back-btn:hover { background: rgba(0,0,0,0.08); }
+.qr-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* Same height as the Back button so the header stays one slim row. */
+.qr-header-right :deep(.lang-seg-light) { padding: 3px; gap: 3px; }
+.qr-header-right :deep(.lang-seg-btn) { min-width: 44px; min-height: 34px; font-size: 13px; }
 .machine-label {
   color: rgba(26,32,44,0.4);
   font-size: 13px;
@@ -754,6 +766,13 @@ onBeforeUnmount(() => {
    base rule (not the compact one) to fill the extra width instead of
    leaving large empty margins beside a QR code sized for a desktop
    monitor. */
+/* Narrow screens (phone): Back + language buttons take the full width, so the
+   title starts below them instead of under them; the machine code is hidden. */
+@media (max-width: 640px) {
+  .kiosk-qr { padding-top: 64px; }
+  .machine-label { display: none; }
+}
+
 @media (orientation: portrait) and (min-width: 700px) {
   .kiosk-qr { justify-content: center; gap: 48px; }
   .kiosk-footer {

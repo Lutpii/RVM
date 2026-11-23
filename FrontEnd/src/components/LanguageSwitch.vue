@@ -1,6 +1,6 @@
 <template>
   <!-- Kiosks: all three languages visible, one tap to switch. -->
-  <div v-if="variant === 'segmented'" class="lang-seg" role="radiogroup" :aria-label="$t('settings.language')">
+  <div v-if="variant === 'segmented'" :class="['lang-seg', { 'lang-seg-light': tone === 'light' }]" role="radiogroup" :aria-label="$t('settings.language')">
     <button v-for="l in languages" :key="l.code" type="button" role="radio"
       :class="['lang-seg-btn', { active: locale === l.code }]"
       :aria-checked="locale === l.code" :aria-label="l.label" @click="setLanguage(l.code)">
@@ -36,7 +36,12 @@ import { useLanguage } from '@/composables/useLanguage'
 import { languageMenuNext } from '@/utils/languageMenu'
 import { escapeListener } from '@/composables/useEscapeToClose'
 
-defineProps({ variant: { type: String, default: 'segmented' } })
+defineProps({
+  variant: { type: String, default: 'segmented' },
+  // 'light': segmented buttons on a light page (kiosk start + QR screens)
+  // instead of the default white-on-gradient session header.
+  tone: { type: String, default: 'gradient' },
+})
 
 const { locale, languages, currentLanguage, setLanguage } = useLanguage()
 const open = ref(false)
@@ -76,6 +81,11 @@ onUnmounted(() => {
 }
 .lang-seg-btn.active { background: #fff; color: #1e3a8a; }
 .lang-seg-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+.lang-seg-light { padding: 4px; gap: 4px; border-radius: 999px; background: #fff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+.lang-seg-light .lang-seg-btn { min-width: 52px; min-height: 44px; border-radius: 999px; color: #4a5568; font-size: 15px; }
+.lang-seg-light .lang-seg-btn.active { background: linear-gradient(135deg, #4e6ef2 0%, #a855f7 100%); color: #fff; }
+.lang-seg-light .lang-seg-btn:focus-visible { outline: 2px solid #4e6ef2; outline-offset: 2px; }
 
 /* Same size and look as the landing header's round buttons. */
 .lang-menu { position: relative; }
