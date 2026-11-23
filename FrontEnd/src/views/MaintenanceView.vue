@@ -1,16 +1,8 @@
 <template>
   <main class="mnt" :data-theme="theme">
-    <nav class="mnt-lang" aria-label="Language">
-      <button
-        v-for="l in LANGUAGES"
-        :key="l.code"
-        type="button"
-        :class="{ active: lang === l.code }"
-        :aria-pressed="lang === l.code"
-        :title="l.label"
-        @click="setLang(l.code)"
-      >{{ l.short }}</button>
-    </nav>
+    <div class="mnt-lang">
+      <LanguagePill :languages="LANGUAGES" :current="lang" tone="light" @select="setLang" />
+    </div>
 
     <section class="mnt-card">
       <div class="mnt-icon" aria-hidden="true">
@@ -38,6 +30,7 @@
 import { computed, ref, watchEffect } from 'vue'
 import { LANGUAGES, resolveStoredLanguage, htmlLang } from '@/composables/useLanguage'
 import { maintenanceText } from '@/utils/maintenance'
+import LanguagePill from '@/components/LanguagePill.vue'
 
 const store = (() => { try { return localStorage } catch { return undefined } })()
 const lang = ref(resolveStoredLanguage(store))
@@ -93,26 +86,7 @@ watchEffect(() => {
   position: absolute;
   top: 16px;
   right: 16px;
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--m-border);
-  border-radius: 999px;
-  background: var(--m-card);
-}
-.mnt-lang button {
-  border: 0;
-  background: transparent;
-  color: var(--m-sub);
-  font: 600 13px 'DM Sans', sans-serif;
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  min-height: 32px;
-}
-.mnt-lang button.active {
-  background: linear-gradient(135deg, #4e6ef2 0%, #a855f7 100%);
-  color: #fff;
+  --lang-size: 38px;
 }
 
 .mnt-card {

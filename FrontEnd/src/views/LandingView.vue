@@ -17,7 +17,7 @@
               <PhSun v-if="theme === 'dark'" :size="19" aria-hidden="true" />
               <PhMoon v-else :size="19" aria-hidden="true" />
             </button>
-            <LanguageSwitch variant="menu" />
+            <LanguageSwitch />
             <RouterLink to="/login" class="nav-login">{{ $t('nav.login') }}</RouterLink>
           </div>
         </nav>
@@ -424,7 +424,7 @@ h1, h2, h3 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 .brand { display: flex; align-items: center; gap: 10px; min-height: 44px; color: #fff; text-decoration: none; }
 .brand-mark { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .brand-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; white-space: nowrap; }
-.nav-actions { display: flex; align-items: center; gap: 8px; }
+.nav-actions { display: flex; align-items: center; gap: 8px; --lang-size: 38px; }
 .nav-link { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; opacity: 0.95; white-space: nowrap; }
 .nav-link:hover { background: rgba(255,255,255,0.14); }
 @media (max-width: 900px) { .nav-link { display: none; } }

@@ -1,5 +1,6 @@
-// Open/close rules for the landing page language menu (LanguageSwitch
-// variant="menu"). refocus = move focus back to the menu button.
+// Open/close rules for the language controls: LanguagePill (round button that
+// slides open) and the Account page row menu. refocus = move focus back to the
+// button that opened it.
 export function languageMenuNext(open, action) {
   switch (action) {
     case 'toggle': return { open: !open, refocus: false }

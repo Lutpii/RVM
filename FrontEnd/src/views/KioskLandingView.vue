@@ -3,7 +3,7 @@
     <div class="kiosk-bg"></div>
 
     <div class="kiosk-lang">
-      <LanguageSwitch variant="segmented" tone="light" />
+      <LanguageSwitch tone="light" />
     </div>
 
     <div class="kiosk-content">

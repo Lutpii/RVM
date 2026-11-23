@@ -7,7 +7,7 @@
       <button class="back-btn" @click="$router.push(`${base}/${machineCode}`)">← {{ $t('kioskQr.back') }}</button>
       <div class="qr-header-right">
         <span class="machine-label">{{ machineCode }}</span>
-        <LanguageSwitch variant="segmented" tone="light" />
+        <LanguageSwitch tone="light" />
       </div>
     </div>
 
@@ -447,9 +447,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
 }
-/* Same height as the Back button so the header stays one slim row. */
-.qr-header-right :deep(.lang-seg-light) { padding: 3px; gap: 3px; }
-.qr-header-right :deep(.lang-seg-btn) { min-width: 44px; min-height: 34px; font-size: 13px; }
+/* About the Back button's height so the header stays one slim row. */
+.qr-header-right { --lang-size: 36px; }
 .machine-label {
   color: rgba(26,32,44,0.4);
   font-size: 13px;
