@@ -8,7 +8,7 @@
 // Local `npm run dev` is never blocked; preview the page there with
 // VITE_MAINTENANCE_PREVIEW=true. A single deploy can opt out with
 // VITE_MAINTENANCE_MODE=false.
-export const MAINTENANCE_ON = true
+export const MAINTENANCE_ON = false
 
 export function isMaintenance(env = import.meta.env, on = MAINTENANCE_ON) {
   if (env.VITE_MAINTENANCE_PREVIEW === 'true') return true
