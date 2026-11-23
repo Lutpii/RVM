@@ -652,7 +652,7 @@ export default {
     generating: 'Membuat QR...',
     qrAlt: 'Kode QR',
     failedLoad: 'Gagal memuat QR',
-    connecting: 'Menghubungkan ke server...',
+    connecting: 'Connecting to the server...',
     tokenLabel: 'Kode koneksi',
     step1: 'Pindai kode QR ini dengan ponsel Anda',
     step2: 'Masuk ke akun Ultra RVM Anda',

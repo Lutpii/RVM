@@ -1337,7 +1337,7 @@ export const messages = {
       generating: 'Menjana QR...',
       qrAlt: 'Kod QR',
       failedLoad: 'Gagal memuatkan QR',
-      connecting: 'Menyambung ke pelayan...',
+      connecting: 'Connecting to the server...',
       tokenLabel: 'Kod sambungan',
       step1: 'Imbas kod QR ini dengan telefon anda',
       step2: 'Log masuk ke akaun Ultra RVM anda',
