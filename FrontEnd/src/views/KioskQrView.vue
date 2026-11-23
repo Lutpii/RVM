@@ -96,7 +96,7 @@ import { PhHourglass } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 import { QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, afterQrExpiry } from '@/utils/qrToken'
-import { qrRetryDelay } from '@/utils/qrRetry'
+import { qrRetryDelay, isTemporaryQrError } from '@/utils/qrRetry'
 
 const router      = useRouter()
 const route       = useRoute()
@@ -140,6 +140,7 @@ async function generateQr() {
   timerPct.value   = 100
 
   let ok = false
+  let retry = true
   try {
     const res = await api.get(`/qr/generate/${machineCode}`)
     if (res.data.success) {
@@ -151,8 +152,9 @@ async function generateQr() {
       startPoll()
       startTimer()
     }
-  } catch {
+  } catch (e) {
     qrSvgSrc.value = ''
+    retry = isTemporaryQrError(e?.response?.status)
   } finally {
     loadingQr.value = false
   }
@@ -160,8 +162,11 @@ async function generateQr() {
   if (ok) {
     failedQrTries = 0
     retryingQr.value = false
-  } else {
+  } else if (retry) {
     scheduleQrRetry()
+  } else {
+    // e.g. 404 unknown machine code: retrying cannot help, show the error
+    retryingQr.value = false
   }
 }
 

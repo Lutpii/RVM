@@ -11,3 +11,11 @@ export function qrRetryDelay(failedAttempts) {
   const i = Math.max(0, failedAttempts - 1)
   return i < DELAYS_MS.length ? DELAYS_MS[i] : MAX_DELAY_MS
 }
+
+// Only failures that can clear up by themselves are retried: no response at
+// all (network, CORS during a cold start), 408, 425, 429 and 5xx. A 404
+// (unknown machine code) or another 4xx shows "Failed to load QR" at once.
+export function isTemporaryQrError(status) {
+  if (status === undefined || status === null || status === 0) return true
+  return status === 408 || status === 425 || status === 429 || status >= 500
+}
