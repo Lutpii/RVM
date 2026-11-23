@@ -8,6 +8,7 @@ class RewardItem extends Model
 {
     protected $fillable = [
         'name', 'description', 'category', 'image_path', 'image_stored_at',
+        'name_en', 'name_id', 'description_en', 'description_id', 'category_en', 'category_id',
         'points_cost', 'stock', 'valid_from', 'valid_until', 'is_active',
     ];
 

@@ -19,3 +19,12 @@ export function rewardCategoryLabel(raw, t) {
   const key = rewardCategoryKey(raw)
   return key ? t(`rewards.categories.${key}`) : raw
 }
+
+// A reward card's category label: the admin's own translation for this
+// language wins (category_en / category_id), then the built-in label for a
+// known category, then the category exactly as typed.
+export function rewardItemCategoryLabel(item, locale, t) {
+  const translated = item?.[`category_${locale}`]
+  if (typeof translated === 'string' && translated.trim()) return translated
+  return rewardCategoryLabel(item?.category, t)
+}

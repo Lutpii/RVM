@@ -91,4 +91,50 @@ class RewardVoucherTest extends TestCase
         $this->postJson("/api/admin/vouchers/{$code}/use")->assertForbidden();
         $this->assertNull(RewardRedemption::where('voucher_code', $code)->first()->used_at);
     }
+
+    public function test_voucher_carries_the_reward_translations(): void
+    {
+        $user = $this->makeUser();
+        Sanctum::actingAs($user, ['*']);
+        $item = RewardItem::create([
+            'name' => 'Baucar GrabFood RM5', 'name_en' => 'GrabFood Voucher RM5', 'name_id' => 'Voucher GrabFood RM5',
+            'points_cost' => 500, 'is_active' => true,
+        ]);
+        $code = $this->postJson("/api/user/reward-items/{$item->id}/redeem")->assertOk()->json('redemption.voucher_code');
+
+        $this->getJson("/api/vouchers/{$code}")->assertOk()
+            ->assertJsonPath('voucher.reward_name', 'Baucar GrabFood RM5')
+            ->assertJsonPath('voucher.reward_name_en', 'GrabFood Voucher RM5')
+            ->assertJsonPath('voucher.reward_name_id', 'Voucher GrabFood RM5');
+    }
+
+    public function test_voucher_history_carries_the_reward_translations(): void
+    {
+        $user = $this->makeUser();
+        Sanctum::actingAs($user, ['*']);
+        $item = RewardItem::create([
+            'name' => 'Baucar Kopi RM5', 'name_en' => 'Coffee Voucher RM5',
+            'points_cost' => 500, 'is_active' => true,
+        ]);
+        $this->postJson("/api/user/reward-items/{$item->id}/redeem")->assertOk();
+
+        $row = $this->getJson('/api/user/reward-redemptions')->assertOk()->json('redemptions.data.0');
+        $this->assertEquals('Baucar Kopi RM5', $row['reward_name']);
+        $this->assertEquals('Coffee Voucher RM5', $row['reward_name_en']);
+        $this->assertNull($row['reward_name_id']);
+    }
+
+    public function test_redeem_response_carries_the_reward_translations(): void
+    {
+        $user = $this->makeUser();
+        Sanctum::actingAs($user, ['*']);
+        $item = RewardItem::create([
+            'name' => 'Baucar Kopi RM5', 'name_id' => 'Voucher Kopi RM5',
+            'points_cost' => 500, 'is_active' => true,
+        ]);
+
+        $this->postJson("/api/user/reward-items/{$item->id}/redeem")->assertOk()
+            ->assertJsonPath('redemption.reward_name', 'Baucar Kopi RM5')
+            ->assertJsonPath('redemption.reward_name_id', 'Voucher Kopi RM5');
+    }
 }

@@ -20,7 +20,7 @@
           <strong class="voucher-code">{{ voucher.code }}</strong>
 
           <dl class="details">
-            <dt>{{ $t('voucher.reward') }}</dt><dd>{{ voucher.reward_name }}</dd>
+            <dt>{{ $t('voucher.reward') }}</dt><dd>{{ rewardText(voucher, 'reward_name', locale) }}</dd>
             <dt>{{ $t('voucher.holder') }}</dt><dd>{{ voucher.holder }}</dd>
             <dt>{{ $t('voucher.redeemedAt') }}</dt><dd>{{ formatDate(voucher.redeemed_at) }}</dd>
             <template v-if="voucher.used_at">
@@ -45,13 +45,14 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { rewardText } from '@/utils/rewardText'
 import { PhCheckCircle, PhXCircle } from '@phosphor-icons/vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 
 const route = useRoute()
 const auth = useAuthStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const voucher = ref(null)
 const loading = ref(true)
 const error = ref('')

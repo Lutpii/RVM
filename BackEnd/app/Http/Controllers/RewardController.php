@@ -28,6 +28,12 @@ class RewardController extends Controller
             'name'         => $item->name,
             'description'  => $item->description,
             'category'     => $item->category,
+            'name_en'        => $item->name_en,
+            'name_id'        => $item->name_id,
+            'description_en' => $item->description_en,
+            'description_id' => $item->description_id,
+            'category_en'    => $item->category_en,
+            'category_id'    => $item->category_id,
             'image_url'    => $item->image_url,
             'points_cost'  => $item->points_cost,
             'stock'        => $item->stock,
@@ -183,7 +189,7 @@ class RewardController extends Controller
                 'success'      => true,
                 'message'      => __('messages.reward_redeemed'),
                 'total_points' => $user->total_points,
-                'redemption'   => $redemption,
+                'redemption'   => array_merge($redemption->toArray(), $redemption->rewardNameTranslations()),
             ]);
         });
     }
@@ -191,8 +197,13 @@ class RewardController extends Controller
     public function history(Request $request): JsonResponse
     {
         $redemptions = RewardRedemption::where('user_id', $request->user()->id)
+            ->with('rewardItem:id,name_en,name_id')
             ->orderByDesc('created_at')
-            ->paginate(20);
+            ->paginate(20)
+            ->through(fn (RewardRedemption $r) => array_merge(
+                $r->makeHidden('rewardItem')->toArray(),
+                $r->rewardNameTranslations(),
+            ));
 
         return response()->json(['success' => true, 'redemptions' => $redemptions]);
     }
@@ -233,6 +244,7 @@ class RewardController extends Controller
         return [
             'code'         => $redemption->voucher_code,
             'reward_name'  => $redemption->reward_name,
+            ...$redemption->rewardNameTranslations(),
             'points_spent' => $redemption->points_spent,
             'redeemed_at'  => $redemption->created_at,
             'holder'       => self::maskName($redemption->user?->name),

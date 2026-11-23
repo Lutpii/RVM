@@ -214,4 +214,37 @@ class AdminRewardItemsCrudTest extends TestCase
 
         $this->getJson('/api/admin/reward-items')->assertStatus(403);
     }
+
+    public function test_creates_and_updates_a_reward_item_with_translations(): void
+    {
+        $this->actingAsAdmin();
+
+        $id = $this->postJson('/api/admin/reward-items', [
+            'name' => 'Baucar GrabFood RM5', 'points_cost' => 500,
+            'description' => 'Baucar GrabFood bernilai RM5.', 'category' => 'Baucar Makanan',
+            'name_en' => 'GrabFood Voucher RM5', 'name_id' => 'Voucher GrabFood RM5',
+            'description_en' => 'A GrabFood voucher worth RM5.', 'description_id' => 'Voucher GrabFood senilai RM5.',
+            'category_en' => 'Food Voucher', 'category_id' => 'Voucher Makanan',
+        ])->assertStatus(201)->json('reward_item.id');
+
+        $item = RewardItem::find($id);
+        $this->assertEquals('GrabFood Voucher RM5', $item->name_en);
+        $this->assertEquals('Voucher GrabFood senilai RM5.', $item->description_id);
+        $this->assertEquals('Voucher Makanan', $item->category_id);
+
+        $this->putJson("/api/admin/reward-items/{$id}", ['name_en' => 'GrabFood RM5 Voucher', 'category_id' => ''])
+            ->assertOk();
+        $item->refresh();
+        $this->assertEquals('GrabFood RM5 Voucher', $item->name_en);
+        $this->assertNull($item->category_id);
+        $this->assertEquals('Baucar GrabFood RM5', $item->name);
+    }
+
+    public function test_rejects_a_translated_name_that_is_too_long(): void
+    {
+        $this->actingAsAdmin();
+        $this->postJson('/api/admin/reward-items', [
+            'name' => 'Baucar', 'points_cost' => 10, 'name_en' => str_repeat('x', 151),
+        ])->assertStatus(422)->assertJsonValidationErrors('name_en');
+    }
 }

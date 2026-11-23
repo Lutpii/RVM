@@ -16,4 +16,15 @@ class RewardRedemption extends Model
 
     public function user()      { return $this->belongsTo(User::class); }
     public function rewardItem(){ return $this->belongsTo(RewardItem::class); }
+
+    // The reward name was saved in Malay when the voucher was redeemed; the
+    // English / Indonesian versions come from the reward card (null when the
+    // card is gone or has no translation, and the page then shows Malay).
+    public function rewardNameTranslations(): array
+    {
+        return [
+            'reward_name_en' => $this->rewardItem?->name_en,
+            'reward_name_id' => $this->rewardItem?->name_id,
+        ];
+    }
 }

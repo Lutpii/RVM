@@ -1118,9 +1118,20 @@
           <PhX weight="bold" aria-hidden="true" />
         </button>
         <h3>{{ $t('adminUi.addRewardTitle') }}</h3>
+        <p class="field-hint reward-malay-hint">{{ $t('adminUi.rewardMalayHint') }}</p>
         <div class="form-group"><label>{{ $t('adminUi.nameReq') }}</label><input v-model="newRewardItem.name" type="text" /></div>
         <div class="form-group"><label>{{ $t('adminUi.description') }}</label><input v-model="newRewardItem.description" type="text" /></div>
         <div class="form-group"><label>{{ $t('adminUi.category') }}</label><input v-model="newRewardItem.category" type="text" :placeholder="$t('adminUi.egCategory')" /></div>
+        <details class="reward-translations">
+          <summary>{{ $t('adminUi.rewardTranslations') }} <span class="label-hint">{{ $t('adminUi.optional') }}</span></summary>
+          <p class="field-hint">{{ $t('adminUi.rewardTranslationsHint') }}</p>
+          <fieldset v-for="lang in REWARD_TRANSLATION_LANGS" :key="lang.code" class="reward-translation-lang">
+            <legend>{{ $t(lang.label) }}</legend>
+            <div class="form-group"><label>{{ $t('adminUi.rewardTransName') }}</label><input v-model="newRewardItem[`name_${lang.code}`]" type="text" maxlength="150" /></div>
+            <div class="form-group"><label>{{ $t('adminUi.description') }}</label><input v-model="newRewardItem[`description_${lang.code}`]" type="text" /></div>
+            <div class="form-group"><label>{{ $t('adminUi.category') }}</label><input v-model="newRewardItem[`category_${lang.code}`]" type="text" maxlength="50" /></div>
+          </fieldset>
+        </details>
         <div class="form-row">
           <div class="form-group"><label>{{ $t('adminUi.pointsCostReq') }}</label><input v-model.number="newRewardItem.points_cost" type="number" min="1" /></div>
           <div class="form-group"><label>{{ $t('adminUi.stock') }} <span class="label-hint">{{ $t('adminUi.optional') }}</span></label><input v-model="newRewardItem.stock" type="number" min="0" :placeholder="$t('adminUi.unlimited')" /></div>
@@ -1167,9 +1178,20 @@
           <PhX weight="bold" aria-hidden="true" />
         </button>
         <h3>{{ $t('adminUi.editRewardTitle') }}</h3>
+        <p class="field-hint reward-malay-hint">{{ $t('adminUi.rewardMalayHint') }}</p>
         <div class="form-group"><label>{{ $t('adminUi.nameReq') }}</label><input v-model="editingRewardItem.name" type="text" /></div>
         <div class="form-group"><label>{{ $t('adminUi.description') }}</label><input v-model="editingRewardItem.description" type="text" /></div>
         <div class="form-group"><label>{{ $t('adminUi.category') }}</label><input v-model="editingRewardItem.category" type="text" /></div>
+        <details class="reward-translations">
+          <summary>{{ $t('adminUi.rewardTranslations') }} <span class="label-hint">{{ $t('adminUi.optional') }}</span></summary>
+          <p class="field-hint">{{ $t('adminUi.rewardTranslationsHint') }}</p>
+          <fieldset v-for="lang in REWARD_TRANSLATION_LANGS" :key="lang.code" class="reward-translation-lang">
+            <legend>{{ $t(lang.label) }}</legend>
+            <div class="form-group"><label>{{ $t('adminUi.rewardTransName') }}</label><input v-model="editingRewardItem[`name_${lang.code}`]" type="text" maxlength="150" /></div>
+            <div class="form-group"><label>{{ $t('adminUi.description') }}</label><input v-model="editingRewardItem[`description_${lang.code}`]" type="text" /></div>
+            <div class="form-group"><label>{{ $t('adminUi.category') }}</label><input v-model="editingRewardItem[`category_${lang.code}`]" type="text" maxlength="50" /></div>
+          </fieldset>
+        </details>
         <div class="form-row">
           <div class="form-group"><label>{{ $t('adminUi.pointsCostReq') }}</label><input v-model.number="editingRewardItem.points_cost" type="number" min="1" /></div>
           <div class="form-group"><label>{{ $t('adminUi.stock') }} <span class="label-hint">{{ $t('adminUi.optional') }}</span></label><input v-model="editingRewardItem.stock" type="number" min="0" :placeholder="$t('adminUi.unlimited')" /></div>
@@ -1383,6 +1405,7 @@
 
 <script setup>
 import { ref, reactive, computed, inject, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { rewardTranslationFields } from '@/utils/admin/rewardTranslations'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/store/auth'
@@ -1644,6 +1667,11 @@ const rewardItemsPerPage = ref(20)
 const rewardItemsTotal = ref(0)
 const rewardItemsLastPage = ref(1)
 const showAddRewardItem = ref(false)
+// Reward cards are written in Malay; these are the optional translations.
+const REWARD_TRANSLATION_LANGS = [
+  { code: 'en', label: 'adminUi.rewardLangEn' },
+  { code: 'id', label: 'adminUi.rewardLangId' },
+]
 const editingRewardItem = ref(null)
 const newRewardItem = ref({ name: '', description: '', category: '', points_cost: 10, stock: '', valid_from: '', valid_until: '', is_active: true })
 const rewardItemImageFile = ref(null) // the cropped 4:3 JPEG that gets uploaded
@@ -3211,6 +3239,7 @@ function buildRewardItemFormData(source) {
   fd.append('name', source.name.trim())
   fd.append('description', source.description || '')
   fd.append('category', source.category || '')
+  for (const [key, value] of Object.entries(rewardTranslationFields(source))) fd.append(key, value)
   fd.append('points_cost', source.points_cost)
   fd.append('stock', source.stock === '' || source.stock === null || source.stock === undefined ? '' : source.stock)
   fd.append('valid_from', source.valid_from || '')
@@ -3345,6 +3374,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.reward-malay-hint { margin: -4px 0 14px; }
+.reward-translations { margin: 0 0 16px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+.reward-translations summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.reward-translations[open] summary { margin-bottom: 6px; }
+.reward-translation-lang { border: 0; padding: 0; margin: 12px 0 0; min-width: 0; }
+.reward-translation-lang legend { padding: 0; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.reward-translation-lang .form-group:last-child { margin-bottom: 0; }
 .platform-nav-group + .platform-nav-group { margin-top: 8px; }
 .platform-nav-label { display: block; padding: 5px 10px; font-size: .7rem; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
 .platform-nav-group .nav-item { width: 100%; }

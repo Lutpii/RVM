@@ -61,4 +61,19 @@ class RewardCatalogTest extends TestCase
         $this->assertNotNull($item);
         $this->assertFalse($item['is_available']);
     }
+
+    public function test_catalog_includes_the_translation_fields(): void
+    {
+        $this->actingAsUser();
+        RewardItem::create([
+            'name' => 'Baucar Kopi RM5', 'name_en' => 'Coffee Voucher RM5',
+            'category' => 'Baucar Minuman', 'category_id' => 'Voucher Minuman',
+            'points_cost' => 500, 'is_active' => true,
+        ]);
+
+        $item = $this->getJson('/api/user/reward-items')->assertOk()->json('reward_items.0');
+        $this->assertEquals('Coffee Voucher RM5', $item['name_en']);
+        $this->assertEquals('Voucher Minuman', $item['category_id']);
+        $this->assertArrayHasKey('description_en', $item);
+    }
 }

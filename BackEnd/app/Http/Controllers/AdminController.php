@@ -1169,12 +1169,23 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'reward_items' => $items]);
     }
 
+    // Optional English / Indonesian versions of a reward card written in Malay.
+    private const REWARD_TRANSLATION_RULES = [
+        'name_en'        => 'nullable|string|max:150',
+        'name_id'        => 'nullable|string|max:150',
+        'description_en' => 'nullable|string',
+        'description_id' => 'nullable|string',
+        'category_en'    => 'nullable|string|max:50',
+        'category_id'    => 'nullable|string|max:50',
+    ];
+
     public function createRewardItem(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name'         => 'required|string|max:150',
             'description'  => 'nullable|string',
             'category'     => 'nullable|string|max:50',
+            ...self::REWARD_TRANSLATION_RULES,
             'points_cost'  => 'required|integer|min:1',
             'stock'        => 'nullable|integer|min:0',
             'valid_from'   => 'nullable|date',
@@ -1187,6 +1198,7 @@ class AdminController extends Controller
             'name'        => $validated['name'],
             'description' => $validated['description'] ?? null,
             'category'    => $validated['category'] ?? null,
+            ...array_intersect_key($validated, self::REWARD_TRANSLATION_RULES),
             'points_cost' => $validated['points_cost'],
             'stock'       => $validated['stock'] ?? null,
             'valid_from'  => $validated['valid_from'] ?? null,
@@ -1210,6 +1222,7 @@ class AdminController extends Controller
             'name'         => 'sometimes|required|string|max:150',
             'description'  => 'nullable|string',
             'category'     => 'nullable|string|max:50',
+            ...self::REWARD_TRANSLATION_RULES,
             'points_cost'  => 'sometimes|required|integer|min:1',
             'stock'        => 'nullable|integer|min:0',
             'valid_from'   => 'nullable|date',

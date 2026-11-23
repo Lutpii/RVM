@@ -10,7 +10,7 @@
         v-for="cat in categories" :key="cat"
         :class="['chip', { active: activeCategory === cat }]"
         @click="activeCategory = cat"
-      >{{ cat === '__all__' ? $t('rewards.allCategory') : rewardCategoryLabel(cat, t) }}</button>
+      >{{ cat === '__all__' ? $t('rewards.allCategory') : categoryLabel(cat) }}</button>
     </div>
 
     <div v-if="loading" class="loading-placeholder"><div class="spinner-sm"></div></div>
@@ -26,9 +26,9 @@
           <PhGift weight="regular" aria-hidden="true" />
         </div>
         <div class="reward-body">
-          <span v-if="item.category" class="reward-category">{{ rewardCategoryLabel(item.category, t) }}</span>
-          <strong class="reward-name">{{ item.name }}</strong>
-          <p v-if="item.description" class="reward-desc">{{ item.description }}</p>
+          <span v-if="item.category" class="reward-category">{{ rewardItemCategoryLabel(item, locale, t) }}</span>
+          <strong class="reward-name">{{ rewardText(item, 'name', locale) }}</strong>
+          <p v-if="item.description" class="reward-desc">{{ rewardText(item, 'description', locale) }}</p>
           <div class="reward-meta">
             <span class="reward-points">{{ $t('rewards.pointsCost', { points: item.points_cost }) }}</span>
             <span v-if="item.stock !== null" class="reward-stock">{{ $t('rewards.stockLeft', { count: item.stock }) }}</span>
@@ -45,9 +45,9 @@
           <PhGift weight="regular" aria-hidden="true" />
         </div>
         <div class="detail-body">
-          <span v-if="detailItem.category" class="reward-category">{{ rewardCategoryLabel(detailItem.category, t) }}</span>
-          <h3 class="detail-name">{{ detailItem.name }}</h3>
-          <p v-if="detailItem.description" class="detail-desc">{{ detailItem.description }}</p>
+          <span v-if="detailItem.category" class="reward-category">{{ rewardItemCategoryLabel(detailItem, locale, t) }}</span>
+          <h3 class="detail-name">{{ rewardText(detailItem, 'name', locale) }}</h3>
+          <p v-if="detailItem.description" class="detail-desc">{{ rewardText(detailItem, 'description', locale) }}</p>
           <div class="reward-meta">
             <span class="reward-points">{{ $t('rewards.pointsCost', { points: detailItem.points_cost }) }}</span>
             <span v-if="detailItem.stock !== null" class="reward-stock">{{ $t('rewards.stockLeft', { count: detailItem.stock }) }}</span>
@@ -76,7 +76,7 @@
       >
         <PhTicket weight="regular" class="voucher-icon" aria-hidden="true" />
         <span class="voucher-info">
-          <strong>{{ v.reward_name }}</strong>
+          <strong>{{ rewardText(v, 'reward_name', locale) }}</strong>
           <span class="voucher-sub">{{ v.voucher_code }}</span>
         </span>
         <span :class="['voucher-status', v.used_at ? 'used' : 'valid']">
@@ -96,9 +96,10 @@ import { useI18n } from 'vue-i18n'
 import api from '@/services/api'
 import { useAuthStore } from '@/store/auth'
 import VoucherModal from '@/components/VoucherModal.vue'
-import { rewardCategoryLabel } from '@/utils/rewardCategory'
+import { rewardItemCategoryLabel } from '@/utils/rewardCategory'
+import { rewardText } from '@/utils/rewardText'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const auth = useAuthStore()
 const showToast = inject('showToast')
 const items = ref([])
@@ -116,6 +117,13 @@ const categories = computed(() => {
   const set = new Set(items.value.map(i => i.category).filter(Boolean))
   return set.size ? ['__all__', ...set] : []
 })
+
+// A chip is labelled from the first card in that category, so it uses the
+// same translation the cards show.
+function categoryLabel(category) {
+  const item = items.value.find(i => i.category === category)
+  return rewardItemCategoryLabel(item ?? { category }, locale.value, t)
+}
 
 const filteredItems = computed(() => {
   if (activeCategory.value === '__all__') return items.value

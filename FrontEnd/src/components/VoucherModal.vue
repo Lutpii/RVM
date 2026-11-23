@@ -2,8 +2,8 @@
 <template>
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="voucher-modal">
-      <h3 class="voucher-title">{{ fresh ? $t('rewards.voucherReady') : voucher.reward_name }}</h3>
-      <p v-if="fresh" class="voucher-reward">{{ voucher.reward_name }}</p>
+      <h3 class="voucher-title">{{ fresh ? $t('rewards.voucherReady') : rewardName }}</h3>
+      <p v-if="fresh" class="voucher-reward">{{ rewardName }}</p>
 
       <div :class="['qr-box', { used: isUsed }]">
         <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-img" :alt="voucher.voucher_code" />
@@ -30,6 +30,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PhDownloadSimple } from '@phosphor-icons/vue'
 import { voucherQrDataUrl, voucherImageDataUrl } from '@/utils/voucher'
+import { rewardText } from '@/utils/rewardText'
 
 const props = defineProps({
   voucher: { type: Object, required: true },
@@ -38,7 +39,8 @@ const props = defineProps({
 })
 defineEmits(['close'])
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const rewardName = computed(() => rewardText(props.voucher, 'reward_name', locale.value))
 const qrDataUrl = ref('')
 const saving = ref(false)
 const saveError = ref('')
@@ -55,7 +57,7 @@ async function saveImage() {
   try {
     const dataUrl = await voucherImageDataUrl({
       code: props.voucher.voucher_code,
-      rewardName: props.voucher.reward_name,
+      rewardName: rewardName.value,
       dateText: t('rewards.redeemedOn', { date: formatDate(props.voucher.created_at) }),
       qrDataUrl: qrDataUrl.value,
       title: t('rewards.voucherImageTitle'),
