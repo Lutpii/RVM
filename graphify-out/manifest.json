@@ -780,9 +780,9 @@
     "semantic_hash": "d9373629f47b7b382d9740ef42a476d8"
   },
   "FrontEnd/src/locales/index.js": {
-    "mtime": 1795401452.7630494,
-    "seen": 1795401642.3923023,
-    "ast_hash": "9388ca04b45220864b520b87b34b425f",
+    "mtime": 1795402018.8680604,
+    "seen": 1795402102.661827,
+    "ast_hash": "971d195ab04a88893fc30167f05f6da5",
     "semantic_hash": ""
   },
   "FrontEnd/src/main.js": {
@@ -2412,9 +2412,9 @@
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/id.js": {
-    "mtime": 1795401452.7630494,
-    "seen": 1795401642.3923023,
-    "ast_hash": "0eec98862eb4a8b0c456df4df3338c99",
+    "mtime": 1795402018.9098966,
+    "seen": 1795402102.661827,
+    "ast_hash": "06640893fd3c7b9341f2e4bee3d81506",
     "semantic_hash": ""
   },
   "FrontEnd/src/locales/idParity.test.js": {
