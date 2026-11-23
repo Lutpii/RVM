@@ -15,9 +15,9 @@
       <p v-if="elsewhereMsg" class="qr-sub" role="alert"><strong>{{ $t('kioskQr.elsewhere') }}</strong></p>
 
       <div class="qr-box">
-        <div v-if="loadingQr" class="qr-loading">
+        <div v-if="loadingQr || retryingQr" class="qr-loading" role="status">
           <div class="spinner"></div>
-          <span>{{ $t('kioskQr.generating') }}</span>
+          <span>{{ retryingQr ? $t('kioskQr.connecting') : $t('kioskQr.generating') }}</span>
         </div>
         <img
           v-else-if="qrSvgSrc"
@@ -96,6 +96,7 @@ import { PhHourglass } from '@phosphor-icons/vue'
 import BrandFooter from '@/components/BrandFooter.vue'
 import { kioskBase, isDemoKioskPath } from '@/utils/kioskBase'
 import { QR_LIFETIME_SECONDS, QR_MAX_REFRESHES, afterQrExpiry } from '@/utils/qrToken'
+import { qrRetryDelay } from '@/utils/qrRetry'
 
 const router      = useRouter()
 const route       = useRoute()
@@ -107,6 +108,7 @@ const base        = kioskBase(route)
 
 const state          = ref('waiting') // waiting | scanned | expired
 const loadingQr      = ref(true)
+const retryingQr     = ref(false) // last request failed, another one is scheduled
 const qrSvgSrc       = ref('')
 const scanUrl        = ref('')
 const currentToken   = ref('')
@@ -127,6 +129,8 @@ let elsewhereTimer = null
 let screenDeadline = 0
 let machineData   = null  // cached from generate response
 let refreshesDone = 0     // new QRs shown after the first one expired
+let retryTimer    = null
+let failedQrTries = 0     // failed generate requests in a row
 
 async function generateQr() {
   loadingQr.value  = true
@@ -135,9 +139,11 @@ async function generateQr() {
   expiresInSec.value = QR_REFRESH_SECONDS
   timerPct.value   = 100
 
+  let ok = false
   try {
     const res = await api.get(`/qr/generate/${machineCode}`)
     if (res.data.success) {
+      ok = true
       currentToken.value = res.data.token
       scanUrl.value      = res.data.scan_url
       qrSvgSrc.value = `data:image/svg+xml;base64,${res.data.qr_svg}`
@@ -150,6 +156,26 @@ async function generateQr() {
   } finally {
     loadingQr.value = false
   }
+
+  if (ok) {
+    failedQrTries = 0
+    retryingQr.value = false
+  } else {
+    scheduleQrRetry()
+  }
+}
+
+// A failed request (backend still waking up, network blip) is retried with a
+// short back-off instead of leaving "Failed to load QR" on screen until someone
+// reloads the page. The QR screen's own time limit still applies.
+function scheduleQrRetry() {
+  if (!isActive) return
+  failedQrTries += 1
+  retryingQr.value = true
+  clearTimeout(retryTimer)
+  retryTimer = setTimeout(() => {
+    if (isActive) generateQr()
+  }, qrRetryDelay(failedQrTries))
 }
 
 function startPoll() {
@@ -296,6 +322,7 @@ function returnToKiosk() {
 function clearIntervals() {
   clearInterval(pollInterval)
   clearInterval(timerInterval)
+  clearTimeout(retryTimer)
 }
 
 function startAsGuest() {
